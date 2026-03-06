@@ -20,6 +20,7 @@ async function adminSbPost(tablo, data) {
 }
 
 async function adminSbUpdate(tablo, id, data) {
+  if (!ADMIN_SB_URL || !ADMIN_SB_KEY) return;
   try {
     await fetch(`${ADMIN_SB_URL}/rest/v1/${tablo}?id=eq.${id}`, {
       method: 'PATCH',
@@ -34,6 +35,7 @@ async function adminSbUpdate(tablo, id, data) {
 }
 
 async function adminSbGet(tablo, filtre) {
+  if (!ADMIN_SB_URL || !ADMIN_SB_KEY) return [];
   try {
     const res = await fetch(`${ADMIN_SB_URL}/rest/v1/${tablo}?${filtre}&select=*`, {
       headers: { 'apikey': ADMIN_SB_KEY, 'Authorization': `Bearer ${ADMIN_SB_KEY}` }
