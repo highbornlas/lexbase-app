@@ -3,7 +3,7 @@
 // js/modules/supabase-client.js
 // ================================================================
 
-const SUPABASE_URL = 'https://omsahlgcuinyfvculgfj.supabase.co';
+const SUPABASE_URL = 'https://omsahlgcuinyfvcuigfj.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_iUS5jIX8NYPjdstm5U2xkg_MFXprA70';
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
