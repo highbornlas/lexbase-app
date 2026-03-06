@@ -1,0 +1,2724 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hukuk Bürosu Yönetim Sistemi</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="css/style.css">
+<!-- Supabase devre dışı - localStorage modu -->
+</head>
+<body>
+
+<!-- ===== LANDING PAGE ===== -->
+
+<div id="landing-screen">
+  <!-- Üst iletişim bandı -->
+  <div class="lp-topbar">
+    <div class="lp-topbar-inner">
+      <span>📧 <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="e48d8a828ba48189808c918f918fca878b89">[email&#160;protected]</a></span>
+      <span>📞 +90 (212) 000 00 00</span>
+      <span>🕐 Pzt–Cum 09:00–18:00</span>
+    </div>
+  </div>
+
+  <nav class="lp-nav" id="lp-nav">
+    <div class="lp-nav-logo">⚖️ EMD Hukuk</div>
+    <div class="lp-nav-links">
+      <span class="lp-nav-link" onclick="lpScroll('lp-features')">Özellikler</span>
+      <span class="lp-nav-link" onclick="lpScroll('lp-plans')">Fiyatlar</span>
+      <span class="lp-nav-link" onclick="lpScroll('lp-how')">Nasıl Çalışır</span>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="lp-btn-outline" onclick="gmAc('giris')">Giriş Yap</button>
+      <button class="lp-btn-fill" onclick="gmAc('kayit')">Ücretsiz Başla</button>
+    </div>
+  </nav>
+
+  <section class="lp-hero">
+    <div style="position:relative;z-index:1;width:100%">
+      <div class="lp-badge"><span class="lp-badge-dot"></span>Türkiye'nin hukuk büroları için tasarlandı</div>
+      <h1 class="lp-h1">Hukuk büronuzu<br><em>dijitale taşıyın</em></h1>
+      <p class="lp-sub">Müvekkil yönetiminden dava takibine, icra dosyalarından finansal raporlara — tüm iş akışlarınız tek platformda.</p>
+      <div class="lp-cta-row">
+        <button class="lp-cta-gold" onclick="gmAc('kayit')">30 Gün Ücretsiz Dene →</button>
+        <button class="lp-cta-ghost" onclick="lpScroll('lp-features')">Özellikleri Keşfet</button>
+      </div>
+      <div class="lp-stats">
+        <div><div class="lp-stat-n">12+</div><div class="lp-stat-l">Modül</div></div>
+        <div><div class="lp-stat-n">100%</div><div class="lp-stat-l">Veri Güvenliği</div></div>
+        <div><div class="lp-stat-n">30</div><div class="lp-stat-l">Gün Ücretsiz</div></div>
+        <div><div class="lp-stat-n">4</div><div class="lp-stat-l">Abonelik Planı</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="lp-mockup-sec">
+    <div class="lp-mockup-wrap reveal">
+      <div class="lp-mock-bar">
+        <div class="lp-mock-dot" style="background:#e74c3c"></div>
+        <div class="lp-mock-dot" style="background:#f39c12"></div>
+        <div class="lp-mock-dot" style="background:#2ecc71"></div>
+        <div style="flex:1;text-align:center;font-size:11px;color:rgba(255,255,255,.18)">EMD Hukuk — Yönetim Paneli</div>
+      </div>
+      <div class="lp-mock-inner">
+        <div class="lp-mock-nav">
+          <div class="lp-mock-logo">⚖️ EMD Hukuk</div>
+          <div class="lp-mock-item a">📊 Anasayfa</div>
+          <div class="lp-mock-item">👥 Müvekkiller</div>
+          <div class="lp-mock-item">📁 Davalar</div>
+          <div class="lp-mock-item">⚡ İcra Takip</div>
+          <div class="lp-mock-item">💰 Bütçe</div>
+          <div class="lp-mock-item">📅 Takvim</div>
+          <div class="lp-mock-item">🏛 UYAP / Süre</div>
+          <div class="lp-mock-item">📱 WhatsApp</div>
+          <div class="lp-mock-item">🤝 Arabuluculuk</div>
+        </div>
+        <div class="lp-mock-main">
+          <div class="lp-mock-t">Genel Bakış</div>
+          <div class="lp-mock-cards">
+            <div class="lp-mock-card"><div class="lp-mock-v">148</div><div class="lp-mock-l">Aktif Dava</div></div>
+            <div class="lp-mock-card"><div class="lp-mock-v" style="color:#2ecc71">₺284K</div><div class="lp-mock-l">Bu Ay Gelir</div></div>
+            <div class="lp-mock-card"><div class="lp-mock-v">27</div><div class="lp-mock-l">Müvekkil</div></div>
+            <div class="lp-mock-card"><div class="lp-mock-v" style="color:#e74c3c">5</div><div class="lp-mock-l">Kritik Süre</div></div>
+          </div>
+          <div class="lp-mock-tbl">
+            <div class="lp-mock-row"><span>DOSYA NO</span><span>MÜVEKKİL</span><span>DURUŞMA</span><span>DURUM</span></div>
+            <div class="lp-mock-row"><span style="color:rgba(255,255,255,.55)">2024/1247</span><span>Kadir Yılmaz</span><span>15.03.2026</span><span><span class="lp-mkbadge mk-g">Aktif</span></span></div>
+            <div class="lp-mock-row"><span style="color:rgba(255,255,255,.55)">2024/0934</span><span>Altın Yapı A.Ş.</span><span>22.03.2026</span><span><span class="lp-mkbadge mk-o">Bekliyor</span></span></div>
+            <div class="lp-mock-row"><span style="color:rgba(255,255,255,.55)">2023/2108</span><span>Leyla Sönmez</span><span>—</span><span><span class="lp-mkbadge mk-r">Kapandı</span></span></div>
+            <div class="lp-mock-row"><span style="color:rgba(255,255,255,.55)">2024/0512</span><span>Berrak Su Ltd.</span><span>01.04.2026</span><span><span class="lp-mkbadge mk-g">Aktif</span></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="lp-features" id="lp-features">
+    <div class="lp-sec-hd reveal">
+      <div class="lp-sec-tag">Özellikler</div>
+      <div class="lp-sec-t">Bir hukuk bürosunun<br>ihtiyacı olan her şey</div>
+      <div class="lp-sec-s">Modüler yapısıyla büyüyen büronuzla birlikte büyür</div>
+    </div>
+    <div class="lp-feat-grid">
+      <div class="lp-feat-card reveal"><span class="lp-feat-ico">👥</span><div class="lp-feat-t">Müvekkil Yönetimi</div><div class="lp-feat-d">Gerçek ve tüzel kişi profillerini eksiksiz yönetin. TC, vergi no, MERSIS, banka bilgileri tek yerde.</div><ul class="lp-feat-ul"><li>Gerçek &amp; tüzel kişi ayrımı</li><li>Banka &amp; IBAN yönetimi</li><li>İletişim geçmişi &amp; notlar</li><li>Belge arşivi</li></ul></div>
+      <div class="lp-feat-card reveal rd1"><span class="lp-feat-ico">📁</span><div class="lp-feat-t">Dava Takip</div><div class="lp-feat-d">50+ mahkeme türü, aşama takibi, duruşma kayıtları ve karşı taraf / karşı vekil yönetimi.</div><ul class="lp-feat-ul"><li>Esas &amp; karar no takibi</li><li>Duruşma takvimi</li><li>Bilirkişi &amp; karar aşamaları</li><li>Dava değeri &amp; anlaşma</li></ul></div>
+      <div class="lp-feat-card reveal rd2"><span class="lp-feat-ico">⚡</span><div class="lp-feat-t">İcra Takip</div><div class="lp-feat-d">İlamlı, ilamsız, kambiyo ve haciz takiplerini detaylı yönetin. Tahsilat ve faiz hesaplama.</div><ul class="lp-feat-ul"><li>8 icra türü desteği</li><li>Alacak &amp; tahsilat takibi</li><li>İcra dairesi yönetimi</li><li>Haciz &amp; satış aşamaları</li></ul></div>
+      <div class="lp-feat-card reveal"><span class="lp-feat-ico">💰</span><div class="lp-feat-t">Finans &amp; Fatura</div><div class="lp-feat-d">Gelir-gider takibi, avans yönetimi, vekâlet ücreti hesaplama ve detaylı mali raporlar.</div><ul class="lp-feat-ul"><li>Gelir-gider kategorileri</li><li>Avans &amp; vekâlet ücreti</li><li>Aylık &amp; yıllık raporlar</li><li>Fatura kesme</li></ul></div>
+      <div class="lp-feat-card reveal rd1"><span class="lp-feat-ico">🏛</span><div class="lp-feat-t">UYAP &amp; Süre Takip</div><div class="lp-feat-d">Hukuki süre hesaplama, tatil günleri ve iş günü desteği, kritik süre uyarıları.</div><ul class="lp-feat-ul"><li>Süre tipi kütüphanesi</li><li>Tatil &amp; iş günü hesabı</li><li>Kritik süre uyarıları</li><li>UYAP entegrasyon desteği</li></ul></div>
+      <div class="lp-feat-card reveal rd2"><span class="lp-feat-ico">📱</span><div class="lp-feat-t">WhatsApp Entegrasyonu</div><div class="lp-feat-d">Müvekkillere doğrudan WhatsApp mesajı gönderin. Duruşma hatırlatmalarını tek tıkla iletin.</div><ul class="lp-feat-ul"><li>Hızlı mesaj şablonları</li><li>Dava bilgisi paylaşımı</li><li>Duruşma hatırlatmaları</li><li>Toplu bildirim</li></ul></div>
+      <div class="lp-feat-card reveal"><span class="lp-feat-ico">🤝</span><div class="lp-feat-t">Arabuluculuk &amp; Danışmanlık</div><div class="lp-feat-d">Arabuluculuk dosyaları ve hukuki danışmanlık süreçlerini ayrı modüllerle takip edin.</div><ul class="lp-feat-ul"><li>Dosya aşama takibi</li><li>Arabulucu bilgileri</li><li>Danışmanlık ücret takibi</li><li>Anlaşma belgeleri</li></ul></div>
+      <div class="lp-feat-card reveal rd1"><span class="lp-feat-ico">👤</span><div class="lp-feat-t">Personel Yönetimi</div><div class="lp-feat-d">Büro çalışanlarına rol ve yetki atayın. Görev takibi ve aktivite logları ile tam kontrol.</div><ul class="lp-feat-ul"><li>Rol &amp; yetki sistemi</li><li>Görev ataması</li><li>Aktivite geçmişi</li><li>Çoklu kullanıcı girişi</li></ul></div>
+      <div class="lp-feat-card reveal rd2"><span class="lp-feat-ico">💾</span><div class="lp-feat-t">Yedekleme &amp; Güvenlik</div><div class="lp-feat-d">Verilerinizi cihaza indirin, e-posta ile gönderin veya buluta yükleyin. Tam kontrol sizdedir.</div><ul class="lp-feat-ul"><li>Tek tuş yedekleme</li><li>JSON ile taşınabilirlik</li><li>Bulut yedek (Kurumsal)</li><li>Dosyadan geri yükleme</li></ul></div>
+    </div>
+  </section>
+
+  <section class="lp-how" id="lp-how">
+    <div class="lp-sec-hd reveal">
+      <div class="lp-sec-tag">Nasıl Çalışır</div>
+      <div class="lp-sec-t">Dakikalar içinde hazır olun</div>
+    </div>
+    <div class="lp-steps">
+      <div class="lp-step reveal"><div class="lp-step-n">1</div><div class="lp-step-t">Kaydolun</div><div class="lp-step-d">30 saniyelik kayıt formuyla büronuzu oluşturun. Kart bilgisi gerekmez.</div></div>
+      <div class="lp-step reveal rd1"><div class="lp-step-n">2</div><div class="lp-step-t">Müvekkilleri Ekleyin</div><div class="lp-step-d">Gerçek veya tüzel kişi profillerini hızlıca girin.</div></div>
+      <div class="lp-step reveal rd2"><div class="lp-step-n">3</div><div class="lp-step-t">Davaları Açın</div><div class="lp-step-d">Her müvekkil için dava ve icra dosyaları oluşturun. Takvim otomatik güncellenir.</div></div>
+      <div class="lp-step reveal rd3"><div class="lp-step-n">4</div><div class="lp-step-t">Büronuzu Yönetin</div><div class="lp-step-d">Dashboard'dan tüm iş akışlarınızı izleyin. Raporlarla karar alın.</div></div>
+    </div>
+  </section>
+
+  <section class="lp-plans" id="lp-plans">
+    <div class="lp-sec-hd reveal">
+      <div class="lp-sec-tag">Fiyatlandırma</div>
+      <div class="lp-sec-t">Her büro için doğru plan</div>
+      <div class="lp-sec-s">30 gün ücretsiz deneyin, beğenirseniz devam edin</div>
+    </div>
+    <div class="lp-plan-grid">
+      <div class="lp-plan reveal"><div class="lp-plan-ico">🌱</div><div class="lp-plan-n">Başlangıç</div><div class="lp-plan-ds">Tanışma dönemi</div><div class="lp-plan-p">Ücretsiz <span>/ 30 gün</span></div><div class="lp-plan-div"></div><div class="lp-plan-fs"><div class="lp-plan-f"><span class="ck">✓</span>25 Müvekkil</div><div class="lp-plan-f"><span class="ck">✓</span>30 Dava, 15 İcra</div><div class="lp-plan-f"><span class="ck">✓</span>Arabuluculuk</div><div class="lp-plan-f"><span class="cx">✗</span>WhatsApp</div><div class="lp-plan-f"><span class="cx">✗</span>Finans &amp; Fatura</div><div class="lp-plan-f"><span class="cx">✗</span>Personel hesabı</div></div><button class="lp-plan-btn" onclick="gmAc('kayit')">Ücretsiz Başla</button></div>
+      <div class="lp-plan reveal rd1"><div class="lp-plan-ico">⚡</div><div class="lp-plan-n">Profesyonel</div><div class="lp-plan-ds">Tek avukat için ideal</div><div class="lp-plan-p">₺399 <span>/ ay</span></div><div class="lp-plan-div"></div><div class="lp-plan-fs"><div class="lp-plan-f"><span class="ck">✓</span>150 Müvekkil</div><div class="lp-plan-f"><span class="ck">✓</span>200 Dava, 100 İcra</div><div class="lp-plan-f"><span class="ck">✓</span>WhatsApp</div><div class="lp-plan-f"><span class="ck">✓</span>Finans &amp; Fatura</div><div class="lp-plan-f"><span class="ck">✓</span>UYAP / Süre</div><div class="lp-plan-f"><span class="cx">✗</span>Personel hesabı</div></div><button class="lp-plan-btn" onclick="gmAc('kayit')">Planı Seç</button></div>
+      <div class="lp-plan star reveal rd2"><div class="lp-star-badge">EN POPÜLER</div><div class="lp-plan-ico">🏛</div><div class="lp-plan-n">Büro</div><div class="lp-plan-ds">2-5 kişilik bürolar</div><div class="lp-plan-p">₺699 <span>/ ay</span></div><div class="lp-plan-div"></div><div class="lp-plan-fs"><div class="lp-plan-f"><span class="ck">✓</span>500 Müvekkil</div><div class="lp-plan-f"><span class="ck">✓</span>750 Dava, 400 İcra</div><div class="lp-plan-f"><span class="ck">✓</span>WhatsApp &amp; Finans</div><div class="lp-plan-f"><span class="ck">✓</span>UYAP / Süre</div><div class="lp-plan-f"><span class="ck">✓</span>5 Personel Hesabı</div><div class="lp-plan-f"><span class="cx">✗</span>Bulut Yedek</div></div><button class="lp-plan-btn" onclick="gmAc('kayit')">Planı Seç</button></div>
+      <div class="lp-plan reveal rd3"><div class="lp-plan-ico">🏢</div><div class="lp-plan-n">Kurumsal</div><div class="lp-plan-ds">Büyük bürolar için</div><div class="lp-plan-p">₺999 <span>/ ay</span></div><div class="lp-plan-div"></div><div class="lp-plan-fs"><div class="lp-plan-f"><span class="ck">✓</span>Sınırsız Müvekkil</div><div class="lp-plan-f"><span class="ck">✓</span>Sınırsız Dava &amp; İcra</div><div class="lp-plan-f"><span class="ck">✓</span>Tüm Özellikler</div><div class="lp-plan-f"><span class="ck">✓</span>Sınırsız Personel</div><div class="lp-plan-f"><span class="ck">✓</span>Bulut Yedekleme</div><div class="lp-plan-f"><span class="ck">✓</span>Özel Destek Hattı</div></div><button class="lp-plan-btn" onclick="gmAc('kayit')">Planı Seç</button></div>
+    </div>
+  </section>
+
+  <section style="padding:80px 5vw;background:linear-gradient(135deg,rgba(201,168,76,.07),rgba(201,168,76,.02));border-top:1px solid rgba(201,168,76,.09);border-bottom:1px solid rgba(201,168,76,.09);text-align:center;">
+    <div class="reveal">
+      <div style="font-family:'Playfair Display',serif;font-size:clamp(24px,4vw,42px);color:#fff;margin-bottom:14px;font-weight:700">Büronuzu bugün dijitale taşıyın</div>
+      <div style="font-size:15px;color:rgba(255,255,255,.38);margin-bottom:34px">30 gün ücretsiz — kart bilgisi gerekmez — istediğinizde iptal edin</div>
+      <button class="lp-cta-gold" onclick="gmAc('kayit')" style="font-size:16px;padding:18px 48px">Hemen Başla — Ücretsiz →</button>
+    </div>
+  </section>
+
+  <footer class="lp-footer">
+    <div class="lp-footer-logo">⚖️ EMD Hukuk</div>
+    <div class="lp-flinks">
+      <span class="lp-flink">Gizlilik Politikası</span>
+      <span class="lp-flink">Kullanım Koşulları</span>
+      <span class="lp-flink" onclick="gmAc('giris')">Giriş Yap</span>
+    </div>
+    <div style="font-size:12px;color:rgba(255,255,255,.22)">© 2025 EMD Hukuk. Tüm hakları saklıdır.</div>
+  </footer>
+</div>
+
+<div id="gm-overlay" onclick="if(event.target===this)gmKapat()">
+  <div class="gm-box">
+    <button class="gm-close" onclick="gmKapat()">✕</button>
+    <div class="gm-logo">⚖️ EMD Hukuk</div>
+    <div class="gm-sub">Hukuk Bürosu Yönetim Sistemi</div>
+    <div class="gm-tabs">
+      <div class="gm-tab active" id="gm-t-giris" onclick="gmTab('giris')">Giriş Yap</div>
+      <div class="gm-tab" id="gm-t-kayit" onclick="gmTab('kayit')">Kayıt Ol</div>
+    </div>
+    <div class="gm-err" id="gm-err"></div>
+    <div id="gm-f-giris">
+      <div class="gm-ig"><label>E-posta</label><input type="email" id="gm-email" placeholder="ornek@mail.com" onkeydown="if(event.key==='Enter')gmGiris()"></div>
+      <div class="gm-ig"><label>Şifre</label><input type="password" id="gm-sifre" placeholder="••••••••" onkeydown="if(event.key==='Enter')gmGiris()"></div>
+      <button class="gm-submit" onclick="gmGiris()">Giriş Yap</button>
+      <div class="gm-forgot"><a onclick="sifreSifirla()">Şifremi unuttum</a></div>
+    </div>
+    <div id="gm-f-kayit" style="display:none">
+      <div class="gm-row">
+        <div class="gm-ig"><label>Ad Soyad *</label><input id="gm-kad" placeholder="Ad Soyad"></div>
+        <div class="gm-ig"><label>E-posta *</label><input type="email" id="gm-kemail" placeholder="ornek@mail.com"></div>
+      </div>
+      <div class="gm-row">
+        <div class="gm-ig"><label>Şifre *</label><input type="password" id="gm-ksifre" placeholder="En az 6 karakter"></div>
+        <div class="gm-ig"><label>Büro Adı *</label><input id="gm-kburo" placeholder="Hukuk Bürosu Adı"></div>
+      </div>
+      <button class="gm-submit" onclick="gmKayit()">Kayıt Ol &amp; Başla →</button>
+    </div>
+  </div>
+</div>
+
+
+
+
+<!-- ===== LOGIN EKRANI (gizli - landing page kullanılıyor) ===== -->
+<div id="login-screen" style="display:none!important">
+  <div id="login-error" style="display:none"></div>
+  <div id="login-btn" style="display:none"></div>
+  <div id="kayit-btn" style="display:none"></div>
+  <div id="login-form" style="display:none"><input type="email" id="l-email"><input type="password" id="l-sifre"></div>
+  <div id="kayit-form" style="display:none"><input id="k-ad"><input type="email" id="k-email"><input type="password" id="k-sifre"><input id="k-buro"></div>
+  <div id="lt-giris" style="display:none"></div>
+  <div id="lt-kayit" style="display:none"></div>
+</div>
+
+<!-- ===== UYGULAMA ===== -->
+<div id="app-wrapper">
+<header>
+  <div class="logo">⚖️ Hukuk Bürosu <span id="avukat-adi"></span></div>
+  <div style="display:flex;align-items:center;gap:12px;margin-left:auto">
+    <button onclick="spotlightAc()" title="Ctrl+K ile arama yap" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:6px"><span>🔍</span> Ara <kbd style="font-size:9px;background:var(--surface);border:1px solid var(--border);padding:1px 5px;border-radius:3px">Ctrl+K</kbd></button>
+    <div style="color:var(--text-muted);font-size:12px" id="header-date"></div>
+    <div id="plan-badge" onclick="showPlanSayfasi()" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;border:1px solid;cursor:pointer;transition:all .2s" title="Planınızı görüntüle">🌱 Deneme</div>
+    <div id="header-user" style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:12px;color:var(--text-muted)" id="header-user-ad"></span>
+      <button onclick="showPage('ayarlar',document.getElementById('ni-ayarlar'))" style="background:transparent;border:1px solid var(--border);color:var(--text-muted);padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer" title="Ayarlar">⚙️</button>
+      <button onclick="cikisYap()" style="background:transparent;border:1px solid var(--border);color:var(--text-muted);padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;touch-action:manipulation" title="Çıkış Yap">🚪 Çıkış</button>
+      <button onclick="openWpHizliModal()" style="background:#25D366;border:none;color:#fff;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;touch-action:manipulation" title="WhatsApp Gönder">📱 WP</button>
+    </div>
+  </div>
+</header>
+<div class="app">
+  <nav>
+    <div class="nav-item active" onclick="showPage('anasayfa',this)" id="ni-anasayfa"><span class="nav-icon">🏛</span>Ana Sayfa</div>
+    <div class="nav-item" onclick="showPage('muvekkillar',this)" id="ni-muvekkillar"><span class="nav-icon">📒</span>Rehber<span class="nav-badge" id="nb-muv">0</span></div>
+    <div class="nav-sep"></div>
+    <div class="nav-item" onclick="showPage('davalar',this)" id="ni-davalar"><span class="nav-icon">📁</span>Davalar<span class="nav-badge" id="nb-dav">0</span></div>
+    <div class="nav-item" onclick="showPage('icra',this)" id="ni-icra"><span class="nav-icon">⚡</span>İcra<span class="nav-badge" id="nb-icr">0</span></div>
+    <div class="nav-item" onclick="showPage('arabuluculuk',this)" id="ni-arabuluculuk"><span class="nav-icon">🤝</span>Arabuluculuk<span class="nav-badge" id="nb-arab">0</span></div>
+    <div class="nav-item" onclick="showPage('danismanlik',this)" id="ni-danismanlik"><span class="nav-icon">⚖️</span>Danışmanlık<span class="nav-badge" id="nb-dan">0</span></div>
+    <div class="nav-item" onclick="showPage('ihtarname',this)" id="ni-ihtarname"><span class="nav-icon">📨</span>İhtarname<span class="nav-badge" id="nb-ihtar">0</span></div>
+    <div class="nav-item" onclick="showPage('todo',this)" id="ni-todo"><span class="nav-icon">✅</span>Görevler<span class="nav-badge" id="nb-todo">0</span></div>
+    <div class="nav-sep"></div>
+    <div class="nav-item" onclick="if(ozellikKontrol('finans'))showPage('butce',this)" id="ni-butce"><span class="nav-icon">💰</span>Bütçe</div>
+    <div class="nav-item" onclick="showPage('takvim',this)" id="ni-takvim"><span class="nav-icon">📅</span>Takvim<span class="nav-badge" id="nb-tak">0</span></div>
+    <div class="nav-sep"></div>
+    <div class="nav-item" onclick="showPage('personel',this)" id="ni-personel"><span class="nav-icon">👥</span>Personel</div>
+    <div class="nav-item" onclick="if(ozellikKontrol('uyap'))showPage('uyap',this)" id="ni-uyap"><span class="nav-icon">🏛</span>UYAP / Süre<span class="nav-badge" id="nb-uyap">0</span></div>
+    <div class="nav-spacer"></div>
+    <div class="nav-sep"></div>
+    <div class="nav-bottom">
+      <div class="nav-item" onclick="showPage('ayarlar',this)" id="ni-ayarlar"><span class="nav-icon">⚙️</span>Ayarlar</div>
+    </div>
+  </nav>
+  <main>
+
+<!-- ===== ANA SAYFA ===== -->
+<div class="page active" id="page-anasayfa">
+  <div class="page-title">Genel Bakış</div>
+  <div class="page-sub">Büronuzun anlık durumu</div>
+  <div class="cards" id="dash-cards"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px">
+    <div class="section" style="border:1px solid rgba(201,168,76,.3);background:rgba(201,168,76,.03)"><div class="section-header"><div class="section-title">⚠️ Yaklaşan İşler <span style="font-size:11px;color:var(--text-muted);font-weight:400">(30 gün)</span></div></div><div class="section-body" style="padding:12px"><div id="dash-sureler"></div></div></div>
+    <div class="section"><div class="section-header"><div class="section-title">📅 Yaklaşan Etkinlikler</div></div><div class="section-body" style="padding:12px"><div id="dash-etkinlikler"></div></div></div>
+    <div class="section"><div class="section-header"><div class="section-title">💸 Bekleyen Alacaklar</div></div><div class="section-body" style="padding:12px"><div id="dash-alacaklar"></div></div></div>
+    <div class="section"><div class="section-header"><div class="section-title">⚖️ Devam Eden Hizmetler</div><a onclick="showPage('danismanlik',document.getElementById('ni-danismanlik'))" style="font-size:11px;color:var(--gold);cursor:pointer">Tümü ›</a></div><div class="section-body" style="padding:12px"><div id="dash-danismanlik"></div></div></div>
+  </div>
+</div>
+
+<!-- ===== REHBER ===== -->
+<div class="page" id="page-muvekkillar">
+  <div class="page-title">Rehber</div>
+  <div class="page-sub">Müvekkiller, karşı taraflar ve avukatlar</div>
+  <div class="tabs" style="margin-bottom:18px">
+    <div class="tab active" onclick="rehberTab('muvekkillar',this)">👤 Müvekkiller</div>
+    <div class="tab" onclick="rehberTab('karsitaraflar',this)">⚖️ Karşı Taraflar</div>
+    <div class="tab" onclick="rehberTab('avukatlar',this)">👔 Avukatlar</div>
+  </div>
+
+  <!-- Müvekkiller Paneli -->
+  <div id="rehber-panel-muvekkillar">
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Müvekkil Listesi</div>
+        <div style="display:flex;gap:8px"><input class="search-bar" placeholder="🔍 Ara..." oninput="filterMuvekkillar(this.value)"><button class="btn btn-gold" onclick="openModal('m-modal')">+ Yeni Müvekkil</button></div>
+      </div>
+      <div class="section-body"><div id="muv-list"></div><div class="empty" id="muv-empty" style="display:none"><div class="empty-icon">👤</div><p>Henüz müvekkil yok</p></div></div>
+    </div>
+  </div>
+
+  <!-- Karşı Taraflar Paneli -->
+  <div id="rehber-panel-karsitaraflar" style="display:none">
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Karşı Taraf Listesi</div>
+        <div style="display:flex;gap:8px"><input class="search-bar" placeholder="🔍 Ara..." oninput="filterKarsiTaraflar(this.value)" id="kt-ara-input"><button class="btn btn-gold" onclick="openYeniKT()">+ Yeni Karşı Taraf</button></div>
+      </div>
+      <div class="section-body"><div id="kt-list"></div><div class="empty" id="kt-empty" style="display:none"><div class="empty-icon">⚖️</div><p>Henüz kayıt yok</p></div></div>
+    </div>
+  </div>
+
+  <!-- Avukatlar Paneli -->
+  <div id="rehber-panel-avukatlar" style="display:none">
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">Avukat / Vekil Listesi</div>
+        <div style="display:flex;gap:8px"><input class="search-bar" placeholder="🔍 Ara..." oninput="filterVekillar(this.value)" id="vek-ara-input"><button class="btn btn-gold" onclick="openYeniVek()">+ Yeni Avukat</button></div>
+      </div>
+      <div class="section-body"><div id="vek-list"></div><div class="empty" id="vek-empty" style="display:none"><div class="empty-icon">👔</div><p>Henüz kayıt yok</p></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MÜVEKKİL DETAY ===== -->
+<div class="page" id="page-muv-detay">
+  <div class="breadcrumb"><a onclick="showPage('muvekkillar',document.getElementById('ni-muvekkillar'))">📒 Rehber</a><span>›</span><span id="md-bc"></span></div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+    <div><div class="page-title" id="md-ad"></div><div id="md-meta" style="color:var(--text-muted);font-size:12px;margin-top:4px"></div></div>
+    <div style="display:flex;gap:8px"><button class="btn btn-green" onclick="exportMuvExcel()">⬇ Excel</button><button class="btn btn-outline" onclick="openLogModal()">📋 Geçmiş</button><button class="btn btn-outline" onclick="openMuvEdit()">✏ Düzenle</button></div>
+  </div>
+  <div class="cards" id="md-cards"></div>
+  <div class="tabs">
+    <div class="tab active" onclick="muvTab('davalar',this)">📁 Davalar</div>
+    <div class="tab" onclick="muvTab('kimlik',this)">🪪 Kimlik & İletişim</div>
+    <div class="tab" onclick="muvTab('belgeler',this)">📄 Belgeler</div>
+    <div class="tab" onclick="muvTab('harcamalar',this)">💸 Harcamalar</div>
+    <div class="tab" onclick="muvTab('avans',this)">💰 Avans & Alacak</div>
+    <div class="tab" onclick="muvTab('iletisim',this)">💬 İletişim Geçmişi</div>
+    <div class="tab" onclick="muvTab('planlama',this)">📅 Planlama</div>
+    <div class="tab" onclick="muvTab('iliskiler',this)">🔗 İlişkiler</div>
+    <div class="tab" onclick="muvTab('rapor',this)">📊 Rapor</div>
+    <div class="tab" onclick="muvTab('danismanlik',this)">⚖️ Danışmanlık</div>
+    <div class="tab" onclick="muvTab('notlar',this)">📝 Notlar</div>
+  </div>
+  <div class="tab-panel active" id="mt-davalar">
+    <div class="section"><div class="section-header"><div class="section-title">Müvekkile Ait Davalar</div><button class="btn btn-gold btn-sm" onclick="openDavModalForMuv()">+ Yeni Dava</button></div>
+    <div class="section-body" style="padding:0"><table><thead><tr><th>Dosya No</th><th>Konu</th><th>Mahkeme</th><th>Aşama</th><th>Durum</th><th>Son Duruşma</th><th>İcra Bağ.</th><th></th></tr></thead><tbody id="md-dav-tbody"></tbody></table>
+    <div class="empty" id="md-dav-empty" style="display:none"><div class="empty-icon">📁</div><p>Dava yok</p></div></div></div>
+    <div class="section"><div class="section-header"><div class="section-title">⚡ Müvekkile Ait İcra Dosyaları</div><button class="btn btn-gold btn-sm" onclick="openIcraModalForMuv()">+ Yeni İcra</button></div>
+    <div class="section-body" style="padding:0"><table><thead><tr><th>Dosya No</th><th>Borçlu</th><th>İcra Dairesi</th><th>Alacak</th><th>Tahsil</th><th>Durum</th><th></th></tr></thead><tbody id="md-icra-tbody"></tbody></table>
+    <div class="empty" id="md-icra-empty" style="display:none"><div class="empty-icon">⚡</div><p>İcra dosyası yok</p></div></div></div>
+  </div>
+  <div class="tab-panel" id="mt-kimlik"><div id="mt-kimlik-content"></div></div>
+  <div class="tab-panel" id="mt-belgeler">
+    <div class="section"><div class="section-header"><div class="section-title">Müvekkil Belgeleri</div>
+    <div style="display:flex;gap:6px"><button class="btn btn-outline btn-sm" onclick="openBelgeModal('sozlesme')">+ Sözleşme</button><button class="btn btn-outline btn-sm" onclick="openBelgeModal('vekaletname')">+ Vekaletname</button><button class="btn btn-outline btn-sm" onclick="openBelgeModal('diger')">+ Diğer</button></div></div>
+    <div class="section-body"><div id="belge-list"></div><div class="empty" id="belge-empty" style="display:none"><div class="empty-icon">📄</div><p>Belge yok</p></div></div></div>
+  </div>
+  <div class="tab-panel" id="mt-harcamalar">
+    <div class="section"><div class="section-header"><div class="section-title">Tüm Harcamalar (Tüm Dosyalar)</div><button class="btn btn-gold btn-sm" onclick="openHarcModalForMuv()">+ Harcama</button></div>
+    <div class="section-body" style="padding:0"><table><thead><tr><th>Tarih</th><th>Kaynak</th><th>Mahkeme / Dosya</th><th>Kategori</th><th>Açıklama</th><th>Tutar</th><th></th></tr></thead><tbody id="md-harc-tbody"></tbody></table>
+    <div class="empty" id="md-harc-empty" style="display:none"><div class="empty-icon">💸</div><p>Harcama yok</p></div></div>
+    <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:20px">
+      <span style="font-size:12px;color:var(--text-muted)">Toplam: <strong id="md-harc-total" style="color:#e74c3c">₺0</strong></span>
+    </div></div>
+  </div>
+  <div class="tab-panel" id="mt-avans">
+    <div class="section"><div class="section-header"><div class="section-title">Avans & Alacak Takibi</div><button class="btn btn-gold btn-sm" onclick="openModal('avans-modal')">+ Kayıt</button></div>
+    <div class="section-body" style="padding:0"><table><thead><tr><th>Tarih</th><th>Tür</th><th>Açıklama</th><th>Tutar</th><th>Durum</th><th>Ödeme Tarihi</th><th></th></tr></thead><tbody id="md-avans-tbody"></tbody></table>
+    <div class="empty" id="md-avans-empty" style="display:none"><div class="empty-icon">💰</div><p>Kayıt yok</p></div></div>
+    <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:20px">
+      <span style="font-size:12px;color:var(--text-muted)">Alınan Avans: <strong id="md-avans-alinan" style="color:var(--green)">₺0</strong></span>
+      <span style="font-size:12px;color:var(--text-muted)">Bekleyen Alacak: <strong id="md-avans-bekleyen" style="color:#e74c3c">₺0</strong></span>
+    </div></div>
+  </div>
+  <div class="tab-panel" id="mt-notlar">
+    <div class="section"><div class="section-header"><div class="section-title">Notlar</div></div><div class="section-body"><div id="md-notlar"></div></div></div>
+  </div>
+  <div class="tab-panel" id="mt-iletisim"><div id="mt-iletisim-content"></div></div>
+  <div class="tab-panel" id="mt-planlama"><div id="mt-planlama-content"></div></div>
+  <div class="tab-panel" id="mt-iliskiler"><div id="mt-iliskiler-content"></div></div>
+  <div class="tab-panel" id="mt-rapor"><div id="mt-rapor-content"></div></div>
+  <div class="tab-panel" id="mt-danismanlik"><div id="mt-danismanlik-content"></div></div>
+</div>
+
+<!-- ===== DAVALAR LİSTESİ ===== -->
+<div class="page" id="page-davalar">
+  <div class="page-title">Dava / Dosya Takibi</div>
+  <div class="page-sub">Dosyaya tıklayarak detaya girin</div>
+  <div class="cards" id="dav-cards"></div>
+  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+    <input class="search-bar" placeholder="🔍 Ara..." oninput="filterDavalar()" id="dav-s" style="width:210px">
+    <select class="search-bar" style="width:175px" onchange="filterDavalar()" id="dav-fk">
+      <option value="">Tüm Mahkeme Türleri</option>
+      <optgroup label="Hukuk"><option>Asliye Hukuk</option><option>Sulh Hukuk</option><option>Aile</option><option>Asliye Ticaret</option><option>Tüketici</option><option>İş</option><option>Kadastro</option><option>Fikri ve Sınai Haklar Hukuk</option></optgroup>
+      <optgroup label="Ceza"><option>Asliye Ceza</option><option>Sulh Ceza</option><option>Ağır Ceza</option><option>Çocuk</option></optgroup>
+      <optgroup label="İdare"><option>İdare</option><option>Vergi</option><option>Bölge İdare</option></optgroup>
+      <optgroup label="Üst"><option>Bölge Adliye (İstinaf)</option><option>Yargıtay</option><option>Anayasa</option><option>Diğer</option></optgroup>
+    </select>
+    <select class="search-bar" style="width:145px" onchange="filterDavalar()" id="dav-fa"><option value="">Tüm Aşamalar</option><option>İlk Derece</option><option>İstinaf</option><option>Yargıtay</option><option>Kesinleşti</option><option>Düşürüldü</option></select>
+    <select class="search-bar" style="width:130px" onchange="filterDavalar()" id="dav-fd"><option value="">Tüm Durumlar</option><option>Aktif</option><option>Beklemede</option><option>Kapalı</option></select>
+    <button class="btn btn-gold" onclick="openModal('dav-modal');setTimeout(()=>{const e=document.getElementById('d-no');if(e&&!e.value)e.value=autoNo('dava');},50)" style="margin-left:auto">+ Yeni Dava</button>
+  </div>
+  <div id="dav-grouped"></div>
+  <div class="empty" id="dav-empty" style="display:none"><div class="empty-icon">📁</div><p>Dava yok</p></div>
+</div>
+
+<!-- ===== DAVA DETAY ===== -->
+<div class="page" id="page-dava-detay">
+  <div class="breadcrumb"><a onclick="showPage('davalar',document.getElementById('ni-davalar'))">📁 Davalar</a><span>›</span><span id="dd-bc"></span></div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+    <div><div class="page-title" id="dd-baslik"></div><div id="dd-meta" style="color:var(--text-muted);font-size:12px;margin-top:4px"></div></div>
+    <div style="display:flex;gap:8px"><button class="btn btn-outline btn-sm" id="dd-edit-btn">✏ Düzenle</button></div>
+  </div>
+  <div class="cards" id="dd-cards"></div>
+  <div class="tabs">
+    <div class="tab active" onclick="davaTab('dilekce',this)">📝 Dilekçeler</div>
+    <div class="tab" onclick="davaTab('bilirkisi',this)">🔬 Bilirkişi</div>
+    <div class="tab" onclick="davaTab('zaplar',this)">🎙 Duruşma Zaptları</div>
+    <div class="tab" onclick="davaTab('harcamalar',this)">💸 Harcamalar</div>
+    <div class="tab" onclick="davaTab('notlar',this)">📓 Notlar</div>
+    <div class="tab" onclick="davaTab('anlasma',this)">🤝 Ücret Anlaşması</div>
+    <div class="tab" onclick="davaTab('tahsilat',this)">💵 Tahsilat & Hakediş</div>
+  </div>
+  <div class="tab-panel active" id="dt-dilekce"><div id="dt-dilekce-content"></div></div>
+  <div class="tab-panel" id="dt-bilirkisi"><div id="dt-bilirkisi-content"></div></div>
+  <div class="tab-panel" id="dt-zaplar"><div id="dt-zaplar-content"></div></div>
+  <div class="tab-panel" id="dt-harcamalar"><div id="dt-harcamalar-content"></div></div>
+  <div class="tab-panel" id="dt-notlar"><div id="dt-notlar-content"></div></div>
+  <div class="tab-panel" id="dt-anlasma"><div id="dt-anlasma-content"></div></div>
+  <div class="tab-panel" id="dt-tahsilat"><div id="dt-tahsilat-content"></div></div>
+</div>
+
+<!-- ===== İCRA LİSTESİ ===== -->
+<div class="page" id="page-icra">
+  <div class="page-title">İcra Takip Dosyaları</div>
+  <div class="page-sub">Dosyaya tıklayarak detaya girin</div>
+  <div class="cards" id="icra-cards"></div>
+  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+    <input class="search-bar" placeholder="🔍 Ara..." oninput="filterIcra()" id="icra-s" style="width:210px">
+    <select class="search-bar" style="width:155px" onchange="filterIcra()" id="icra-ft"><option value="">Tüm Türler</option><option>İlamlı İcra</option><option>İlamsız İcra</option><option>Kambiyo Senedi</option><option>İpoteğin Paraya Çevrilmesi</option><option>Nafaka İcrası</option><option>Diğer</option></select>
+    <select class="search-bar" style="width:155px" onchange="filterIcra()" id="icra-fd"><option value="">Tüm Durumlar</option><option>Aktif</option><option>Takipte</option><option>Haciz Aşaması</option><option>Satış Aşaması</option><option>Kapandı</option></select>
+    <button class="btn btn-gold" onclick="openModal('icra-modal')" style="margin-left:auto">+ Yeni İcra</button>
+  </div>
+  <div class="section"><div class="section-body" style="padding:0;overflow-x:auto">
+    <table style="min-width:920px"><thead id="icra-thead"><tr>
+      <th class="sort-th" id="icra-th-sira" onclick="toggleSort('icra','sira')" style="width:50px"># ⇅</th>
+      <th class="sort-th" id="icra-th-no" onclick="toggleSort('icra','no')">Dosya No ⇅</th>
+      <th class="sort-th" id="icra-th-muvId" onclick="toggleSort('icra','muvId')">Müvekkil ⇅</th>
+      <th class="sort-th" id="icra-th-borclu" onclick="toggleSort('icra','borclu')">Borçlu ⇅</th>
+      <th>İcra Dairesi</th>
+      <th class="sort-th" id="icra-th-tur" onclick="toggleSort('icra','tur')">Tür ⇅</th>
+      <th class="sort-th" id="icra-th-alacak" onclick="toggleSort('icra','alacak')">Toplam Alacak ⇅</th>
+      <th class="sort-th" id="icra-th-tahsil" onclick="toggleSort('icra','tahsil')">Tahsil ⇅</th>
+      <th class="sort-th" id="icra-th-durum" onclick="toggleSort('icra','durum')">Durum ⇅</th>
+      <th class="sort-th" id="icra-th-tarih" onclick="toggleSort('icra','tarih')">Tarih ⇅</th>
+      <th>Dava Bağ.</th><th></th>
+    </tr></thead>
+    <tbody id="icra-tbody"></tbody></table>
+    <div class="empty" id="icra-empty" style="display:none"><div class="empty-icon">⚡</div><p>İcra dosyası yok</p></div>
+  </div></div>
+</div>
+
+<!-- ===== İCRA DETAY ===== -->
+<div class="page" id="page-icra-detay">
+  <div class="breadcrumb"><a onclick="showPage('icra',document.getElementById('ni-icra'))">⚡ İcra</a><span>›</span><span id="id-bc"></span></div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+    <div><div class="page-title" id="id-baslik"></div><div id="id-meta" style="color:var(--text-muted);font-size:12px;margin-top:4px"></div></div>
+    <div style="display:flex;gap:8px"><button class="btn btn-outline btn-sm" id="id-edit-btn">✏ Düzenle</button></div>
+  </div>
+  <div class="cards" id="id-cards"></div>
+  <div class="tabs">
+    <div class="tab active" onclick="icraTab('evraklar',this)">📎 Evrak & Belgeler</div>
+    <div class="tab" onclick="icraTab('harcamalar',this)">💸 Harcamalar</div>
+    <div class="tab" onclick="icraTab('notlar',this)">📓 Notlar</div>
+    <div class="tab" onclick="icraTab('anlasma',this)">🤝 Ücret Anlaşması</div>
+    <div class="tab" onclick="icraTab('tahsilat',this)">💵 Tahsilat & Hakediş</div>
+  </div>
+  <div class="tab-panel active" id="it-evraklar"><div id="it-evraklar-content"></div></div>
+  <div class="tab-panel" id="it-harcamalar"><div id="it-harcamalar-content"></div></div>
+  <div class="tab-panel" id="it-notlar"><div id="it-notlar-content"></div></div>
+  <div class="tab-panel" id="it-anlasma"><div id="it-anlasma-content"></div></div>
+  <div class="tab-panel" id="it-tahsilat"><div id="it-tahsilat-content"></div></div>
+</div>
+
+<!-- ===== DANIŞMANLIK ===== -->
+
+<!-- ================================================================ -->
+<!-- İHTARNAME SAYFASI -->
+<!-- ================================================================ -->
+<div class="page" id="page-ihtarname">
+  <div class="page-title">İhtarname / Protesto</div>
+  <div class="page-sub">Gelen ve gönderilen ihtarnameler, noterlik ve tebliğ takibi</div>
+  <div class="cards" id="ihtar-cards"></div>
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+    <input class="search-bar" placeholder="🔍 Ara..." id="ihtar-s" oninput="renderIhtarname()" style="width:200px">
+    <select class="search-bar" style="width:140px" id="ihtar-ft" onchange="renderIhtarname()">
+      <option value="">Tür — Tümü</option>
+      <option>İhtarname</option><option>Protesto</option><option>İhbar</option><option>Diğer</option>
+    </select>
+    <select class="search-bar" style="width:160px" id="ihtar-fd" onchange="renderIhtarname()">
+      <option value="">Tebliğ — Tümü</option>
+      <option>Bekliyor</option><option>Tebliğ Edildi</option><option>Bila</option><option>Posta</option>
+    </select>
+    <button class="btn btn-gold" onclick="openIhtarModal()" style="margin-left:auto">+ Yeni İhtarname</button>
+  </div>
+  <div class="section">
+    <table>
+      <thead><tr>
+        <th>No</th><th>Yön</th><th>Tür</th><th>Müvekkil</th><th>Karşı Taraf</th>
+        <th>Noterlik</th><th>Yevmiye No</th><th>Tarih</th><th>Tebliğ Durumu</th><th></th>
+      </tr></thead>
+      <tbody id="ihtar-tbody"></tbody>
+    </table>
+    <div class="empty" id="ihtar-empty" style="display:none"><div class="empty-icon">📨</div><p>Henüz ihtarname eklenmemiş</p></div>
+  </div>
+</div>
+
+<!-- İHTARNAME DETAY -->
+<div class="page" id="page-ihtar-detay">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+    <button class="btn" onclick="showPage('ihtarname',document.getElementById('ni-ihtarname'))">← Geri</button>
+    <span style="color:var(--text-muted);font-size:13px">İhtarname Detayı</span>
+  </div>
+  <div id="ihtar-detay-icerik"></div>
+</div>
+
+<!-- ================================================================ -->
+<!-- TODO / GÖREV YÖNETİCİSİ SAYFASI -->
+<!-- ================================================================ -->
+<div class="page" id="page-todo">
+  <div class="page-title">Görev Yöneticisi</div>
+  <div class="page-sub">Tüm görevler, atamalar ve takip</div>
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+    <select class="search-bar" style="width:160px" id="todo-fil-durum" onchange="renderTodo()">
+      <option value="">Durum — Tümü</option>
+      <option value="Bekliyor">Bekliyor</option>
+      <option value="Devam Ediyor">Devam Ediyor</option>
+      <option value="Tamamlandı">Tamamlandı</option>
+      <option value="İptal">İptal</option>
+    </select>
+    <select class="search-bar" style="width:160px" id="todo-fil-oncelik" onchange="renderTodo()">
+      <option value="">Öncelik — Tümü</option>
+      <option value="Yüksek">🔴 Yüksek</option>
+      <option value="Orta">🟡 Orta</option>
+      <option value="Düşük">🟢 Düşük</option>
+    </select>
+    <select class="search-bar" style="width:160px" id="todo-fil-atanan" onchange="renderTodo()">
+      <option value="">Atanan — Tümü</option>
+    </select>
+    <button class="btn btn-gold" onclick="openTodoModal()" style="margin-left:auto">+ Yeni Görev</button>
+  </div>
+  <div id="todo-liste"></div>
+  <div class="empty" id="todo-empty" style="display:none"><div class="empty-icon">✅</div><p>Henüz görev eklenmemiş</p></div>
+</div>
+
+<div class="page" id="page-danismanlik">
+  <div class="page-title">Danışmanlık & Diğer Hizmetler</div>
+  <div class="page-sub">Hukuki görüş, ihtarname, sözleşme, idari başvuru takibi</div>
+  <div class="cards">
+    <div class="card"><div class="card-label">Toplam Dosya</div><div class="card-value gold" id="dan-toplam">0</div></div>
+    <div class="card"><div class="card-label">Devam Eden</div><div class="card-value" style="color:var(--blue)" id="dan-devam">0</div></div>
+    <div class="card"><div class="card-label">Tamamlanan</div><div class="card-value green" id="dan-tamam">0</div></div>
+    <div class="card"><div class="card-label">Tahsil Edilmemiş</div><div class="card-value red" id="dan-bekleyen">₺0</div></div>
+  </div>
+  <div class="section">
+    <div class="section-header">
+      <div style="display:flex;gap:8px;align-items:center">
+        <select class="search-bar" style="width:160px" id="dan-fil-tur" onchange="renderDanismanlik()"><option value="">Tür — Tümü</option><option>Danışmanlık / Hukuki Görüş</option><option>İhtarname / Protesto</option><option>Sözleşme Hazırlama</option><option>Sözleşme İnceleme</option><option>İdari Başvuru</option><option>Diğer</option></select>
+        <select class="search-bar" style="width:140px" id="dan-fil-durum" onchange="renderDanismanlik()"><option value="">Durum — Tümü</option><option>Taslak</option><option>Devam Ediyor</option><option>Müvekkil Onayında</option><option>Gönderildi</option><option>Tamamlandı</option><option>İptal</option></select>
+      </div>
+      <button class="btn btn-gold" onclick="openDanModal()">+ Yeni Hizmet</button>
+    </div>
+    <div class="section-body" style="padding:0">
+      <table><thead><tr><th>Tarih</th><th>Tür</th><th>Müvekkil</th><th>Konu</th><th>Durum</th><th>Teslim</th><th>Ücret</th><th>Tahsilat</th><th></th></tr></thead>
+      <tbody id="dan-tbody"></tbody></table>
+      <div class="empty" id="dan-empty" style="display:none"><div class="empty-icon">⚖️</div><p>Henüz hizmet kaydı yok</p></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ===== GELİŞMİŞ FİNANS & FATURA ===== -->
+<div class="page" id="page-butce">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+    <div><div class="page-title">Finans & Fatura</div><div class="page-sub">Gelir/gider, müvekkil bakiyeleri ve faturalar</div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-gold" onclick="openButceModal()">+ Hareket</button>
+      <button class="btn" onclick="openFaturaModal()">🧾 Fatura Oluştur</button>
+      <button class="btn" onclick="finansRaporModal()">📊 Rapor</button>
+    </div>
+  </div>
+
+  <!-- Özet Kartlar -->
+  <div class="cards" style="margin-bottom:20px">
+    <div class="card"><div class="card-label">Toplam Gelir</div><div class="card-value green" id="b-gelir">₺0</div></div>
+    <div class="card"><div class="card-label">Toplam Gider</div><div class="card-value red" id="b-gider">₺0</div></div>
+    <div class="card"><div class="card-label">Net Bakiye</div><div class="card-value" id="b-net">₺0</div></div>
+    <div class="card"><div class="card-label">Bu Ay Net</div><div class="card-value" id="b-ay">₺0</div></div>
+    <div class="card"><div class="card-label">KDV Toplam</div><div class="card-value" id="b-kdv">₺0</div></div>
+    <div class="card"><div class="card-label">Bekleyen Tahsilat</div><div class="card-value" id="b-bekleyen">₺0</div></div>
+  </div>
+
+  <!-- Sekmeler -->
+  <div class="tabs" style="margin-bottom:16px">
+    <div class="tab active" id="ft-hareketler" onclick="finansTab('hareketler',this)">💳 Hareketler</div>
+    <div class="tab" id="ft-muvekkil" onclick="finansTab('muvekkil',this)">👤 Müvekkil Bakiyeleri</div>
+    <div class="tab" id="ft-faturalar" onclick="finansTab('faturalar',this)">🧾 Faturalar</div>
+    <div class="tab" id="ft-rapor" onclick="finansTab('rapor',this)">📊 Aylık Rapor</div>
+  </div>
+
+  <!-- HAREKETLER -->
+  <div id="finans-tab-hareketler">
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <select class="search-bar" style="width:120px" onchange="filterButce(this.value)" id="butce-filtre-tur">
+        <option value="">Tümü</option><option>Gelir</option><option>Gider</option>
+      </select>
+      <select class="search-bar" style="width:140px" onchange="filterButceKat(this.value)" id="butce-filtre-kat">
+        <option value="">Tüm Kategoriler</option>
+      </select>
+      <input type="month" id="butce-filtre-ay" class="search-bar" style="width:150px" onchange="renderButce()" placeholder="Ay filtrele">
+    </div>
+    <div class="section"><div class="section-body" style="padding:0">
+      <table><thead><tr><th>Tarih</th><th>Tür</th><th>Kategori</th><th>Açıklama</th><th>Müvekkil</th><th>KDV</th><th>Tutar</th><th></th></tr></thead>
+      <tbody id="but-tbody"></tbody></table>
+      <div class="empty" id="but-empty" style="display:none"><div class="empty-icon">💰</div><p>Hareket yok</p></div>
+    </div></div>
+  </div>
+
+  <!-- MÜVEKKİL BAKİYELERİ -->
+  <div id="finans-tab-muvekkil" style="display:none">
+    <div id="muvekkil-bakiye-liste"></div>
+  </div>
+
+  <!-- FATURALAR -->
+  <div id="finans-tab-faturalar" style="display:none">
+    <div id="fatura-liste"></div>
+    <div class="empty" id="fatura-empty" style="display:none"><div class="empty-icon">🧾</div><p>Henüz fatura oluşturulmamış</p></div>
+  </div>
+
+  <!-- AYLIK RAPOR -->
+  <div id="finans-tab-rapor" style="display:none">
+    <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+      <select id="rapor-yil" onchange="renderFinansRapor()" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:7px 12px;font-size:13px"></select>
+      <button class="btn btn-gold" onclick="raporPdfIndir()">⬇ PDF İndir</button>
+    </div>
+    <div id="finans-rapor-icerik"></div>
+  </div>
+</div>
+
+<!-- ===== TAKVİM ===== -->
+<div class="page" id="page-takvim">
+  <div class="page-title">Takvim</div><div class="page-sub">Duruşma, son gün ve toplantılar</div>
+  <div style="display:flex;gap:20px;align-items:flex-start">
+    <div style="flex:1"><div class="section"><div class="section-header">
+      <div class="cal-nav"><button class="cal-nav-btn" onclick="calPrev()">‹</button><div class="cal-month" id="cal-label"></div><button class="cal-nav-btn" onclick="calNext()">›</button></div>
+      <button class="btn btn-gold btn-sm" onclick="openTakModal()">+ Etkinlik</button>
+    </div><div class="section-body"><div class="cal-grid" id="cal-header"></div><div class="cal-grid" id="cal-body" style="margin-top:3px"></div></div></div></div>
+    <div style="width:260px"><div class="section"><div class="section-header"><div class="section-title">Etkinlikler</div></div>
+    <div style="max-height:480px;overflow-y:auto"><div id="etk-liste"></div><div class="empty" id="etk-empty" style="display:none"><div class="empty-icon">📅</div><p>Etkinlik yok</p></div></div></div></div>
+  </div>
+</div>
+
+
+<!-- ===== UYAP / SÜRE TAKİP ===== -->
+<div class="page" id="page-uyap">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+    <div>
+      <div class="page-title">UYAP & Süre Takip</div>
+      <div class="page-sub">Dava sorgulama, tebligat süreleri ve zamanaşımı takibi</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-gold" onclick="openSureModal()">+ Süre Ekle</button>
+      <button class="btn" onclick="openDurusmaCekModal()">📋 Duruşma Aktar</button>
+      <button class="btn" onclick="openUyapSorguModal()">🔍 UYAP Sorgula</button>
+    </div>
+  </div>
+
+  <!-- Özet Kartlar -->
+  <div class="cards" style="margin-bottom:20px">
+    <div class="card" style="border-left:3px solid var(--red)"><div class="card-label">🚨 Bugün Biten</div><div class="card-value red" id="uyap-bugun">0</div></div>
+    <div class="card" style="border-left:3px solid #f39c12"><div class="card-label">⚠️ 3 Gün İçinde</div><div class="card-value" style="color:#f39c12" id="uyap-3gun">0</div></div>
+    <div class="card" style="border-left:3px solid #f39c12"><div class="card-label">📅 7 Gün İçinde</div><div class="card-value" style="color:#f39c12" id="uyap-7gun">0</div></div>
+    <div class="card" style="border-left:3px solid var(--green)"><div class="card-label">✅ Tamamlanan</div><div class="card-value green" id="uyap-tamam">0</div></div>
+    <div class="card"><div class="card-label">📋 Toplam Süre</div><div class="card-value" id="uyap-toplam">0</div></div>
+  </div>
+
+  <!-- Sekmeler -->
+  <div class="tabs" style="margin-bottom:16px">
+    <div class="tab active" id="ut-sureler" onclick="uyapTab('sureler',this)">⏱ Süre Takibi</div>
+    <div class="tab" id="ut-durusmalar" onclick="uyapTab('durusmalar',this)">⚖️ Duruşmalar</div>
+    <div class="tab" id="ut-zamanasimi" onclick="uyapTab('zamanasimi',this)">⌛ Zamanaşımı</div>
+    <div class="tab" id="ut-sorgula" onclick="uyapTab('sorgula',this)">🔍 UYAP Sorgula</div>
+  </div>
+
+  <!-- SÜRE TAKİBİ -->
+  <div id="uyap-tab-sureler">
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <select id="sure-filtre-durum" onchange="renderSureler()" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:7px 12px;font-size:13px">
+        <option value="">Tüm Durumlar</option>
+        <option value="aktif">Aktif</option>
+        <option value="kritik">🚨 Kritik (3 gün)</option>
+        <option value="tamam">✅ Tamamlandı</option>
+        <option value="gecti">❌ Geçti</option>
+      </select>
+      <select id="sure-filtre-tur" onchange="renderSureler()" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:7px 12px;font-size:13px">
+        <option value="">Tüm Türler</option>
+        <option>Cevap Süresi</option>
+        <option>İtiraz Süresi</option>
+        <option>Temyiz Süresi</option>
+        <option>İstinaf Süresi</option>
+        <option>İcra Takip Süresi</option>
+        <option>Zamanaşımı</option>
+        <option>Diğer</option>
+      </select>
+    </div>
+    <div id="sure-liste"></div>
+    <div class="empty" id="sure-empty" style="display:none"><div class="empty-icon">⏱</div><p>Henüz süre takibi eklenmemiş</p><button class="btn btn-gold" onclick="openSureModal()" style="margin-top:12px">+ Süre Ekle</button></div>
+  </div>
+
+  <!-- DURUŞMALAR -->
+  <div id="uyap-tab-durusmalar" style="display:none">
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <input type="month" id="durusma-filtre-ay" onchange="renderDurusmalar()" class="search-bar" style="width:160px">
+      <select id="durusma-filtre-muv" onchange="renderDurusmalar()" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:7px 12px;font-size:13px;min-width:160px">
+        <option value="">Tüm Müvekkiller</option>
+      </select>
+    </div>
+    <div id="durusma-listesi"></div>
+    <div class="empty" id="durusma-empty" style="display:none"><div class="empty-icon">⚖️</div><p>Duruşma kaydı yok</p><button class="btn btn-gold" onclick="openDurusmaCekModal()" style="margin-top:12px">📋 UYAP'tan Aktar</button></div>
+  </div>
+
+  <!-- ZAMANAŞIMI -->
+  <div id="uyap-tab-zamanasimi" style="display:none">
+    <div id="zamanasimi-liste"></div>
+    <div class="empty" id="zamanasimi-empty" style="display:none"><div class="empty-icon">⌛</div><p>Zamanaşımı takibi yok</p></div>
+  </div>
+
+  <!-- UYAP SORGULA -->
+  <div id="uyap-tab-sorgula" style="display:none">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px">
+      <div style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--gold)">🔍 UYAP Avukat Portal Sorgu</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px">Dava numarası ile doğrudan UYAP'a yönlendirme. UYAP'ta e-imza ile giriş yapmanız gerekmektedir.</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Mahkeme / Birim</label>
+          <select id="uyap-mahkeme-tur" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:8px 12px;font-size:13px;width:100%">
+            <option value="as">Asliye Hukuk Mahkemesi</option>
+            <option value="ac">Asliye Ceza Mahkemesi</option>
+            <option value="tum">Tüketici Mahkemesi</option>
+            <option value="is">İş Mahkemesi</option>
+            <option value="aile">Aile Mahkemesi</option>
+            <option value="tic">Ticaret Mahkemesi</option>
+            <option value="idare">İdare Mahkemesi</option>
+            <option value="icra">İcra Dairesi</option>
+            <option value="bag">Bölge Adliye Mahkemesi</option>
+            <option value="yarg">Yargıtay</option>
+            <option value="dan">Danıştay</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Esas No</label>
+          <input id="uyap-esas-no" placeholder="2024/123" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:8px 12px;font-size:13px;width:100%">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-gold" onclick="uyapPortalAc()" style="touch-action:manipulation">🌐 UYAP Portal Aç</button>
+        <button class="btn" onclick="uyapAvukatPortalAc()" style="touch-action:manipulation">⚖️ Avukat Portal</button>
+        <button class="btn" onclick="uetsTebligatAc()" style="touch-action:manipulation">📬 UETS Tebligat</button>
+        <button class="btn" onclick="uyapMevzuatAc()" style="touch-action:manipulation">📖 Mevzuat</button>
+      </div>
+    </div>
+
+    <!-- Sorgulama Geçmişi -->
+    <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Hızlı Bağlantılar</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
+      <a href="https://avukat.uyap.gov.tr" target="_blank" style="display:block;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-decoration:none;transition:all .15s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:20px;margin-bottom:6px">⚖️</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text)">UYAP Avukat Portal</div>
+        <div style="font-size:11px;color:var(--text-muted)">avukat.uyap.gov.tr</div>
+      </a>
+      <a href="https://uets.ptt.gov.tr" target="_blank" style="display:block;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-decoration:none;transition:all .15s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:20px;margin-bottom:6px">📬</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text)">UETS Tebligat</div>
+        <div style="font-size:11px;color:var(--text-muted)">uets.ptt.gov.tr</div>
+      </a>
+      <a href="https://www.mevzuat.gov.tr" target="_blank" style="display:block;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-decoration:none;transition:all .15s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:20px;margin-bottom:6px">📖</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text)">Mevzuat.gov.tr</div>
+        <div style="font-size:11px;color:var(--text-muted)">Kanun & Yönetmelik</div>
+      </a>
+      <a href="https://www.legalbank.net" target="_blank" style="display:block;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-decoration:none;transition:all .15s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:20px;margin-bottom:6px">🏛</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text)">Legalbank</div>
+        <div style="font-size:11px;color:var(--text-muted)">İçtihat & Emsal</div>
+      </a>
+      <a href="https://karararama.yargitay.gov.tr" target="_blank" style="display:block;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-decoration:none;transition:all .15s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:20px;margin-bottom:6px">⚖️</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text)">Yargıtay Kararları</div>
+        <div style="font-size:11px;color:var(--text-muted)">karararama.yargitay.gov.tr</div>
+      </a>
+      <a href="https://www.danistay.gov.tr" target="_blank" style="display:block;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-decoration:none;transition:all .15s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div style="font-size:20px;margin-bottom:6px">🏛</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text)">Danıştay</div>
+        <div style="font-size:11px;color:var(--text-muted)">danistay.gov.tr</div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PERSONEL SAYFASI ===== -->
+<div class="page" id="page-personel">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+    <div><div class="page-title">Personel Yönetimi</div><div class="page-sub">Çalışanlar, yetkiler ve görev takibi</div></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-gold" onclick="openPersonelModal()" id="personel-ekle-btn">+ Personel Ekle</button>
+    </div>
+  </div>
+  <!-- Sekmeler -->
+  <div class="tabs" style="margin-bottom:20px">
+    <div class="tab active" id="pt-liste" onclick="personelTab('liste',this)">👥 Personel Listesi</div>
+    <div class="tab" id="pt-gorevler" onclick="personelTab('gorevler',this)">📋 Görev Takibi</div>
+    <div class="tab" id="pt-aktivite" onclick="personelTab('aktivite',this)">🕐 Aktivite Logu</div>
+  </div>
+
+  <!-- PERSONEL LİSTESİ -->
+  <div id="personel-tab-liste">
+    <div id="personel-liste" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px"></div>
+    <div class="empty" id="personel-empty" style="display:none"><div class="empty-icon">👥</div><p>Henüz personel eklenmemiş</p></div>
+  </div>
+
+  <!-- GÖREV TAKİBİ -->
+  <div id="personel-tab-gorevler" style="display:none">
+    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+      <select id="gorev-filtre-personel" onchange="renderGorevler()" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:7px 12px;font-size:13px">
+        <option value="">Tüm Personel</option>
+      </select>
+      <select id="gorev-filtre-durum" onchange="renderGorevler()" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:7px 12px;font-size:13px">
+        <option value="">Tüm Durumlar</option>
+        <option value="bekliyor">Bekliyor</option>
+        <option value="yapildi">Yapıldı</option>
+        <option value="gecikti">Gecikti</option>
+      </select>
+      <button class="btn btn-gold" onclick="openGorevModal()" id="gorev-ekle-btn">+ Görev Ata</button>
+    </div>
+    <div id="gorev-liste"></div>
+    <div class="empty" id="gorev-empty" style="display:none"><div class="empty-icon">📋</div><p>Henüz görev atanmamış</p></div>
+  </div>
+
+  <!-- AKTİVİTE LOGU -->
+  <div id="personel-tab-aktivite" style="display:none">
+    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+      <select id="akt-filtre-kisi" onchange="renderAktiviteLog()" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:7px 12px;font-size:13px">
+        <option value="">Tüm Kullanıcılar</option>
+      </select>
+      <select id="akt-filtre-islem" onchange="renderAktiviteLog()" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:7px 12px;font-size:13px">
+        <option value="">Tüm İşlemler</option>
+        <option value="Müvekkil">Müvekkil</option>
+        <option value="Dava">Dava</option>
+        <option value="İcra">İcra</option>
+        <option value="Belge">Belge</option>
+        <option value="Finans">Finans</option>
+      </select>
+    </div>
+    <div id="aktivite-log-liste"></div>
+    <div class="empty" id="aktivite-empty" style="display:none"><div class="empty-icon">🕐</div><p>Henüz aktivite kaydı yok</p></div>
+  </div>
+</div>
+
+<!-- ===== PERSONEL EKLEME/DÜZENLEME MODALI ===== -->
+<div class="modal-overlay" id="personel-modal">
+  <div class="modal modal-lg" style="max-width:760px;max-height:90vh;overflow-y:auto">
+    <div class="modal-title" id="personel-modal-title">Personel Ekle</div>
+
+    <!-- Sekmeler -->
+    <div class="tabs" style="margin-bottom:20px">
+      <div class="tab active" id="pmt-bilgi" onclick="personelModalTab('bilgi',this)">👤 Bilgiler</div>
+      <div class="tab" id="pmt-yetki" onclick="personelModalTab('yetki',this)">🔐 Yetkiler</div>
+      <div class="tab" id="pmt-hesap" onclick="personelModalTab('hesap',this)">🔑 Giriş Hesabı</div>
+    </div>
+
+    <!-- BİLGİLER -->
+    <div id="pmt-tab-bilgi">
+      <div class="form-row">
+        <div class="form-group"><label>Ad Soyad *</label><input id="p-ad" placeholder="Ad Soyad"></div>
+        <div class="form-group"><label>Unvan / Rol *</label>
+          <select id="p-rol">
+            <option value="avukat">⚖️ Avukat</option>
+            <option value="stajyer">📚 Stajyer Avukat</option>
+            <option value="sekreter">📋 Sekreter</option>
+            <option value="muhasebe">💰 Muhasebe</option>
+            <option value="diger">👤 Diğer</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Telefon</label><input id="p-tel" placeholder="(5xx) xxx xx xx" oninput="formatTelInput(this)" maxlength="15"></div>
+        <div class="form-group"><label>E-posta</label><input id="p-email" type="email" placeholder="avukat@mail.com"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>TC Kimlik No</label><input id="p-tc" placeholder="11 haneli TC No"></div>
+        <div class="form-group"><label>Baro Sicil No</label><input id="p-baro-sicil" placeholder="Baro sicil numarası"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>İşe Başlama Tarihi</label><input type="date" id="p-baslama"></div>
+        <div class="form-group"><label>Durum</label>
+          <select id="p-durum">
+            <option value="aktif">✅ Aktif</option>
+            <option value="pasif">⛔ Pasif</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label>Notlar</label><textarea id="p-notlar" rows="2" placeholder="Personele ilişkin notlar..."></textarea></div>
+    </div>
+
+    <!-- YETKİLER -->
+    <div id="pmt-tab-yetki" style="display:none">
+      <div style="background:var(--gold-dim);border:1px solid var(--gold);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--gold)">
+        💡 Her modül için <strong>Tam Yetki</strong>, <strong>Sadece Görüntüle</strong> veya <strong>Erişim Yok</strong> seçebilirsiniz.
+      </div>
+      <div id="yetki-gruplari"></div>
+    </div>
+
+    <!-- GİRİŞ HESABI -->
+    <div id="pmt-tab-hesap" style="display:none">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:16px">
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px">🔑 Sisteme Giriş Hesabı</div>
+        <div style="font-size:12px;color:var(--text-muted)">Bu personel için bir giriş hesabı oluşturabilirsiniz. Giriş yaptıklarında yalnızca kendilerine verilen yetkiler dahilinde işlem yapabilirler.</div>
+      </div>
+      <div id="hesap-mevcut-bilgi" style="display:none;background:var(--green-dim);border:1px solid var(--green);border-radius:var(--radius);padding:12px;margin-bottom:14px;font-size:12px;color:var(--green)"></div>
+      <div class="form-group"><label>Giriş E-postası *</label><input id="p-hesap-email" type="email" placeholder="personel@buro.com"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label id="p-sifre-label">Şifre *</label>
+          <input type="password" id="p-hesap-sifre" placeholder="En az 6 karakter" oninput="sifreGucGoster(this.value)">
+          <div id="sifre-guc-bar2" style="display:none;margin-top:6px">
+            <div class="sifre-guc" id="sifre-guc-fill2"></div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:3px" id="sifre-guc-lbl2"></div>
+          </div>
+        </div>
+        <div class="form-group"><label>Şifre Tekrar *</label><input type="password" id="p-hesap-sifre2" placeholder="••••••••"></div>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Şifre alanlarını boş bırakırsanız mevcut şifre değişmez.</div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('personel-modal')">İptal</button>
+      <button class="btn btn-danger" id="p-sil-btn" style="display:none" onclick="personelSil()">Sil</button>
+      <button class="btn btn-gold" onclick="savePersonel()" id="p-kaydet-btn">💾 Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== GÖREV ATAMA MODALI ===== -->
+<div class="modal-overlay" id="gorev-modal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-title" id="gorev-modal-title">Görev Ata</div>
+    <div class="form-row">
+      <div class="form-group"><label>Personel *</label>
+        <select id="g-personel"><option value="">— Seçin —</option></select>
+      </div>
+      <div class="form-group"><label>Görev Türü</label>
+        <select id="g-tur">
+          <option value="dava">📁 Dava Takibi</option>
+          <option value="icra">⚡ İcra Takibi</option>
+          <option value="durusma">🏛️ Duruşma</option>
+          <option value="evrak">📄 Evrak Hazırlama</option>
+          <option value="arastirma">🔍 Araştırma</option>
+          <option value="toplanti">👥 Toplantı</option>
+          <option value="diger">📌 Diğer</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Görev Başlığı *</label><input id="g-baslik" placeholder="Görevin kısa açıklaması"></div>
+    <div class="form-group"><label>Açıklama</label><textarea id="g-aciklama" rows="2" placeholder="Detaylar, talimatlar..."></textarea></div>
+    <div class="form-row">
+      <div class="form-group"><label>İlgili Dosya (opsiyonel)</label>
+        <select id="g-dosya"><option value="">— Seçin —</option></select>
+      </div>
+      <div class="form-group"><label>Son Tarih</label><input type="date" id="g-son-tarih"></div>
+    </div>
+    <div class="form-group"><label>Öncelik</label>
+      <select id="g-oncelik">
+        <option value="normal">⚪ Normal</option>
+        <option value="yuksek">🔴 Yüksek</option>
+        <option value="dusuk">🔵 Düşük</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('gorev-modal')">İptal</button>
+      <button class="btn btn-gold" onclick="saveGorev()">📋 Görevi Ata</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== GÖREV ONAY MODALI ===== -->
+<div class="modal-overlay" id="gorev-onay-modal">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-title">✅ Görevi Tamamlandı Olarak İşaretle</div>
+    <div id="gorev-onay-bilgi" style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:14px;font-size:12px;color:var(--text-muted)"></div>
+    <div class="form-group"><label>Açıklama / Yapılanlar *</label><textarea id="gorev-onay-aciklama" rows="3" placeholder="Görevi nasıl tamamladığınızı kısaca açıklayın..."></textarea></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('gorev-onay-modal')">İptal</button>
+      <button class="btn btn-gold" onclick="gorevTamamla()">✅ Onayla</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PERSONEL PROFİL MODALI ===== -->
+<div class="modal-overlay" id="personel-profil-modal">
+  <div class="modal modal-lg" style="max-width:640px">
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+      <div class="personel-avatar" id="pp-avatar" style="width:60px;height:60px;font-size:22px"></div>
+      <div>
+        <div style="font-size:18px;font-weight:700;color:var(--text)" id="pp-ad"></div>
+        <div id="pp-rol-badge" style="margin-top:4px"></div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px" id="pp-meta"></div>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <button class="btn btn-gold" onclick="openPersonelDuzenle(aktivPersonelId)">✏️ Düzenle</button>
+      </div>
+    </div>
+    <!-- Görevler -->
+    <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Atanan Görevler</div>
+    <div id="pp-gorevler"></div>
+    <div class="empty" id="pp-gorev-empty" style="display:none"><p>Atanmış görev yok</p></div>
+    <div class="modal-footer"><button class="btn" onclick="closeModal('personel-profil-modal')">Kapat</button></div>
+  </div>
+</div>
+
+
+<div class="page" id="page-ayarlar">
+  <div class="page-title">Ayarlar</div>
+  <div class="page-sub">Hesap, büro ve görünüm ayarları</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+
+    <!-- SOL -->
+    <div>
+      <!-- Profil -->
+      <div class="ayar-section">
+        <div class="ayar-section-header">
+          <span class="ayar-section-icon">👤</span>
+          <div><div class="ayar-section-title">Kişisel Bilgiler</div><div class="ayar-section-sub">Ad, e-posta ve iletişim bilgileri</div></div>
+        </div>
+        <div style="padding:20px">
+          <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+            <div class="profil-avatar-lg" id="ayar-avatar">?</div>
+            <div>
+              <div style="font-size:15px;font-weight:600;color:var(--text)" id="ayar-profil-ad">—</div>
+              <div style="font-size:12px;color:var(--text-muted)" id="ayar-profil-email">—</div>
+              <div style="font-size:11px;color:var(--gold);margin-top:3px" id="ayar-profil-rol">—</div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Ad Soyad</label><input id="ayar-ad" placeholder="Ad Soyad"></div>
+            <div class="form-group"><label>Telefon</label><input id="ayar-tel" placeholder="(5xx) xxx xx xx"></div>
+          </div>
+          <div class="form-group"><label>E-posta</label><input id="ayar-email" type="email" placeholder="ornek@mail.com"></div>
+          <button class="btn btn-gold" onclick="profilGuncelle()" style="width:100%;justify-content:center;margin-top:4px">💾 Bilgileri Güncelle</button>
+        </div>
+      </div>
+
+      <!-- Şifre -->
+      <div class="ayar-section">
+        <div class="ayar-section-header">
+          <span class="ayar-section-icon">🔐</span>
+          <div><div class="ayar-section-title">Şifre Değiştir</div><div class="ayar-section-sub">Güvenliğiniz için düzenli değiştirin</div></div>
+        </div>
+        <div style="padding:20px">
+          <div class="form-group"><label>Mevcut Şifre</label><input type="password" id="ayar-sifre-eski" placeholder="••••••••"></div>
+          <div class="form-group">
+            <label>Yeni Şifre</label>
+            <input type="password" id="ayar-sifre-yeni" placeholder="En az 6 karakter" oninput="sifreGucGoster(this.value)">
+            <div id="sifre-guc-bar" style="display:none;margin-top:6px">
+              <div class="sifre-guc" id="sifre-guc-fill"></div>
+              <div style="font-size:10px;color:var(--text-muted);margin-top:3px" id="sifre-guc-lbl"></div>
+            </div>
+          </div>
+          <div class="form-group"><label>Yeni Şifre Tekrar</label><input type="password" id="ayar-sifre-tekrar" placeholder="••••••••"></div>
+          <button class="btn btn-gold" onclick="sifreDegistir()" style="width:100%;justify-content:center;margin-top:4px">🔑 Şifreyi Değiştir</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SAĞ -->
+    <div>
+      <!-- Tema -->
+      <div class="ayar-section">
+        <div class="ayar-section-header">
+          <span class="ayar-section-icon">🎨</span>
+          <div><div class="ayar-section-title">Görünüm & Tema</div><div class="ayar-section-sub">Renk teması tercihinizi seçin</div></div>
+        </div>
+        <div class="tema-grid">
+          <div class="tema-kart" id="tema-koyu" onclick="temaAyarla('koyu')">
+            <div class="tema-kart-icon">🌙</div>
+            <div class="tema-kart-ad">Koyu</div>
+            <div class="tema-kart-sub">Göz yormaz</div>
+            <div class="tema-onizleme">
+              <div class="tema-renk" style="background:#0f0e0d;border:1px solid #444"></div>
+              <div class="tema-renk" style="background:#1a1917"></div>
+              <div class="tema-renk" style="background:#c9a84c"></div>
+            </div>
+          </div>
+          <div class="tema-kart" id="tema-acik" onclick="temaAyarla('acik')">
+            <div class="tema-kart-icon">☀️</div>
+            <div class="tema-kart-ad">Açık</div>
+            <div class="tema-kart-sub">Parlak ortam</div>
+            <div class="tema-onizleme">
+              <div class="tema-renk" style="background:#f5f4f2;border:1px solid #ddd"></div>
+              <div class="tema-renk" style="background:#ffffff;border:1px solid #ddd"></div>
+              <div class="tema-renk" style="background:#a07830"></div>
+            </div>
+          </div>
+          <div class="tema-kart" id="tema-sistem" onclick="temaAyarla('sistem')">
+            <div class="tema-kart-icon">📱</div>
+            <div class="tema-kart-ad">Sistem</div>
+            <div class="tema-kart-sub">Otomatik</div>
+            <div class="tema-onizleme">
+              <div class="tema-renk" style="background:linear-gradient(135deg,#0f0e0d 50%,#f5f4f2 50%);border:1px solid #888"></div>
+              <div class="tema-renk" style="background:#888"></div>
+              <div class="tema-renk" style="background:#c9a84c"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Büro Bilgileri -->
+      <div class="ayar-section">
+        <div class="ayar-section-header">
+          <span class="ayar-section-icon">🏛️</span>
+          <div><div class="ayar-section-title">Büro Bilgileri</div><div class="ayar-section-sub">Büro adı ve iletişim bilgileri</div></div>
+        </div>
+        <div style="padding:20px">
+          <div class="form-group"><label>Büro Adı</label><input id="ayar-buro-ad" placeholder="Hukuk Bürosu Adı"></div>
+          <div class="form-row">
+            <div class="form-group"><label>Telefon</label><input id="ayar-buro-tel" placeholder="(xxx) xxx xx xx"></div>
+            <div class="form-group"><label>E-posta</label><input id="ayar-buro-mail" placeholder="buro@mail.com"></div>
+          </div>
+          <div class="form-group"><label>Adres</label><textarea id="ayar-buro-adres" rows="2" placeholder="Büro adresi"></textarea></div>
+          <button class="btn btn-gold" onclick="buroBilgisiGuncelle()" style="width:100%;justify-content:center;margin-top:4px">💾 Büroyu Güncelle</button>
+        </div>
+      </div>
+
+      <!-- Tehlikeli Alan -->
+      <div class="ayar-section" style="border-color:var(--red-dim)">
+        <div class="ayar-section-header" style="border-bottom-color:var(--red-dim)">
+          <span class="ayar-section-icon">⚠️</span>
+          <div><div class="ayar-section-title" style="color:#e74c3c">Tehlikeli Alan</div><div class="ayar-section-sub">Geri alınamaz işlemler</div></div>
+        </div>
+        <div style="padding:20px">
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Hesabınızı silmek tüm verilerinizi kalıcı olarak siler.</div>
+          <button class="btn btn-danger" onclick="hesapSilOnay()" style="width:100%;justify-content:center">🗑️ Hesabı Sil</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- YEDEKLEMe BÖLÜMÜ — tam genişlik -->
+  <div style="margin-top:18px">
+    <div class="ayar-section">
+      <div class="ayar-section-header">
+        <span class="ayar-section-icon">💾</span>
+        <div><div class="ayar-section-title">Veri Yedekleme & Geri Yükleme</div><div class="ayar-section-sub">Tüm verilerinizi güvende tutun</div></div>
+      </div>
+      <div style="padding:20px">
+
+        <!-- İstatistik -->
+        <div id="yedek-istatistik" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px"></div>
+
+        <!-- Son Yedek Bilgisi -->
+        <div id="son-yedek-bilgi" style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:18px;font-size:12px;display:flex;align-items:center;justify-content:space-between">
+          <div style="color:var(--text-muted)">Son yedek: <span id="son-yedek-tarih" style="color:var(--text)">—</span></div>
+          <div id="son-yedek-boyut" style="color:var(--text-muted)"></div>
+        </div>
+
+        <!-- YEDEKLEMe SEÇENEKLERI -->
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Yedekleme Yöntemi</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px">
+
+          <!-- Locale İndir -->
+          <div class="yedek-kart" onclick="yedegiIndir()" id="yk-indur">
+            <div style="font-size:24px;margin-bottom:8px">💻</div>
+            <div style="font-weight:700;font-size:13px;margin-bottom:4px">Cihaza İndir</div>
+            <div style="font-size:11px;color:var(--text-muted)">.json dosyası olarak bilgisayarınıza kaydeder</div>
+            <div style="margin-top:10px">
+              <span style="background:var(--green-dim);color:var(--green);font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">Tüm Planlar</span>
+            </div>
+          </div>
+
+          <!-- Mail ile Gönder -->
+          <div class="yedek-kart" onclick="yedegiMaille()" id="yk-mail">
+            <div style="font-size:24px;margin-bottom:8px">📧</div>
+            <div style="font-weight:700;font-size:13px;margin-bottom:4px">E-posta ile Gönder</div>
+            <div style="font-size:11px;color:var(--text-muted)">Kayıtlı e-postanıza yedek linki gönderir</div>
+            <div style="margin-top:10px">
+              <span style="background:var(--gold-dim);color:var(--gold);font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">Tüm Planlar</span>
+            </div>
+          </div>
+
+          <!-- Bulut Yedek -->
+          <div class="yedek-kart" id="yk-bulut" onclick="yedegiBuiluta()">
+            <div style="font-size:24px;margin-bottom:8px">☁️</div>
+            <div style="font-weight:700;font-size:13px;margin-bottom:4px">Buluta Kaydet</div>
+            <div style="font-size:11px;color:var(--text-muted)">Sunucumuzda güvenle saklar, her yerden erişin</div>
+            <div style="margin-top:10px">
+              <span id="bulut-plan-badge" style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px">🏢 Kurumsal</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Bulut Yedekler Listesi (sadece kurumsal) -->
+        <div id="bulut-yedekler-wrap" style="display:none;margin-bottom:18px">
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">☁️ Buluttaki Yedekler</div>
+          <div id="bulut-yedekler-liste" style="max-height:160px;overflow-y:auto"></div>
+        </div>
+
+        <!-- GERİ YÜKLEME -->
+        <div style="border-top:1px solid var(--border);padding-top:16px">
+          <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Geri Yükleme</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div>
+              <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">Bilgisayarınızdaki yedek dosyasını yükleyin (.json)</div>
+              <label style="display:block">
+                <input type="file" id="yedek-dosya-input" accept=".json" style="display:none" onchange="yedegiyukle(this)">
+                <div class="btn" style="width:100%;justify-content:center;cursor:pointer">📂 Dosyadan Geri Yükle</div>
+              </label>
+            </div>
+            <div id="bulut-geri-yukle-wrap" style="display:none">
+              <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">Buluttaki yedeklerden geri yükleyin</div>
+              <button class="btn" style="width:100%;justify-content:center" onclick="bulutYedekleriGoster()">☁️ Bulut Yedeği Seç</button>
+            </div>
+          </div>
+          <div id="yedek-geri-yukleme-sonuc" style="margin-top:10px;display:none"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+  </main>
+</div>
+
+<!-- ============================================================ MODALS -->
+<!-- Müvekkil Ekle / Düzenle — tek modal, mod ile yönetilir -->
+<div class="modal-overlay" id="m-modal"><div class="modal modal-lg" style="max-width:720px">
+  <div class="modal-title" id="m-modal-title">Yeni Müvekkil</div>
+
+  <!-- Tip Seçimi -->
+  <div style="display:flex;gap:0;margin-bottom:18px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+    <button id="m-tip-gercek" class="muv-tip-btn active" onclick="muvTipSec('gercek')" style="flex:1;padding:10px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;background:var(--gold);color:#000">
+      👤 Gerçek Kişi
+    </button>
+    <button id="m-tip-tuzel" class="muv-tip-btn" onclick="muvTipSec('tuzel')" style="flex:1;padding:10px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;background:var(--surface2);color:var(--text-muted)">
+      🏢 Tüzel Kişi
+    </button>
+  </div>
+  <input type="hidden" id="m-tip" value="gercek">
+
+  <!-- GERÇEK KİŞİ ALANLARI -->
+  <div id="m-gercek-alanlar">
+    <div class="form-section-label">Kişisel Bilgiler</div>
+    <div class="form-row">
+      <div class="form-group"><label>Ad Soyad *</label><input id="m-ad" placeholder="Ad Soyad"></div>
+      <div class="form-group"><label>T.C. Kimlik No</label><input id="m-tc" placeholder="11 haneli TC No" maxlength="11"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Uyruk</label><select id="m-uyruk" onchange="muvUyrukDegis(this.value)"><option value="TC">T.C.</option><option value="yabanci">Yabancı Uyruklu</option></select></div>
+      <div class="form-group"><label>Pasaport No (yabancı)</label><input id="m-pasaport"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Doğum Tarihi</label><input type="date" id="m-dogum"></div>
+      <div class="form-group"><label>Meslek</label><select id="m-meslek-sel" onchange="muvMeslekSec(this.value)"><option value="">— Seçin —</option><option>Avukat</option><option>Doktor</option><option>Mühendis</option><option>Mimar</option><option>Öğretmen</option><option>Esnaf</option><option>Emekli</option><option>İşçi</option><option>Memur</option><option>Serbest Meslek</option><option>Yönetici</option><option value="diger">Diğer...</option></select><input id="m-meslek" placeholder="Meslek yazın" style="margin-top:6px;display:none"></div>
+    </div>
+  </div>
+
+  <!-- TÜZEL KİŞİ ALANLARI -->
+  <div id="m-tuzel-alanlar" style="display:none">
+    <div class="form-section-label">Şirket / Kurum Bilgileri</div>
+    <div class="form-row">
+      <div class="form-group"><label>Unvan *</label><input id="m-unvan" placeholder="Şirket Ünvanı"></div>
+      <div class="form-group"><label>Şirket Türü</label><select id="m-sirket-tur"><option>A.Ş.</option><option>Ltd. Şti.</option><option>Şahıs Firması</option><option>Kooperatif</option><option>Dernek</option><option>Vakıf</option><option>Kamu Kurumu</option><option>Diğer</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Vergi No</label><input id="m-vergino" placeholder="10 haneli Vergi No" maxlength="10"></div>
+      <div class="form-group"><label>Vergi Dairesi</label><input id="m-vergidairesi"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>MERSİS No</label><input id="m-mersis" placeholder="0000-0000-0000-0000"></div>
+      <div class="form-group"><label>Ticaret Sicil No</label><input id="m-ticaretsicil"></div>
+    </div>
+    <div class="form-section-label">Yetkili Temsilci</div>
+    <div class="form-row">
+      <div class="form-group"><label>Yetkili Ad Soyad</label><input id="m-yetkili-ad"></div>
+      <div class="form-group"><label>Yetkili Unvanı</label><input id="m-yetkili-unvan" placeholder="Genel Müdür, Yönetim Kurulu Başkanı..."></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Yetkili TC No</label><input id="m-yetkili-tc" maxlength="11"></div>
+      <div class="form-group"><label>Yetkili Telefonu</label><input id="m-yetkili-tel"></div>
+    </div>
+  </div>
+
+  <!-- ORTAK İLETİŞİM -->
+  <div class="form-section-label">İletişim Bilgileri</div>
+  <div class="form-row">
+    <div class="form-group"><label>Telefon</label><input id="m-tel" placeholder="05XX XXX XX XX"></div>
+    <div class="form-group"><label>E-posta</label><input id="m-mail" type="email"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Faks</label><input id="m-faks"></div>
+    <div class="form-group"><label>Web Sitesi</label><input id="m-web" placeholder="https://"></div>
+  </div>
+  <div class="form-group"><label>Adres</label><textarea id="m-adres" rows="2"></textarea></div>
+
+  <!-- BANKA BİLGİLERİ -->
+  <div class="form-section-label">Banka Bilgileri <span style="font-weight:400;color:var(--text-dim)">(opsiyonel)</span></div>
+  <div id="m-banka-list" style="margin-bottom:8px"></div>
+  <button type="button" class="btn btn-outline btn-sm" onclick="muvBankaEkle()">+ Banka Hesabı Ekle</button>
+
+  <!-- NOTLAR -->
+  <div class="form-section-label" style="margin-top:14px">Notlar</div>
+  <div class="form-group"><textarea id="m-not" rows="2" placeholder="Müvekkile özel notlar..."></textarea></div>
+
+  <div class="modal-footer">
+    <button class="btn btn-danger btn-sm" id="m-sil-btn" style="margin-right:auto;display:none" onclick="deleteMuvekkil()">Sil</button>
+    <button class="btn btn-outline" onclick="closeModal('m-modal')">İptal</button>
+    <button class="btn btn-gold" id="m-kaydet-btn" onclick="saveMuvekkil()">Kaydet</button>
+  </div>
+</div></div>
+
+<!-- İletişim Geçmişi Modal -->
+<div class="modal-overlay" id="iletisim-modal"><div class="modal">
+  <div class="modal-title" id="il-modal-title">💬 İletişim Kaydı Ekle</div>
+  <div class="form-row">
+    <div class="form-group"><label>Tarih *</label><input type="date" id="il-tarih"></div>
+    <div class="form-group"><label>Saat</label><input type="time" id="il-saat" value="09:00"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>İletişim Kanalı</label>
+      <select id="il-kanal">
+        <option>📞 Telefon Görüşmesi</option><option>📧 E-posta</option>
+        <option>🤝 Yüz Yüze Görüşme</option><option>💬 WhatsApp / Mesaj</option>
+        <option>📠 Faks</option><option>📮 Posta / Tebligat</option>
+        <option>🎥 Video Görüşme</option><option>📋 Diğer</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Konu</label><input id="il-konu" placeholder="Görüşme konusu..."></div>
+  </div>
+  <div class="form-group"><label>Özet / Not *</label><textarea id="il-ozet" rows="4" placeholder="Görüşmede ne konuşuldu, ne kararlaştırıldı..."></textarea></div>
+  <div class="modal-footer">
+    <button class="btn btn-danger btn-sm" id="il-sil-btn" style="margin-right:auto;display:none" onclick="deleteIletisim()">Sil</button>
+    <button class="btn btn-outline" onclick="closeModal('iletisim-modal')">İptal</button>
+    <button class="btn btn-gold" onclick="saveIletisim()">Kaydet</button>
+  </div>
+</div></div>
+
+<!-- İlişki Ekle Modal -->
+<div class="modal-overlay" id="iliski-modal"><div class="modal">
+  <div class="modal-title">🔗 Müvekkil İlişkisi Ekle</div>
+  <div class="form-group"><label>İlişkili Müvekkil *</label><select id="rl-muv"></select></div>
+  <div class="form-row">
+    <div class="form-group"><label>İlişki Türü *</label>
+      <select id="rl-tur">
+        <option>Eş</option><option>Anne / Baba</option><option>Çocuk</option><option>Kardeş</option>
+        <option>Ortak / Hissedar</option><option>Yönetim Kurulu Üyesi</option>
+        <option>İşveren / İşçi</option><option>Vekil</option><option>Kefil</option><option>Diğer</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Açıklama</label><input id="rl-acik" placeholder="Opsiyonel not..."></div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-outline" onclick="closeModal('iliski-modal')">İptal</button>
+    <button class="btn btn-gold" onclick="saveIliski()">Kaydet</button>
+  </div>
+</div></div>
+
+<!-- Vekaletname Takip Modal -->
+<div class="modal-overlay" id="vekaletname-modal"><div class="modal modal-lg">
+  <div class="modal-title" id="vk-modal-title">📜 Vekaletname Bilgisi</div>
+  <div class="form-row">
+    <div class="form-group"><label>Düzenlenme Tarihi</label><input type="date" id="vk-tarih"></div>
+    <div class="form-group"><label>Geçerlilik Bitiş Tarihi</label><input type="date" id="vk-bitis"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Noter Adı / Yeri</label><input id="vk-noter" placeholder="İstanbul 12. Noteri..."></div>
+    <div class="form-group"><label>Yevmiye No</label><input id="vk-yevmiye"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Vekil Adı</label><input id="vk-vekil"></div>
+    <div class="form-group"><label>İlgili Dosyalar</label><input id="vk-dosyalar" placeholder="Virgülle ayırın..."></div>
+  </div>
+  <div style="margin-bottom:10px">
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+      <input type="checkbox" id="vk-ozel" onchange="document.getElementById('vk-ozel-alan').style.display=this.checked?'block':'none'" style="width:16px;height:16px">
+      Özel Yetki İçeriyor
+    </label>
+    <div id="vk-ozel-alan" style="display:none;margin-top:8px">
+      <div class="form-group"><label>Özel Yetki Kapsamı</label><textarea id="vk-ozel-acik" rows="2" placeholder="Taşınmaz satışı, sulh yetkisi, bedel kabulü vb."></textarea></div>
+    </div>
+  </div>
+  <div class="form-group"><label>Notlar</label><textarea id="vk-not" rows="2"></textarea></div>
+  <div class="modal-footer">
+    <button class="btn btn-danger btn-sm" id="vk-sil-btn" style="margin-right:auto;display:none" onclick="deleteVekaletname()">Sil</button>
+    <button class="btn btn-outline" onclick="closeModal('vekaletname-modal')">İptal</button>
+    <button class="btn btn-gold" onclick="saveVekaletname()">Kaydet</button>
+  </div>
+</div></div>
+
+<!-- Dava Modal -->
+<div class="modal-overlay" id="dav-modal"><div class="modal modal-lg">
+  <div class="modal-title">Dava / Dosya Ekle</div>
+  <div class="form-row"><div class="form-group"><label>Dosya No <span style="font-size:10px;color:var(--gold);margin-left:6px">● Otomatik atanır</span></label><input id="d-no" placeholder="D-2026-001" style="background:var(--surface);color:var(--text-muted);"></div><div class="form-group"><label>Müvekkil *</label><select id="d-muv"></select></div></div>
+  <div class="form-group"><label>Dava Konusu *</label><input id="d-konu"></div>
+  <div class="form-section-label">Mahkeme Bilgileri</div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>İl</label>
+      <select id="d-il" onchange="ilSecDava(this.value)"><option value="">— İl seçin —</option></select>
+    </div>
+    <div class="form-group">
+      <label>Adliye</label>
+      <select id="d-adliye"><option value="">— Önce il seçin —</option></select>
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Mahkeme Türü</label>
+      <select id="d-mtur">
+        <optgroup label="Hukuk"><option>Asliye Hukuk</option><option>Sulh Hukuk</option><option>Aile</option><option>Asliye Ticaret</option><option>Tüketici</option><option>İş</option><option>Kadastro</option><option>Fikri ve Sınai Haklar Hukuk</option></optgroup>
+        <optgroup label="Ceza"><option>Asliye Ceza</option><option>Sulh Ceza</option><option>Ağır Ceza</option><option>Çocuk</option></optgroup>
+        <optgroup label="İdare"><option>İdare</option><option>Vergi</option><option>Bölge İdare</option></optgroup>
+        <optgroup label="Üst"><option>Bölge Adliye (İstinaf)</option><option>Yargıtay</option><option>Anayasa</option><option>Diğer</option></optgroup>
+      </select>
+    </div>
+    <div class="form-group"><label>Mahkeme No</label><input id="d-mno" placeholder="3. Asliye..."></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>Esas No<span style="font-size:10px;color:var(--text-muted);margin-left:6px">Mahkeme esas no</span></label>
+      <div style="display:flex;align-items:center;gap:4px">
+        <input id="d-esas-yil" placeholder="2024" maxlength="4" style="width:72px;flex-shrink:0">
+        <span style="color:var(--text-muted);font-weight:bold">/</span>
+        <input id="d-esas-no" placeholder="1234" style="flex:1">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Karar No (Yıl / Numara)</label>
+      <div style="display:flex;align-items:center;gap:4px">
+        <input id="d-karar-yil" placeholder="2024" maxlength="4" style="width:72px;flex-shrink:0">
+        <span style="color:var(--text-muted);font-weight:bold">/</span>
+        <input id="d-karar-no" placeholder="5678" style="flex:1">
+      </div>
+    </div>
+  </div>
+  <div class="form-row"><div class="form-group"><label>Hâkim</label><input id="d-hakim"></div><div class="form-group"></div></div>
+  <div class="form-section-label">Aşama & Durum</div>
+  <div class="form-row">
+    <div class="form-group"><label>Yargılama Aşaması</label><select id="d-asama"><option>İlk Derece</option><option>İstinaf</option><option>Yargıtay</option><option>Kesinleşti</option><option>Düşürüldü</option></select></div>
+    <div class="form-group"><label>Dosya Durumu</label><select id="d-durum"><option>Aktif</option><option>Beklemede</option><option>Kapalı</option></select></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Derdestlik</label><select id="d-derdest"><option value="">—</option><option>Derdest (Görülmekte)</option><option>Karar Verildi – Temyiz Bekliyor</option><option>Kesinleşmiş Karar</option><option>Düşmüş / İptal</option><option>Feragat Edildi</option><option>Sulh / Uzlaşma</option></select></div>
+    <div class="form-group"><label>Taraf</label><select id="d-taraf"><option>Davacı</option><option>Davalı</option><option>Katılan</option><option>Müdahil</option><option>Sanık</option></select></div>
+  </div>
+  <div class="form-section-label">Tarihler</div>
+  <div class="form-row"><div class="form-group"><label>Açılış</label><input type="date" id="d-tarih"></div><div class="form-group"><label>Son Duruşma</label><input type="date" id="d-durusma"></div></div>
+  <div class="form-row"><div class="form-group"><label>Karar Tarihi</label><input type="date" id="d-ktarih"></div><div class="form-group"><label>Kesinleşme</label><input type="date" id="d-kesin"></div></div>
+  <div class="form-section-label">Diğer</div>
+  <div class="form-section-label">Karşı Taraf</div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>Karşı Taraf</label>
+      <div style="position:relative">
+        <input id="d-karsi-ara" placeholder="Ad ile ara veya yeni ekle..." autocomplete="off"
+          oninput="ktAra('d-karsi-ara','d-karsi-liste','d-karsi-id','d-karsi-goster')"
+          onfocus="ktAra('d-karsi-ara','d-karsi-liste','d-karsi-id','d-karsi-goster')">
+        <div id="d-karsi-liste" class="kt-dropdown" style="display:none"></div>
+      </div>
+      <div id="d-karsi-goster" class="kt-secili" style="display:none"></div>
+      <input type="hidden" id="d-karsi-id">
+    </div>
+    <div class="form-group">
+      <label>Karşı Taraf Vekili</label>
+      <div style="position:relative">
+        <input id="d-karsav-ara" placeholder="Ad ile ara veya yeni ekle..." autocomplete="off"
+          oninput="vekAra('d-karsav-ara','d-karsav-liste','d-karsav-id','d-karsav-goster')"
+          onfocus="vekAra('d-karsav-ara','d-karsav-liste','d-karsav-id','d-karsav-goster')">
+        <div id="d-karsav-liste" class="kt-dropdown" style="display:none"></div>
+      </div>
+      <div id="d-karsav-goster" class="kt-secili" style="display:none"></div>
+      <input type="hidden" id="d-karsav-id">
+    </div>
+  </div>
+  <div class="form-row"><div class="form-group"><label>İlişkili İcra No</label><input id="d-icrano"></div><div class="form-group"><label>Dava Değeri (₺)</label><input type="number" id="d-deger"></div></div>
+  <div class="form-group"><label>Notlar</label><textarea id="d-not" rows="2"></textarea></div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('dav-modal')">İptal</button><button class="btn btn-gold" onclick="saveDava()">Kaydet</button></div>
+</div></div>
+
+<!-- Karşı Taraf Kayıt Modal -->
+<div class="modal-overlay" id="kt-modal"><div class="modal modal-lg">
+  <div class="modal-title" id="kt-modal-title">Karşı Taraf Ekle</div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>Tür</label>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button id="kt-tip-gercek-btn" class="btn btn-gold" onclick="ktTipSec('gercek')" style="flex:1">👤 Gerçek Kişi</button>
+        <button id="kt-tip-tuzel-btn" class="btn btn-outline" onclick="ktTipSec('tuzel')" style="flex:1">🏢 Tüzel Kişi</button>
+      </div>
+      <input type="hidden" id="kt-tip" value="gercek">
+    </div>
+    <div class="form-group"><label>Ad / Unvan *</label><input id="kt-ad" placeholder="Kişi adı veya şirket unvanı"></div>
+  </div>
+  <!-- Gerçek Kişi Alanları -->
+  <div id="kt-gercek-alanlari">
+    <div class="form-row">
+      <div class="form-group"><label>TC Kimlik No</label><input id="kt-tc" placeholder="11 haneli TC kimlik no" maxlength="11"></div>
+      <div class="form-group"><label>Doğum Tarihi</label><input type="date" id="kt-dogum"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Meslek</label><input id="kt-meslek" placeholder="Meslek / Unvan"></div>
+      <div class="form-group"><label>Uyruk</label>
+        <select id="kt-uyruk"><option>T.C.</option><option>Yabancı Uyruklu</option></select>
+      </div>
+    </div>
+  </div>
+  <!-- Tüzel Kişi Alanları -->
+  <div id="kt-tuzel-alanlari" style="display:none">
+    <div class="form-row">
+      <div class="form-group"><label>Şirket Türü</label>
+        <select id="kt-sirkettur"><option>A.Ş.</option><option>Ltd. Şti.</option><option>Koll. Şti.</option><option>Koop.</option><option>Vakıf</option><option>Dernek</option><option>Kamu Kurumu</option><option>Diğer</option></select>
+      </div>
+      <div class="form-group"><label>Vergi No</label><input id="kt-vergino" placeholder="10 haneli vergi no" maxlength="10"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Vergi Dairesi</label><input id="kt-vergidairesi"></div>
+      <div class="form-group"><label>MERSİS No</label><input id="kt-mersis"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Yetkili Adı</label><input id="kt-yetkili-ad" placeholder="Yetkili / Temsilci adı"></div>
+      <div class="form-group"><label>Yetkili Unvanı</label><input id="kt-yetkili-unvan" placeholder="Genel Müdür vb."></div>
+    </div>
+  </div>
+  <div class="form-section-label">İletişim</div>
+  <div class="form-row">
+    <div class="form-group"><label>Telefon</label><input id="kt-tel" placeholder="(5xx) xxx xx xx" oninput="formatTelInput(this)" maxlength="15"></div>
+    <div class="form-group"><label>E-posta</label><input id="kt-mail" placeholder="ornek@mail.com"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Faks</label><input id="kt-faks" placeholder="(xxx) xxx xx xx" oninput="formatTelInput(this)" maxlength="15"></div>
+    <div class="form-group"><label>UETS / KEP Adresi</label><input id="kt-uets"></div>
+  </div>
+  <div class="form-group"><label>Adres</label><textarea id="kt-adres" rows="2"></textarea></div>
+  <div class="form-section-label">Banka Bilgileri</div>
+  <div class="form-row">
+    <div class="form-group"><label>Banka</label><input id="kt-banka" placeholder="Banka adı"></div>
+    <div class="form-group"><label>IBAN</label><input id="kt-iban" placeholder="TR00 0000 0000 0000 0000 0000 00" oninput="formatIbanInput(this)" maxlength="32"></div>
+  </div>
+  <div class="form-group"><label>Açıklama / Not</label><input id="kt-acik"></div>
+  <div class="modal-footer">
+    <button class="btn btn-outline" onclick="closeModal('kt-modal')">İptal</button>
+    <button class="btn btn-gold" id="kt-modal-btn" onclick="saveKarsiTaraf()">Kaydet & Seç</button>
+  </div>
+</div></div>
+
+<!-- Karşı Taraf Profil Popup -->
+<div class="modal-overlay" id="kt-profil-modal"><div class="modal modal-lg">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px">
+    <div style="display:flex;gap:14px;align-items:center">
+      <div id="kt-profil-avatar" style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#2c3e50,#8e44ad);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:700;flex-shrink:0"></div>
+      <div>
+        <div id="kt-profil-ad" style="font-size:18px;font-weight:700;color:var(--text)"></div>
+        <div id="kt-profil-alt" style="font-size:12px;color:var(--text-muted);margin-top:3px"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline btn-sm" id="kt-profil-duzenle-btn">✏ Düzenle</button>
+      <button class="btn btn-outline btn-sm" onclick="closeModal('kt-profil-modal')">✕</button>
+    </div>
+  </div>
+  <div id="kt-profil-bilgiler" style="display:grid;grid-template-columns:1fr 1fr;gap:8px 18px;margin-bottom:18px"></div>
+  <div id="kt-profil-dosyalar"></div>
+</div></div>
+
+<!-- Vekil Kayıt Modal -->
+<div class="modal-overlay" id="vek-modal"><div class="modal modal-lg">
+  <div class="modal-title" id="vek-modal-title">Karşı Taraf Vekili Ekle</div>
+  <div class="form-row">
+    <div class="form-group"><label>Ad Soyad *</label><input id="vek-ad" placeholder="Ad Soyad"></div>
+    <div class="form-group"><label>Baro</label><select id="vek-baro">
+      <option value="">— Baro seçin —</option>
+      <option>Adana Barosu</option><option>Adıyaman Barosu</option><option>Afyonkarahisar Barosu</option>
+      <option>Ağrı Barosu</option><option>Aksaray Barosu</option><option>Amasya Barosu</option>
+      <option>Ankara Barosu</option><option>Antalya Barosu</option><option>Ardahan Barosu</option>
+      <option>Artvin Barosu</option><option>Aydın Barosu</option><option>Balıkesir Barosu</option>
+      <option>Bartın Barosu</option><option>Batman Barosu</option><option>Bayburt Barosu</option>
+      <option>Bilecik Barosu</option><option>Bingöl Barosu</option><option>Bitlis Barosu</option>
+      <option>Bolu Barosu</option><option>Burdur Barosu</option><option>Bursa Barosu</option>
+      <option>Çanakkale Barosu</option><option>Çankırı Barosu</option><option>Çorum Barosu</option>
+      <option>Denizli Barosu</option><option>Diyarbakır Barosu</option><option>Düzce Barosu</option>
+      <option>Edirne Barosu</option><option>Elazığ Barosu</option><option>Erzincan Barosu</option>
+      <option>Erzurum Barosu</option><option>Eskişehir Barosu</option><option>Gaziantep Barosu</option>
+      <option>Giresun Barosu</option><option>Gümüşhane Barosu</option><option>Hakkari Barosu</option>
+      <option>Hatay Barosu</option><option>Iğdır Barosu</option><option>Isparta Barosu</option>
+      <option>İstanbul Barosu</option><option>İstanbul 1 No'lu Barosu</option><option>İstanbul 2 No'lu Barosu</option>
+      <option>İzmir Barosu</option><option>İzmir 1 No'lu Barosu</option><option>İzmir 2 No'lu Barosu</option>
+      <option>Ankara 1 No'lu Barosu</option><option>Ankara 2 No'lu Barosu</option>
+      <option>Kahramanmaraş Barosu</option><option>Karabük Barosu</option><option>Karaman Barosu</option>
+      <option>Kars Barosu</option><option>Kastamonu Barosu</option><option>Kayseri Barosu</option>
+      <option>Kilis Barosu</option><option>Kırıkkale Barosu</option><option>Kırklareli Barosu</option>
+      <option>Kırşehir Barosu</option><option>Kocaeli Barosu</option><option>Konya Barosu</option>
+      <option>Kütahya Barosu</option><option>Malatya Barosu</option><option>Manisa Barosu</option>
+      <option>Mardin Barosu</option><option>Mersin Barosu</option><option>Muğla Barosu</option>
+      <option>Muş Barosu</option><option>Nevşehir Barosu</option><option>Niğde Barosu</option>
+      <option>Ordu Barosu</option><option>Osmaniye Barosu</option><option>Rize Barosu</option>
+      <option>Sakarya Barosu</option><option>Samsun Barosu</option><option>Şanlıurfa Barosu</option>
+      <option>Siirt Barosu</option><option>Sinop Barosu</option><option>Şırnak Barosu</option>
+      <option>Sivas Barosu</option><option>Tekirdağ Barosu</option><option>Tokat Barosu</option>
+      <option>Trabzon Barosu</option><option>Tunceli Barosu</option><option>Uşak Barosu</option>
+      <option>Van Barosu</option><option>Yalova Barosu</option><option>Yozgat Barosu</option>
+      <option>Zonguldak Barosu</option>
+    </select></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Baro Sicil No</label><input id="vek-sicil" placeholder="12345"></div>
+    <div class="form-group"><label>TBB Sicil No</label><input id="vek-tbb" placeholder="TBB sicil no"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Telefon</label><input id="vek-tel" placeholder="(5xx) xxx xx xx" oninput="formatTelInput(this)" maxlength="15"></div>
+    <div class="form-group"><label>E-posta</label><input id="vek-mail" placeholder="avukat@mail.com"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>UETS / KEP Adresi</label><input id="vek-uets" placeholder="UETS / KEP adresi"></div>
+    <div class="form-group"><label>IBAN</label><input id="vek-banka" placeholder="TR00 0000 0000 0000 0000 0000 00" oninput="formatIbanInput(this)" maxlength="32"></div>
+  </div>
+  <div class="form-group"><label>Açıklama / Not</label><input id="vek-acik"></div>
+  <div class="modal-footer">
+    <button class="btn btn-outline" onclick="closeModal('vek-modal')">İptal</button>
+    <button class="btn btn-gold" id="vek-modal-btn" onclick="saveVekil()">Kaydet & Seç</button>
+  </div>
+</div></div>
+
+<!-- Avukat Profil Popup -->
+<div class="modal-overlay" id="vek-profil-modal"><div class="modal modal-lg">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px">
+    <div style="display:flex;gap:14px;align-items:center">
+      <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#2c3e50,#34495e);display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:22px;flex-shrink:0">⚖</div>
+      <div>
+        <div id="vp-ad" style="font-size:18px;font-weight:700;color:var(--text)"></div>
+        <div id="vp-baro" style="font-size:12px;color:var(--gold);margin-top:3px"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline btn-sm" id="vp-duzenle-btn">✏ Düzenle</button>
+      <button class="btn btn-outline btn-sm" onclick="closeModal('vek-profil-modal')">✕</button>
+    </div>
+  </div>
+  <div id="vp-bilgiler" style="display:grid;grid-template-columns:1fr 1fr;gap:8px 18px;margin-bottom:18px"></div>
+  <div id="vp-dosyalar"></div>
+</div></div>
+
+<!-- Log Modal -->
+<div class="modal-overlay" id="log-modal"><div class="modal modal-lg">
+  <div class="modal-title">📋 Değişiklik Geçmişi</div>
+  <div id="log-modal-content" style="max-height:420px;overflow-y:auto"></div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('log-modal')">Kapat</button></div>
+</div></div>
+
+<!-- İcra Modal -->
+<div class="modal-overlay" id="icra-modal"><div class="modal modal-lg">
+  <div class="modal-title">İcra Dosyası Ekle</div>
+  <div class="form-row"><div class="form-group"><label>Dosya No *<span style="font-size:10px;color:var(--text-muted);margin-left:6px">Büro iç referans no</span></label><input id="i-no"></div><div class="form-group"><label>Müvekkil (Alacaklı) *</label><select id="i-muv"></select></div></div>
+  <div class="form-row"><div class="form-group"><label>Borçlu Adı *</label><input id="i-borclu"></div><div class="form-group"><label>Borçlu TC / Vergi No</label><input id="i-btc"></div></div>
+  <div class="form-section-label">İcra Dairesi</div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>İl</label>
+      <select id="i-il" onchange="ilSecIcra(this.value)"><option value="">— İl seçin —</option></select>
+    </div>
+    <div class="form-group">
+      <label>İcra Dairesi</label>
+      <select id="i-adliye"><option value="">— Önce il seçin —</option></select>
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>İcra Müdürlüğü Adı / No</label><input id="i-daire" placeholder="3. İcra Müdürlüğü"></div>
+    <div class="form-group"></div>
+  </div>
+  <div class="form-row"><div class="form-group"><label>Esas No<span style="font-size:10px;color:var(--text-muted);margin-left:6px">İcra dairesi esas no</span></label><input id="i-esas"></div>
+  <div class="form-group"><label>Tür</label><select id="i-tur"><option>İlamlı İcra</option><option>İlamsız İcra</option><option>Kambiyo Senedi</option><option>İpoteğin Paraya Çevrilmesi</option><option>Nafaka İcrası</option><option>Diğer</option></select></div></div>
+  <div class="form-section-label">Alacak Bilgileri</div>
+  <div class="form-row"><div class="form-group"><label>Toplam Alacak (₺) *</label><input type="number" id="i-alacak"></div><div class="form-group"><label>Tahsil Edilen (₺)</label><input type="number" id="i-tahsil" value="0"></div></div>
+  <div class="form-row"><div class="form-group"><label>Faiz (%)</label><input type="number" id="i-faiz"></div><div class="form-group"><label>Alacak Türü</label><select id="i-atur"><option>Kira Alacağı</option><option>Borç / Senet</option><option>Tazminat</option><option>İşçilik Alacağı</option><option>Nafaka</option><option>Diğer</option></select></div></div>
+  <div class="form-section-label">Durum & Tarihler</div>
+  <div class="form-row"><div class="form-group"><label>Durum</label><select id="i-durum"><option>Aktif</option><option>Takipte</option><option>Haciz Aşaması</option><option>Satış Aşaması</option><option>Kapandı</option></select></div><div class="form-group"><label>Takip Tarihi</label><input type="date" id="i-tarih"></div></div>
+  <div class="form-row"><div class="form-group"><label>Ödeme Emri Tarihi</label><input type="date" id="i-otarih"></div><div class="form-group"><label>İtiraz Son Tarihi</label><input type="date" id="i-itarih"></div></div>
+  <div class="form-section-label">Karşı Taraf Vekili</div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>Karşı Taraf Vekili</label>
+      <div style="position:relative">
+        <input id="i-karsav-ara" placeholder="Ad ile ara veya yeni ekle..." autocomplete="off"
+          oninput="vekAra('i-karsav-ara','i-karsav-liste','i-karsav-id','i-karsav-goster')"
+          onfocus="vekAra('i-karsav-ara','i-karsav-liste','i-karsav-id','i-karsav-goster')">
+        <div id="i-karsav-liste" class="kt-dropdown" style="display:none"></div>
+      </div>
+      <div id="i-karsav-goster" class="kt-secili" style="display:none"></div>
+      <input type="hidden" id="i-karsav-id">
+    </div>
+    <div class="form-group"></div>
+  </div>
+  <div class="form-row"><div class="form-group"><label>İlişkili Dava No</label><input id="i-davno"></div><div class="form-group"><label>Dayanak Belge</label><input id="i-dayanak"></div></div>
+  <div class="form-group"><label>Notlar</label><textarea id="i-not" rows="2"></textarea></div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('icra-modal')">İptal</button><button class="btn btn-gold" onclick="saveIcra()">Kaydet</button></div>
+</div></div>
+
+<!-- Harcama Modal -->
+<div class="modal-overlay" id="harc-modal"><div class="modal">
+  <div class="modal-title" id="harc-modal-title">Harcama Ekle</div>
+  <div class="form-row"><div class="form-group"><label>Tarih *</label><input type="date" id="h-tarih"></div><div class="form-group"><label>Tutar (₺) *</label><input type="number" id="h-tutar"></div></div>
+  <div class="form-row"><div class="form-group"><label>Kategori</label><select id="h-kat"><option>Harç / Pul</option><option>Tebligat</option><option>Bilirkişi Ücreti</option><option>Ulaşım</option><option>Fotokopi / Baskı</option><option>Tercüme</option><option>Avukatlık Ücreti</option><option>Genel Büro</option><option>Diğer</option></select></div>
+  <div class="form-group" id="h-dosya-group" style="display:none"><label>İlişkili Dosya</label>
+    <select id="h-dosya-sel">
+      <option value="">— Dosya seçin —</option>
+    </select>
+  </div></div>
+  <div class="form-group"><label>Açıklama</label><input id="h-acik"></div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('harc-modal')">İptal</button><button class="btn btn-gold" onclick="saveHarcama()">Kaydet</button></div>
+</div></div>
+
+<!-- Avans Modal -->
+<div class="modal-overlay" id="avans-modal"><div class="modal">
+  <div class="modal-title" id="avans-modal-title">Avans / Alacak Ekle</div>
+  <div class="form-row"><div class="form-group"><label>Tür *</label><select id="a-tur"><option>Avans Alındı</option><option>Masraf Alacağı</option><option>Vekalet Ücreti Alacağı</option><option>Diğer Alacak</option></select></div><div class="form-group"><label>Tarih *</label><input type="date" id="a-tarih"></div></div>
+  <div class="form-row"><div class="form-group"><label>Tutar (₺) *</label><input type="number" id="a-tutar"></div><div class="form-group"><label>Durum</label><select id="a-durum"><option>Ödendi</option><option>Bekliyor</option><option>Kısmi Ödeme</option></select></div></div>
+  <div class="form-row"><div class="form-group"><label>İlgili Dosya <span style="font-size:10px;color:var(--text-dim)">(opsiyonel)</span></label><select id="a-dosya"><option value="">— Dosyaya bağlamayın —</option></select></div><div class="form-group"><label>Ödeme Tarihi</label><input type="date" id="a-odeme"></div></div>
+  <div class="form-row"><div class="form-group"><label>Açıklama</label><input id="a-acik"></div></div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('avans-modal')">İptal</button><button class="btn btn-gold" onclick="saveAvans()">Kaydet</button></div>
+</div></div>
+
+<!-- Belge Modal -->
+<div class="modal-overlay" id="belge-modal"><div class="modal">
+  <div class="modal-title" id="bg-title">Belge Yükle</div>
+  <div class="form-group"><label>Belge Adı</label><input id="bg-ad"></div>
+  <div class="form-group"><label>Açıklama</label><input id="bg-acik"></div>
+  <div class="form-group"><label>Dosya</label>
+    <div class="upload-zone" onclick="document.getElementById('bg-file').click()">
+      <input type="file" id="bg-file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onchange="bgFileSelected(event)">
+      <div style="font-size:28px;margin-bottom:6px">📎</div>
+      <div id="bg-file-lbl" style="font-size:12px">Tıklayın veya sürükleyin</div>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:4px">PDF, Word, Resim</div>
+    </div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('belge-modal')">İptal</button><button class="btn btn-gold" onclick="saveBelge()">Yükle</button></div>
+</div></div>
+
+<!-- Evrak Upload (Dava/İcra içi) -->
+<div class="modal-overlay" id="evrak-modal"><div class="modal">
+  <div class="modal-title" id="ev-title">Evrak Yükle</div>
+  <div class="form-group"><label>Evrak Adı</label><input id="ev-ad"></div>
+  <div class="form-group"><label>Kategori</label><select id="ev-kat"></select></div>
+  <div class="form-group"><label>Tarih / Duruşma Tarihi</label><input type="date" id="ev-tarih"></div>
+  <div class="form-group"><label>Açıklama</label><input id="ev-acik"></div>
+  <div class="form-group"><label>Dosya</label>
+    <div class="upload-zone" onclick="document.getElementById('ev-file').click()">
+      <input type="file" id="ev-file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onchange="evFileSelected(event)" multiple>
+      <div style="font-size:28px;margin-bottom:6px">📎</div>
+      <div id="ev-file-lbl" style="font-size:12px">Tıklayın veya sürükleyin</div>
+    </div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('evrak-modal')">İptal</button><button class="btn btn-gold" onclick="saveEvrak()">Yükle</button></div>
+</div></div>
+
+<!-- Not Modal -->
+<div class="modal-overlay" id="not-modal"><div class="modal">
+  <div class="modal-title" id="not-modal-title">📝 Not Ekle</div>
+  <div class="form-row"><div class="form-group"><label>Not Türü</label><select id="not-tur"><option>Çalışma Notu</option><option>Müvekkil Görüşme Notu</option><option>Duruşma Notu</option><option>Strateji Notu</option><option>Genel Not</option></select></div><div class="form-group"><label>Tarih</label><input type="date" id="not-tarih"></div></div>
+  <div class="form-group"><label>Not İçeriği *</label><textarea id="not-icerik" rows="5"></textarea></div>
+  <input type="hidden" id="not-edit-id">
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('not-modal')">İptal</button><button class="btn btn-gold" onclick="saveNot()">Kaydet</button></div>
+</div></div>
+
+<!-- Ücret Anlaşması Modal — sadece anlaşma koşulları, tahsilat buraya girmez -->
+<div class="modal-overlay" id="anlasma-modal"><div class="modal modal-lg">
+  <div class="modal-title">🤝 Ücret Anlaşması Koşulları</div>
+  <div class="form-group"><label>Anlaşma Türü</label>
+    <select id="an-tur" onchange="anlasmaChange()">
+      <option value="pesin">Peşin Sabit Ücret</option>
+      <option value="taksit">Taksitli Ücret</option>
+      <option value="basari">Başarı Primi (%)</option>
+      <option value="tahsilat">Tahsilat Payı (%)</option>
+      <option value="karma">Karma (Peşin + %)</option>
+    </select>
+  </div>
+  <div id="an-pesin-alanlar">
+    <div class="form-row">
+      <div class="form-group"><label>Kararlaştırılan Ücret (₺)</label><input type="number" id="an-ucret" placeholder="0"></div>
+      <div class="form-group"><label>Ödeme Tarihi / Vadesi</label><input type="date" id="an-otarih"></div>
+    </div>
+  </div>
+  <!-- TAKSİT ALANLARI -->
+  <div id="an-taksit-alanlar" style="display:none">
+    <div class="form-row">
+      <div class="form-group"><label>Toplam Ücret (₺)</label><input type="number" id="an-taksit-ucret" placeholder="0"></div>
+      <div class="form-group"><label>İlk Ödeme Tarihi</label><input type="date" id="an-taksit-bastar"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Taksit Sayısı</label>
+        <input type="number" id="an-taksit-sayi" placeholder="Kaç taksit?" min="2" max="120" oninput="taksitOnizle()">
+      </div>
+      <div class="form-group">
+        <label>Taksit Aralığı</label>
+        <select id="an-taksit-aralik" onchange="taksitOnizle()">
+          <option value="1">Aylık (her ay)</option>
+          <option value="2">2 Aylık</option>
+          <option value="3">3 Aylık (çeyrek)</option>
+          <option value="6">6 Aylık (yarıyıl)</option>
+          <option value="12">Yıllık</option>
+        </select>
+      </div>
+    </div>
+    <div id="an-taksit-onizle" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;font-size:11px;color:var(--text-muted);margin-bottom:6px;display:none"></div>
+  </div>
+  <div id="an-basari-alanlar" style="display:none">
+    <div class="form-row">
+      <div class="form-group"><label>Oran (%)</label><input type="number" id="an-yuzde" placeholder="20"></div>
+      <div class="form-group"><label>Baz Tutar (₺) — boşsa dava/icra değeri kullanılır</label><input type="number" id="an-baz"></div>
+    </div>
+  </div>
+  <div id="an-karma-alanlar" style="display:none">
+    <div class="form-row">
+      <div class="form-group"><label>Peşin Kısım (₺)</label><input type="number" id="an-karma-pesin"></div>
+      <div class="form-group"><label>Oran (%)</label><input type="number" id="an-karma-yuzde"></div>
+    </div>
+  </div>
+  <div class="form-group"><label>Anlaşma Notları</label><textarea id="an-not" rows="3" placeholder="Anlaşma koşullarına dair ek notlar…"></textarea></div>
+  <div style="background:var(--blue-dim);border:1px solid var(--blue);border-radius:var(--radius);padding:9px 13px;font-size:11px;color:var(--blue);margin-bottom:4px">
+    💡 Tahsilat, hakediş ve müvekkile aktarım işlemlerini kaydetmek için <strong>Tahsilat & Hakediş</strong> sekmesini kullanın.
+  </div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('anlasma-modal')">İptal</button><button class="btn btn-gold" onclick="saveAnlasma()">Kaydet</button></div>
+</div></div>
+
+<!-- Tahsilat / Hakediş / Aktarım Hareketi Modal -->
+<div class="modal-overlay" id="tahsilat-modal"><div class="modal modal-lg">
+  <div class="modal-title" id="th-modal-title">💵 Finansal Hareket Ekle</div>
+  <div class="form-row">
+    <div class="form-group"><label>Hareket Türü *</label>
+      <select id="th-tur" onchange="tahsilatTurChange()">
+        <option value="tahsilat">💰 Tahsilat (Karşı Taraftan Alınan)</option>
+        <option value="akdi_vekalet">📋 Akdi Vekalet Ücreti (Müvekkil Ödemesi)</option>
+        <option value="hakediş">⚖️ Karşı Taraf Vekalet Hakedişi</option>
+        <option value="aktarim">📤 Müvekkile Aktarım / Ödeme</option>
+        <option value="iade">↩️ İade / Düzeltme</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Tarih *</label><input type="date" id="th-tarih"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Tutar (₺) *</label><input type="number" id="th-tutar" placeholder="0.00"></div>
+    <div class="form-group"><label>Açıklama / Referans</label><input id="th-acik" placeholder="Banka, dekont no, not…"></div>
+  </div>
+  <div id="th-preview-box" style="display:none;border-radius:var(--radius);padding:9px 13px;font-size:11px;margin-bottom:4px"></div>
+  <!-- Belge Yükleme -->
+  <div class="form-group" style="margin-top:6px">
+    <label>Dekont / Belge Yükleme <span style="color:var(--text-dim);font-weight:400">(opsiyonel)</span></label>
+    <div class="upload-zone" style="padding:10px 14px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="document.getElementById('th-belge-file').click()">
+      <input type="file" id="th-belge-file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" style="display:none" onchange="thBelgeSelected(event)">
+      <span style="font-size:20px">📎</span>
+      <div>
+        <div id="th-belge-lbl" style="font-size:12px;color:var(--text-muted)">Tıklayın veya sürükleyin — PDF, Resim, Word</div>
+        <div id="th-belge-name" style="font-size:11px;color:var(--gold);margin-top:2px;display:none"></div>
+      </div>
+      <button type="button" id="th-belge-clear" style="display:none;margin-left:auto;background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:16px" onclick="event.stopPropagation();thBelgeClear()">✕</button>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-outline" onclick="closeModal('tahsilat-modal')">İptal</button>
+    <button class="btn btn-gold" onclick="saveTahsilatHareket()">Kaydet</button>
+  </div>
+</div></div>
+
+<!-- Belge Görüntüleme Popup -->
+<div class="modal-overlay" id="belge-viewer-modal"><div class="modal modal-lg">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div class="modal-title" id="bv-title" style="margin-bottom:0">Belge</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline btn-sm" onclick="bvIndir()">⬇ İndir</button>
+      <button class="btn btn-outline btn-sm" onclick="closeModal('belge-viewer-modal')">✕ Kapat</button>
+    </div>
+  </div>
+  <div id="bv-content" style="max-height:70vh;overflow:auto;border-radius:var(--radius);background:var(--surface2);display:flex;align-items:center;justify-content:center;min-height:200px"></div>
+</div></div>
+
+<!-- Bütçe Modal -->
+<div class="modal-overlay" id="but-modal"><div class="modal" style="max-width:520px">
+  <div class="modal-title">Hareket Ekle</div>
+  <div class="form-row">
+    <div class="form-group"><label>Tür</label><select id="b-tur"><option>Gelir</option><option>Gider</option></select></div>
+    <div class="form-group"><label>Tarih</label><input type="date" id="b-tarih"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Kategori</label><select id="b-kat"><option>Akdi Vekalet Ücreti</option><option>Avukatlık Hakedişi</option><option>Tahsilat (Karşı Taraf)</option><option>Masraf Alacağı (Bekliyor)</option><option>Akdi Vekalet Ücreti (Bekliyor)</option><option>Müvekkile Aktarım</option><option>Müvekkile Aktarım (Bekliyor)</option><option>Ofis Gideri</option><option>Personel</option><option>İade / Düzeltme</option><option>Danışmanlık</option><option>Ulaşım</option><option>Harç / Masraf</option><option>Diğer</option></select></div>
+    <div class="form-group"><label>Tutar (₺) *</label><input type="number" id="b-tutar" placeholder="0.00"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>KDV Oranı</label>
+      <select id="b-kdv-oran">
+        <option value="0">KDV Yok</option>
+        <option value="1">%1</option>
+        <option value="8">%8</option>
+        <option value="10">%10</option>
+        <option value="18">%18</option>
+        <option value="20">%20</option>
+      </select>
+    </div>
+    <div class="form-group"><label>KDV Tutarı</label><input type="number" id="b-kdv-tutar" placeholder="Otomatik" readonly style="background:var(--surface2)"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Müvekkil</label><select id="b-muv"><option value="">—</option></select></div>
+    <div class="form-group"><label>Açıklama</label><input id="b-acik" placeholder="İsteğe bağlı"></div>
+  </div>
+  <div id="b-kdv-toplam-satir" style="display:none;background:var(--surface2);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;font-size:13px">
+    KDV Dahil Toplam: <strong id="b-kdv-toplam">₺0</strong>
+  </div>
+  <div class="modal-footer">
+    <button class="btn" onclick="closeModal('but-modal')">İptal</button>
+    <button class="btn btn-gold" onclick="saveButce()">Kaydet</button>
+  </div>
+</div></div>
+
+<!-- FATURA MODAL -->
+<div class="modal-overlay" id="fatura-modal">
+  <div class="modal modal-lg" style="max-width:680px;max-height:90vh;overflow-y:auto">
+    <div class="modal-title" id="fatura-modal-title">🧾 Fatura Oluştur</div>
+    <div class="form-row">
+      <div class="form-group"><label>Fatura No *</label><input id="fat-no" placeholder="2024-001"></div>
+      <div class="form-group"><label>Tarih *</label><input type="date" id="fat-tarih"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Müvekkil *</label><select id="fat-muv"><option value="">— Seçin —</option></select></div>
+      <div class="form-group"><label>Vade Tarihi</label><input type="date" id="fat-vade"></div>
+    </div>
+    <div class="form-group"><label>Hizmet Açıklaması *</label><textarea id="fat-aciklama" rows="2" placeholder="Hukuki danışmanlık, dava takibi vs."></textarea></div>
+    <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Kalemler</div>
+    <div id="fat-kalemler">
+      <div class="fat-kalem-satir" style="display:grid;grid-template-columns:1fr 80px 100px 100px 30px;gap:8px;margin-bottom:6px">
+        <input placeholder="Hizmet açıklaması" class="fat-kalem-ad" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:7px 10px;font-size:12px">
+        <input type="number" placeholder="Miktar" class="fat-kalem-miktar" value="1" oninput="fatKalemHesapla(this)" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:7px 10px;font-size:12px">
+        <input type="number" placeholder="Birim fiyat" class="fat-kalem-fiyat" oninput="fatKalemHesapla(this)" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:7px 10px;font-size:12px">
+        <input placeholder="Toplam" class="fat-kalem-toplam" readonly style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:7px 10px;font-size:12px;font-weight:600">
+        <button onclick="fatKalemSil(this)" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:16px">✕</button>
+      </div>
+    </div>
+    <button class="btn" style="margin-bottom:14px;font-size:11px" onclick="fatKalemEkle()">+ Kalem Ekle</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="form-group"><label>KDV Oranı</label>
+        <select id="fat-kdv" onchange="fatToplamHesapla()">
+          <option value="0">KDV Yok</option>
+          <option value="1">%1</option>
+          <option value="8">%8</option>
+          <option value="10">%10</option>
+          <option value="18">%18</option>
+          <option value="20">%20</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Ödeme Durumu</label>
+        <select id="fat-durum">
+          <option value="bekliyor">⏳ Ödeme Bekleniyor</option>
+          <option value="odendi">✅ Ödendi</option>
+          <option value="gecikti">🔴 Gecikti</option>
+          <option value="iptal">❌ İptal</option>
+        </select>
+      </div>
+    </div>
+    <div style="background:var(--surface2);border-radius:var(--radius);padding:14px;margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span style="color:var(--text-muted)">Ara Toplam:</span><strong id="fat-ara-toplam">₺0</strong></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span style="color:var(--text-muted)">KDV:</span><strong id="fat-kdv-tutar">₺0</strong></div>
+      <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:700;border-top:1px solid var(--border);padding-top:8px;margin-top:4px"><span>Genel Toplam:</span><span style="color:var(--gold)" id="fat-genel-toplam">₺0</span></div>
+    </div>
+    <div class="form-group"><label>Notlar</label><textarea id="fat-notlar" rows="2" placeholder="Ödeme bilgileri, IBAN vs."></textarea></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('fatura-modal')">İptal</button>
+      <button class="btn" onclick="faturaOnizle()">👁 Önizle</button>
+      <button class="btn btn-gold" onclick="saveFatura()">💾 Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- FATURA ÖNİZLEME MODAL -->
+<div class="modal-overlay" id="fatura-onizle-modal">
+  <div class="modal modal-lg" style="max-width:700px;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div class="modal-title" style="margin-bottom:0">Fatura Önizleme</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-gold" onclick="faturaYazdir()">🖨 Yazdır / PDF</button>
+        <button class="btn" onclick="closeModal('fatura-onizle-modal')">✕ Kapat</button>
+      </div>
+    </div>
+    <div id="fatura-onizle-icerik" style="background:#fff;color:#1a1714;padding:40px;border-radius:var(--radius)"></div>
+  </div>
+</div>
+
+<!-- FİNANS RAPOR MODAL -->
+<div class="modal-overlay" id="finans-rapor-modal">
+  <div class="modal modal-lg" style="max-width:700px;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div class="modal-title" style="margin-bottom:0">📊 Finansal Rapor</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-gold" onclick="finansRaporYazdir()">🖨 PDF İndir</button>
+        <button class="btn" onclick="closeModal('finans-rapor-modal')">✕ Kapat</button>
+      </div>
+    </div>
+    <div id="finans-rapor-icerik"></div>
+  </div>
+</div>
+
+<!-- SÜRE TAKİP MODAL -->
+<div class="modal-overlay" id="sure-modal">
+  <div class="modal modal-lg" style="max-width:600px">
+    <div class="modal-title" id="sure-modal-title">⏱ Süre Ekle</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Süre Türü *</label>
+        <select id="sure-tur" onchange="sureTurDegisti()">
+          <option>Cevap Süresi</option>
+          <option>İtiraz Süresi</option>
+          <option>Temyiz Süresi</option>
+          <option>İstinaf Süresi</option>
+          <option>İcra Takip Süresi</option>
+          <option>Zamanaşımı</option>
+          <option>Diğer</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Yasal Süre (Gün)</label>
+        <select id="sure-gun-secim" onchange="sureGunHesapla()">
+          <option value="7">7 gün</option>
+          <option value="10">10 gün</option>
+          <option value="14">14 gün</option>
+          <option value="15">15 gün</option>
+          <option value="30" selected>30 gün</option>
+          <option value="60">60 gün</option>
+          <option value="90">90 gün (3 ay)</option>
+          <option value="180">180 gün (6 ay)</option>
+          <option value="365">365 gün (1 yıl)</option>
+          <option value="0">Manuel gir</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Başlangıç / Tebliğ Tarihi *</label>
+        <input type="date" id="sure-baslangic" oninput="sureGunHesapla()">
+      </div>
+      <div class="form-group">
+        <label>Manuel Gün (isteğe bağlı)</label>
+        <input type="number" id="sure-gun-manuel" placeholder="Örn: 45" oninput="sureGunHesapla()">
+      </div>
+    </div>
+    <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:12px;color:var(--text-muted)">Son Gün:</span>
+        <strong id="sure-son-gun-goster" style="font-size:15px;color:var(--gold)">—</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+        <span style="font-size:12px;color:var(--text-muted)">Kalan Gün:</span>
+        <strong id="sure-kalan-gun-goster" style="font-size:15px">—</strong>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>İlgili Dava / Dosya</label>
+        <select id="sure-dava-id">
+          <option value="">— Seçin —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Müvekkil</label>
+        <select id="sure-muv-id">
+          <option value="">— Seçin —</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Açıklama / Konu *</label>
+      <input id="sure-aciklama" placeholder="Örn: İtiraz dilekçesi hazırla, cevap layihası ver...">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Öncelik</label>
+        <select id="sure-oncelik">
+          <option value="yuksek">🔴 Yüksek</option>
+          <option value="normal" selected>⚪ Normal</option>
+          <option value="dusuk">🔵 Düşük</option>
+        </select>
+      </div>
+      <div class="form-group" style="display:flex;align-items:flex-end;gap:8px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:0">
+          <input type="checkbox" id="sure-takvim-ekle" checked style="width:14px;height:14px">
+          <span style="font-size:13px">Takvime otomatik ekle</span>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('sure-modal')">İptal</button>
+      <button class="btn btn-gold" onclick="saveSure()">💾 Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- DURUŞMA AKTAR MODAL -->
+<div class="modal-overlay" id="durusma-cek-modal">
+  <div class="modal modal-lg" style="max-width:640px">
+    <div class="modal-title">📋 UYAP'tan Duruşma Listesi Aktar</div>
+    <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:14px;font-size:12px;color:var(--text-muted)">
+      <strong>Nasıl kullanılır:</strong><br>
+      1. UYAP Avukat Portal'a giriş yapın<br>
+      2. İlgili davanın duruşma listesini açın<br>
+      3. Duruşma bilgilerini kopyalayıp aşağıya yapıştırın<br>
+      4. "Aktar" butonuna basın — sistem otomatik analiz eder
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>İlgili Dava</label>
+        <select id="dc-dava-id" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:8px;font-size:13px;width:100%">
+          <option value="">— Seçin —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Müvekkil</label>
+        <select id="dc-muv-id" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:8px;font-size:13px;width:100%">
+          <option value="">— Seçin —</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>UYAP'tan Kopyalanan Metin</label>
+      <textarea id="dc-metin" rows="8" placeholder="UYAP'tan kopyaladığınız duruşma bilgilerini buraya yapıştırın...&#10;&#10;Örnek format:&#10;15.03.2025 09:00 - Tensip Zaptı Okunması&#10;22.04.2025 10:30 - Delillerin Toplanması&#10;10.06.2025 09:00 - Bilirkişi Raporu İnceleme" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:10px;font-size:12px;width:100%;resize:vertical;font-family:monospace"></textarea>
+    </div>
+    <div id="dc-onizleme" style="display:none;margin-bottom:12px"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('durusma-cek-modal')">İptal</button>
+      <button class="btn" onclick="dcOnizle()">👁 Analiz Et</button>
+      <button class="btn btn-gold" id="dc-aktar-btn" onclick="dcAktar()" style="display:none">✅ Takvime Aktar</button>
+    </div>
+  </div>
+</div>
+
+<!-- UPGRADE MODAL -->
+<div class="modal-overlay" id="upgrade-modal">
+  <div class="modal" style="max-width:700px">
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="font-size:36px;margin-bottom:8px">🚀</div>
+      <div class="modal-title" id="upg-baslik" style="margin-bottom:6px">Plan yükseltme gerekli</div>
+      <div style="font-size:13px;color:var(--text-muted)" id="upg-detay"></div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:4px">Mevcut plan: <span id="upg-mevcut-plan" style="color:var(--gold)"></span></div>
+    </div>
+    <div id="upg-planlar" style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center"></div>
+    <div style="text-align:center;margin-top:16px">
+      <button class="btn" onclick="closeModal('upgrade-modal')" style="font-size:12px">Şimdi değil</button>
+    </div>
+  </div>
+</div>
+
+<!-- SÜPER WHATSAPP / BİLDİRİM MODAL -->
+<div class="modal-overlay" id="wp-modal">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-title">📱 WhatsApp / SMS Gönder</div>
+    <div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:14px;font-size:12px;color:var(--text-muted)">
+      Alıcıya WhatsApp mesajı göndermek için aşağıdaki butona tıklayın. Mesaj taslağı otomatik doldurulacak.
+    </div>
+    <div class="form-group">
+      <label>Alıcı Telefon *</label>
+      <div style="display:flex;gap:8px">
+        <select id="wp-telefon-kodu" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:7px 10px;font-size:13px;width:100px">
+          <option value="90">🇹🇷 +90</option>
+          <option value="1">🇺🇸 +1</option>
+          <option value="49">🇩🇪 +49</option>
+          <option value="44">🇬🇧 +44</option>
+          <option value="31">🇳🇱 +31</option>
+          <option value="33">🇫🇷 +33</option>
+        </select>
+        <input id="wp-telefon" placeholder="5xx xxx xx xx" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:7px 10px;font-size:13px">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Şablon Seç</label>
+      <select id="wp-sablon" onchange="wpSablonUygula()" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:7px 10px;font-size:13px;width:100%">
+        <option value="">— Şablon seç (isteğe bağlı) —</option>
+        <option value="durusma">📅 Duruşma Hatırlatması</option>
+        <option value="tahsilat">💰 Ödeme Hatırlatması</option>
+        <option value="fatura">🧾 Fatura Bildirimi</option>
+        <option value="evrak">📄 Evrak Teslim Bildirimi</option>
+        <option value="sonuc">✅ Dava Sonuç Bildirimi</option>
+        <option value="randevu">🤝 Randevu Hatırlatması</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Mesaj *</label>
+      <textarea id="wp-mesaj" rows="5" placeholder="Mesajınızı buraya yazın..." style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:10px;font-size:13px;width:100%;resize:vertical"></textarea>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:4px"><span id="wp-karakter">0</span> karakter</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('wp-modal')">İptal</button>
+      <button class="btn" onclick="wpKopyala()" style="background:var(--surface2)">📋 Kopyala</button>
+      <button class="btn btn-gold" onclick="wpGonder()" style="background:#25D366;border-color:#25D366;color:#fff">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="white" style="margin-right:4px"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+        WhatsApp'ta Aç
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Takvim / Planlama Modal -->
+<div class="modal-overlay" id="tak-modal"><div class="modal modal-lg" style="max-width:600px">
+  <div class="modal-title" id="tak-modal-title">Etkinlik Ekle</div>
+  <div class="form-row">
+    <div class="form-group"><label>Başlık *</label><input id="t-baslik" placeholder="Duruşma, toplantı, görüşme..."></div>
+    <div class="form-group"><label>Tür</label>
+      <select id="t-tur">
+        <option>Duruşma</option><option>Son Gün</option>
+        <option>Müvekkil Görüşmesi</option><option>Toplantı</option>
+        <option>Keşif</option><option>Bilirkişi</option>
+        <option>Arabuluculuk</option><option>Uzlaşma</option>
+        <option>Diğer</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Tarih *</label><input type="date" id="t-tarih"></div>
+    <div class="form-group"><label>Saat</label><input type="time" id="t-saat" value="09:00"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Müvekkil</label><select id="t-muv" onchange="populateTakDavSelect(this.value)"><option value="">— Seçiniz —</option></select></div>
+    <div class="form-group"><label>İlgili Dosya No</label><select id="t-dav-sel"><option value="">—</option></select></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Konum / Yer</label><input id="t-yer" placeholder="Mahkeme salonu, ofis, zoom..."></div>
+    <div class="form-group"><label>Hatırlatma</label>
+      <select id="t-hatirlatma">
+        <option value="">Yok</option><option value="0">Gün başında</option>
+        <option value="1">1 gün önce</option><option value="3">3 gün önce</option>
+        <option value="7">1 hafta önce</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-group"><label>Notlar</label><textarea id="t-not" rows="3" placeholder="Hazırlanması gereken evraklar, görüşme gündemine dair notlar..."></textarea></div>
+  <div class="modal-footer">
+    <button class="btn btn-danger btn-sm" id="tak-sil-btn" style="margin-right:auto;display:none" onclick="delEtkinlikEdit()">Sil</button>
+    <button class="btn btn-outline" onclick="closeModal('tak-modal')">İptal</button>
+    <button class="btn btn-gold" id="tak-kaydet-btn" onclick="saveEtkinlik()">Kaydet</button>
+  </div>
+</div></div>
+
+<!-- ===== ARABULUCULUK SAYFASI ===== -->
+<div class="page" id="page-arabuluculuk">
+  <div class="page-title">Arabuluculuk</div>
+  <div class="page-sub">Zorunlu ve ihtiyari arabuluculuk dosyaları</div>
+  <div class="cards" id="arab-cards"></div>
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">Arabuluculuk Dosyaları</div>
+      <div style="display:flex;gap:8px">
+        <select id="arab-ft" class="search-bar" style="width:160px" onchange="renderArabuluculuk()">
+          <option value="">Tüm Türler</option>
+          <option value="Zorunlu">Zorunlu</option>
+          <option value="İhtiyari">İhtiyari</option>
+        </select>
+        <select id="arab-fd" class="search-bar" style="width:180px" onchange="renderArabuluculuk()">
+          <option value="">Tüm Durumlar</option>
+          <option value="Başvuru Yapıldı">Başvuru Yapıldı</option>
+          <option value="İlk Toplantı Bekleniyor">İlk Toplantı Bekleniyor</option>
+          <option value="Görüşmeler Devam Ediyor">Görüşmeler Devam Ediyor</option>
+          <option value="Uzlaşma Sağlandı">Uzlaşma Sağlandı</option>
+          <option value="Uzlaşma Sağlanamadı">Uzlaşma Sağlanamadı</option>
+          <option value="Dava Açıldı">Dava Açıldı</option>
+        </select>
+        <input class="search-bar" placeholder="🔍 Ara..." oninput="renderArabuluculuk(this.value)" id="arab-s">
+        <button class="btn btn-gold" onclick="openArabModal()">+ Yeni Dosya</button>
+      </div>
+    </div>
+    <div class="section-body" style="padding:0">
+      <div id="arab-list"></div>
+      <div class="empty" id="arab-empty" style="display:none"><div class="empty-icon">🤝</div><p>Henüz arabuluculuk dosyası yok</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ARABULUCULUK DETAY SAYFASI ===== -->
+<div class="page" id="page-arab-detay">
+  <div class="breadcrumb"><a onclick="showPage('arabuluculuk',document.getElementById('ni-arabuluculuk'))">🤝 Arabuluculuk</a><span>›</span><span id="arab-bc"></span></div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+    <div><div class="page-title" id="arab-detay-baslik"></div><div id="arab-detay-meta" style="color:var(--text-muted);font-size:12px;margin-top:4px"></div></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline" onclick="openArabDurumModal()">🔄 Durum Güncelle</button>
+      <button class="btn btn-outline" onclick="openArabEdit()">✏ Düzenle</button>
+    </div>
+  </div>
+  <div class="cards" id="arab-detay-cards"></div>
+  <div class="tabs">
+    <div class="tab active" onclick="arabTab('bilgi',this)">📋 Dosya Bilgileri</div>
+    <div class="tab" onclick="arabTab('toplanti',this)">📅 Toplantılar</div>
+    <div class="tab" onclick="arabTab('taraflar',this)">👥 Taraf Talepleri</div>
+    <div class="tab" onclick="arabTab('tutanaklar',this)">📄 Tutanaklar</div>
+    <div class="tab" onclick="arabTab('notlar',this)">📝 Toplantı Notları</div>
+  </div>
+  <div class="tab-panel active" id="abt-bilgi"><div id="abt-bilgi-content"></div></div>
+  <div class="tab-panel" id="abt-toplanti"><div id="abt-toplanti-content"></div></div>
+  <div class="tab-panel" id="abt-taraflar"><div id="abt-taraflar-content"></div></div>
+  <div class="tab-panel" id="abt-tutanaklar"><div id="abt-tutanaklar-content"></div></div>
+  <div class="tab-panel" id="abt-notlar"><div id="abt-notlar-content"></div></div>
+</div>
+
+<!-- ARABULUCULUK YENİ/DÜZENLE MODAL -->
+<div class="modal-overlay" id="arab-modal"><div class="modal modal-lg">
+  <div class="modal-title" id="arab-modal-title">Yeni Arabuluculuk Dosyası</div>
+  <input type="hidden" id="arab-edit-id">
+  <div class="form-row">
+    <div class="form-group"><label>Dosya / Konu *</label><input id="arab-konu" placeholder="Arabuluculuk konusu"></div>
+    <div class="form-group"><label>Tür *</label>
+      <select id="arab-tur">
+        <option>Zorunlu</option>
+        <option>İhtiyari</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Müvekkil</label>
+      <select id="arab-muv"><option value="">— Seçiniz —</option></select>
+    </div>
+    <div class="form-group"><label>Başvuru Tarihi</label><input type="date" id="arab-basvuru-tarih"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Karşı Taraf</label><input id="arab-karsi" placeholder="Karşı taraf adı"></div>
+    <div class="form-group"><label>Durum</label>
+      <select id="arab-durum">
+        <option>Başvuru Yapıldı</option>
+        <option>İlk Toplantı Bekleniyor</option>
+        <option>Görüşmeler Devam Ediyor</option>
+        <option>Uzlaşma Sağlandı</option>
+        <option>Uzlaşma Sağlanamadı</option>
+        <option>Dava Açıldı</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-section-label">Arabulucu Bilgileri</div>
+  <div class="form-row">
+    <div class="form-group"><label>Arabulucu Adı</label><input id="arab-arabulucu-ad" placeholder="Arabulucu ad soyad"></div>
+    <div class="form-group"><label>Arabulucu Sicil No</label><input id="arab-arabulucu-sicil" placeholder="Sicil numarası"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Arabulucu Telefon</label><input id="arab-arabulucu-tel" placeholder="(5xx) xxx xx xx"></div>
+    <div class="form-group"><label>Arabuluculuk Bürosu / Merkezi</label><input id="arab-arabulucu-buro" placeholder="Büro adı"></div>
+  </div>
+  <div class="form-section-label">İlk Toplantı</div>
+  <div class="form-row">
+    <div class="form-group"><label>İlk Toplantı Tarihi</label><input type="date" id="arab-ilk-tarih"></div>
+    <div class="form-group"><label>Saat</label><input type="time" id="arab-ilk-saat" value="10:00"></div>
+  </div>
+  <div class="form-group"><label>Toplantı Yeri</label><input id="arab-yer" placeholder="Adres veya online link"></div>
+  <div class="form-group"><label>Notlar</label><textarea id="arab-notlar" rows="2"></textarea></div>
+  <div class="modal-footer">
+    <button class="btn btn-danger btn-sm" id="arab-sil-btn" style="margin-right:auto;display:none" onclick="deleteArab()">Sil</button>
+    <button class="btn btn-outline" onclick="closeModal('arab-modal')">İptal</button>
+    <button class="btn btn-gold" onclick="saveArab()">Kaydet</button>
+  </div>
+</div></div>
+
+<!-- ARABULUCULUK TOPLANTI MODAL -->
+<div class="modal-overlay" id="arab-toplanti-modal"><div class="modal modal-lg">
+  <div class="modal-title" id="arab-toplanti-modal-title">Toplantı Ekle</div>
+  <input type="hidden" id="abt-edit-id">
+  <div class="form-row">
+    <div class="form-group"><label>Toplantı No / Adı</label><input id="abt-baslik" placeholder="1. Toplantı, 2. Toplantı..."></div>
+    <div class="form-group"><label>Tarih *</label><input type="date" id="abt-tarih"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Saat</label><input type="time" id="abt-saat" value="10:00"></div>
+    <div class="form-group"><label>Yer / Platform</label><input id="abt-yer" placeholder="Adres veya online link"></div>
+  </div>
+  <div class="form-group"><label>Sonuç</label>
+    <select id="abt-sonuc">
+      <option value="">— Henüz gerçekleşmedi —</option>
+      <option value="Ertelendi">Ertelendi</option>
+      <option value="Görüşme Devam Ediyor">Görüşme Devam Ediyor</option>
+      <option value="Uzlaşma Sağlandı">Uzlaşma Sağlandı</option>
+      <option value="Uzlaşma Sağlanamadı">Uzlaşma Sağlanamadı</option>
+    </select>
+  </div>
+  <div class="form-group"><label>Toplantı Notları</label><textarea id="abt-notlar" rows="4" placeholder="Toplantıda konuşulanlar, öne çıkan noktalar..."></textarea></div>
+  <div class="modal-footer">
+    <button class="btn btn-outline" onclick="closeModal('arab-toplanti-modal')">İptal</button>
+    <button class="btn btn-gold" onclick="saveArabToplanti()">Kaydet</button>
+  </div>
+</div></div>
+
+<!-- ARABULUCULUK TALEP MODAL -->
+<div class="modal-overlay" id="arab-talep-modal"><div class="modal modal-lg">
+  <div class="modal-title">Taraf Talebi Ekle</div>
+  <input type="hidden" id="att-edit-id">
+  <div class="form-row">
+    <div class="form-group"><label>Taraf</label>
+      <select id="att-taraf">
+        <option value="Müvekkil">Müvekkil Tarafı</option>
+        <option value="Karşı Taraf">Karşı Taraf</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Tarih</label><input type="date" id="att-tarih"></div>
+  </div>
+  <div class="form-group"><label>Talep Konusu *</label><input id="att-konu" placeholder="Talep başlığı"></div>
+  <div class="form-group"><label>Talep Tutarı (₺) — opsiyonel</label><input type="number" id="att-tutar" placeholder="0"></div>
+  <div class="form-group">area></div>
+  <div class="modal-footer">
+    <button class="btn btn-outline" onclick="closeModal('arab-talep-modal')">İptal</button>
+    <button class="btn btn-gold" onclick="saveArabTalep()">Kaydet</button>
+  </div>
+</div></div>
+
+<!-- ARABULUCULUK DURUM MODAL -->
+<div class="modal-overlay" id="arab-durum-modal"><div class="modal" style="max-width:460px">
+  <div class="modal-title">🔄 Durum Güncelle</div>
+  <div class="form-group"><label>Yeni Durum</label>
+    <select id="arab-yeni-durum">
+      <option>Başvuru Yapıldı</option>
+      <option>İlk Toplantı Bekleniyor</option>
+      <option>Görüşmeler Devam Ediyor</option>
+      <option>Uzlaşma Sağlandı</option>
+      <option>Uzlaşma Sağlanamadı</option>
+      <option>Dava Açıldı</option>
+    </select>
+  </div>
+  <!-- Dava bağlantısı — uzlaşma sağlanamadı durumunda -->
+  <div id="arab-dava-baglanti" style="display:none">
+    <div style="background:var(--blue-dim);border:1px solid var(--blue);border-radius:var(--radius);padding:9px 13px;font-size:11px;color:var(--blue);margin-bottom:10px">
+      💡 Arabuluculuk sonucu dava açıldıysa aşağıdan ilgili dava dosyasıyla ilişkilendirebilirsiniz.
+    </div>
+    <div class="form-group"><label>İlişkili Dava Dosyası (opsiyonel)</label>
+      <select id="arab-ilgili-dava"><option value="">— Dava seçin —</option></select>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-outline" onclick="closeModal('arab-durum-modal')">İptal</button>
+    <button class="btn btn-gold" onclick="saveArabDurum()">Güncelle</button>
+  </div>
+</div></div>
+
+
+<div id="notif"></div>
+
+
+<!-- ===== DANIŞMANLIK MODAL ===== -->
+<div class="modal-overlay" id="dan-modal">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-header"><div class="modal-title" id="dan-modal-title">Yeni Hizmet</div><button class="modal-close" onclick="closeModal('dan-modal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="dan-id">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Hizmet Türü *</label>
+          <select id="dan-tur">
+            <option>Danışmanlık / Hukuki Görüş</option>
+            <option>İhtarname / Protesto</option>
+            <option>Sözleşme Hazırlama</option>
+            <option>Sözleşme İnceleme</option>
+            <option>İdari Başvuru</option>
+            <option>Diğer</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Müvekkil *</label>
+          <select id="dan-muv"></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Konu / Başlık *</label>
+        <input type="text" id="dan-konu" placeholder="Hizmetin konusu">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Durum</label>
+          <select id="dan-durum">
+            <option>Taslak</option>
+            <option>Devam Ediyor</option>
+            <option>Müvekkil Onayında</option>
+            <option>Gönderildi</option>
+            <option>Tamamlandı</option>
+            <option>İptal</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Başlangıç Tarihi</label>
+          <input type="date" id="dan-tarih">
+        </div>
+        <div class="form-group">
+          <label>Teslim / Bitiş Tarihi</label>
+          <input type="date" id="dan-teslim">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Kararlaştırılan Ücret (₺)</label>
+          <input type="number" id="dan-ucret" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>Tahsil Edilen (₺)</label>
+          <input type="number" id="dan-tahsil" placeholder="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Açıklama / Not</label>
+        <textarea id="dan-aciklama" rows="3" placeholder="Detaylar, özel notlar..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Takvime Ekle</label>
+        <div style="display:flex;align-items:center;gap:10px">
+          <input type="checkbox" id="dan-takvim-ekle" onchange="toggleDanTakvim(this)">
+          <span style="font-size:12px;color:var(--text-muted)">Teslim tarihi için hatırlatıcı oluştur</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('dan-modal')">İptal</button>
+      <button class="btn btn-gold" onclick="saveDan()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== DANIŞMANLIK DETAY MODAL ===== -->
+<div class="modal-overlay" id="dan-detay-modal">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-header"><div class="modal-title" id="dan-detay-title">Hizmet Detayı</div><button class="modal-close" onclick="closeModal('dan-detay-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="tabs" style="margin-bottom:16px">
+        <div class="tab active" onclick="danDetayTab('bilgi',this)">📋 Bilgi</div>
+        <div class="tab" onclick="danDetayTab('evraklar',this)">📄 Evraklar</div>
+        <div class="tab" onclick="danDetayTab('notlar',this)">📝 Notlar</div>
+      </div>
+      <div class="tab-panel active" id="ddt-bilgi"><div id="ddt-bilgi-content"></div></div>
+      <div class="tab-panel" id="ddt-evraklar"><div id="ddt-evraklar-content"></div></div>
+      <div class="tab-panel" id="ddt-notlar"><div id="ddt-notlar-content"></div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('dan-detay-modal')">Kapat</button>
+      <button class="btn btn-outline" onclick="editDanFromDetay()">✏ Düzenle</button>
+      <button class="btn btn-red" onclick="deleteDanFromDetay()">🗑 Sil</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /#app-wrapper -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/modules/supabase-client.js"></script>
+<!-- ===== MODÜLLER ===== -->
+<script src="js/modules/globals.js"></script>
+<script src="js/modules/state.js"></script>
+<script src="js/modules/plan.js"></script>
+<script src="js/modules/utils.js"></script>
+<script src="js/modules/ui.js"></script>
+<script src="js/modules/rehber.js"></script>
+<script src="js/modules/davalar.js"></script>
+<script src="js/modules/icra.js"></script>
+<script src="js/modules/finans.js"></script>
+<script src="js/modules/uyap.js"></script>
+<script src="js/modules/takvim.js"></script>
+<script src="js/modules/dashboard.js"></script>
+<script src="js/modules/danismanlik.js"></script>
+<script src="js/modules/app.js"></script>
+<script src="js/modules/personel.js"></script>
+<script src="js/modules/arabuluculuk.js"></script>
+<script src="js/modules/ayarlar.js"></script>
+<script src="js/modules/admin.js"></script>
+<script src="js/modules/auth.js"></script>
+<script src="js/modules/login.js"></script>
+<script src="js/modules/ihtarname.js"></script>
+<script src="js/modules/todo.js"></script>
+<script src="js/modules/yedekleme.js"></script>
+
+<!-- SPOTLIGHT ARAMA -->
+<div id="spotlight-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:99999;align-items:flex-start;justify-content:center;padding-top:15vh">
+  <div style="width:100%;max-width:600px;background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 40px 100px rgba(0,0,0,.6)">
+    <div style="display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border)">
+      <span style="font-size:18px">🔍</span>
+      <input id="spotlight-input" placeholder="Müvekkil, dosya no, ihtarname ara..." 
+        style="flex:1;background:none;border:none;outline:none;font-size:16px;color:var(--text);font-family:'DM Sans',sans-serif"
+        oninput="spotlightAra(this.value)">
+      <kbd style="font-size:10px;color:var(--text-muted);background:var(--surface2);padding:3px 7px;border-radius:4px;border:1px solid var(--border)">ESC</kbd>
+    </div>
+    <div id="spotlight-sonuclar" style="max-height:400px;overflow-y:auto;padding:8px"></div>
+  </div>
+</div>
+
+<!-- İHTARNAME MODAL -->
+<div class="modal-overlay" id="ihtar-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title" id="ihtar-modal-title">Yeni İhtarname / Protesto</div>
+      <button class="modal-close" onclick="closeModal('ihtar-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="ihtar-id">
+      <div class="form-row">
+        <div class="form-group"><label>Yön</label>
+          <select id="ihtar-yon">
+            <option value="Giden">📤 Giden (Gönderilen)</option>
+            <option value="Gelen">📥 Gelen (Alınan)</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Tür</label>
+          <select id="ihtar-tur">
+            <option>İhtarname</option><option>Protesto</option><option>İhbar</option><option>Diğer</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>İhtarname No <span style="font-size:10px;color:var(--gold)">● Otomatik</span></label>
+          <input id="ihtar-no" placeholder="IHT-2026-001">
+        </div>
+        <div class="form-group"><label>Müvekkil *</label>
+          <select id="ihtar-muv"></select>
+        </div>
+      </div>
+      <div class="form-group"><label>Karşı Taraf Adı / Unvanı</label>
+        <input id="ihtar-karsi-taraf" placeholder="Karşı taraf adını yazın">
+      </div>
+      <div class="form-group"><label>Konu *</label>
+        <textarea id="ihtar-konu" rows="3" placeholder="İhtarname konusunu açıklayın..."></textarea>
+      </div>
+      <div class="form-section-label">Noterlik Bilgileri</div>
+      <div class="form-row">
+        <div class="form-group"><label>Noterlik Adı</label>
+          <input id="ihtar-noterlik" placeholder="İstanbul 1. Noterliği">
+        </div>
+        <div class="form-group"><label>Yevmiye No</label>
+          <input id="ihtar-yevmiye" placeholder="12345">
+        </div>
+      </div>
+      <div class="form-group"><label>Düzenleme Tarihi</label>
+        <input type="date" id="ihtar-tarih">
+      </div>
+      <div class="form-section-label">Tebliğ Bilgileri</div>
+      <div class="form-row">
+        <div class="form-group"><label>Tebliğ Durumu</label>
+          <select id="ihtar-teblig-durum">
+            <option value="Bekliyor">⏳ Bekliyor</option>
+            <option value="Tebliğ Edildi">✅ Tebliğ Edildi</option>
+            <option value="Bila">❌ Bila (Tebliğ Edilemedi)</option>
+            <option value="Posta">📮 Posta ile Gönderildi</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Tebliğ Tarihi</label>
+          <input type="date" id="ihtar-teblig-tarih">
+        </div>
+      </div>
+      <div class="form-section-label">İlgili Dosya (Opsiyonel)</div>
+      <div class="form-row">
+        <div class="form-group"><label>Dosya Türü</label>
+          <select id="ihtar-ilgili-tur" onchange="ihtarDosyaDoldur(this.value)">
+            <option value="">— Seçin —</option>
+            <option value="dava">📁 Dava</option>
+            <option value="icra">⚡ İcra</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Dosya</label>
+          <select id="ihtar-ilgili-dosya-id">
+            <option value="">— Önce tür seçin —</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label>İçindekiler / Talepler</label>
+        <textarea id="ihtar-icindekiler" rows="4" placeholder="İhtarname içeriği veya talepler..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('ihtar-modal')">İptal</button>
+      <button class="btn btn-gold" onclick="saveIhtar()">💾 Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- TODO MODAL -->
+<div class="modal-overlay" id="todo-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="todo-modal-title">Yeni Görev</div>
+      <button class="modal-close" onclick="closeModal('todo-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="todo-id">
+      <div class="form-group"><label>Başlık *</label>
+        <input id="todo-baslik" placeholder="Görev başlığı">
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Öncelik</label>
+          <select id="todo-oncelik">
+            <option value="Orta">🟡 Orta</option>
+            <option value="Yüksek">🔴 Yüksek</option>
+            <option value="Düşük">🟢 Düşük</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Son Tarih</label>
+          <input type="date" id="todo-son-tarih">
+        </div>
+      </div>
+      <div class="form-group"><label>Atanan Kişi</label>
+        <select id="todo-atanan">
+          <option value="">— Kendim (atanmamış) —</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>İlgili Dosya Türü</label>
+          <select id="todo-dosya-tur" onchange="todoDosyaDoldur(this.value)">
+            <option value="">— Yok —</option>
+            <option value="dava">📁 Dava</option>
+            <option value="icra">⚡ İcra</option>
+            <option value="arabuluculuk">🤝 Arabuluculuk</option>
+            <option value="danismanlik">⚖️ Danışmanlık</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Dosya</label>
+          <select id="todo-dosya-id">
+            <option value="">— Seçin —</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label>Müvekkil</label>
+        <select id="todo-muv-id">
+          <option value="">— Opsiyonel —</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Açıklama</label>
+        <textarea id="todo-aciklama" rows="3" placeholder="Görev detayları..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('todo-modal')">İptal</button>
+      <button class="btn btn-gold" onclick="saveTodo()">💾 Kaydet</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
