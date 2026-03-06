@@ -98,12 +98,14 @@ async function sbVeriYukle() {
     });
 
     showYukleniyor(false);
-    uygulamayiBaslat();
+    // Küçük gecikme ile başlat — DOM hazır olsun
+    setTimeout(uygulamayiBaslat, 100);
 
   } catch (e) {
     console.error('Veri yükleme hatası:', e);
     showYukleniyor(false);
     notify('❌ Bağlantı hatası: ' + e.message);
+    setTimeout(uygulamayiBaslat, 100);
   }
 }
 
@@ -210,11 +212,19 @@ function showLanding() {
 }
 
 function uygulamayiBaslat() {
-  document.getElementById('landing-wrapper')?.style.setProperty('display', 'none');
-  document.getElementById('app-wrapper')?.style.setProperty('display', 'flex');
+  // Landing'i gizle
+  const landing = document.getElementById('landing-screen');
+  if (landing) landing.classList.add('hidden');
+  // App'i göster
+  const app = document.getElementById('app-wrapper');
+  if (app) { app.style.display = ''; app.classList.add('visible'); }
   // Kullanıcı adını göster
-  const unEl = document.getElementById('header-user');
+  const unEl = document.getElementById('header-user-ad');
   if (unEl && currentUser) unEl.textContent = currentUser.ad;
+  // Tema ve yetkiler
+  if (typeof temaYukle === 'function') temaYukle();
+  if (typeof yetkiMenuGuncelle === 'function') yetkiMenuGuncelle();
+  if (typeof planBilgisiGuncelle === 'function') planBilgisiGuncelle();
   renderMuvekkillar(); renderDavalar(); renderDavaCards();
   renderIcra(); renderIcraCards(); renderButce(); renderDanismanlik();
   renderDashboard();
