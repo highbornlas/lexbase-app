@@ -122,8 +122,13 @@ async function gmKayit() {
   try {
     await sbKayitOl(email, sifre, ad);
     btn.textContent = 'Kayıt Ol & Başla →'; btn.disabled = false;
-    gmHata('✅ Kayıt başarılı! Giriş yapın.');
-    gmTab('giris');
+    gmKapat();
+    // Başarı bildirimi
+    const bildirim = document.createElement('div');
+    bildirim.style.cssText = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#27ae60;color:#fff;padding:14px 28px;border-radius:10px;font-size:14px;font-weight:600;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,.3);animation:slideIn .3s ease';
+    bildirim.textContent = '✅ Kayıt başarılı! Şimdi giriş yapabilirsiniz.';
+    document.body.appendChild(bildirim);
+    setTimeout(() => bildirim.remove(), 4000);
   } catch(e) {
     btn.textContent = 'Kayıt Ol & Başla →'; btn.disabled = false;
     if (e.message && e.message.includes('already registered')) gmHata('Bu e-posta zaten kayıtlı. Giriş yapın.');

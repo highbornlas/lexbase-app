@@ -38,11 +38,16 @@ async function sbMevcutKullanici() {
   return kul ? { ...kul, authUser: user } : null;
 }
 
-// Auth state değişimini dinle
+// Auth state değişimini dinle — sadece ilk girişte yükle
+let _veriYuklendi = false;
 sb.auth.onAuthStateChange(async (event, session) => {
   if (event === 'SIGNED_IN' && session) {
-    await sbVeriYukle();
+    if (!_veriYuklendi) {
+      _veriYuklendi = true;
+      await sbVeriYukle();
+    }
   } else if (event === 'SIGNED_OUT') {
+    _veriYuklendi = false;
     currentBuroId = null;
     currentUser = null;
     Object.keys(state).forEach(k => { if (Array.isArray(state[k])) state[k] = []; });
