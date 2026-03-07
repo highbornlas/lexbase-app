@@ -172,24 +172,14 @@
     </div>
     <div class="gm-err" id="gm-err"></div>
     <div id="gm-f-giris">
-      <div class="gm-ig"><label>E-posta</label><input type="email" id="gm-email" placeholder="ornek@mail.com" autocomplete="email"></div>
-      <div class="gm-ig"><label>Kullanıcı Adı</label><input id="gm-kadi" placeholder="kullanici_adi" autocomplete="username" style="text-transform:lowercase" onkeydown="if(event.key==='Enter')gmGiris()"></div>
+      <div class="gm-ig"><label>E-posta</label><input type="email" id="gm-email" placeholder="ornek@mail.com" autocomplete="email" onkeydown="if(event.key==='Enter')gmGiris()"></div>
       <div class="gm-ig"><label>Şifre</label><input type="password" id="gm-sifre" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')gmGiris()"></div>
       <button class="gm-submit" onclick="gmGiris()">Giriş Yap</button>
       <div class="gm-forgot"><a onclick="sifreSifirla()">Şifremi unuttum</a></div>
     </div>
     <div id="gm-f-kayit" style="display:none">
-      <div class="gm-row">
-        <div class="gm-ig"><label>Ad Soyad *</label><input id="gm-kad" placeholder="Ad Soyad"></div>
-        <div class="gm-ig"><label>E-posta *</label><input type="email" id="gm-kemail" placeholder="ornek@mail.com"></div>
-      </div>
-      <div class="gm-row">
-        <div class="gm-ig">
-          <label>Kullanıcı Adı * <span style="font-size:10px;color:var(--text-muted)" id="gm-kadi-durum"></span></label>
-          <input id="gm-kayit-kadi" placeholder="kullanici_adi" oninput="kullaniciAdiKontrol(this.value,'gm-kadi-durum')" autocomplete="username" style="text-transform:lowercase">
-        </div>
-        <div class="gm-ig"><label>Büro Adı *</label><input id="gm-kburo" placeholder="Hukuk Bürosu Adı"></div>
-      </div>
+      <div class="gm-ig"><label>Ad Soyad *</label><input id="gm-kad" placeholder="Ad Soyad"></div>
+      <div class="gm-ig"><label>E-posta *</label><input type="email" id="gm-kemail" placeholder="ornek@mail.com" autocomplete="email"></div>
       <div class="gm-row">
         <div class="gm-ig"><label>Şifre *</label><input type="password" id="gm-ksifre" placeholder="En az 6 karakter" autocomplete="new-password"></div>
         <div class="gm-ig"><label>Şifre Tekrar *</label><input type="password" id="gm-ksifre2" placeholder="••••••••" autocomplete="new-password"></div>
@@ -913,33 +903,11 @@
 
     <!-- GİRİŞ HESABI -->
     <div id="pmt-tab-hesap" style="display:none">
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:16px">
-        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px">🔑 Sisteme Giriş Hesabı</div>
-        <div style="font-size:12px;color:var(--text-muted)">Personel, <strong>büronuzun e-posta adresi</strong> + kullanıcı adı + şifre ile giriş yapacak.</div>
+      <div style="background:var(--gold-dim);border:1px solid var(--gold);border-radius:var(--radius);padding:14px;margin-bottom:16px">
+        <div style="font-size:13px;font-weight:600;color:var(--gold);margin-bottom:6px">✉️ Davet E-postası</div>
+        <div style="font-size:12px;color:var(--text-muted)">Personelin <strong>e-posta adresine</strong> davet linki gönderilecek. Personel linke tıklayarak kendi şifresini belirleyecek.</div>
       </div>
       <div id="hesap-mevcut-bilgi" style="display:none;background:var(--green-dim);border:1px solid var(--green);border-radius:var(--radius);padding:12px;margin-bottom:14px;font-size:12px;color:var(--green)"></div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Kullanıcı Adı * <span id="p-kadi-durum" style="font-size:10px;margin-left:4px"></span></label>
-          <input id="p-hesap-kadi" placeholder="ornek: ayse_hukuk" autocomplete="off"
-            style="text-transform:lowercase"
-            oninput="kullaniciAdiKontrol(this.value,'p-kadi-durum')">
-          <div style="font-size:10px;color:var(--text-muted);margin-top:2px">Yalnızca İngilizce harf, rakam ve _ (3-20 karakter)</div>
-        </div>
-        <div class="form-group"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label id="p-sifre-label">Şifre *</label>
-          <input type="password" id="p-hesap-sifre" placeholder="En az 6 karakter" oninput="sifreGucGoster(this.value)">
-          <div id="sifre-guc-bar2" style="display:none;margin-top:6px">
-            <div class="sifre-guc" id="sifre-guc-fill2"></div>
-            <div style="font-size:10px;color:var(--text-muted);margin-top:3px" id="sifre-guc-lbl2"></div>
-          </div>
-        </div>
-        <div class="form-group"><label>Şifre Tekrar *</label><input type="password" id="p-hesap-sifre2" placeholder="••••••••"></div>
-      </div>
-      <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Şifre alanlarını boş bırakırsanız mevcut şifre değişmez.</div>
     </div>
 
     <div class="modal-footer">
