@@ -35,20 +35,43 @@ async function sbKayitOl(email, sifre, ad, kullaniciAdi) {
 // 2. Personel: buroEmail + kullaniciAdi + sifre (internal email ile)
 // 3. Fallback: sadece email + sifre (eski kayıtlar için)
 async function sbGirisYap(email, kullaniciAdi, sifre) {
-  // kullaniciAdi varsa tablo üzerinden gerçek auth emailini bul
+  // 1. Önce tablo üzerinden kullanıcı adı + buro_email ile bul
   if (kullaniciAdi) {
-    const { data: kul, error: kulErr } = await sb.from('kullanicilar')
-      .select('auth_email, email')
-      .eq('buro_email', email)
+    const { data: kul } = await sb.from('kullanicilar')
+      .select('auth_email, kullanici_adi, buro_email')
       .eq('kullanici_adi', kullaniciAdi.toLowerCase())
-      .single();
-    if (kulErr || !kul) throw new Error('Kullanıcı adı veya e-posta hatalı.');
-    // auth_email: personel için internal fake email, sahip için gerçek email
-    const authEmail = kul.auth_email || email;
-    const { data, error } = await sb.auth.signInWithPassword({ email: authEmail, password: sifre });
-    if (error) throw error;
-    return data;
+      .maybeSingle();
+
+    if (kul) {
+      // Kullanıcı adı bulundu — auth_email veya buro_email ile gir
+      const authEmail = kul.auth_email || kul.buro_email || email;
+      const { data, error } = await sb.auth.signInWithPassword({ email: authEmail, password: sifre });
+      if (!error) return data;
+      // auth_email yanlışsa email ile de dene
+      const { data: data2, error: err2 } = await sb.auth.signInWithPassword({ email, password: sifre });
+      if (!err2) return data2;
+      throw new Error('Şifre hatalı.');
+    }
+
+    // Kullanıcı adı tabloda yok — buro_email + kullanici_adi eksik olabilir (eski kayıt)
+    // Direkt email + şifre ile dene
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: sifre });
+    if (!error) {
+      // Giriş başarılı — bu kullanıcının tablosunu güncelle (eksik alanları doldur)
+      setTimeout(async () => {
+        const { data: { user } } = await sb.auth.getUser();
+        if (user) {
+          await sb.from('kullanicilar')
+            .update({ kullanici_adi: kullaniciAdi.toLowerCase(), buro_email: email, auth_email: email })
+            .eq('auth_id', user.id)
+            .is('kullanici_adi', null); // sadece boşsa güncelle
+        }
+      }, 1000);
+      return data;
+    }
+    throw new Error('E-posta, kullanıcı adı veya şifre hatalı.');
   }
+
   // Fallback: direkt email ile giriş
   const { data, error } = await sb.auth.signInWithPassword({ email, password: sifre });
   if (error) throw error;
