@@ -101,6 +101,29 @@ function saveKarsiTaraf(){
     return;
   }
   if(!state.karsiTaraflar)state.karsiTaraflar=[];
+  // ── 1. Mükerrer kayıt kontrolü ──
+  if (typeof MukerrerKontrol !== 'undefined') {
+    const mukKontrol = MukerrerKontrol.kisiKontrol(d, state.karsiTaraflar);
+    if (mukKontrol.length > 0) {
+      MukerrerKontrol.uyariGoster('karsiTaraf', d.ad, mukKontrol, function() { _saveKtMenfaatKontrol(d); });
+      return;
+    }
+  }
+  _saveKtMenfaatKontrol(d);
+}
+function _saveKtMenfaatKontrol(d) {
+  // ── 2. Menfaat çakışması kontrolü ──
+  if (typeof MenfaatKontrol !== 'undefined') {
+    const cakismalar = MenfaatKontrol.kontrolEt(d, 'karsiTaraf');
+    if (cakismalar.length > 0) {
+      MenfaatKontrol.uyariGoster(d.ad, cakismalar, function() { _saveKtDevam(d); });
+      return;
+    }
+  }
+  _saveKtDevam(d);
+}
+function _saveKtDevam(d) {
+  if(!state.karsiTaraflar)state.karsiTaraflar=[];
   const kt={id:uid(),sira:nextSira('karsiTaraflar'),...d};
   state.karsiTaraflar.push(kt);
   saveData();
@@ -158,7 +181,9 @@ function vekYeniAc(araId,listeId,hiddenId,gosterId){
   _vekCtx={araId,listeId,hiddenId,gosterId};
   const q=document.getElementById(araId).value.trim();
   document.getElementById('vek-ad').value=q;
-  ['vek-baro','vek-sicil','vek-tel','vek-mail','vek-uets','vek-banka','vek-acik'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});
+  ['vek-baro','vek-sicil','vek-tel','vek-mail','vek-uets','vek-acik'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});
+  vekBankalar = [];
+  renderVekBankalar();
   document.getElementById('vek-modal-title').textContent='Karşı Taraf Vekili Ekle';
   document.getElementById('vek-modal-btn').textContent='Kaydet & Seç';
   document.getElementById('vek-modal-btn').onclick=saveVekil;
@@ -170,13 +195,7 @@ function saveVekil(){
   if(!zorunluKontrol([{id:'vek-ad', deger:ad, label:'Ad Soyad'}])) {
     notify('⚠️ Zorunlu alanları doldurun.');return;
   }
-  // IBAN doğrulama
-  if (!numaralariDogrula([
-    { id:'vek-banka', tip:'iban' },
-  ])) {
-    notify('⚠️ IBAN formatı hatalı, lütfen kontrol edin.');
-    return;
-  }
+  // Banka IBAN doğrulaması — dinamik widget'taki blur eventleri halleder
   if(!state.vekillar)state.vekillar=[];
   const v={
     id:uid(),sira:nextSira('vekillar'),ad,
@@ -186,13 +205,12 @@ function saveVekil(){
     tel:document.getElementById('vek-tel').value.trim(),
     mail:document.getElementById('vek-mail').value.trim(),
     uets:document.getElementById('vek-uets').value.trim(),
-    bankaAd:(document.getElementById('vek-banka-ad')||{}).value?.trim()||'',
-    banka:document.getElementById('vek-banka').value.trim(),
-    hesapAd:(document.getElementById('vek-hesap-ad')||{}).value?.trim()||'',
-    sube:(document.getElementById('vek-sube')||{}).value?.trim()||'',
+    bankalar: vekBankalar.filter(b => b.banka || b.iban),
+    banka: vekBankalar.length > 0 ? vekBankalar[0].iban || '' : '',
     aciklama:document.getElementById('vek-acik').value.trim()
   };
   state.vekillar.push(v);
+  vekBankalar = [];
   saveData();
   if(currentBuroId) saveToSupabase('vekillar', v);
   closeModal('vek-modal');
@@ -979,3 +997,110 @@ window.addEventListener('resize', function() {
 function openMuvModal() {
   openModal('m-modal');
 }
+
+// ================================================================
+// VEKİL BANKA HESABI — DİNAMİK WİDGET
+// Müvekkil banka widget'ı ile aynı yapı
+// ================================================================
+var vekBankalar = [];
+
+function vekBankaEkle(data) {
+  vekBankalar.push(data || { banka: '', sube: '', iban: '', hesapNo: '', hesapAd: '' });
+  renderVekBankalar();
+}
+
+function vekBankaKaldir(idx) {
+  vekBankalar.splice(idx, 1);
+  renderVekBankalar();
+}
+
+function renderVekBankalar() {
+  const el = document.getElementById('vek-banka-list');
+  if (!el) return;
+  if (!vekBankalar.length) { el.innerHTML = ''; return; }
+  el.innerHTML = vekBankalar.map((b, i) => `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;position:relative">
+      <button type="button" onclick="vekBankaKaldir(${i})" style="position:absolute;top:8px;right:10px;background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:15px" title="Kaldır">✕</button>
+      <div style="font-size:10px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;font-weight:700">Banka Hesabı ${i + 1}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div><label style="font-size:10px;color:var(--text-muted)">Banka</label><input value="${b.banka || ''}" oninput="vekBankalar[${i}].banka=this.value" placeholder="Banka Adı" style="width:100%;margin-top:2px"></div>
+        <div><label style="font-size:10px;color:var(--text-muted)">Şube</label><input value="${b.sube || ''}" oninput="vekBankalar[${i}].sube=this.value" placeholder="Şube Adı / No" style="width:100%;margin-top:2px"></div>
+        <div style="grid-column:1/-1"><label style="font-size:10px;color:var(--text-muted)">IBAN</label><input value="${b.iban || ''}" oninput="vekBankalar[${i}].iban=this.value" placeholder="TR00 0000 0000 0000 0000 0000 00" style="width:100%;margin-top:2px;font-family:monospace;letter-spacing:1px"></div>
+        <div><label style="font-size:10px;color:var(--text-muted)">Hesap Adı</label><input value="${b.hesapAd || ''}" oninput="vekBankalar[${i}].hesapAd=this.value" placeholder="Hesap sahibi adı" style="width:100%;margin-top:2px"></div>
+        <div><label style="font-size:10px;color:var(--text-muted)">Hesap No</label><input value="${b.hesapNo || ''}" oninput="vekBankalar[${i}].hesapNo=this.value" placeholder="Hesap numarası" style="width:100%;margin-top:2px"></div>
+      </div>
+    </div>`).join('');
+}
+
+// ================================================================
+// GÖRÜNÜM TOGGLE — Liste / Kanban
+// ================================================================
+function davGorunumDegis(mod) {
+  const liste = document.getElementById('dav-grouped');
+  const kanban = document.getElementById('kanban-davalar');
+  const empty = document.getElementById('dav-empty');
+  const btnL = document.getElementById('dav-view-liste');
+  const btnK = document.getElementById('dav-view-kanban');
+  if (mod === 'kanban') {
+    if(liste) liste.style.display = 'none';
+    if(empty) empty.style.display = 'none';
+    if(kanban) kanban.style.display = 'flex';
+    if(btnL) { btnL.style.background = 'var(--surface2)'; btnL.style.color = 'var(--text-muted)'; }
+    if(btnK) { btnK.style.background = 'var(--gold)'; btnK.style.color = '#000'; }
+    Kanban.renderDavaKanban();
+  } else {
+    if(liste) liste.style.display = '';
+    if(kanban) kanban.style.display = 'none';
+    if(btnL) { btnL.style.background = 'var(--gold)'; btnL.style.color = '#000'; }
+    if(btnK) { btnK.style.background = 'var(--surface2)'; btnK.style.color = 'var(--text-muted)'; }
+    renderDavalar();
+  }
+}
+
+function todoGorunumDegis(mod) {
+  const liste = document.getElementById('todo-liste');
+  const kanban = document.getElementById('kanban-gorevler');
+  const empty = document.getElementById('todo-empty');
+  const btnL = document.getElementById('todo-view-liste');
+  const btnK = document.getElementById('todo-view-kanban');
+  if (mod === 'kanban') {
+    if(liste) liste.style.display = 'none';
+    if(empty) empty.style.display = 'none';
+    if(kanban) kanban.style.display = 'flex';
+    if(btnL) { btnL.style.background = 'var(--surface2)'; btnL.style.color = 'var(--text-muted)'; }
+    if(btnK) { btnK.style.background = 'var(--gold)'; btnK.style.color = '#000'; }
+    Kanban.renderGorevKanban();
+  } else {
+    if(liste) liste.style.display = '';
+    if(kanban) kanban.style.display = 'none';
+    if(btnL) { btnL.style.background = 'var(--gold)'; btnL.style.color = '#000'; }
+    if(btnK) { btnK.style.background = 'var(--surface2)'; btnK.style.color = 'var(--text-muted)'; }
+    renderTodo();
+  }
+}
+
+// ================================================================
+// WIZARD BAŞLATMA — Dava Modalı
+// ================================================================
+document.addEventListener('DOMContentLoaded', function() {
+  if (typeof Wizard === 'undefined') return;
+
+  // Dava wizard
+  Wizard.olustur('dav-modal', {
+    adimlar: [
+      { baslik: 'Taraf Bilgileri', panelId: 'dav-wiz-1',
+        dogrula: function() {
+          const konu = document.getElementById('d-konu')?.value.trim();
+          const muv = document.getElementById('d-muv')?.value;
+          if (!konu) { notify('⚠️ Dava konusu zorunludur'); return false; }
+          if (!muv) { notify('⚠️ Müvekkil seçmelisiniz'); return false; }
+          return true;
+        }
+      },
+      { baslik: 'Mahkeme & Esas', panelId: 'dav-wiz-2' },
+      { baslik: 'Tarih & Diğer', panelId: 'dav-wiz-3' },
+    ],
+    bitirFn: function() { saveDava(); }
+  });
+  Wizard.render('dav-modal');
+});

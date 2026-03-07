@@ -2840,3 +2840,239 @@ body > .modal-overlay.open {
 body > .modal-overlay.open ~ .modal-overlay.open {
   z-index: 10010 !important;
 }
+
+/* ================================================================
+   1. STICKY TABLE HEADERS
+   ================================================================ */
+table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--surface);
+  box-shadow: 0 1px 0 var(--border);
+}
+.section-body table thead th {
+  background: var(--surface);
+}
+
+/* ================================================================
+   CONTEXT MENU (⋮ Üç Nokta Menüsü)
+   ================================================================ */
+.ctx-btn {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--radius);
+  line-height: 1;
+  transition: all .15s;
+}
+.ctx-btn:hover {
+  background: var(--surface2);
+  border-color: var(--border);
+  color: var(--text);
+}
+.ctx-menu {
+  display: none;
+  position: fixed;
+  z-index: 99999;
+  min-width: 170px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.5);
+  padding: 4px 0;
+  animation: ctxIn .12s ease;
+}
+.ctx-menu.open { display: block; }
+@keyframes ctxIn {
+  from { opacity: 0; transform: scale(.95) translateY(-4px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.ctx-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  transition: background .1s;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+.ctx-item:hover { background: var(--surface2); }
+.ctx-item.danger { color: #e74c3c; }
+.ctx-item.danger:hover { background: rgba(231,76,60,.08); }
+.ctx-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+/* ================================================================
+   2. WIZARD (ADIMLI FORM)
+   ================================================================ */
+.wizard-progress {
+  display: flex;
+  margin-bottom: 20px;
+  gap: 0;
+  position: relative;
+}
+.wizard-step-indicator {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+.wizard-step-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--surface2);
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  transition: all .3s;
+}
+.wizard-step-indicator.active .wizard-step-dot {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #000;
+}
+.wizard-step-indicator.done .wizard-step-dot {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+.wizard-step-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 6px;
+  text-align: center;
+  font-weight: 600;
+}
+.wizard-step-indicator.active .wizard-step-label { color: var(--gold); }
+.wizard-step-indicator.done .wizard-step-label { color: var(--green); }
+.wizard-line {
+  position: absolute;
+  top: 15px;
+  left: 16%;
+  right: 16%;
+  height: 2px;
+  background: var(--border);
+  z-index: 0;
+}
+.wizard-body { min-height: 200px; }
+.wizard-panel { display: none; }
+.wizard-panel.active { display: block; animation: wizIn .25s ease; }
+@keyframes wizIn {
+  from { opacity: 0; transform: translateX(12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.wizard-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  margin-top: 14px;
+}
+
+/* ================================================================
+   3. KANBAN BOARD
+   ================================================================ */
+.kanban-container {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 4px 0 12px 0;
+  min-height: 400px;
+  align-items: flex-start;
+}
+.kanban-col {
+  flex: 0 0 260px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  max-height: 70vh;
+}
+.kanban-col-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.kanban-col-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+}
+.kanban-col-count {
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1px 8px;
+  color: var(--text-muted);
+}
+.kanban-col-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  min-height: 60px;
+}
+.kanban-col-body.drag-over {
+  background: rgba(201,168,76,.06);
+  border: 2px dashed var(--gold);
+  border-radius: 8px;
+}
+.kanban-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  cursor: grab;
+  transition: box-shadow .15s, transform .15s;
+}
+.kanban-card:active { cursor: grabbing; }
+.kanban-card.dragging {
+  opacity: 0.5;
+  transform: rotate(2deg);
+  box-shadow: 0 8px 24px rgba(0,0,0,.3);
+}
+.kanban-card-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.kanban-card-meta {
+  font-size: 10px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.kanban-card-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-top: 4px;
+}

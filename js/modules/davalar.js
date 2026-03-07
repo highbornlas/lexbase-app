@@ -33,6 +33,17 @@ function saveDava(){
     not:document.getElementById('d-not').value.trim(),
     evraklar:[],notlar:[],harcamalar:[],anlasma:{}
   };
+  // ── Mükerrer dava kontrolü ──
+  if (typeof MukerrerKontrol !== 'undefined') {
+    const mukKontrol = MukerrerKontrol.davaKontrol(yeniDava);
+    if (mukKontrol.length > 0) {
+      MukerrerKontrol.uyariGoster('dava', yeniDava.no + ' — ' + yeniDava.konu, mukKontrol, function() { _saveDavaDevam(yeniDava); });
+      return;
+    }
+  }
+  _saveDavaDevam(yeniDava);
+}
+function _saveDavaDevam(yeniDava) {
   state.davalar.push(yeniDava);
   ['d-no','d-konu','d-mno','d-esas-yil','d-esas-no','d-karar-yil','d-karar-no','d-hakim','d-derdest','d-icrano','d-deger','d-not','d-durusma','d-ktarih','d-kesin','d-muv','d-muv-ara'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});
   const muvGoster=document.getElementById('d-muv-secili');if(muvGoster){muvGoster.style.display='none';muvGoster.innerHTML='';}; document.getElementById('d-il').value=''; document.getElementById('d-adliye').innerHTML='<option value="">— Önce il seçin —</option>';
@@ -88,7 +99,7 @@ function renderDavalar(search='',fk='',fa='',fd=''){
         <td><span class="badge badge-${bc}">${d.durum}</span></td>
         <td>${d.taraf||'—'}</td><td>${fmtD(d.durusma)}</td>
         <td>${d.icrano?`<span style="color:var(--gold);font-size:11px">⚡ ${d.icrano}</span>`:'—'}</td>
-        <td><button class="delete-btn" onclick="event.stopPropagation();deleteDavaById('${d.id}')">✕</button></td>
+        <td><button class="ctx-btn" onclick="event.stopPropagation();CtxMenu.davaMenu(event,'${d.id}')">⋮</button></td>
       </tr>`;
     }).join('');
     return`<div class="section" style="margin-bottom:14px"><div class="section-header" style="border-left:3px solid ${renk}">

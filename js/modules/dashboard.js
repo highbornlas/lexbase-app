@@ -114,6 +114,8 @@ function renderDashboard(){
   const da=document.getElementById('dash-alacaklar');
   if(!al.length)da.innerHTML='<div class="empty"><div class="empty-icon">💸</div><p>Bekleyen alacak yok</p></div>';
   else da.innerHTML=al.map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)"><div><div style="font-size:12px;font-weight:600">${getMuvAd(a.muvId)}</div><div style="font-size:10px;color:var(--text-muted)">${a.tur} · ${fmtD(a.tarih)}</div></div><span style="color:#e74c3c;font-weight:700;font-size:12px">${fmt(a.tutar)}</span></div>`).join('');
+  // Menfaat çakışması özeti
+  if (typeof renderDashMenfaat === 'function') renderDashMenfaat();
 }
 
 // ================================================================
@@ -236,4 +238,53 @@ function saveDan() {
   if (document.getElementById('mt-danismanlik').classList.contains('active')) renderMdDanismanlik();
   updateBadges();
   notify('✓ Hizmet kaydedildi');
+}
+
+// ================================================================
+// DASHBOARD — MENFAAT ÇAKIŞMASI ÖZETİ
+// ================================================================
+function renderDashMenfaat() {
+  const el = document.getElementById('dash-menfaat');
+  if (!el || typeof MenfaatKontrol === 'undefined') return;
+
+  const cakismalar = MenfaatKontrol.tumSistemiTara();
+  const kesinSayi = cakismalar.filter(c => c.kesin).length;
+  const olasiSayi = cakismalar.length - kesinSayi;
+
+  if (!cakismalar.length) {
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 0">
+        <div style="font-size:28px">✅</div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--green)">Temiz</div>
+          <div style="font-size:11px;color:var(--text-muted)">Menfaat çakışması tespit edilmedi</div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;padding:8px 0;cursor:pointer" onclick="MenfaatKontrol.raporGoster()">
+      <div style="font-size:28px">${kesinSayi > 0 ? '🚫' : '⚠️'}</div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700;color:${kesinSayi > 0 ? 'var(--red)' : '#e67e22'}">
+          ${cakismalar.length} Çakışma Tespit Edildi
+        </div>
+        <div style="font-size:11px;color:var(--text-muted)">
+          ${kesinSayi > 0 ? kesinSayi + ' kesin · ' : ''}${olasiSayi > 0 ? olasiSayi + ' olası' : ''}
+           — Detay için tıklayın
+        </div>
+      </div>
+      <span style="color:var(--text-muted);font-size:18px">→</span>
+    </div>
+    ${cakismalar.slice(0, 3).map(c => `
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border);font-size:11px">
+        <span style="color:${c.kesin ? 'var(--red)' : '#e67e22'}">${c.kesin ? '🚫' : '⚠️'}</span>
+        <span style="color:var(--text);font-weight:600">${escHTML(c.muvekkil.ad)}</span>
+        <span style="color:var(--text-dim)">⚔️</span>
+        <span style="color:var(--text);font-weight:600">${escHTML(c.karsiTaraf.ad)}</span>
+        <span style="margin-left:auto;font-size:10px;color:var(--text-dim)">%${c.skor}</span>
+      </div>
+    `).join('')}
+    ${cakismalar.length > 3 ? `<div style="font-size:10px;color:var(--text-muted);text-align:center;padding:6px 0;border-top:1px solid var(--border)">+${cakismalar.length - 3} daha...</div>` : ''}`;
 }

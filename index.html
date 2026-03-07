@@ -851,6 +851,17 @@
     <div class="section" style="border:1px solid rgba(201,168,76,.3);background:rgba(201,168,76,.03)"><div class="section-header"><div class="section-title">⚠️ Yaklaşan İşler <span style="font-size:11px;color:var(--text-muted);font-weight:400">(30 gün)</span></div></div><div class="section-body" style="padding:12px"><div id="dash-sureler"></div></div></div>
     <div class="section"><div class="section-header"><div class="section-title">📅 Yaklaşan Etkinlikler</div></div><div class="section-body" style="padding:12px"><div id="dash-etkinlikler"></div></div></div>
     <div class="section"><div class="section-header"><div class="section-title">💸 Bekleyen Alacaklar</div></div><div class="section-body" style="padding:12px"><div id="dash-alacaklar"></div></div></div>
+  </div>
+  <!-- Menfaat Çakışması Hızlı Kontrol -->
+  <div class="section" style="border:1px solid rgba(231,76,60,.2);margin-top:18px">
+    <div class="section-header" style="border-bottom-color:rgba(231,76,60,.2)">
+      <div class="section-title">🔍 Menfaat Çakışması Kontrolü</div>
+      <button class="btn btn-outline btn-sm" onclick="MenfaatKontrol.raporGoster()" style="border-color:var(--red);color:var(--red)">🔍 Tam Tarama Yap</button>
+    </div>
+    <div class="section-body" style="padding:12px">
+      <div id="dash-menfaat"></div>
+    </div>
+  </div>
     <div class="section"><div class="section-header"><div class="section-title">⚖️ Devam Eden Hizmetler</div><a onclick="showPage('danismanlik',document.getElementById('ni-danismanlik'))" style="font-size:11px;color:var(--gold);cursor:pointer">Tümü ›</a></div><div class="section-body" style="padding:12px"><div id="dash-danismanlik"></div></div></div>
   </div>
 </div>
@@ -967,6 +978,11 @@
   <div class="page-sub">Dosyaya tıklayarak detaya girin</div>
   <div class="cards" id="dav-cards"></div>
   <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+    <!-- Görünüm Toggle -->
+    <div style="display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-right:8px">
+      <button id="dav-view-liste" class="btn btn-sm" onclick="davGorunumDegis('liste')" style="border:none;border-radius:0;background:var(--gold);color:#000;font-size:11px;padding:6px 12px">☰ Liste</button>
+      <button id="dav-view-kanban" class="btn btn-sm" onclick="davGorunumDegis('kanban')" style="border:none;border-radius:0;background:var(--surface2);color:var(--text-muted);font-size:11px;padding:6px 12px">▦ Kanban</button>
+    </div>
     <input class="search-bar" placeholder="🔍 Ara..." oninput="filterDavalar()" id="dav-s" style="width:210px">
     <select class="search-bar" style="width:175px" onchange="filterDavalar()" id="dav-fk">
       <option value="">Tüm Mahkeme Türleri</option>
@@ -977,9 +993,10 @@
     </select>
     <select class="search-bar" style="width:145px" onchange="filterDavalar()" id="dav-fa"><option value="">Tüm Aşamalar</option><option>İlk Derece</option><option>İstinaf</option><option>Yargıtay</option><option>Kesinleşti</option><option>Düşürüldü</option></select>
     <select class="search-bar" style="width:130px" onchange="filterDavalar()" id="dav-fd"><option value="">Tüm Durumlar</option><option>Aktif</option><option>Beklemede</option><option>Kapalı</option></select>
-    <button class="btn btn-gold" onclick="openModal('dav-modal');setTimeout(()=>{const e=document.getElementById('d-no');if(e&&!e.value)e.value=autoNo('dava');},50)" style="margin-left:auto">+ Yeni Dava</button>
+    <button class="btn btn-gold" onclick="openModal('dav-modal');setTimeout(()=>{const e=document.getElementById('d-no');if(e&&!e.value)e.value=autoNo('dava');Wizard.sifirla('dav-modal');},50)" style="margin-left:auto">+ Yeni Dava</button>
   </div>
   <div id="dav-grouped"></div>
+  <div id="kanban-davalar" class="kanban-container" style="display:none"></div>
   <div class="empty" id="dav-empty" style="display:none"><div class="empty-icon">📁</div><p>Dava yok</p></div>
 </div>
 
@@ -1110,6 +1127,11 @@
   <div class="page-title">Görev Yöneticisi</div>
   <div class="page-sub">Tüm görevler, atamalar ve takip</div>
   <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+    <!-- Görünüm Toggle -->
+    <div style="display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-right:4px">
+      <button id="todo-view-liste" class="btn btn-sm" onclick="todoGorunumDegis('liste')" style="border:none;border-radius:0;background:var(--gold);color:#000;font-size:11px;padding:6px 12px">☰ Liste</button>
+      <button id="todo-view-kanban" class="btn btn-sm" onclick="todoGorunumDegis('kanban')" style="border:none;border-radius:0;background:var(--surface2);color:var(--text-muted);font-size:11px;padding:6px 12px">▦ Kanban</button>
+    </div>
     <select class="search-bar" style="width:160px" id="todo-fil-durum" onchange="renderTodo()">
       <option value="">Durum — Tümü</option>
       <option value="Bekliyor">Bekliyor</option>
@@ -1129,6 +1151,7 @@
     <button class="btn btn-gold" onclick="openTodoModal()" style="margin-left:auto">+ Yeni Görev</button>
   </div>
   <div id="todo-liste"></div>
+  <div id="kanban-gorevler" class="kanban-container" style="display:none"></div>
   <div class="empty" id="todo-empty" style="display:none"><div class="empty-icon">✅</div><p>Henüz görev eklenmemiş</p></div>
 </div>
 
@@ -2048,148 +2071,151 @@
 </div></div>
 
 <!-- Dava Modal -->
-<div class="modal-overlay" id="dav-modal"><div class="modal modal-lg" style="max-width:680px">
+<div class="modal-overlay" id="dav-modal"><div class="modal modal-lg" style="max-width:700px">
   <div class="modal-header">
     <div class="modal-title" id="dav-modal-title">Dava / Dosya Ekle</div>
+    <span id="dav-modal-wiz-sayac" style="font-size:11px;color:var(--text-muted)"></span>
   </div>
   <div class="modal-body">
-  <div class="form-row">
-  <div class="form-group">
-    <label>Dosya No <span style="font-size:10px;color:var(--gold);margin-left:6px">● Otomatik atanır</span></label>
-    <input id="d-no" placeholder="D-2026-001" readonly style="background:var(--surface2);color:var(--text-muted);cursor:not-allowed;">
-  </div>
-  <div class="form-group">
-    <label>Taraf</label>
-    <select id="d-taraf"><option>Davacı</option><option>Davalı</option><option>Katılan</option><option>Müdahil</option><option>Sanık</option></select>
-  </div>
-</div>
-<div class="form-row">
-  <div class="form-group" style="flex:2">
-    <label>Müvekkil *</label>
-    <div style="position:relative">
-      <input id="d-muv-ara" placeholder="🔍 Müvekkil ara..." autocomplete="off"
-        oninput="muvAra('d-muv-ara','d-muv-liste','d-muv','d-muv-secili')"
-        onfocus="muvAra('d-muv-ara','d-muv-liste','d-muv','d-muv-secili')"
-        style="width:100%">
-      <div id="d-muv-liste" class="kt-dropdown" style="display:none"></div>
-    </div>
-    <input type="hidden" id="d-muv">
-    <div id="d-muv-secili" class="kt-secili" style="display:none"></div>
-  </div>
-</div>
-  <div class="form-group"><label>Dava Konusu *</label><input id="d-konu"></div>
-  <div class="form-section-label">Mahkeme Bilgileri</div>
-  <div class="form-row">
-    <div class="form-group">
-      <label>İl</label>
-      <select id="d-il" onchange="ilSecDava(this.value)"><option value="">— İl seçin —</option></select>
-    </div>
-    <div class="form-group">
-      <label>Adliye</label>
-      <select id="d-adliye"><option value="">— Önce il seçin —</option></select>
-    </div>
-  </div>
-  <div class="form-row">
-    <div class="form-group"><label>Mahkeme Türü</label>
-      <select id="d-mtur">
-        <optgroup label="Hukuk"><option>Asliye Hukuk</option><option>Sulh Hukuk</option><option>Aile</option><option>Asliye Ticaret</option><option>Tüketici</option><option>İş</option><option>Kadastro</option><option>Fikri ve Sınai Haklar Hukuk</option></optgroup>
-        <optgroup label="Ceza"><option>Asliye Ceza</option><option>Sulh Ceza</option><option>Ağır Ceza</option><option>Çocuk</option></optgroup>
-        <optgroup label="İdare"><option>İdare</option><option>Vergi</option><option>Bölge İdare</option></optgroup>
-        <optgroup label="Üst"><option>Bölge Adliye (İstinaf)</option><option>Yargıtay</option><option>Anayasa</option><option>Diğer</option></optgroup>
-      </select>
-    </div>
-    <div class="form-group"><label>Mahkeme No</label><input id="d-mno" placeholder="3. Asliye..."></div>
-  </div>
-  <div class="form-row">
-    <div class="form-group">
-      <label>Esas No<span style="font-size:10px;color:var(--text-muted);margin-left:6px">Mahkeme esas no</span></label>
-      <div style="display:flex;align-items:center;gap:4px">
-        <input id="d-esas-yil" placeholder="2024" maxlength="4" style="width:72px;flex-shrink:0">
-        <span style="color:var(--text-muted);font-weight:bold">/</span>
-        <input id="d-esas-no" placeholder="1234" style="flex:1">
+  <!-- Wizard Progress -->
+  <div id="dav-modal-wiz-progress" class="wizard-progress"></div>
+
+  <!-- ADIM 1: Taraf Bilgileri -->
+  <div id="dav-wiz-1" class="wizard-panel active">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Dosya No <span style="font-size:10px;color:var(--gold);margin-left:6px">● Otomatik atanır</span></label>
+        <input id="d-no" placeholder="D-2026-001" readonly style="background:var(--surface2);color:var(--text-muted);cursor:not-allowed;">
+      </div>
+      <div class="form-group"><label>Taraf</label>
+        <select id="d-taraf"><option>Davacı</option><option>Davalı</option><option>Katılan</option><option>Müdahil</option><option>Sanık</option></select>
       </div>
     </div>
-    <div class="form-group">
-      <label>Karar No (Yıl / Numara)</label>
-      <div style="display:flex;align-items:center;gap:4px">
-        <input id="d-karar-yil" placeholder="2024" maxlength="4" style="width:72px;flex-shrink:0">
-        <span style="color:var(--text-muted);font-weight:bold">/</span>
-        <input id="d-karar-no" placeholder="5678" style="flex:1">
-      </div>
-    </div>
-  </div>
-  <div class="form-row"><div class="form-group"><label>Hâkim</label><input id="d-hakim"></div><div class="form-group"></div></div>
-  <div class="form-section-label">Aşama & Durum</div>
-  <div class="form-row">
-    <div class="form-group"><label>Yargılama Aşaması</label><select id="d-asama"><option>İlk Derece</option><option>İstinaf</option><option>Yargıtay</option><option>Kesinleşti</option><option>Düşürüldü</option></select></div>
-    <div class="form-group"><label>Dava Durumu</label><select id="d-durum"><option value="Aktif">Aktif</option><option value="Devam Ediyor">Devam Ediyor</option><option value="Beklemede">Beklemede</option><option value="Kapandı">Kapandı</option></select></div>
-  </div>
-  <div class="form-row">
-    <div class="form-group"><label>Dosya Durumu / Derdestlik</label>
-      <select id="d-derdest" onchange="derdestDegis(this.value)">
-        <option value="">—</option>
-        <option value="derdest">Derdest (Görülmekte)</option>
-        <option value="karar_temyiz">Karar Verildi – Temyiz Bekliyor</option>
-        <option value="kesinlesti">Kesinleşmiş Karar</option>
-        <option value="dustu">Düşmüş / İptal</option>
-        <option value="feragat">Feragat Edildi</option>
-        <option value="sulh">Sulh / Uzlaşma</option>
-        <option value="beklemede">Beklemede</option>
-        <option value="kapali">Kapalı</option>
-      </select>
-    </div>
-  </div>
-  <div id="d-kesin-wrap" style="display:none" class="form-row">
-    <div class="form-group"><label>Kesinleşme Tarihi <span style="color:var(--red)">*</span></label><input type="date" id="d-kesin-tarih"></div>
-    <div class="form-group"></div>
-  </div>
-  <div class="form-section-label">Tarihler</div>
-  <div class="form-row">
-    <div class="form-group"><label>Açılış <span style="color:var(--red)">*</span></label><input type="date" id="d-tarih" required></div>
-    <div class="form-group"><label>Gelecek Duruşma</label><input type="date" id="d-gelecek-durusma"></div>
-  </div>
-  <div class="form-row">
-    <div class="form-group"><label>Son Duruşma</label><input type="date" id="d-durusma"></div>
-    <div class="form-group"><label>Karar Tarihi</label><input type="date" id="d-ktarih"></div>
-  </div>
-  <div class="form-row"><div class="form-group"><label>Kesinleşme</label><input type="date" id="d-kesin"></div><div class="form-group"></div></div>
-  <div class="form-section-label">Diğer</div>
-  <div class="form-section-label" style="display:flex;justify-content:space-between;align-items:center">
-    <span>Karşı Taraf(lar)</span>
-    <button class="btn btn-sm btn-outline" onclick="davaTarafEkle()" type="button">+ Karşı Taraf Ekle</button>
-  </div>
-  <div id="d-karsi-wrap">
-    <div class="form-row d-karsi-satir" id="d-karsi-satir-0">
+    <div class="form-row">
       <div class="form-group" style="flex:2">
-        <label>Karşı Taraf</label>
+        <label>Müvekkil *</label>
         <div style="position:relative">
-          <input id="d-karsi-ara-0" class="d-karsi-ara" placeholder="Ad ile ara veya yeni ekle..." autocomplete="off"
-            oninput="ktAra(this.id,this.dataset.liste,this.dataset.hidden,this.dataset.goster)"
-            onfocus="ktAra(this.id,this.dataset.liste,this.dataset.hidden,this.dataset.goster)"
-            data-liste="d-karsi-dd-0" data-hidden="d-karsi-id-0" data-goster="d-karsi-g-0">
-          <div id="d-karsi-dd-0" class="kt-dropdown" style="display:none"></div>
+          <input id="d-muv-ara" placeholder="🔍 Müvekkil ara..." autocomplete="off"
+            oninput="muvAra('d-muv-ara','d-muv-liste','d-muv','d-muv-secili')"
+            onfocus="muvAra('d-muv-ara','d-muv-liste','d-muv','d-muv-secili')" style="width:100%">
+          <div id="d-muv-liste" class="kt-dropdown" style="display:none"></div>
         </div>
-        <div id="d-karsi-g-0" class="kt-secili" style="display:none"></div>
-        <input type="hidden" id="d-karsi-id-0">
+        <input type="hidden" id="d-muv">
+        <div id="d-muv-secili" class="kt-secili" style="display:none"></div>
+      </div>
+    </div>
+    <div class="form-group"><label>Dava Konusu *</label><input id="d-konu"></div>
+    <div class="form-group"><label>Dava Değeri (₺)</label><input type="number" id="d-deger"></div>
+  </div>
+
+  <!-- ADIM 2: Mahkeme & Esas -->
+  <div id="dav-wiz-2" class="wizard-panel">
+    <div class="form-section-label">Mahkeme Bilgileri</div>
+    <div class="form-row">
+      <div class="form-group"><label>İl</label>
+        <select id="d-il" onchange="ilSecDava(this.value)"><option value="">— İl seçin —</option></select>
+      </div>
+      <div class="form-group"><label>Adliye</label>
+        <select id="d-adliye"><option value="">— Önce il seçin —</option></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Mahkeme Türü</label>
+        <select id="d-mtur">
+          <optgroup label="Hukuk"><option>Asliye Hukuk</option><option>Sulh Hukuk</option><option>Aile</option><option>Asliye Ticaret</option><option>Tüketici</option><option>İş</option><option>Kadastro</option><option>Fikri ve Sınai Haklar Hukuk</option></optgroup>
+          <optgroup label="Ceza"><option>Asliye Ceza</option><option>Sulh Ceza</option><option>Ağır Ceza</option><option>Çocuk</option></optgroup>
+          <optgroup label="İdare"><option>İdare</option><option>Vergi</option><option>Bölge İdare</option></optgroup>
+          <optgroup label="Üst"><option>Bölge Adliye (İstinaf)</option><option>Yargıtay</option><option>Anayasa</option><option>Diğer</option></optgroup>
+        </select>
+      </div>
+      <div class="form-group"><label>Mahkeme No</label><input id="d-mno" placeholder="3. Asliye..."></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Esas No</label>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input id="d-esas-yil" placeholder="2024" maxlength="4" style="width:72px;flex-shrink:0">
+          <span style="color:var(--text-muted);font-weight:bold">/</span>
+          <input id="d-esas-no" placeholder="1234" style="flex:1">
+        </div>
       </div>
       <div class="form-group">
-        <label>Karşı Taraf Vekili</label>
-        <div style="position:relative">
-          <input id="d-karsav-ara-0" class="d-karsav-ara" placeholder="Ad ile ara..." autocomplete="off"
-            oninput="vekAra(this.id,this.dataset.liste,this.dataset.hidden,this.dataset.goster)"
-            onfocus="vekAra(this.id,this.dataset.liste,this.dataset.hidden,this.dataset.goster)"
-            data-liste="d-karsav-dd-0" data-hidden="d-karsav-id-0" data-goster="d-karsav-g-0">
-          <div id="d-karsav-dd-0" class="kt-dropdown" style="display:none"></div>
+        <label>Karar No</label>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input id="d-karar-yil" placeholder="2024" maxlength="4" style="width:72px;flex-shrink:0">
+          <span style="color:var(--text-muted);font-weight:bold">/</span>
+          <input id="d-karar-no" placeholder="5678" style="flex:1">
         </div>
-        <div id="d-karsav-g-0" class="kt-secili" style="display:none"></div>
-        <input type="hidden" id="d-karsav-id-0">
       </div>
     </div>
+    <div class="form-group"><label>Hâkim</label><input id="d-hakim"></div>
+    <div class="form-section-label">Aşama & Durum</div>
+    <div class="form-row">
+      <div class="form-group"><label>Yargılama Aşaması</label><select id="d-asama"><option>İlk Derece</option><option>İstinaf</option><option>Yargıtay</option><option>Kesinleşti</option><option>Düşürüldü</option></select></div>
+      <div class="form-group"><label>Dava Durumu</label><select id="d-durum"><option value="Aktif">Aktif</option><option value="Devam Ediyor">Devam Ediyor</option><option value="Beklemede">Beklemede</option><option value="Kapandı">Kapandı</option></select></div>
+    </div>
+    <div class="form-group"><label>Dosya Durumu / Derdestlik</label>
+      <select id="d-derdest" onchange="derdestDegis(this.value)">
+        <option value="">—</option><option value="derdest">Derdest (Görülmekte)</option><option value="karar_temyiz">Karar Verildi – Temyiz Bekliyor</option>
+        <option value="kesinlesti">Kesinleşmiş Karar</option><option value="dustu">Düşmüş / İptal</option><option value="feragat">Feragat Edildi</option>
+        <option value="sulh">Sulh / Uzlaşma</option><option value="beklemede">Beklemede</option><option value="kapali">Kapalı</option>
+      </select>
+    </div>
+    <div id="d-kesin-wrap" style="display:none" class="form-row">
+      <div class="form-group"><label>Kesinleşme Tarihi <span style="color:var(--red)">*</span></label><input type="date" id="d-kesin-tarih"></div>
+      <div class="form-group"></div>
+    </div>
   </div>
-  <div class="form-row"><div class="form-group"><label>İlişkili İcra No</label><input id="d-icrano"></div><div class="form-group"><label>Dava Değeri (₺)</label><input type="number" id="d-deger"></div></div>
-  <div class="form-group"><label>Notlar</label><textarea id="d-not" rows="2"></textarea></div>
+
+  <!-- ADIM 3: Tarihler, Karşı Taraf & Notlar -->
+  <div id="dav-wiz-3" class="wizard-panel">
+    <div class="form-section-label">Tarihler</div>
+    <div class="form-row">
+      <div class="form-group"><label>Açılış Tarihi</label><input type="date" id="d-tarih"></div>
+      <div class="form-group"><label>Gelecek Duruşma</label><input type="date" id="d-gelecek-durusma"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Son Duruşma</label><input type="date" id="d-durusma"></div>
+      <div class="form-group"><label>Karar Tarihi</label><input type="date" id="d-ktarih"></div>
+    </div>
+    <div class="form-row"><div class="form-group"><label>Kesinleşme</label><input type="date" id="d-kesin"></div><div class="form-group"></div></div>
+    <div class="form-section-label" style="display:flex;justify-content:space-between;align-items:center">
+      <span>Karşı Taraf(lar)</span>
+      <button class="btn btn-sm btn-outline" onclick="davaTarafEkle()" type="button">+ Karşı Taraf Ekle</button>
+    </div>
+    <div id="d-karsi-wrap">
+      <div class="form-row d-karsi-satir" id="d-karsi-satir-0">
+        <div class="form-group" style="flex:2"><label>Karşı Taraf</label>
+          <div style="position:relative">
+            <input id="d-karsi-ara-0" class="d-karsi-ara" placeholder="Ad ile ara veya yeni ekle..." autocomplete="off"
+              oninput="ktAra(this.id,this.dataset.liste,this.dataset.hidden,this.dataset.goster)"
+              onfocus="ktAra(this.id,this.dataset.liste,this.dataset.hidden,this.dataset.goster)"
+              data-liste="d-karsi-dd-0" data-hidden="d-karsi-id-0" data-goster="d-karsi-g-0">
+            <div id="d-karsi-dd-0" class="kt-dropdown" style="display:none"></div>
+          </div>
+          <div id="d-karsi-g-0" class="kt-secili" style="display:none"></div>
+          <input type="hidden" id="d-karsi-id-0">
+        </div>
+        <div class="form-group"><label>Karşı Taraf Vekili</label>
+          <div style="position:relative">
+            <input id="d-karsav-ara-0" class="d-karsav-ara" placeholder="Ad ile ara..." autocomplete="off"
+              oninput="vekAra(this.id,this.dataset.liste,this.dataset.hidden,this.dataset.goster)"
+              onfocus="vekAra(this.id,this.dataset.liste,this.dataset.hidden,this.dataset.goster)"
+              data-liste="d-karsav-dd-0" data-hidden="d-karsav-id-0" data-goster="d-karsav-g-0">
+            <div id="d-karsav-dd-0" class="kt-dropdown" style="display:none"></div>
+          </div>
+          <div id="d-karsav-g-0" class="kt-secili" style="display:none"></div>
+          <input type="hidden" id="d-karsav-id-0">
+        </div>
+      </div>
+    </div>
+    <div class="form-row"><div class="form-group"><label>İlişkili İcra No</label><input id="d-icrano"></div><div class="form-group"></div></div>
+    <div class="form-group"><label>Notlar</label><textarea id="d-not" rows="2"></textarea></div>
+  </div>
+
   <input type="hidden" id="d-karsi-id"><input type="hidden" id="d-karsav-id">
-  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('dav-modal')">İptal</button><button class="btn btn-gold" id="dav-kaydet-btn" onclick="saveDava()">Kaydet</button></div>
+  <!-- Wizard Footer -->
+  <div id="dav-modal-wiz-footer" class="wizard-footer"></div>
   </div>
 </div></div>
 
@@ -2365,14 +2391,8 @@
   </div>
   <div class="form-group"><label>UETS / KEP Adresi</label><input id="vek-uets" placeholder="UETS / KEP adresi"></div>
   <div class="form-section-label">Banka Bilgileri <span style="font-weight:400;color:var(--text-dim)">(opsiyonel)</span></div>
-  <div class="form-row">
-    <div class="form-group"><label>Banka Adı</label><input id="vek-banka-ad" placeholder="Banka adı"></div>
-    <div class="form-group"><label>IBAN</label><input id="vek-banka" placeholder="TR00 0000 0000 0000 0000 0000 00" maxlength="32" style="font-family:monospace;letter-spacing:1px"></div>
-  </div>
-  <div class="form-row">
-    <div class="form-group"><label>Hesap Sahibi</label><input id="vek-hesap-ad" placeholder="Hesap sahibi adı"></div>
-    <div class="form-group"><label>Şube</label><input id="vek-sube" placeholder="Şube adı / no"></div>
-  </div>
+  <div id="vek-banka-list" style="margin-bottom:8px"></div>
+  <button type="button" class="btn btn-outline btn-sm" onclick="vekBankaEkle()">+ Banka Hesabı Ekle</button>
   <div class="form-section-label">Notlar</div>
   <div class="form-group"><textarea id="vek-acik" rows="2" placeholder="Avukata özel notlar..."></textarea></div>
   <div class="modal-footer">
@@ -3073,10 +3093,17 @@
   <div class="section">
     <div class="section-header">
       <div class="section-title">Arabuluculuk Dosyaları</div>
-      <div style="display:flex;gap:8px">
-        <select id="arab-ft" class="search-bar" style="width:160px" onchange="renderArabuluculuk()">
-          <option value="">Tüm Türler</option>
-          <option value="Zorunlu">Zorunlu</option>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <select id="arab-ft" class="search-bar" style="width:200px" onchange="renderArabuluculuk()">
+          <option value="">Tüm Dosya Türleri</option>
+          <optgroup label="Zorunlu">
+            <option value="Zorunlu — İş">Zorunlu — İş</option>
+            <option value="Zorunlu — Ticari">Zorunlu — Ticari</option>
+            <option value="Zorunlu — Tüketici">Zorunlu — Tüketici</option>
+            <option value="Zorunlu — Kira">Zorunlu — Kira</option>
+            <option value="Zorunlu — Ortaklık">Zorunlu — Ortaklık</option>
+            <option value="Zorunlu — Diğer">Zorunlu — Diğer</option>
+          </optgroup>
           <option value="İhtiyari">İhtiyari</option>
         </select>
         <select id="arab-fd" class="search-bar" style="width:180px" onchange="renderArabuluculuk()">
@@ -3125,36 +3152,107 @@
 </div>
 
 <!-- ARABULUCULUK YENİ/DÜZENLE MODAL -->
-<div class="modal-overlay" id="arab-modal"><div class="modal modal-lg">
-  <div class="modal-title" id="arab-modal-title">Yeni Arabuluculuk Dosyası</div>
+<div class="modal-overlay" id="arab-modal"><div class="modal modal-lg" style="max-width:720px">
+  <div class="modal-header">
+    <div class="modal-title" id="arab-modal-title">Yeni Arabuluculuk Dosyası</div>
+  </div>
   <input type="hidden" id="arab-edit-id">
+  <div class="form-section-label">Dosya Bilgileri</div>
   <div class="form-row">
     <div class="form-group"><label>Dosya / Konu *</label><input id="arab-konu" placeholder="Arabuluculuk konusu"></div>
-    <div class="form-group"><label>Tür *</label>
-      <select id="arab-tur">
-        <option>Zorunlu</option>
-        <option>İhtiyari</option>
+    <div class="form-group"><label>Dosya Türü *</label>
+      <select id="arab-tur" onchange="arabDosyaTuruDegisti()">
+        <optgroup label="Zorunlu Arabuluculuk">
+          <option value="Zorunlu — İş">Zorunlu — İş Uyuşmazlığı</option>
+          <option value="Zorunlu — Ticari">Zorunlu — Ticari Uyuşmazlık</option>
+          <option value="Zorunlu — Tüketici">Zorunlu — Tüketici Uyuşmazlığı</option>
+          <option value="Zorunlu — Kira">Zorunlu — Kira İlişkisi</option>
+          <option value="Zorunlu — Ortaklık">Zorunlu — Ortaklığın Giderilmesi</option>
+          <option value="Zorunlu — Diğer">Zorunlu — Diğer</option>
+        </optgroup>
+        <optgroup label="İhtiyari Arabuluculuk">
+          <option value="İhtiyari">İhtiyari Arabuluculuk</option>
+        </optgroup>
       </select>
     </div>
   </div>
+  <div class="form-row">
+    <div class="form-group"><label>Uyuşmazlık Türü</label>
+      <select id="arab-uyusmazlik-tur">
+        <option value="">— Seçiniz —</option>
+        <optgroup label="İş Hukuku">
+          <option>İşe İade</option>
+          <option>Kıdem Tazminatı</option>
+          <option>İhbar Tazminatı</option>
+          <option>Fazla Mesai Ücreti</option>
+          <option>Yıllık İzin Ücreti</option>
+          <option>AGİ / Ücret Alacağı</option>
+          <option>İş Kazası Tazminatı</option>
+          <option>Meslek Hastalığı</option>
+          <option>Mobbing / Kötü Niyet Tazminatı</option>
+          <option>Toplu İş Uyuşmazlığı</option>
+          <option>Hizmet Tespiti</option>
+        </optgroup>
+        <optgroup label="Ticaret Hukuku">
+          <option>Ticari Alacak</option>
+          <option>Fatura İtirazı</option>
+          <option>Sözleşme İhlali</option>
+          <option>Haksız Rekabet</option>
+          <option>Şirketler Arası Uyuşmazlık</option>
+          <option>Acente / Distribütörlük</option>
+          <option>Franchise Uyuşmazlığı</option>
+          <option>Sigorta Rücu</option>
+        </optgroup>
+        <optgroup label="Tüketici Hukuku">
+          <option>Ayıplı Mal</option>
+          <option>Ayıplı Hizmet</option>
+          <option>Abonelik İptali</option>
+          <option>Kredi / Banka Uyuşmazlığı</option>
+          <option>Sigorta Uyuşmazlığı</option>
+          <option>Paket Tur / Tatil</option>
+          <option>Mesafeli Satış İadesi</option>
+        </optgroup>
+        <optgroup label="Gayrimenkul / Kira">
+          <option>Kira Alacağı</option>
+          <option>Tahliye</option>
+          <option>Kira Uyarlama</option>
+          <option>Kat Mülkiyeti Uyuşmazlığı</option>
+          <option>Ortaklığın Giderilmesi (İzale-i Şuyu)</option>
+          <option>Komşuluk Hukuku</option>
+        </optgroup>
+        <optgroup label="Aile / Miras">
+          <option>Miras Paylaşımı</option>
+          <option>Boşanma Protokolü</option>
+          <option>Nafaka Uyuşmazlığı</option>
+          <option>Velayet / Kişisel İlişki</option>
+        </optgroup>
+        <optgroup label="Diğer">
+          <option>Tazminat (Genel)</option>
+          <option>Fikri Mülkiyet</option>
+          <option>Sağlık Uyuşmazlığı (Malpraktis)</option>
+          <option>Eser / İstisna Sözleşmesi</option>
+          <option>Diğer</option>
+        </optgroup>
+      </select>
+    </div>
+    <div class="form-group"><label>Başvuru Tarihi</label><input type="date" id="arab-basvuru-tarih"></div>
+  </div>
+  <div class="form-section-label">Taraflar</div>
   <div class="form-row">
     <div class="form-group"><label>Müvekkil</label>
       <select id="arab-muv"><option value="">— Seçiniz —</option></select>
     </div>
-    <div class="form-group"><label>Başvuru Tarihi</label><input type="date" id="arab-basvuru-tarih"></div>
-  </div>
-  <div class="form-row">
     <div class="form-group"><label>Karşı Taraf</label><input id="arab-karsi" placeholder="Karşı taraf adı"></div>
-    <div class="form-group"><label>Durum</label>
-      <select id="arab-durum">
-        <option>Başvuru Yapıldı</option>
-        <option>İlk Toplantı Bekleniyor</option>
-        <option>Görüşmeler Devam Ediyor</option>
-        <option>Uzlaşma Sağlandı</option>
-        <option>Uzlaşma Sağlanamadı</option>
-        <option>Dava Açıldı</option>
-      </select>
-    </div>
+  </div>
+  <div class="form-group"><label>Durum</label>
+    <select id="arab-durum">
+      <option>Başvuru Yapıldı</option>
+      <option>İlk Toplantı Bekleniyor</option>
+      <option>Görüşmeler Devam Ediyor</option>
+      <option>Uzlaşma Sağlandı</option>
+      <option>Uzlaşma Sağlanamadı</option>
+      <option>Dava Açıldı</option>
+    </select>
   </div>
   <div class="form-section-label">Arabulucu Bilgileri</div>
   <div class="form-row">
@@ -3394,6 +3492,11 @@
 <script src="js/modules/bankaWidget.js"></script>
 <script src="js/modules/bildirim.js"></script>
 <script src="js/modules/tani.js"></script>
+<script src="js/modules/contextmenu.js"></script>
+<script src="js/modules/wizard.js"></script>
+<script src="js/modules/kanban.js"></script>
+<script src="js/modules/menfaat.js"></script>
+<script src="js/modules/mukerrer.js"></script>
 <script src="js/modules/validasyon.js"></script>
 
 <!-- SPOTLIGHT ARAMA -->

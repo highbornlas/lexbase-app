@@ -14,9 +14,9 @@ function renderArabuluculuk(){
   const ft=(document.getElementById('arab-ft')||{}).value||'';
   const fd=(document.getElementById('arab-fd')||{}).value||'';
   let list=[...state.arabuluculuk];
-  if(ft)list=list.filter(a=>a.tur===ft);
+  if(ft)list=list.filter(a=>a.tur===ft || (a.tur||'').startsWith(ft));
   if(fd)list=list.filter(a=>a.durum===fd);
-  if(ara)list=list.filter(a=>(a.konu+a.karsi+a.arabulucuAd).toLowerCase().includes(ara.toLowerCase()));
+  if(ara)list=list.filter(a=>(a.konu+(a.karsi||'')+(a.arabulucuAd||'')+(a.uyusmazlikTur||'')).toLowerCase().includes(ara.toLowerCase()));
 
   // Özet kartlar
   const toplam=state.arabuluculuk.length;
@@ -39,6 +39,7 @@ function renderArabuluculuk(){
         <div class="arab-row-title">${a.konu}</div>
         <div class="arab-row-meta">
           <span style="background:var(--surface2);padding:1px 7px;border-radius:10px;font-size:10px;margin-right:6px">${a.tur}</span>
+          ${a.uyusmazlikTur?`<span style="background:rgba(0,188,212,.1);color:#00BCD4;padding:1px 7px;border-radius:10px;font-size:10px;margin-right:6px">${a.uyusmazlikTur}</span>`:''}
           ${a.muvId?getMuvAd(a.muvId)+'  ·  ':''} 
           ${a.karsi?'Karşı: '+a.karsi:''}
           ${a.basvuruTarih?' · '+fmtD(a.basvuruTarih):''}
@@ -58,7 +59,7 @@ function openArabDetay(id){
   document.getElementById('arab-bc').textContent=a.konu;
   document.getElementById('arab-detay-baslik').textContent=a.konu;
   document.getElementById('arab-detay-meta').innerHTML=
-    `${a.tur} Arabuluculuk · ${getMuvAd(a.muvId)||'—'} · ${arabDurumBadge(a.durum)}`;
+    `${a.tur}${a.uyusmazlikTur?' · '+a.uyusmazlikTur:''} · ${getMuvAd(a.muvId)||'—'} · ${arabDurumBadge(a.durum)}`;
   renderArabDetayCards(a);
   arabTab('bilgi',document.querySelector('#page-arab-detay .tab'));
 }
@@ -67,10 +68,10 @@ function renderArabDetayCards(a){
   const toplanti=(a.toplantılar||[]).length;
   const sonToplanti=(a.toplantılar||[]).slice(-1)[0];
   document.getElementById('arab-detay-cards').innerHTML=`
-    <div class="card"><div class="card-label">Tür</div><div class="card-value gold" style="font-size:14px">${a.tur}</div></div>
+    <div class="card"><div class="card-label">Dosya Türü</div><div class="card-value gold" style="font-size:12px">${a.tur}</div></div>
+    <div class="card"><div class="card-label">Uyuşmazlık</div><div class="card-value" style="font-size:12px;color:#00BCD4">${a.uyusmazlikTur||'—'}</div></div>
     <div class="card"><div class="card-label">Durum</div><div class="card-value" style="font-size:12px">${arabDurumBadge(a.durum)}</div></div>
-    <div class="card"><div class="card-label">Toplantı Sayısı</div><div class="card-value gold">${toplanti}</div></div>
-    <div class="card"><div class="card-label">Son Toplantı</div><div class="card-value" style="font-size:13px">${sonToplanti?fmtD(sonToplanti.tarih):'—'}</div></div>`;
+    <div class="card"><div class="card-label">Toplantı</div><div class="card-value gold">${toplanti} ${sonToplanti?'<span style="font-size:10px;color:var(--text-muted)">· '+fmtD(sonToplanti.tarih)+'</span>':''}</div></div>`;
 }
 
 let _arabAktifTab='bilgi';
@@ -95,7 +96,8 @@ function renderArabBilgi(a){
   return`<div class="section"><div class="section-header"><div class="section-title">📋 Dosya Bilgileri</div></div>
     <div class="section-body">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
-        <div class="hakediş-box"><div class="hakediş-label">Arabuluculuk Türü</div><div class="hakediş-value">${a.tur}</div></div>
+        <div class="hakediş-box"><div class="hakediş-label">Dosya Türü</div><div class="hakediş-value">${a.tur}</div></div>
+        <div class="hakediş-box"><div class="hakediş-label">Uyuşmazlık Türü</div><div class="hakediş-value" style="font-size:14px">${a.uyusmazlikTur||'—'}</div></div>
         <div class="hakediş-box"><div class="hakediş-label">Başvuru Tarihi</div><div class="hakediş-value" style="font-size:15px">${fmtD(a.basvuruTarih)||'—'}</div></div>
         <div class="hakediş-box"><div class="hakediş-label">Müvekkil</div><div class="hakediş-value" style="font-size:14px">${getMuvAd(a.muvId)||'—'}</div></div>
         <div class="hakediş-box"><div class="hakediş-label">Karşı Taraf</div><div class="hakediş-value" style="font-size:14px">${a.karsi||'—'}</div></div>
@@ -209,7 +211,14 @@ function openArabModal(id){
   const muvSel=document.getElementById('arab-muv');
   muvSel.innerHTML='<option value="">— Seçiniz —</option>'+state.muvekkillar.map(m=>`<option value="${m.id}"${edit&&edit.muvId===m.id?' selected':''}>${m.ad}</option>`).join('');
   document.getElementById('arab-konu').value=edit?.konu||'';
-  document.getElementById('arab-tur').value=edit?.tur||'Zorunlu';
+  // Eski "Zorunlu"/"İhtiyari" değerlerini yeni formata eşle
+  let editTur = edit?.tur || 'Zorunlu — İş';
+  if (editTur === 'Zorunlu') editTur = 'Zorunlu — İş';
+  document.getElementById('arab-tur').value=editTur;
+  const uyTur=document.getElementById('arab-uyusmazlik-tur');
+  if(uyTur) uyTur.value=edit?.uyusmazlikTur||'';
+  // Uyuşmazlık türü optgroup filtresi uygula
+  if(typeof arabDosyaTuruDegisti==='function') arabDosyaTuruDegisti();
   document.getElementById('arab-basvuru-tarih').value=edit?.basvuruTarih||today();
   document.getElementById('arab-karsi').value=edit?.karsi||'';
   document.getElementById('arab-durum').value=edit?.durum||'Başvuru Yapıldı';
@@ -233,6 +242,7 @@ function saveArab(){
   const kayit={
     id:editId||uid(),konu,
     tur:document.getElementById('arab-tur').value,
+    uyusmazlikTur:(document.getElementById('arab-uyusmazlik-tur')||{}).value||'',
     muvId:document.getElementById('arab-muv').value,
     basvuruTarih:document.getElementById('arab-basvuru-tarih').value,
     karsi:document.getElementById('arab-karsi').value.trim(),
@@ -448,3 +458,39 @@ window.renderDashboard=function(){
 // ================================================================
 // TEMA SİSTEMİ
 // ================================================================
+// ================================================================
+// DOSYA TÜRÜ DEĞİŞTİ — Uyuşmazlık türü seçeneklerini filtrele
+// ================================================================
+function arabDosyaTuruDegisti() {
+  const dosyaTuru = document.getElementById('arab-tur').value;
+  const uySelect = document.getElementById('arab-uyusmazlik-tur');
+  if (!uySelect) return;
+
+  // Tüm optgroup'ları göster/gizle dosya türüne göre
+  const grupMap = {
+    'Zorunlu — İş':       ['İş Hukuku'],
+    'Zorunlu — Ticari':   ['Ticaret Hukuku'],
+    'Zorunlu — Tüketici': ['Tüketici Hukuku'],
+    'Zorunlu — Kira':     ['Gayrimenkul / Kira'],
+    'Zorunlu — Ortaklık': ['Gayrimenkul / Kira'],
+    'Zorunlu — Diğer':    null, // hepsini göster
+    'İhtiyari':           null, // hepsini göster
+  };
+
+  const izinliGruplar = grupMap[dosyaTuru];
+  const optgroups = uySelect.querySelectorAll('optgroup');
+
+  optgroups.forEach(og => {
+    if (izinliGruplar === null) {
+      og.style.display = '';
+    } else {
+      og.style.display = izinliGruplar.includes(og.label) ? '' : 'none';
+    }
+  });
+
+  // Mevcut seçim gizlenen bir gruptaysa sıfırla
+  const selected = uySelect.selectedOptions[0];
+  if (selected && selected.parentElement.tagName === 'OPTGROUP' && selected.parentElement.style.display === 'none') {
+    uySelect.value = '';
+  }
+}

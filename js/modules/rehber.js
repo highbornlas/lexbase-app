@@ -169,7 +169,30 @@ function saveMuvekkil(){
     if(currentBuroId) saveToSupabase('muvekkillar', m);
     openDetay(aktivMuvId);renderMuvekkillar();notify('✓ Güncellendi');
   } else {
-    if(!limitKontrol('muvekkil')) return; // ← Plan limit kontrolü
+    if(!limitKontrol('muvekkil')) return;
+    // ── 1. Mükerrer kayıt kontrolü ──
+    if (typeof MukerrerKontrol !== 'undefined') {
+      const mukKontrol = MukerrerKontrol.kisiKontrol(d, state.muvekkillar);
+      if (mukKontrol.length > 0) {
+        MukerrerKontrol.uyariGoster('muvekkil', d.ad, mukKontrol, function() { _saveMuvMenfaatKontrol(d); });
+        return;
+      }
+    }
+    _saveMuvMenfaatKontrol(d);
+  }
+}
+function _saveMuvMenfaatKontrol(d) {
+    // ── 2. Menfaat çakışması kontrolü ──
+    if (typeof MenfaatKontrol !== 'undefined') {
+      const cakismalar = MenfaatKontrol.kontrolEt(d, 'muvekkil');
+      if (cakismalar.length > 0) {
+        MenfaatKontrol.uyariGoster(d.ad, cakismalar, function() { _saveMuvDevam(d); });
+        return;
+      }
+    }
+    _saveMuvDevam(d);
+}
+function _saveMuvDevam(d) {
     const yeniId=uid();
     const yeniKayit={id:yeniId,sira:nextSira('muvekkillar'),...d};
     state.muvekkillar.push(yeniKayit);
@@ -179,7 +202,6 @@ function saveMuvekkil(){
     renderMuvekkillar();updateBadges();notify('✓ Müvekkil eklendi');
     // Dava modalından açıldıysa widget'ı güncelle
     if(typeof muvWidgetGuncelle==='function') muvWidgetGuncelle(yeniId);
-  }
 }
 
 function openMuvEdit(){
@@ -255,6 +277,8 @@ function openModal(id){
     }
     const dlbl=document.getElementById('dav-modal-title');if(dlbl)dlbl.textContent='Yeni Dava';
     const dbtn=document.getElementById('dav-kaydet-btn');if(dbtn)dbtn.textContent='Kaydet';
+    // Wizard ilk adıma döndür
+    if (typeof Wizard !== 'undefined') Wizard.sifirla('dav-modal');
   }
   if(id==='icra-modal'){
     // Tüm alanları sıfırla
@@ -554,7 +578,9 @@ function openYeniKT(){
 }
 function openYeniVek(){
   _vekCtx=null;
-  ['vek-ad','vek-sicil','vek-tbb','vek-tel','vek-mail','vek-uets','vek-banka','vek-banka-ad','vek-hesap-ad','vek-sube','vek-acik'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});
+  ['vek-ad','vek-sicil','vek-tbb','vek-tel','vek-mail','vek-uets','vek-acik'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});
+  vekBankalar = [];
+  renderVekBankalar();
   document.getElementById('vek-baro').value='';
   document.getElementById('vek-modal-title').textContent='Avukat / Vekil Ekle';
   document.getElementById('vek-modal-btn').textContent='Kaydet';

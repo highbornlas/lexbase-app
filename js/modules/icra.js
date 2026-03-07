@@ -12,9 +12,9 @@ function saveIcra(){
     {id:'i-borclu', deger:borclu, label:'Borçlu Adı'},
     {id:'i-alacak', deger:(!isNaN(alacak)&&alacak>0)?'ok':'', label:'Alacak Tutarı'},
   ])){notify('⚠️ Zorunlu alanları doldurun.');return;}
-  if(!limitKontrol('icra')) return; // ← Plan limit kontrolü
+  if(!limitKontrol('icra')) return;
   const karsavId=document.getElementById('i-karsav-id').value;
-  state.icra.push({
+  const yeniIcra = {
     id:uid(),sira:nextSira('icra'),no,muvId,borclu,btc:document.getElementById('i-btc').value.trim(),
     il:document.getElementById('i-il').value,adliye:document.getElementById('i-adliye').value,daire:document.getElementById('i-daire').value.trim(),
     esas:document.getElementById('i-esas').value.trim(),tur:document.getElementById('i-tur').value,
@@ -25,7 +25,19 @@ function saveIcra(){
     karsavId,karsav:getVekAd(karsavId),
     davno:document.getElementById('i-davno').value.trim(),dayanak:document.getElementById('i-dayanak').value.trim(),
     not:document.getElementById('i-not').value.trim(),evraklar:[],notlar:[],harcamalar:[],anlasma:{}
-  });
+  };
+  // ── Mükerrer icra kontrolü ──
+  if (typeof MukerrerKontrol !== 'undefined') {
+    const mukKontrol = MukerrerKontrol.icraKontrol(yeniIcra);
+    if (mukKontrol.length > 0) {
+      MukerrerKontrol.uyariGoster('icra', yeniIcra.no + ' — ' + yeniIcra.borclu, mukKontrol, function() { _saveIcraDevam(yeniIcra); });
+      return;
+    }
+  }
+  _saveIcraDevam(yeniIcra);
+}
+function _saveIcraDevam(yeniIcra) {
+  state.icra.push(yeniIcra);
   ['i-no','i-borclu','i-btc','i-daire','i-esas','i-alacak','i-tahsil','i-faiz','i-davno','i-dayanak','i-not','i-tarih','i-otarih','i-itarih'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';}); document.getElementById('i-il').value=''; document.getElementById('i-adliye').innerHTML='<option value="">— Önce il seçin —</option>';
   ktWidgetTemizle('i-karsav-ara','i-karsav-liste','i-karsav-id','i-karsav-goster');
   closeModal('icra-modal');saveData();renderIcra();renderIcraCards();renderMdDavalar();updateBadges();notify('✓ İcra dosyası eklendi');
@@ -72,7 +84,7 @@ function renderIcra(s='',ft='',fd=''){
       <td style="color:${IDRENK[i.durum]||'var(--text-muted)'};font-size:11px;font-weight:600">${i.durum}</td>
       <td>${fmtD(i.tarih)}</td>
       <td>${i.davno?`<span style="color:var(--blue);font-size:11px">📁 ${i.davno}</span>`:'—'}</td>
-      <td><button class="delete-btn" onclick="event.stopPropagation();deleteIcraById('${i.id}')">✕</button></td>
+      <td><button class="ctx-btn" onclick="event.stopPropagation();CtxMenu.icraMenu(event,'${i.id}')">⋮</button></td>
     </tr>`;
   });
 }
