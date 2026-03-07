@@ -361,37 +361,45 @@ function openHarcForDosya(ctx){
   }
   document.getElementById('harc-modal').classList.add('open');
 }
-function saveHarcama(){
+async function saveHarcama(){
   const tutar=parseFloat(document.getElementById('h-tutar').value);
   const tarih=document.getElementById('h-tarih').value;
   if(!zorunluKontrol([{id:'h-tarih',deger:tarih,label:'Tarih'},{id:'h-tutar',deger:(!isNaN(tutar)&&tutar>0)?'ok':'',label:'Tutar'}])){notify('⚠️ Zorunlu alanları doldurun.');return;}
   const acik=document.getElementById('h-acik').value.trim();
   const kat=document.getElementById('h-kat').value;
   const h={id:uid(),tarih,tutar,kat,acik};
-  document.getElementById('h-tutar').value='';
-  document.getElementById('h-acik').value='';
-  closeModal('harc-modal');
+  var hedefObj=null, hedefTablo='', hedefCtx='';
 
   if(aktifSekme==='dava'){
-    const d=getDava(aktivDavaId);
-    if(d){if(!d.harcamalar)d.harcamalar=[];d.harcamalar.push(h);saveData();renderDavaTabContent('harcamalar');renderDdCards(d);}
+    hedefObj=getDava(aktivDavaId); hedefTablo='davalar'; hedefCtx='dava';
   } else if(aktifSekme==='icra'){
-    const i=getIcra(aktivIcraId);
-    if(i){if(!i.harcamalar)i.harcamalar=[];i.harcamalar.push(h);saveData();renderIcraTabContent('harcamalar');renderIdCards(i);}
+    hedefObj=getIcra(aktivIcraId); hedefTablo='icra'; hedefCtx='icra';
   } else if(aktifSekme==='muv'){
-    const secim=document.getElementById('h-dosya-sel').value; // 'dava:ID' veya 'icra:ID' veya ''
-    if(secim){
-      const [tip,did]=secim.split(':');
-      if(tip==='dava'){const d=getDava(did);if(d){if(!d.harcamalar)d.harcamalar=[];d.harcamalar.push(h);addLog(aktivMuvId,'Harcama Eklendi',`${kat} | ${fmt(tutar)} → 📁 ${d.no}${acik?' | '+acik:''}`);}}
-      else if(tip==='icra'){const i=getIcra(did);if(i){if(!i.harcamalar)i.harcamalar=[];i.harcamalar.push(h);addLog(aktivMuvId,'Harcama Eklendi',`${kat} | ${fmt(tutar)} → ⚡ ${i.no}${acik?' | '+acik:''}`);}}
-    } else {
-      // Dosya seçilmezse müvekkilin ilk aktif davasına ekle
-      const d=state.davalar.find(x=>x.muvId===aktivMuvId&&x.durum==='Aktif')||state.davalar.find(x=>x.muvId===aktivMuvId);
-      if(d){if(!d.harcamalar)d.harcamalar=[];d.harcamalar.push({...h,acik:'[Genel]'+(acik?' '+acik:'')});addLog(aktivMuvId,'Harcama Eklendi',`${kat} | ${fmt(tutar)} → 📁 ${d.no} (genel)${acik?' | '+acik:''}`);}
-    }
-    saveData();renderMdHarcamalar();renderMdCards();
+    const secim=(document.getElementById('h-dosya-sel')||{}).value||'';
+    if(secim){ const [tip,did]=secim.split(':'); if(tip==='dava'){hedefObj=getDava(did);hedefTablo='davalar';hedefCtx='dava';}else{hedefObj=getIcra(did);hedefTablo='icra';hedefCtx='icra';} }
+    else { hedefObj=state.davalar.find(x=>x.muvId===aktivMuvId&&x.durum==='Aktif')||state.davalar.find(x=>x.muvId===aktivMuvId); hedefTablo='davalar'; hedefCtx='dava'; h.acik='[Genel]'+(acik?' '+acik:''); }
   }
-  notify('✓ Harcama eklendi');
+  if(!hedefObj){notify('⚠️ Harcama eklenecek dosya bulunamadı');return;}
+  if(!hedefObj.harcamalar)hedefObj.harcamalar=[];
+  hedefObj.harcamalar.push(h);
+
+  if (typeof LexSubmit !== 'undefined') {
+    var btn=document.querySelector('#harc-modal .btn-gold');
+    var ok=await LexSubmit.formKaydet({ tablo:hedefTablo, kayit:hedefObj, modalId:'harc-modal', butonEl:btn, basariMesaj:'✓ Harcama eklendi',
+      renderFn:function(){
+        if(hedefCtx==='dava'){renderDavaTabContent('harcamalar');renderDdCards(hedefObj);}
+        else{renderIcraTabContent('harcamalar');renderIdCards(hedefObj);}
+        if(aktifSekme==='muv'){renderMdHarcamalar();renderMdCards();}
+      }
+    });
+    if(!ok){hedefObj.harcamalar.pop();return;} // Hata: geri al
+  } else {
+    closeModal('harc-modal');saveData();
+    if(hedefCtx==='dava'){renderDavaTabContent('harcamalar');renderDdCards(hedefObj);}
+    else{renderIcraTabContent('harcamalar');renderIdCards(hedefObj);}
+    if(aktifSekme==='muv'){renderMdHarcamalar();renderMdCards();}
+    notify('✓ Harcama eklendi');
+  }
 }
 function delHarcDosya(id,ctx){
   const obj=ctx==='dava'?getDava(aktivDavaId):getIcra(aktivIcraId);
@@ -595,7 +603,7 @@ function openTahsilatModal(ctx, editId=null){
   document.getElementById('tahsilat-modal').classList.add('open');
 }
 
-function saveTahsilatHareket(){
+async function saveTahsilatHareket(){
   const tutar=parseFloat(document.getElementById('th-tutar').value);
   const tarih=document.getElementById('th-tarih').value;
   if(!zorunluKontrol([{id:'th-tarih',deger:tarih,label:'Tarih'},{id:'th-tutar',deger:(!isNaN(tutar)&&tutar>0)?'ok':'',label:'Tutar'}])){notify('⚠️ Zorunlu alanları doldurun.');return;}
@@ -613,12 +621,24 @@ function saveTahsilatHareket(){
     obj.tahsilatlar.push(entry);
   }
   thBelgeReset();
-  // Bütçeye yansıt
   syncTahsilatBudget(obj, tahsilatCtx.type);
-  closeModal('tahsilat-modal');saveData();
-  if(tahsilatCtx.type==='dava'){renderDavaTabContent('tahsilat');renderDdCards(getDava(aktivDavaId));}
-  else{renderIcraTabContent('tahsilat');renderIdCards(getIcra(aktivIcraId));}
-  notify(tahsilatCtx.editId?'✓ Hareket güncellendi':'✓ Hareket eklendi');
+  const hedefTablo = tahsilatCtx.type==='dava'?'davalar':'icra';
+
+  if (typeof LexSubmit !== 'undefined') {
+    var btn=document.querySelector('#tahsilat-modal .btn-gold');
+    var ok=await LexSubmit.formKaydet({ tablo:hedefTablo, kayit:obj, modalId:'tahsilat-modal', butonEl:btn, basariMesaj:tahsilatCtx.editId?'✓ Hareket güncellendi':'✓ Hareket eklendi',
+      renderFn:function(){
+        if(tahsilatCtx.type==='dava'){renderDavaTabContent('tahsilat');renderDdCards(getDava(aktivDavaId));}
+        else{renderIcraTabContent('tahsilat');renderIdCards(getIcra(aktivIcraId));}
+      }
+    });
+    if(!ok){if(!tahsilatCtx.editId)obj.tahsilatlar.pop();return;}
+  } else {
+    closeModal('tahsilat-modal');saveData();
+    if(tahsilatCtx.type==='dava'){renderDavaTabContent('tahsilat');renderDdCards(getDava(aktivDavaId));}
+    else{renderIcraTabContent('tahsilat');renderIdCards(getIcra(aktivIcraId));}
+    notify(tahsilatCtx.editId?'✓ Hareket güncellendi':'✓ Hareket eklendi');
+  }
 }
 
 function deleteTahsilatHareket(id, ctx){

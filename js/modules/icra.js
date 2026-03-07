@@ -306,7 +306,7 @@ function butceKdvHesapla() {
   }
 }
 
-function saveButce() {
+async function saveButce() {
   const tutar = parseFloat(document.getElementById('b-tutar').value);
   const tarih = document.getElementById('b-tarih').value;
   if (!zorunluKontrol([{id:'b-tarih',deger:tarih,label:'Tarih'},{id:'b-tutar',deger:(!isNaN(tutar)&&tutar>0)?'ok':'',label:'Tutar'}])) { notify('⚠️ Zorunlu alanları doldurun.'); return; }
@@ -319,14 +319,23 @@ function saveButce() {
     acik: document.getElementById('b-acik').value.trim(),
     kdvOran, kdvTutar
   };
-  state.butce.push(_butKayit);
-  if (currentBuroId) saveToSupabase('finans', _butKayit);
+
+  if (typeof LexSubmit !== 'undefined') {
+    var btn = document.querySelector('#but-modal .btn-gold');
+    var ok = await LexSubmit.formKaydet({ tablo:'butce', kayit:_butKayit, modalId:'but-modal', butonEl:btn, basariMesaj:'✓ Hareket eklendi',
+      renderFn:function(){ renderButce(); addAktiviteLog('Finans Hareketi Eklendi', _butKayit.tur + ' — ' + fmt(tutar), 'Finans'); }
+    });
+    if(!ok) return;
+  } else {
+    state.butce.push(_butKayit);
+    if (currentBuroId) saveToSupabase('finans', _butKayit);
+    closeModal('but-modal'); saveData(); renderButce(); notify('✓ Hareket eklendi');
+    addAktiviteLog('Finans Hareketi Eklendi', _butKayit.tur + ' — ' + fmt(tutar), 'Finans');
+  }
   ['b-tutar','b-acik'].forEach(i => document.getElementById(i).value = '');
   document.getElementById('b-kdv-oran').value = '0';
   document.getElementById('b-kdv-tutar').value = '';
   document.getElementById('b-kdv-toplam-satir').style.display = 'none';
-  closeModal('but-modal'); saveData(); renderButce(); notify('✓ Hareket eklendi');
-  addAktiviteLog('Finans Hareketi Eklendi', _butKayit.tur + ' — ' + fmt(tutar), 'Finans');
 }
 
 function filterButce(ft) { renderButce(); }

@@ -238,7 +238,7 @@ function fatToplamHesapla() {
   document.getElementById('fat-genel-toplam').textContent = fmt(genel);
 }
 
-function saveFatura() {
+async function saveFatura() {
   const no = document.getElementById('fat-no').value.trim();
   const tarih = document.getElementById('fat-tarih').value;
   const muvId = document.getElementById('fat-muv').value;
@@ -269,17 +269,34 @@ function saveFatura() {
     olusturmaTarih: today()
   };
 
-  if (!state.faturalar) state.faturalar = [];
-  state.faturalar.push(fatura);
-  // Finans hareketine de ekle
+  // Ödendi ise bütçe hareketi de oluştur
+  var butceKayit = null;
   if (fatura.durum === 'odendi') {
-    const hk = { id: uid(), tur: 'Gelir', tarih, tutar: genelToplam, kat: 'Fatura Tahsilatı', muvId, acik: `Fatura #${no}`, kdvOran, kdvTutar };
-    state.butce.push(hk);
-    if (currentBuroId) saveToSupabase('finans', hk);
+    butceKayit = { id: uid(), tur: 'Gelir', tarih, tutar: genelToplam, kat: 'Fatura Tahsilatı', muvId, acik: `Fatura #${no}`, kdvOran, kdvTutar };
   }
-  saveData(); closeModal('fatura-modal'); renderFaturaListe(); renderButce();
-  notify('✅ Fatura kaydedildi');
-  addAktiviteLog('Fatura Oluşturuldu', `#${no} — ${getMuvAd(muvId)} — ${fmt(genelToplam)}`, 'Finans');
+
+  if (typeof LexSubmit !== 'undefined') {
+    // Faturayı bütçe olarak kaydet (faturalar tablosu Supabase'de yoksa butce'ye yaz)
+    var btn = document.querySelector('#fatura-modal .btn-gold');
+    if (butceKayit) {
+      var okB = await LexSubmit.kaydet('butce', butceKayit);
+      if (!okB.ok) { notify('❌ Bütçe hareketi kaydedilemedi'); return; }
+    }
+    // Faturayı localStorage'a yaz (faturalar tablosu Supabase'de olmayabilir)
+    if (!state.faturalar) state.faturalar = [];
+    state.faturalar.push(fatura);
+    saveData();
+    closeModal('fatura-modal'); renderFaturaListe(); renderButce();
+    notify('✅ Fatura kaydedildi');
+    addAktiviteLog('Fatura Oluşturuldu', `#${no} — ${getMuvAd(muvId)} — ${fmt(genelToplam)}`, 'Finans');
+  } else {
+    if (!state.faturalar) state.faturalar = [];
+    state.faturalar.push(fatura);
+    if (butceKayit) { state.butce.push(butceKayit); }
+    saveData(); closeModal('fatura-modal'); renderFaturaListe(); renderButce();
+    notify('✅ Fatura kaydedildi');
+    addAktiviteLog('Fatura Oluşturuldu', `#${no} — ${getMuvAd(muvId)} — ${fmt(genelToplam)}`, 'Finans');
+  }
 }
 
 function renderFaturaListe() {

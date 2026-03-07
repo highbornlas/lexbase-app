@@ -1517,7 +1517,7 @@ function editAvans(id){
   document.getElementById('a-odeme').value=a.odeme||'';
   openModal('avans-modal');
 }
-function saveAvans(){
+async function saveAvans(){
   const tutar=parseFloat(document.getElementById('a-tutar').value);
   const tarih=document.getElementById('a-tarih').value;
   if(!zorunluKontrol([{id:'a-tarih',deger:tarih,label:'Tarih'},{id:'a-tutar',deger:(!isNaN(tutar)&&tutar>0)?'ok':'',label:'Tutar'}])){notify('⚠️ Zorunlu alanları doldurun.');return;}
@@ -1533,36 +1533,66 @@ function saveAvans(){
   const tur=document.getElementById('a-tur').value;
   const durum=document.getElementById('a-durum').value;
   const odeme=document.getElementById('a-odeme').value;
+
   if(avansEditId){
     const a=state.avanslar.find(x=>x.id===avansEditId);
     if(a){
       const eskiOzet=`${a.tur} | ${fmt(a.tutar)} | ${a.durum}`;
-      a.tur=tur;a.tarih=tarih;a.tutar=tutar;a.durum=durum;a.acik=acik;a.odeme=odeme;
-      addLog(aktivMuvId,'Avans Düzenlendi',`${eskiOzet} → ${tur} | ${fmt(tutar)} | ${durum}${acik?' | '+acik:''}`);
+      const guncel = Object.assign({}, a, {tur,tarih,tutar,durum,acik,odeme});
+      if (typeof LexSubmit !== 'undefined') {
+        var btn = document.querySelector('#avans-modal .btn-gold');
+        var ok = await LexSubmit.formKaydet({ tablo:'avanslar', kayit:guncel, modalId:'avans-modal', butonEl:btn, basariMesaj:'✓ Kayıt güncellendi',
+          renderFn:function(){ addLog(aktivMuvId,'Avans Düzenlendi',eskiOzet+' → '+tur+' | '+fmt(tutar)); renderMdAvans();renderMdCards(); }
+        });
+        if(!ok) return;
+      } else {
+        Object.assign(a, {tur,tarih,tutar,durum,acik,odeme});
+        addLog(aktivMuvId,'Avans Düzenlendi',eskiOzet+' → '+tur+' | '+fmt(tutar));
+        closeModal('avans-modal');saveData();renderMdAvans();renderMdCards();notify('✓ Kayıt güncellendi');
+      }
     }
     avansEditId=null;
-    ['a-tutar','a-acik','a-odeme'].forEach(i=>document.getElementById(i).value='');
-    document.getElementById('a-dosya').value='';
-    document.getElementById('avans-modal-title').textContent='Avans / Alacak Ekle';
-    closeModal('avans-modal');saveData();renderMdAvans();renderMdCards();notify('✓ Kayıt güncellendi');
     return;
   }
+  // Yeni kayıt
   const avansId=uid();
-  state.avanslar.push({id:avansId,muvId:aktivMuvId,tarih,tutar,tur,durum,acik,odeme,dosyaTur,dosyaId,dosyaNo});
-  addLog(aktivMuvId,'Avans Eklendi',`${tur} | ${fmt(tutar)} | ${durum}${acik?' | '+acik:''}${dosyaNo?' → '+dosyaNo:''}`);
-  if(dosyaTur&&dosyaId){
-    const harc={id:uid(),tarih,tutar,kat:'Avans / Masraf',acik:(acik||tur)+' — avans kaydından'};
-    if(dosyaTur==='dava'){const d=getDava(dosyaId);if(d){if(!d.harcamalar)d.harcamalar=[];d.harcamalar.push(harc);}}
-    else if(dosyaTur==='icra'){const i=getIcra(dosyaId);if(i){if(!i.harcamalar)i.harcamalar=[];i.harcamalar.push(harc);}}
+  const yeniAvans = {id:avansId,muvId:aktivMuvId,tarih,tutar,tur,durum,acik,odeme,dosyaTur,dosyaId,dosyaNo};
+  if (typeof LexSubmit !== 'undefined') {
+    var btn2 = document.querySelector('#avans-modal .btn-gold');
+    var ok2 = await LexSubmit.formKaydet({ tablo:'avanslar', kayit:yeniAvans, modalId:'avans-modal', butonEl:btn2, basariMesaj:'✓ Kayıt eklendi'+(dosyaNo?' → '+dosyaNo+' dosyasına da eklendi':''),
+      renderFn:function(){
+        addLog(aktivMuvId,'Avans Eklendi',tur+' | '+fmt(tutar)+' | '+durum);
+        if(dosyaTur&&dosyaId){
+          const harc={id:uid(),tarih,tutar,kat:'Avans / Masraf',acik:(acik||tur)+' — avans kaydından'};
+          if(dosyaTur==='dava'){const d=getDava(dosyaId);if(d){if(!d.harcamalar)d.harcamalar=[];d.harcamalar.push(harc);}}
+          else if(dosyaTur==='icra'){const i=getIcra(dosyaId);if(i){if(!i.harcamalar)i.harcamalar=[];i.harcamalar.push(harc);}}
+          saveData();
+        }
+        renderMdAvans();renderMdCards();
+      }
+    });
+    if(!ok2) return;
+  } else {
+    state.avanslar.push(yeniAvans);
+    addLog(aktivMuvId,'Avans Eklendi',tur+' | '+fmt(tutar)+' | '+durum);
+    if(dosyaTur&&dosyaId){
+      const harc={id:uid(),tarih,tutar,kat:'Avans / Masraf',acik:(acik||tur)+' — avans kaydından'};
+      if(dosyaTur==='dava'){const d=getDava(dosyaId);if(d){if(!d.harcamalar)d.harcamalar=[];d.harcamalar.push(harc);}}
+      else if(dosyaTur==='icra'){const i=getIcra(dosyaId);if(i){if(!i.harcamalar)i.harcamalar=[];i.harcamalar.push(harc);}}
+    }
+    closeModal('avans-modal');saveData();renderMdAvans();renderMdCards();notify('✓ Kayıt eklendi');
   }
-  ['a-tutar','a-acik','a-odeme'].forEach(i=>document.getElementById(i).value='');
-  document.getElementById('a-dosya').value='';
-  closeModal('avans-modal');saveData();renderMdAvans();renderMdCards();notify('✓ Kayıt eklendi'+(dosyaNo?' → '+dosyaNo+' dosyasına da eklendi':''));
 }
-function deleteAvans(id){
-  const a=state.avanslar.find(x=>x.id===id);
-  if(a)addLog(aktivMuvId,'Avans Silindi',`${a.tur} | ${fmt(a.tutar)} | ${a.durum}${a.acik?' | '+a.acik:''}`);
-  state.avanslar=state.avanslar.filter(a=>a.id!==id);saveData();renderMdAvans();renderMdCards();notify('Silindi');
+async function deleteAvans(id){
+  if (typeof LexSubmit !== 'undefined') {
+    await LexSubmit.formSil({ tablo:'avanslar', id:id, onayMesaj:'Bu kaydı silmek istediğinize emin misiniz?', basariMesaj:'Silindi',
+      renderFn:function(){ renderMdAvans();renderMdCards(); }
+    });
+  } else {
+    const a=state.avanslar.find(x=>x.id===id);
+    if(a)addLog(aktivMuvId,'Avans Silindi',a.tur+' | '+fmt(a.tutar));
+    state.avanslar=state.avanslar.filter(a=>a.id!==id);saveData();renderMdAvans();renderMdCards();notify('Silindi');
+  }
 }
 
 // ================================================================

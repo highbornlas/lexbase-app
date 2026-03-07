@@ -226,7 +226,7 @@ var LexSubmit = (function () {
   // YARDIMCILAR
   // ================================================================
 
-  // ── localStorage'a kaydet ──────────────────────────────────
+  // ── localStorage'a kaydet + snapshot güncelle ───────────────
   function _localKaydet(stateKey, kayit) {
     if (!state[stateKey]) state[stateKey] = [];
     var idx = state[stateKey].findIndex(function (x) { return x.id === kayit.id; });
@@ -237,14 +237,17 @@ var LexSubmit = (function () {
     }
     try { localStorage.setItem(SK, JSON.stringify(state)); }
     catch (e) { console.warn('[LexSubmit] localStorage yazma hatası:', e.message); }
+    // Snapshot güncelle (diff engine'in bu kaydı tekrar sync etmesini engelle)
+    if (typeof _takeSyncSnapshot === 'function') _takeSyncSnapshot();
   }
 
-  // ── localStorage'dan sil ───────────────────────────────────
+  // ── localStorage'dan sil + snapshot güncelle ───────────────
   function _localSil(stateKey, id) {
     if (!state[stateKey]) return;
     state[stateKey] = state[stateKey].filter(function (x) { return x.id !== id; });
     try { localStorage.setItem(SK, JSON.stringify(state)); }
     catch (e) { console.warn('[LexSubmit] localStorage yazma hatası:', e.message); }
+    if (typeof _takeSyncSnapshot === 'function') _takeSyncSnapshot();
   }
 
   // ── MERKEZİ HATA YÖNETİMİ ─────────────────────────────────

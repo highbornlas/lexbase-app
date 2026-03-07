@@ -191,7 +191,7 @@ function anlasmaChange(){
   document.getElementById('an-basari-alanlar').style.display=(t==='basari'||t==='tahsilat')?'block':'none';
   document.getElementById('an-karma-alanlar').style.display=t==='karma'?'block':'none';
 }
-function saveAnlasma(){
+async function saveAnlasma(){
   const obj=anlasmaCtx.type==='dava'?getDava(aktivDavaId):getIcra(aktivIcraId);if(!obj)return;
   const tur=document.getElementById('an-tur').value;
   obj.anlasma={
@@ -206,24 +206,44 @@ function saveAnlasma(){
     karmaYuzde:parseFloat(document.getElementById('an-karma-yuzde').value)||0,
     not:document.getElementById('an-not').value.trim(),
   };
-  // Sözleşme ücreti varsa → dashboard alacaklar'a ekle
+  const hedefTablo=anlasmaCtx.type==='dava'?'davalar':'icra';
+
+  // Sözleşme ücreti → avans kaydı
+  var avansKayit=null;
   const ucret=obj.anlasma.ucret;
   if(ucret>0){
     const muvId=obj.muvId||obj.muvid;
-    const muvAd=getMuvAd(muvId)||'—';
     const dosyaNo=obj.no||obj.konu||'Dosya';
-    // Daha önce bu dosya için alacak kaydı var mı? Varsa güncelle
     const mevcutIdx=state.avanslar.findIndex(a=>a.kaynak===obj.id&&a.tur==='Sözleşme Ücreti');
-    const kayit={id:mevcutIdx>=0?state.avanslar[mevcutIdx].id:uid(),muvId,tur:'Sözleşme Ücreti',aciklama:`${dosyaNo} — Ücret Anlaşması`,tutar:ucret,tarih:obj.anlasma.otarih||today(),durum:'Bekliyor',kaynak:obj.id,kaynakTur:anlasmaCtx.type};
-    if(mevcutIdx>=0)state.avanslar[mevcutIdx]=kayit;
-    else state.avanslar.push(kayit);
-    saveData();
+    avansKayit={id:mevcutIdx>=0?state.avanslar[mevcutIdx].id:uid(),muvId,tur:'Sözleşme Ücreti',aciklama:`${dosyaNo} — Ücret Anlaşması`,tutar:ucret,tarih:obj.anlasma.otarih||today(),durum:'Bekliyor',kaynak:obj.id,kaynakTur:anlasmaCtx.type};
   }
-  closeModal('anlasma-modal');saveData();
-  if(anlasmaCtx.type==='dava'){renderDavaTabContent('anlasma');renderDdCards(getDava(aktivDavaId));}
-  else{renderIcraTabContent('anlasma');renderIdCards(getIcra(aktivIcraId));}
-  renderDashboard();
-  notify('✓ Anlaşma kaydedildi'+(ucret>0?' — Alacaklar güncellendi':''));
+
+  if (typeof LexSubmit !== 'undefined') {
+    var btn=document.querySelector('#anlasma-modal .btn-gold');
+    var ok=await LexSubmit.formKaydet({ tablo:hedefTablo, kayit:obj, modalId:'anlasma-modal', butonEl:btn, basariMesaj:'✓ Ücret anlaşması kaydedildi',
+      renderFn:function(){
+        // Avans kaydını da Supabase'e yaz
+        if(avansKayit){
+          var mi=state.avanslar.findIndex(a=>a.id===avansKayit.id);
+          if(mi>=0)state.avanslar[mi]=avansKayit;else state.avanslar.push(avansKayit);
+          LexSubmit.kaydet('avanslar', avansKayit); // fire-and-forget for secondary record
+        }
+        if(anlasmaCtx.type==='dava'){renderDavaTabContent('anlasma');renderDdCards(getDava(aktivDavaId));}
+        else{renderIcraTabContent('anlasma');renderIdCards(getIcra(aktivIcraId));}
+        renderDashboard();
+      }
+    });
+    if(!ok) return;
+  } else {
+    if(avansKayit){
+      var mi2=state.avanslar.findIndex(a=>a.id===avansKayit.id);
+      if(mi2>=0)state.avanslar[mi2]=avansKayit;else state.avanslar.push(avansKayit);
+    }
+    closeModal('anlasma-modal');saveData();
+    if(anlasmaCtx.type==='dava'){renderDavaTabContent('anlasma');renderDdCards(getDava(aktivDavaId));}
+    else{renderIcraTabContent('anlasma');renderIdCards(getIcra(aktivIcraId));}
+    renderDashboard(); notify('✓ Ücret anlaşması kaydedildi');
+  }
 }
 function openAnlasmaModal(ctx){
   anlasmaCtx={type:ctx};

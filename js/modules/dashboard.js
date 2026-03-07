@@ -183,7 +183,7 @@ function toggleDanTakvim(cb) {
   // Takvim checkbox toggle — ileride geliştirilebilir
 }
 
-function saveDan() {
+async function saveDan() {
   const konu = document.getElementById('dan-konu').value.trim();
   const muvId = document.getElementById('dan-muv').value;
   if(!zorunluKontrol([{id:'dan-konu',deger:konu,label:'Konu'}])){notify('⚠️ Zorunlu alanları doldurun.');return;}
@@ -194,22 +194,20 @@ function saveDan() {
   const teslim = document.getElementById('dan-teslim').value;
   const ekTakvim = document.getElementById('dan-takvim-ekle').checked;
   let takvimId = null;
+  var kayit;
   if (id) {
-    const d = state.danismanlik.find(x => x.id === id);
-    if (d) {
-      d.tur = document.getElementById('dan-tur').value;
-      d.muvId = muvId;
-      d.konu = konu;
-      d.durum = document.getElementById('dan-durum').value;
-      d.tarih = document.getElementById('dan-tarih').value;
-      d.teslimTarih = teslim;
-      d.ucret = ucret;
-      d.tahsilEdildi = tahsil;
-      d.aciklama = document.getElementById('dan-aciklama').value.trim();
-      takvimId = d.takvimId;
+    kayit = state.danismanlik.find(x => x.id === id);
+    if (kayit) {
+      kayit.tur = document.getElementById('dan-tur').value;
+      kayit.muvId = muvId; kayit.konu = konu;
+      kayit.durum = document.getElementById('dan-durum').value;
+      kayit.tarih = document.getElementById('dan-tarih').value;
+      kayit.teslimTarih = teslim; kayit.ucret = ucret; kayit.tahsilEdildi = tahsil;
+      kayit.aciklama = document.getElementById('dan-aciklama').value.trim();
+      takvimId = kayit.takvimId;
     }
   } else {
-    const yeni = {
+    kayit = {
       id: uid(), muvId, sira: (state.danismanlik.length + 1),
       tur: document.getElementById('dan-tur').value,
       konu, durum: document.getElementById('dan-durum').value,
@@ -221,23 +219,30 @@ function saveDan() {
     if (ekTakvim && teslim) {
       const etk = { id: uid(), baslik: konu + ' (Teslim)', tarih: teslim, saat: '', tur: 'Son Gün', muvId, acik: 'Danışmanlık hizmeti teslim tarihi' };
       state.etkinlikler.push(etk);
-      yeni.takvimId = etk.id;
+      kayit.takvimId = etk.id;
     }
-    state.danismanlik.push(yeni);
   }
-  // Takvimde güncelle
-  if (ekTakvim && teslim && !takvimId) {
-    const etk = { id: uid(), baslik: konu + ' (Teslim)', tarih: teslim, saat: '', tur: 'Son Gün', muvId, acik: 'Danışmanlık hizmeti teslim tarihi' };
-    state.etkinlikler.push(etk);
-    const d = state.danismanlik.find(x => x.id === id);
-    if (d) d.takvimId = etk.id;
+
+  if (typeof LexSubmit !== 'undefined') {
+    var btn = document.querySelector('#dan-modal .btn-gold');
+    var ok = await LexSubmit.formKaydet({ tablo:'danismanlik', kayit:kayit, modalId:'dan-modal', butonEl:btn, basariMesaj:'✓ Hizmet kaydedildi',
+      renderFn:function(){
+        if (!id) { if (ekTakvim && teslim && !takvimId) { var etk2={id:uid(),baslik:konu+' (Teslim)',tarih:teslim,saat:'',tur:'Son Gün',muvId,acik:'Danışmanlık teslim'}; state.etkinlikler.push(etk2); } }
+        renderDanismanlik(); updateBadges();
+        if (document.getElementById('mt-danismanlik')?.classList.contains('active')) renderMdDanismanlik();
+      }
+    });
+    if(!ok) return;
+  } else {
+    if (!id) state.danismanlik.push(kayit);
+    if (ekTakvim && teslim && !takvimId) {
+      const etk = { id: uid(), baslik: konu + ' (Teslim)', tarih: teslim, saat: '', tur: 'Son Gün', muvId, acik: 'Danışmanlık hizmeti teslim tarihi' };
+      state.etkinlikler.push(etk);
+      const d = state.danismanlik.find(x => x.id === (id||kayit.id));
+      if (d) d.takvimId = etk.id;
+    }
+    saveData(); closeModal('dan-modal'); renderDanismanlik(); updateBadges(); notify('✓ Hizmet kaydedildi');
   }
-  saveData();
-  closeModal('dan-modal');
-  renderDanismanlik();
-  if (document.getElementById('mt-danismanlik').classList.contains('active')) renderMdDanismanlik();
-  updateBadges();
-  notify('✓ Hizmet kaydedildi');
 }
 
 // ================================================================

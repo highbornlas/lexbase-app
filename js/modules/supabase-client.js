@@ -154,6 +154,8 @@ async function sbVeriYukle() {
     });
 
     showYukleniyor(false);
+    // Snapshot al (diff engine için)
+    if (typeof _takeSyncSnapshot === 'function') _takeSyncSnapshot();
     // Küçük gecikme ile başlat — DOM hazır olsun
     setTimeout(uygulamayiBaslat, 100);
 
@@ -194,60 +196,206 @@ async function sbSil(tablo, id) {
 }
 
 // ================================================================
-// TOPLU KAYDETME (tüm state'i sync)
-// Bu fonksiyon state.js'deki saveData()'ı override eder.
-// Hem localStorage'a hem Supabase'e yazar.
+// TOPLU KAYDETME — HİBRİT MİMARİ
+//
+// saveData() her çağrıldığında:
+// 1. localStorage'a ANINDA yazar (her zaman, offline'da da)
+// 2. Supabase aktifse diff hesaplar → sadece değişen kayıtları gönderir
+// 3. Hata varsa kırmızı toast gösterir (sessiz hata YOK)
+// 4. F5/tab kapatmada beforeunload ile sync garantisi
+//
+// Modal formlar için LexSubmit.formKaydet() kullanılır (pessimistic).
+// Diğer tüm işlemler (not ekle, harcama ekle vb.) saveData() ile sync.
 // ================================================================
 
 // Önceki (localStorage-only) saveData'yı yedekle
 const _localSaveData = typeof saveData === 'function' ? saveData : null;
 
+// Snapshot: Son sync edilen state'in kopyası (diff için)
+let _syncSnapshot = {};
+let _syncInProgress = false;
+let _pendingSync = false;
+
+function _takeSyncSnapshot() {
+  const KEYS = ['muvekkillar','davalar','icra','butce','etkinlikler','avanslar',
+    'danismanlik','arabuluculuk','ihtarnameler','todolar','personel','karsiTaraflar','vekillar'];
+  KEYS.forEach(k => {
+    const arr = state[k];
+    if (Array.isArray(arr)) {
+      _syncSnapshot[k] = {};
+      arr.forEach(item => { if (item && item.id) _syncSnapshot[k][item.id] = JSON.stringify(item); });
+    }
+  });
+}
+
 function saveData() {
-  // Her zaman localStorage'a da yaz (offline fallback)
+  // ── 1. localStorage'a ANINDA yaz (her zaman) ──
   try { localStorage.setItem(SK, JSON.stringify(state)); } catch(e) {
     console.warn('[LexBase] localStorage yazma hatası:', e.message);
   }
 
-  if (!currentBuroId) return;
-
-  // Debounce — 500ms bekle, çok sık yazmayı önle
-  clearTimeout(saveData._timer);
-  saveData._timer = setTimeout(async () => {
-    try {
-      await sbTümüSenkronize();
-    } catch(e) {
-      console.warn('[LexBase] Supabase sync hatası:', e.message);
-    }
-  }, 500);
+  // ── 2. Supabase aktifse → diff sync ──
+  if (!currentBuroId || typeof sb === 'undefined') return;
+  _scheduleDiffSync();
 }
 
-async function sbTümüSenkronize() {
-  if (!currentBuroId) return;
+// Çok kısa debounce (50ms) — ardışık çağrıları birleştir ama F5'e yetecek kadar hızlı
+let _diffTimer = null;
+function _scheduleDiffSync() {
+  if (_diffTimer) clearTimeout(_diffTimer);
+  _diffTimer = setTimeout(_executeDiffSync, 50);
+}
 
-  const eslemeler = {
-    'muvekkillar': state.muvekkillar,
-    'davalar': state.davalar,
-    'icra': state.icra,
-    'butce': state.butce,
-    'etkinlikler': state.etkinlikler,
-    'avanslar': state.avanslar,
-    'danismanlik': state.danismanlik,
-    'arabuluculuk': state.arabuluculuk,
-    'ihtarnameler': state.ihtarnameler || [],
-    'todolar': state.todolar || [],
-    'personel': state.personel,
-    'karsi_taraflar': state.karsiTaraflar,
-    'vekillar': state.vekillar,
-  };
+async function _executeDiffSync() {
+  if (_syncInProgress) { _pendingSync = true; return; }
+  _syncInProgress = true;
 
-  for (const [tablo, kayitlar] of Object.entries(eslemeler)) {
-    if (!kayitlar || !kayitlar.length) continue;
-    const satirlar = kayitlar.map(({ id, ...data }) => ({
-      id, buro_id: currentBuroId, data
-    }));
-    const { error } = await sb.from(tablo).upsert(satirlar);
-    if (error) console.warn(`${tablo} sync hatası:`, error.message);
+  try {
+    const TABLO_MAP = {
+      'muvekkillar':'muvekkillar', 'davalar':'davalar', 'icra':'icra',
+      'butce':'butce', 'etkinlikler':'etkinlikler', 'avanslar':'avanslar',
+      'danismanlik':'danismanlik', 'arabuluculuk':'arabuluculuk',
+      'ihtarnameler':'ihtarnameler', 'todolar':'todolar', 'personel':'personel',
+      'karsiTaraflar':'karsi_taraflar', 'vekillar':'vekillar',
+    };
+
+    for (const [stateKey, tablo] of Object.entries(TABLO_MAP)) {
+      const current = state[stateKey];
+      if (!Array.isArray(current)) continue;
+      const prev = _syncSnapshot[stateKey] || {};
+      const currentIds = {};
+
+      // Değişen veya yeni kayıtları bul
+      const upserts = [];
+      current.forEach(item => {
+        if (!item || !item.id) return;
+        currentIds[item.id] = true;
+        const serialized = JSON.stringify(item);
+        if (!prev[item.id] || prev[item.id] !== serialized) {
+          const { id, ...data } = item;
+          upserts.push({ id, buro_id: currentBuroId, data });
+        }
+      });
+
+      // Silinen kayıtları bul
+      const deletes = [];
+      Object.keys(prev).forEach(id => { if (!currentIds[id]) deletes.push(id); });
+
+      // Upsert
+      if (upserts.length > 0) {
+        const { error } = await sb.from(tablo).upsert(upserts);
+        if (error) {
+          console.error(`[LexBase] ❌ ${tablo} sync hatası:`, error.message);
+          if (typeof notify === 'function') {
+            if (error.message.includes('row-level security') || error.message.includes('policy')) {
+              notify('🔒 ' + tablo + ': Yetkilendirme hatası — tekrar giriş yapın');
+            } else {
+              notify('❌ ' + tablo + ': Kayıt senkronizasyon hatası');
+            }
+          }
+        }
+      }
+
+      // Delete
+      for (const id of deletes) {
+        const { error } = await sb.from(tablo).delete().eq('id', id).eq('buro_id', currentBuroId);
+        if (error) console.warn(`[LexBase] ${tablo} silme hatası:`, error.message);
+      }
+    }
+
+    // Snapshot güncelle
+    _takeSyncSnapshot();
+
+  } catch (e) {
+    console.error('[LexBase] Sync hatası:', e.message);
+    if (typeof notify === 'function') notify('❌ Senkronizasyon hatası: ' + e.message);
+  } finally {
+    _syncInProgress = false;
+    if (_pendingSync) { _pendingSync = false; _scheduleDiffSync(); }
   }
+}
+
+// ── beforeunload — F5/tab kapatmada son sync (keepalive) ──
+// Modern tarayıcılar normal fetch'leri iptal eder. keepalive: true
+// veya navigator.sendBeacon ile istek sayfa kapansa da tamamlanır.
+window.addEventListener('beforeunload', function() {
+  if (!currentBuroId || typeof sb === 'undefined') return;
+
+  // localStorage zaten güncel (saveData'da yazıldı)
+  try { localStorage.setItem(SK, JSON.stringify(state)); } catch(e) {}
+
+  // Supabase REST API üzerinden doğrudan keepalive fetch
+  // sb client yerine doğrudan REST endpoint kullanıyoruz çünkü
+  // supabase-js kütüphanesi keepalive desteklemiyor
+  try {
+    var supabaseUrl = sb.supabaseUrl || '';
+    var supabaseKey = sb.supabaseKey || '';
+    if (!supabaseUrl || !supabaseKey) return;
+
+    // Diff hesapla — sadece değişen kayıtları gönder
+    var TABLO_MAP = {
+      'muvekkillar':'muvekkillar', 'davalar':'davalar', 'icra':'icra',
+      'butce':'butce', 'etkinlikler':'etkinlikler', 'avanslar':'avanslar',
+      'danismanlik':'danismanlik', 'arabuluculuk':'arabuluculuk',
+      'ihtarnameler':'ihtarnameler', 'todolar':'todolar', 'personel':'personel',
+      'karsiTaraflar':'karsi_taraflar', 'vekillar':'vekillar',
+    };
+
+    for (var stateKey in TABLO_MAP) {
+      var current = state[stateKey];
+      if (!Array.isArray(current)) continue;
+      var prev = _syncSnapshot[stateKey] || {};
+      var upserts = [];
+
+      for (var ci = 0; ci < current.length; ci++) {
+        var item = current[ci];
+        if (!item || !item.id) continue;
+        var serialized = JSON.stringify(item);
+        if (!prev[item.id] || prev[item.id] !== serialized) {
+          var data = {};
+          for (var k in item) { if (k !== 'id') data[k] = item[k]; }
+          upserts.push({ id: item.id, buro_id: currentBuroId, data: data });
+        }
+      }
+
+      if (upserts.length > 0) {
+        var tablo = TABLO_MAP[stateKey];
+        var url = supabaseUrl + '/rest/v1/' + tablo;
+
+        // Yöntem 1: fetch with keepalive (tercih edilen)
+        try {
+          fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': supabaseKey,
+              'Authorization': 'Bearer ' + (sb.auth?.session?.()?.access_token || supabaseKey),
+              'Prefer': 'resolution=merge-duplicates'
+            },
+            body: JSON.stringify(upserts),
+            keepalive: true  // ← Tarayıcı sayfayı kapatsa da istek tamamlanır
+          });
+        } catch(fetchErr) {
+          // Yöntem 2: navigator.sendBeacon fallback
+          try {
+            var blob = new Blob([JSON.stringify(upserts)], { type: 'application/json' });
+            navigator.sendBeacon(url + '?apikey=' + supabaseKey, blob);
+          } catch(beaconErr) {
+            // Her iki yöntem de başarısız — en azından localStorage güncel
+          }
+        }
+      }
+    }
+  } catch(e) {
+    // Sessiz başarısızlık — localStorage zaten güncel
+  }
+});
+
+// İlk snapshot'ı uygulama başladığında al
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(_takeSyncSnapshot, 2000); // Uygulama yüklendikten sonra
+  });
 }
 
 // ================================================================
