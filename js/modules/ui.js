@@ -90,7 +90,6 @@ function saveKarsiTaraf(){
     { id:'kt-tc', tip:'tc' },
     { id:'kt-vergino', tip:'vergi' },
     { id:'kt-mersis', tip:'mersis' },
-    { id:'kt-iban', tip:'iban' },
   ])) {
     notify('⚠️ Hatalı veya eksik numara alanları var, lütfen kontrol edin.');
     return;
@@ -153,7 +152,8 @@ function vekYeniAc(araId,listeId,hiddenId,gosterId){
   _vekCtx={araId,listeId,hiddenId,gosterId};
   const q=document.getElementById(araId).value.trim();
   document.getElementById('vek-ad').value=q;
-  ['vek-baro','vek-sicil','vek-tel','vek-mail','vek-uets','vek-banka','vek-acik'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});
+  ['vek-baro','vek-sicil','vek-tel','vek-mail','vek-uets','vek-acik'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});
+  if(typeof vekBankalar!=='undefined'){ vekBankalar=[]; if(typeof renderVekBankalar==='function') renderVekBankalar(); }
   document.getElementById('vek-modal-title').textContent='Karşı Taraf Vekili Ekle';
   document.getElementById('vek-modal-btn').textContent='Kaydet & Seç';
   document.getElementById('vek-modal-btn').onclick=saveVekil;
@@ -165,13 +165,7 @@ function saveVekil(){
   if(!zorunluKontrol([{id:'vek-ad', deger:ad, label:'Ad Soyad'}])) {
     notify('⚠️ Zorunlu alanları doldurun.');return;
   }
-  // IBAN doğrulama
-  if (!numaralariDogrula([
-    { id:'vek-banka', tip:'iban' },
-  ])) {
-    notify('⚠️ IBAN formatı hatalı, lütfen kontrol edin.');
-    return;
-  }
+  // IBAN doğrulama bankaWidget tarafından yapılır
   if(!state.vekillar)state.vekillar=[];
   const v={
     id:uid(),sira:nextSira('vekillar'),ad,
@@ -180,7 +174,7 @@ function saveVekil(){
     tel:document.getElementById('vek-tel').value.trim(),
     mail:document.getElementById('vek-mail').value.trim(),
     uets:document.getElementById('vek-uets').value.trim(),
-    banka:document.getElementById('vek-banka').value.trim(),
+    bankalar:JSON.parse(JSON.stringify(typeof vekBankalar!=='undefined'?vekBankalar:[])),
     aciklama:document.getElementById('vek-acik').value.trim()
   };
   state.vekillar.push(v);
@@ -602,18 +596,15 @@ function spotlightAra(q) {
 // DİNAMİK FORM FONKSİYONLARI
 // ================================================================
 function muvUyrukDegis(uyruk) {
-  const tcEl  = document.getElementById('m-tc');
-  const pasEl = document.getElementById('m-pasaport');
-  const lbl   = document.getElementById('m-kimlik-label');
-  if (!tcEl || !pasEl) return;
+  const tcGrup = document.getElementById('m-tc')?.closest('.form-group');
+  const pasGrup = document.getElementById('m-pasaport')?.closest('.form-group');
+  if (!tcGrup || !pasGrup) return;
   if (uyruk === 'yabanci') {
-    tcEl.style.display  = 'none';
-    pasEl.style.display = 'block';
-    if (lbl) lbl.textContent = 'Pasaport No';
+    tcGrup.style.display = 'none';
+    pasGrup.style.display = 'block';
   } else {
-    tcEl.style.display  = 'block';
-    pasEl.style.display = 'none';
-    if (lbl) lbl.textContent = 'T.C. Kimlik No';
+    tcGrup.style.display = 'block';
+    pasGrup.style.display = 'none';
   }
 }
 
@@ -716,18 +707,15 @@ function muvWidgetDoldur(muvId, araId, listeId, hiddenId, gosterId) {
 
 // Karşı taraf form dinamikleri
 function ktUyrukDegis(uyruk) {
-  const tcEl  = document.getElementById('kt-tc');
+  const tcGrup = document.getElementById('kt-tc')?.closest('.form-group');
   const pasEl = document.getElementById('kt-pasaport');
-  const lbl   = document.getElementById('kt-kimlik-label');
-  if (!tcEl || !pasEl) return;
+  if (!tcGrup || !pasEl) return;
   if (uyruk === 'yabanci') {
-    tcEl.style.display  = 'none';
+    tcGrup.style.display = 'none';
     pasEl.style.display = 'block';
-    if (lbl) lbl.textContent = 'Pasaport No';
   } else {
-    tcEl.style.display  = 'block';
+    tcGrup.style.display = 'block';
     pasEl.style.display = 'none';
-    if (lbl) lbl.textContent = 'TC Kimlik No';
   }
 }
 
