@@ -9,11 +9,10 @@ function showPage(id,el){
   const pageEl = document.getElementById('page-'+id);
   if(pageEl) pageEl.classList.add('active');
   if(el)el.classList.add('active');
-  // Tüm olası scroll container'ları sıfırla
-  document.querySelectorAll('main, .main-content, .app-content, #app-wrapper, .page.active').forEach(el => { el.scrollTop = 0; });
-  window.scrollTo(0, 0);
-  if(pageEl) pageEl.scrollTop = 0;
-  const map={anasayfa:renderDashboard,davalar:()=>{renderDavalar();renderDavaCards();},icra:()=>{renderIcra();renderIcraCards();},danismanlik:renderDanismanlik,butce:renderButce,takvim:renderCalendar,arabuluculuk:renderArabuluculuk,uyap:renderUyapSayfa};
+  // main scroll'u sıfırla — setTimeout ile DOM güncellendikten sonra
+  const mainEl = document.querySelector('main');
+  if(mainEl) mainEl.scrollTop = 0;
+  const map={anasayfa:renderDashboard,davalar:()=>{renderDavalar();renderDavaCards();},icra:()=>{renderIcra();renderIcraCards();},danismanlik:renderDanismanlik,butce:renderButce,takvim:renderCalendar,arabuluculuk:()=>{setTimeout(()=>{renderArabuluculuk();if(mainEl)mainEl.scrollTop=0;},10);},uyap:renderUyapSayfa};
   if(id==='muvekkillar'){
     if(aktifRehberTab==='karsitaraflar')renderKarsiTaraflarListesi();
     else if(aktifRehberTab==='avukatlar')renderVekillarListesi();
