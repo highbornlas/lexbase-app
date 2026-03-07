@@ -97,7 +97,14 @@ async function sbVeriYukle() {
     const kul = await sbMevcutKullanici();
     if (!kul) { showYukleniyor(false); showLanding(); return; }
 
-    currentUser = { id: kul.id, ad: kul.ad, email: kul.email, rol: kul.rol };
+    currentUser = {
+      id:       kul.id,
+      ad:       kul.ad,
+      ad_soyad: kul.ad,           // admin.js uyumluluğu için alias
+      email:    kul.email,
+      rol:      kul.rol,
+      buro_ad:  buro?.ad || '',   // admin.js uyumluluğu için büro adı
+    };
     currentBuroId = kul.buro_id;
 
     // Tüm tabloları paralel olarak çek
@@ -126,7 +133,10 @@ async function sbVeriYukle() {
 
     // Büro bilgisini çek
     const { data: buro } = await sb.from('burolar').select('*').eq('id', currentBuroId).single();
-    if (buro) state.plan = buro.plan || 'deneme';
+    if (buro) {
+      state.plan = buro.plan || 'deneme';
+      if (currentUser) currentUser.buro_ad = buro.ad || ''; // admin.js için büro adını güncelle
+    }
 
     // ensure arrays
     ['davalar','icra'].forEach(k => {

@@ -42,9 +42,21 @@ async function kayitOl() {
   const btn = document.getElementById('kayit-btn');
   btn.textContent = 'Kayıt yapılıyor...'; btn.disabled = true;
   try {
-    await sbKayitOl(email, sifre, ad);
+    const kayitData = await sbKayitOl(email, sifre, ad);
     btn.textContent = 'Kayıt Ol & Başla'; btn.disabled = false;
     loginHata('✅ Kayıt başarılı! E-postanızı doğrulayın, ardından giriş yapın.');
+    // Admin DB'ye yeni müşteri kaydını arka planda gönder
+    if (typeof adminMusteriKayit === 'function') {
+      const authUser = kayitData?.user;
+      if (authUser) {
+        adminMusteriKayit({
+          id:      authUser.id,
+          ad_soyad: ad,
+          email:   email,
+          buro_ad: buroAd,
+        });
+      }
+    }
   } catch(e) {
     btn.textContent = 'Kayıt Ol & Başla'; btn.disabled = false;
     if (e.message.includes('already registered')) loginHata('Bu e-posta zaten kayıtlı. Giriş yapın.');
