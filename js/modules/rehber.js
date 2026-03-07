@@ -46,8 +46,8 @@ function populateMuvSelects(){
 // MÜVEKKİLLER
 // ================================================================
 // ── Müvekkil Modal Yardımcıları ─────────────────────────────────
-let muvBankalar=[]; // [{banka,sube,iban,hesapNo,hesapAd}]
-let muvModalMod='yeni'; // 'yeni' | 'duzenle'
+var muvBankalar=[]; // [{banka,sube,iban,hesapNo,hesapAd}] — var kullanılmalı (bankaWidget.js window.muvBankalar'a erişir)
+var muvModalMod='yeni'; // 'yeni' | 'duzenle'
 
 function muvTipSec(tip){
   document.getElementById('m-tip').value=tip;

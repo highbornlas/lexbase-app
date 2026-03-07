@@ -967,3 +967,11 @@ window.addEventListener('resize', function() {
     document.body.style.overflow = '';
   }
 });
+
+// ================================================================
+// EKSİK FONKSİYON: openMuvModal
+// muvAra dropdown'ından "yeni müvekkil oluştur" tıklanınca çağrılır
+// ================================================================
+function openMuvModal() {
+  openModal('m-modal');
+}
