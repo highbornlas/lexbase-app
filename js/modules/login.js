@@ -131,8 +131,11 @@ async function gmKayit() {
     btn.textContent = 'Kayıt Ol & Başla →'; btn.disabled = false;
     gmTab('giris');
     gmHata('✅ Kayıt başarılı! Kullanıcı adınız: ' + kadi + ' — şimdi giriş yapın.');
-    document.getElementById('gm-email').value = email;
-    document.getElementById('gm-kadi').value = kadi;
+    // Giriş formunu otomatik doldur
+    const emailEl = document.getElementById('gm-email');
+    const kadiEl = document.getElementById('gm-kadi');
+    if (emailEl) emailEl.value = email;
+    if (kadiEl) kadiEl.value = kadi;
   } catch(e) {
     btn.textContent = 'Kayıt Ol & Başla →'; btn.disabled = false;
     if (e.message && e.message.includes('already registered')) gmHata('Bu e-posta zaten kayıtlı.');
