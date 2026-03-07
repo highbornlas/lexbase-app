@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hukuk Bürosu Yönetim Platformu</title>
+<title>Hukuk Bürosu Yönetim Sistemi</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -18,14 +18,14 @@
   <!-- Üst iletişim bandı -->
   <div class="lp-topbar">
     <div class="lp-topbar-inner">
-      <span>📧 <a href="mailto:info@lexbase.app" class="__cf_email__" data-cfemail="e48d8a828ba48189808c918f918fca878b89">[email&#160;protected]</a></span>
+      <span>📧 <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="e48d8a828ba48189808c918f918fca878b89">[email&#160;protected]</a></span>
       <span>📞 +90 (212) 000 00 00</span>
       <span>🕐 Pzt–Cum 09:00–18:00</span>
     </div>
   </div>
 
   <nav class="lp-nav" id="lp-nav">
-    <div class="lp-nav-logo"><svg width="22" height="22" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle"><rect width="40" height="40" rx="8" fill="url(#lg)"></rect><path d="M10 28V12h4v12h10v4H10z" fill="#fff" opacity=".9"/><path d="M22 12h8v4h-8v-4zm0 6h7v3.5h-7V18zm0 5.5h6V28h-6v-4.5z" fill="#00BCD4"/><defs><linearGradient id="lg" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse"><stop stop-color="#0D1117"/><stop offset="1" stop-color="#161B22"/></linearGradient></defs></svg> LexBase</div>
+    <div class="lp-nav-logo">LexBase</div>
     <div class="lp-nav-links">
       <span class="lp-nav-link" onclick="lpScroll('lp-features')">Özellikler</span>
       <span class="lp-nav-link" onclick="lpScroll('lp-plans')">Fiyatlar</span>
@@ -38,6 +38,7 @@
   </nav>
 
   <section class="lp-hero lp-hero-split">
+    <!-- Sol: Metin -->
     <div class="lp-hero-content">
       <div class="lp-badge"><span class="lp-badge-dot"></span>Türkiye'nin hukuk büroları için tasarlandı</div>
       <h1 class="lp-h1">Hukuk Büronuzu<br><em>Dijitale Taşıyın.</em></h1>
@@ -53,9 +54,11 @@
         <div><div class="lp-stat-n">4</div><div class="lp-stat-l">Abonelik Planı</div></div>
       </div>
     </div>
+    <!-- Sağ: Görsel -->
     <div class="lp-hero-visual">
       <div class="lp-hero-img-wrap">
-        <img src="images/hero-avukat.png" alt="LexBase — Hukuk Bürosu Yönetimi" class="lp-hero-img" onerror="this.style.display='none';this.parentElement.classList.add('lp-hero-img-fallback')">
+        <img src="images/hero-avukat.png" alt="LexBase Dashboard" class="lp-hero-img"
+             onerror="this.parentElement.style.display='none'">
         <div class="lp-hero-glow"></div>
       </div>
     </div>
@@ -71,7 +74,7 @@
       </div>
       <div class="lp-mock-inner">
         <div class="lp-mock-nav">
-          <div class="lp-mock-logo" style="color:#00BCD4">⚖ LexBase</div>
+          <div class="lp-mock-logo">LexBase</div>
           <div class="lp-mock-item a">📊 Anasayfa</div>
           <div class="lp-mock-item">👥 Müvekkiller</div>
           <div class="lp-mock-item">📁 Davalar</div>
@@ -108,29 +111,28 @@
       <div class="lp-sec-t">Bir hukuk bürosunun<br>ihtiyacı olan her şey</div>
       <div class="lp-sec-s">Modüler yapısıyla büyüyen büronuzla birlikte büyür</div>
     </div>
-
-    <!-- 3 öne çıkan kart görselli -->
-    <div class="lp-feat-highlight reveal">
-      <div class="lp-feat-hi-card">
+    <!-- 3 Öne Çıkan Kart -->
+    <div class="lp-feat-highlight">
+      <div class="lp-feat-hi-card reveal">
         <div class="lp-feat-hi-ico">
-          <svg width="56" height="56" viewBox="0 0 56 56" fill="none"><rect width="56" height="56" rx="16" fill="#00BCD415"/><path d="M14 38V20a2 2 0 012-2h16l8 8v12a2 2 0 01-2 2H16a2 2 0 01-2-2z" fill="#00BCD430" stroke="#00BCD4" stroke-width="1.5"/><path d="M30 18v8h8" stroke="#00BCD4" stroke-width="1.5" stroke-linecap="round"/><path d="M20 8l-4 4v4M34 10l2 2-2 2" stroke="#00BCD4" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <svg width="52" height="52" viewBox="0 0 52 52" fill="none"><rect width="52" height="52" rx="14" fill="#00BCD415"/><path d="M13 36V17a2 2 0 012-2h15l7 7v14a2 2 0 01-2 2H15a2 2 0 01-2-2z" stroke="#00BCD4" stroke-width="1.5" fill="#00BCD40A"/><path d="M28 15v7h7" stroke="#00BCD4" stroke-width="1.5" stroke-linecap="round"/><path d="M18 24h10M18 28h8M18 32h6" stroke="#00BCD4" stroke-width="1.5" stroke-linecap="round"/></svg>
         </div>
         <div class="lp-feat-hi-t">Dava &amp; İcra Yönetimi</div>
         <div class="lp-feat-hi-d">50+ mahkeme türü, aşama takibi, duruşma takvimi ve icra dosyası yönetimi tek ekranda.</div>
       </div>
-      <div class="lp-feat-hi-card lp-feat-hi-center">
+      <div class="lp-feat-hi-card lp-feat-hi-center reveal rd1">
         <div class="lp-feat-hi-ico">
-          <svg width="56" height="56" viewBox="0 0 56 56" fill="none"><rect width="56" height="56" rx="16" fill="#00BCD415"/><rect x="14" y="16" width="20" height="24" rx="3" fill="#00BCD420" stroke="#00BCD4" stroke-width="1.5"/><rect x="18" y="22" width="12" height="1.5" rx=".75" fill="#00BCD4"/><rect x="18" y="26" width="9" height="1.5" rx=".75" fill="#00BCD4"/><rect x="18" y="30" width="10" height="1.5" rx=".75" fill="#00BCD4"/><path d="M32 26a6 6 0 110 12 6 6 0 010-12z" fill="#00BCD415" stroke="#00BCD4" stroke-width="1.5"/><path d="M30 32l2 2 3-3" stroke="#00BCD4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg width="52" height="52" viewBox="0 0 52 52" fill="none"><rect width="52" height="52" rx="14" fill="#00BCD415"/><rect x="13" y="14" width="18" height="24" rx="3" fill="#00BCD40A" stroke="#00BCD4" stroke-width="1.5"/><rect x="17" y="21" width="10" height="1.5" rx=".75" fill="#00BCD4"/><rect x="17" y="25" width="7" height="1.5" rx=".75" fill="#00BCD4"/><circle cx="35" cy="33" r="6" fill="#0D1117" stroke="#00BCD4" stroke-width="1.5"/><path d="M33 33l1.5 1.5L36.5 31" stroke="#00BCD4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
         <div class="lp-feat-hi-t">Güvenli Müvekkil Portalı</div>
         <div class="lp-feat-hi-d">Gerçek ve tüzel kişi profilleri, belge arşivi, iletişim geçmişi ve tam güvenlik.</div>
       </div>
-      <div class="lp-feat-hi-card">
+      <div class="lp-feat-hi-card reveal rd2">
         <div class="lp-feat-hi-ico">
-          <svg width="56" height="56" viewBox="0 0 56 56" fill="none"><rect width="56" height="56" rx="16" fill="#00BCD415"/><path d="M14 38h28M14 38V26l8-8 8 8 8-8v20" stroke="#00BCD4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="22" cy="26" r="2" fill="#00BCD4"/><circle cx="30" cy="32" r="2" fill="#00BCD4"/><circle cx="38" cy="22" r="2" fill="#00BCD4"/></svg>
+          <svg width="52" height="52" viewBox="0 0 52 52" fill="none"><rect width="52" height="52" rx="14" fill="#00BCD415"/><path d="M12 36h28M12 36V24l9-9 9 9 9-9v21" stroke="#00BCD4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="21" cy="24" r="2" fill="#00BCD4"/><circle cx="30" cy="28" r="2" fill="#00BCD4"/><circle cx="39" cy="20" r="2" fill="#00BCD4"/></svg>
         </div>
         <div class="lp-feat-hi-t">Finansal Raporlama</div>
-        <div class="lp-feat-hi-d">Gelir-gider takibi, avans yönetimi, vekâlet ücreti hesaplama ve aylık/yıllık raporlar.</div>
+        <div class="lp-feat-hi-d">Gelir-gider takibi, avans yönetimi, vekâlet ücreti hesaplama ve detaylı mali raporlar.</div>
       </div>
     </div>
 
@@ -178,7 +180,7 @@
     <div class="lp-cta-inner reveal">
       <div class="lp-cta-glow-ring"></div>
       <div style="position:relative;z-index:1">
-        <div style="font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#00BCD4;margin-bottom:16px">Hemen Başlayın</div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#00BCD4;margin-bottom:16px">Hemen Başlayın</div>
         <div style="font-family:'Playfair Display',serif;font-size:clamp(24px,4vw,48px);color:#fff;margin-bottom:14px;font-weight:700;line-height:1.15">Büronuzu bugün<br><span style="color:#00BCD4">dijitale taşıyın</span></div>
         <div style="font-size:15px;color:rgba(255,255,255,.45);margin-bottom:40px">30 gün ücretsiz — kart bilgisi gerekmez — istediğinizde iptal edin</div>
         <button class="lp-cta-teal" onclick="gmAc('kayit')" style="font-size:16px;padding:18px 52px">Hemen Başla — Ücretsiz →</button>
@@ -186,21 +188,91 @@
     </div>
   </section>
 
-  <footer class="lp-footer">
-    <div class="lp-footer-logo" style="font-family:'DM Sans',sans-serif;font-size:20px;font-weight:800;letter-spacing:-0.5px;color:#00BCD4">LexBase</div>
-    <div class="lp-flinks">
-      <span class="lp-flink">Gizlilik Politikası</span>
-      <span class="lp-flink">Kullanım Koşulları</span>
-      <span class="lp-flink" onclick="gmAc('giris')">Giriş Yap</span>
+  <footer class="lp-footer-new">
+    <!-- Üst Grid: 4 Sütun -->
+    <div class="lp-footer-grid">
+
+      <!-- Sütun 1: Marka -->
+      <div class="lp-footer-col lp-footer-brand">
+        <div class="lp-footer-logo-wrap">
+          <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="40" height="40" rx="10" fill="#00BCD415"/>
+            <rect width="40" height="40" rx="10" stroke="#00BCD4" stroke-width="1.2" fill="none"/>
+            <path d="M10 29V11h5v14h12v4H10z" fill="#00BCD4" opacity=".9"/>
+            <path d="M23 11h8v4h-8v-4zm0 6h7v3.5h-7V17zm0 5.5h6V26h-6v-3.5z" fill="#26C6DA"/>
+          </svg>
+          <span class="lp-footer-brand-name">LexBase</span>
+        </div>
+        <p class="lp-footer-slogan">Hukuk Büronuzu<br>Dijitale Taşıyın.</p>
+        <div class="lp-footer-social">
+          <!-- LinkedIn -->
+          <a href="#" class="lp-social-icon" title="LinkedIn" aria-label="LinkedIn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/>
+            </svg>
+          </a>
+          <!-- X / Twitter -->
+          <a href="#" class="lp-social-icon" title="X (Twitter)" aria-label="X">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+            </svg>
+          </a>
+          <!-- Instagram -->
+          <a href="#" class="lp-social-icon" title="Instagram" aria-label="Instagram">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Sütun 2: Platform -->
+      <div class="lp-footer-col">
+        <div class="lp-footer-col-title">Platform</div>
+        <ul class="lp-footer-links">
+          <li><span class="lp-footer-link" onclick="lpScroll('lp-features')">Özellikler</span></li>
+          <li><span class="lp-footer-link" onclick="lpScroll('lp-plans')">Fiyatlandırma</span></li>
+          <li><span class="lp-footer-link">Entegrasyonlar (UYAP)</span></li>
+          <li><span class="lp-footer-link">Sürüm Notları</span></li>
+        </ul>
+      </div>
+
+      <!-- Sütun 3: Kurumsal -->
+      <div class="lp-footer-col">
+        <div class="lp-footer-col-title">LexBase</div>
+        <ul class="lp-footer-links">
+          <li><span class="lp-footer-link">Hakkımızda</span></li>
+          <li><span class="lp-footer-link">Blog</span></li>
+          <li><span class="lp-footer-link">İletişim</span></li>
+          <li><span class="lp-footer-link">Yardım Merkezi</span></li>
+        </ul>
+      </div>
+
+      <!-- Sütun 4: Yasal -->
+      <div class="lp-footer-col">
+        <div class="lp-footer-col-title">Yasal</div>
+        <ul class="lp-footer-links">
+          <li><span class="lp-footer-link">Kullanım Koşulları</span></li>
+          <li><span class="lp-footer-link">Gizlilik Politikası</span></li>
+          <li><span class="lp-footer-link">KVKK Aydınlatma Metni</span></li>
+          <li><span class="lp-footer-link">Veri Güvenliği</span></li>
+        </ul>
+      </div>
+
+    </div><!-- /lp-footer-grid -->
+
+    <!-- Alt Telif Çubuğu -->
+    <div class="lp-footer-bottom">
+      <span class="lp-footer-copy">© 2026 LexBase. Tüm hakları saklıdır.</span>
+      <span class="lp-footer-tr">Türkiye'de Geliştirilmiştir 🇹🇷</span>
     </div>
-    <div style="font-size:12px;color:rgba(255,255,255,.22)">© 2025 LexBase. Tüm hakları saklıdır.</div>
   </footer>
 </div>
 
 <div id="gm-overlay" onclick="if(event.target===this)gmKapat()">
   <div class="gm-box">
     <button class="gm-close" onclick="gmKapat()">✕</button>
-    <div class="gm-logo" style="font-family:'DM Sans',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#00BCD4">⚖ LexBase</div>
+    <div class="gm-logo">LexBase</div>
     <div class="gm-sub">Hukuk Bürosu Yönetim Platformu</div>
     <div class="gm-tabs">
       <div class="gm-tab active" id="gm-t-giris" onclick="gmTab('giris')">Giriş Yap</div>
