@@ -114,13 +114,4 @@ function hesapSilOnay() {
 // ================================================================
 // SUPABASE BAĞLANTISI
 // ================================================================
-// ================================================================
-// ADMIN ENTEGRASYON — Supabase (sadece müşteri/log/duyuru)
-// Ana uygulama verisi hâlâ localStorage'da kalır
-// ================================================================
-const ADMIN_SB_URL = '';  // Yapılandırılmamış
-const ADMIN_SB_KEY = '';  // Yapılandırılmamış
-let _oturumLogId = null;
-let _oturumBaslangic = null;
-
-// Admin Supabase'e veri gönder (sessizce, hata olursa yoksay)
+// Admin entegrasyonu js/modules/admin.js dosyasındadır
