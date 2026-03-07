@@ -70,7 +70,7 @@ function demoVeriYukle() {
     if (!confirm('Mevcut verilerinizin üzerine demo veriler eklenecek. Devam?')) return;
   }
   seedTestData();
-  kaydet();
+  saveData();
   renderMuvekkillar(); renderDavalar(); renderDavaCards();
   renderIcra(); renderIcraCards(); renderDashboard(); updateBadges();
   notify('✅ Demo veriler yüklendi — 27 müvekkil, 50 dava, 28 icra dosyası');
@@ -78,12 +78,12 @@ function demoVeriYukle() {
 
 function demoVeriSil() {
   if (!confirm('Tüm demo veriler (muv01-muv27, dav01-dav50, icr01-icr28) silinecek. Devam?')) return;
-  state.muvekkillar = state.muvekkillar.filter(m => !m.id.match(/^muv\d+$/));
-  state.davalar     = state.davalar.filter(d => !d.id.match(/^dav\d+$/));
-  state.icra        = state.icra.filter(i => !i.id.match(/^icr\d+$/));
-  state.karsiTaraflar = (state.karsiTaraflar||[]).filter(k => !k.id.match(/^kt\d+$/));
-  state.vekillar    = (state.vekillar||[]).filter(v => !v.id.match(/^vek\d+$/));
-  kaydet();
+  state.muvekkillar   = state.muvekkillar.filter(m => !/^muv\d+$/.test(m.id));
+  state.davalar       = state.davalar.filter(d => !/^dav\d+$/.test(d.id));
+  state.icra          = state.icra.filter(i => !/^icr\d+$/.test(i.id));
+  state.karsiTaraflar = (state.karsiTaraflar||[]).filter(k => !/^kt\d+$/.test(k.id));
+  state.vekillar      = (state.vekillar||[]).filter(v => !/^vek\d+$/.test(v.id));
+  saveData();
   renderMuvekkillar(); renderDavalar(); renderDavaCards();
   renderIcra(); renderIcraCards(); renderDashboard(); updateBadges();
   notify('🗑️ Demo veriler silindi');
