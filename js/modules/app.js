@@ -65,27 +65,104 @@ function init(){
 }
 
 
+
+function seedDemoEkstra() {
+  // ── Arabuluculuk ──────────────────────────────────────────────
+  if (!state.arabuluculuk) state.arabuluculuk = [];
+  const arabDemo = [
+    { id:'ara01', sira:1, konu:'Kira Alacağı Arabuluculuk', tur:'İş', muvId:'muv01', basvuruTarih:'2024-01-15', karsi:'Serkan Bulut', durum:'Anlaşmayla Kapandı', arabulucuAd:'Av. Canan Yıldız', arabulucuSicil:'34-A-1234', arabulucuTel:'(532) 111 22 33', arabulucuBuro:'İstanbul Arabuluculuk Merkezi', ilkTarih:'2024-02-01', ilkSaat:'10:00', yer:'İstanbul Adliyesi A Blok', notlar:'Taraflar anlaşmaya vardı.', toplantılar:[], talepler:[], evraklar:[], topNotlar:[], ilgiliDavaId:'dav01' },
+    { id:'ara02', sira:2, konu:'İşçi Alacakları Arabuluculuk', tur:'İş', muvId:'muv02', basvuruTarih:'2024-03-10', karsi:'Deniz Yıldız', durum:'Devam Ediyor', arabulucuAd:'Av. Kemal Demir', arabulucuSicil:'06-A-5678', arabulucuTel:'(545) 222 33 44', arabulucuBuro:'Ankara Arabuluculuk Merkezi', ilkTarih:'2024-04-05', ilkSaat:'14:00', yer:'Ankara Adliyesi', notlar:'2. toplantı planlandı.', toplantılar:[], talepler:[], evraklar:[], topNotlar:[], ilgiliDavaId:'' },
+    { id:'ara03', sira:3, konu:'Ticari Alacak Arabuluculuk', tur:'Ticari', muvId:'muv19', basvuruTarih:'2024-05-20', karsi:'Kartal Yapı Ltd. Şti.', durum:'Anlaşma Sağlanamadı', arabulucuAd:'Av. Selin Arslan', arabulucuSicil:'35-A-9012', arabulucuTel:'(543) 333 44 55', arabulucuBuro:'İzmir Arabuluculuk Merkezi', ilkTarih:'2024-06-10', ilkSaat:'11:00', yer:'İzmir Adliyesi', notlar:'Taraflar anlaşamadı, dava açıldı.', toplantılar:[], talepler:[], evraklar:[], topNotlar:[], ilgiliDavaId:'dav19' },
+    { id:'ara04', sira:4, konu:'Tüketici Uyuşmazlığı Arabuluculuk', tur:'Tüketici', muvId:'muv05', basvuruTarih:'2024-07-08', karsi:'Selin Karahan', durum:'Devam Ediyor', arabulucuAd:'Av. Bora Yılmaz', arabulucuSicil:'16-A-3456', arabulucuTel:'(551) 444 55 66', arabulucuBuro:'Bursa Arabuluculuk Merkezi', ilkTarih:'2024-08-01', ilkSaat:'09:30', yer:'Bursa Adliyesi', notlar:'İlk toplantı yapıldı.', toplantılar:[], talepler:[], evraklar:[], topNotlar:[], ilgiliDavaId:'' },
+    { id:'ara05', sira:5, konu:'Ortaklık Uyuşmazlığı Arabuluculuk', tur:'Ticari', muvId:'muv21', basvuruTarih:'2024-09-15', karsi:'Hakan Bozkurt', durum:'Başvuru Yapıldı', arabulucuAd:'Av. Derya Çelik', arabulucuSicil:'34-A-7890', arabulucuTel:'(532) 555 66 77', arabulucuBuro:'İstanbul Arabuluculuk Merkezi', ilkTarih:'2024-10-01', ilkSaat:'13:00', yer:'İstanbul Adliyesi B Blok', notlar:'', toplantılar:[], talepler:[], evraklar:[], topNotlar:[], ilgiliDavaId:'dav08' },
+  ];
+  arabDemo.forEach(a => { if (!state.arabuluculuk.find(x => x.id === a.id)) state.arabuluculuk.push(a); });
+
+  // ── Danışmanlık ───────────────────────────────────────────────
+  if (!state.danismanlik) state.danismanlik = [];
+  const danDemo = [
+    { id:'dan01', sira:1, muvId:'muv19', tur:'Şirket Hukuku', konu:'Şirket Ana Sözleşmesi Hazırlama', durum:'Tamamlandı', tarih:'2024-01-10', teslimTarih:'2024-02-10', ucret:15000, tahsilEdildi:15000, aciklama:'Ana sözleşme teslim edildi.', notlar:[], evraklar:[], takvimId:null },
+    { id:'dan02', sira:2, muvId:'muv20', tur:'Sözleşme Hukuku', konu:'Dağıtım Sözleşmesi Revizyonu', durum:'Devam Ediyor', tarih:'2024-03-05', teslimTarih:'2024-04-30', ucret:8500, tahsilEdildi:4250, aciklama:'Revizyonlar devam ediyor.', notlar:[], evraklar:[], takvimId:null },
+    { id:'dan03', sira:3, muvId:'muv01', tur:'Gayrimenkul Hukuku', konu:'Tapu Devri Hukuki Danışmanlık', durum:'Tamamlandı', tarih:'2024-02-20', teslimTarih:'2024-03-20', ucret:6000, tahsilEdildi:6000, aciklama:'İşlem tamamlandı.', notlar:[], evraklar:[], takvimId:null },
+    { id:'dan04', sira:4, muvId:'muv22', tur:'İş Hukuku', konu:'Personel Yönetmeliği Hazırlama', durum:'Beklemede', tarih:'2024-05-15', teslimTarih:'2024-07-15', ucret:12000, tahsilEdildi:0, aciklama:'Başlanmadı.', notlar:[], evraklar:[], takvimId:null },
+    { id:'dan05', sira:5, muvId:'muv25', tur:'Ticaret Hukuku', konu:'Yıllık Hukuki Danışmanlık Hizmeti', durum:'Devam Ediyor', tarih:'2024-01-01', teslimTarih:'2024-12-31', ucret:48000, tahsilEdildi:36000, aciklama:'Aylık retainer sözleşmesi.', notlar:[], evraklar:[], takvimId:null },
+    { id:'dan06', sira:6, muvId:'muv03', tur:'Vergi Hukuku', konu:'Vergi Uyuşmazlığı Danışmanlık', durum:'Tamamlandı', tarih:'2024-04-01', teslimTarih:'2024-05-01', ucret:9500, tahsilEdildi:9500, aciklama:'Uzlaşma sağlandı.', notlar:[], evraklar:[], takvimId:null },
+  ];
+  danDemo.forEach(d => { if (!state.danismanlik.find(x => x.id === d.id)) state.danismanlik.push(d); });
+
+  // ── İhtarnameler ──────────────────────────────────────────────
+  if (!state.ihtarnameler) state.ihtarnameler = [];
+  const ihtarDemo = [
+    { id:'iht01', no:'2024/İHT-001', yon:'Gönderilen', tur:'Kira', muvId:'muv01', karsiTaraf:'Serkan Bulut', konu:'Kira borcunun ödenmesi ihtarı', noterlik:'İstanbul 15. Noterliği', yevmiyeNo:'2024/1234', tarih:'2024-01-20', tebligDurum:'Tebliğ Edildi', tebligTarih:'2024-01-25', icindekiler:'Kira borcu ödenmemiş olup 7 gün içinde ödenmesi talep edilmektedir.', ilgiliTur:'dava', ilgiliDosyaId:'dav01' },
+    { id:'iht02', no:'2024/İHT-002', yon:'Gönderilen', tur:'Alacak', muvId:'muv07', karsiTaraf:'Pınar Ekici', konu:'Sözleşme bedelinin ödenmesi', noterlik:'İzmir 8. Noterliği', yevmiyeNo:'2024/5678', tarih:'2024-02-15', tebligDurum:'Tebliğ Edildi', tebligTarih:'2024-02-20', icindekiler:'Sözleşme bedeli ödenmemiş olup ihtaren talep edilmektedir.', ilgiliTur:'dava', ilgiliDosyaId:'dav07' },
+    { id:'iht03', no:'2024/İHT-003', yon:'Alınan', tur:'Tahliye', muvId:'muv03', karsiTaraf:'Canan Güneş', konu:'Taşınmazı tahliye etme talebi', noterlik:'Ankara 22. Noterliği', yevmiyeNo:'2024/9012', tarih:'2024-03-10', tebligDurum:'Tebliğ Edildi', tebligTarih:'2024-03-12', icindekiler:'Kiralananın 30 gün içinde tahliyesi talep edilmektedir.', ilgiliTur:'dava', ilgiliDosyaId:'dav03' },
+    { id:'iht04', no:'2024/İHT-004', yon:'Gönderilen', tur:'İşçilik', muvId:'muv02', karsiTaraf:'Deniz Yıldız', konu:'Kıdem ve ihbar tazminatı talebi', noterlik:'Bursa 5. Noterliği', yevmiyeNo:'2024/3456', tarih:'2024-04-05', tebligDurum:'İadeli Taahhütlü', tebligTarih:'', icindekiler:'Haksız fesih nedeniyle kıdem ve ihbar tazminatı talep edilmektedir.', ilgiliTur:'dava', ilgiliDosyaId:'dav02' },
+    { id:'iht05', no:'2024/İHT-005', yon:'Gönderilen', tur:'Diğer', muvId:'muv22', karsiTaraf:'Doğa Enerji Koop.', konu:'Sözleşme ihlali bildirimi', noterlik:'İstanbul 30. Noterliği', yevmiyeNo:'2024/7890', tarih:'2024-05-20', tebligDurum:'Gönderildi', tebligTarih:'', icindekiler:'Sözleşme yükümlülükleri yerine getirilmemiş olup ihtarname gönderilmiştir.', ilgiliTur:'', ilgiliDosyaId:'' },
+  ];
+  ihtarDemo.forEach(i => { if (!state.ihtarnameler.find(x => x.id === i.id)) state.ihtarnameler.push(i); });
+
+  // ── Görevler (Todolar) ────────────────────────────────────────
+  if (!state.todolar) state.todolar = [];
+  const todoDemo = [
+    { id:'tod01', baslik:'Dav01 dilekçesi hazırla', aciklama:'Cevap dilekçesi mahkemeye sunulacak', oncelik:'Yüksek', durum:'Devam Ediyor', sonTarih:'2026-03-15', olusturmaTarih:'2026-03-01', muvId:'muv01', dosyaTur:'dava', dosyaId:'dav01', atananId:'', olusturanId:'sahip' },
+    { id:'tod02', baslik:'Bilirkişi raporu incele', aciklama:'Rapor detaylı incelenecek ve itiraz hazırlanacak', oncelik:'Yüksek', durum:'Bekliyor', sonTarih:'2026-03-20', olusturmaTarih:'2026-03-01', muvId:'muv06', dosyaTur:'dava', dosyaId:'dav06', atananId:'', olusturanId:'sahip' },
+    { id:'tod03', baslik:'İcra takibi başlat', aciklama:'İcra dairesine başvuru yapılacak', oncelik:'Orta', durum:'Tamamlandı', sonTarih:'2026-02-28', olusturmaTarih:'2026-02-15', muvId:'muv08', dosyaTur:'icra', dosyaId:'icr04', atananId:'', olusturanId:'sahip', tamamlanmaTarih:'2026-02-27' },
+    { id:'tod04', baslik:'Müvekkil toplantısı ayarla', aciklama:'Dava stratejisi görüşmek üzere toplantı organize et', oncelik:'Orta', durum:'Bekliyor', sonTarih:'2026-03-25', olusturmaTarih:'2026-03-02', muvId:'muv19', dosyaTur:'', dosyaId:'', atananId:'', olusturanId:'sahip' },
+    { id:'tod05', baslik:'Arabuluculuk tutanağı teslim al', aciklama:'2. toplantı sonrası tutanak imzalanacak', oncelik:'Orta', durum:'Bekliyor', sonTarih:'2026-04-05', olusturmaTarih:'2026-03-03', muvId:'muv02', dosyaTur:'', dosyaId:'', atananId:'', olusturanId:'sahip' },
+    { id:'tod06', baslik:'Yargıtay temyiz dilekçesi', aciklama:'Temyiz süresi dolmadan hazırlanacak', oncelik:'Acil', durum:'Devam Ediyor', sonTarih:'2026-03-10', olusturmaTarih:'2026-03-01', muvId:'muv04', dosyaTur:'dava', dosyaId:'dav04', atananId:'', olusturanId:'sahip' },
+    { id:'tod07', baslik:'Danışmanlık sözleşmesi yenile', aciklama:'Yıllık sözleşme yenileme görüşmesi', oncelik:'Düşük', durum:'Bekliyor', sonTarih:'2026-04-30', olusturmaTarih:'2026-03-05', muvId:'muv25', dosyaTur:'', dosyaId:'', atananId:'', olusturanId:'sahip' },
+  ];
+  todoDemo.forEach(t => { if (!state.todolar.find(x => x.id === t.id)) state.todolar.push(t); });
+
+  // ── Takvim Etkinlikleri ───────────────────────────────────────
+  if (!state.etkinlikler) state.etkinlikler = [];
+  const etkinlikDemo = [
+    { id:'etk01', baslik:'Kadir Yılmaz - Duruşma', tarih:'2026-03-15', saat:'09:00', tur:'Duruşma', muvId:'muv01', davNo:'2024/0001', yer:'Sincan Adliyesi Salon 15', not:'Bilirkişi raporu sunulacak' },
+    { id:'etk02', baslik:'Leyla Sönmez - Arabuluculuk', tarih:'2026-03-18', saat:'14:00', tur:'Arabuluculuk', muvId:'muv02', davNo:'', yer:'Bursa Adliyesi', not:'2. oturum' },
+    { id:'etk03', baslik:'Bahar Işık - Duruşma', tarih:'2026-03-27', saat:'10:30', tur:'Duruşma', muvId:'muv04', davNo:'2023/0004', yer:'İstanbul Adalet Sarayı Salon 17', not:'Tanık dinlenecek' },
+    { id:'etk04', baslik:'Güven Medikal - Müvekkil Toplantısı', tarih:'2026-03-20', saat:'11:00', tur:'Toplantı', muvId:'muv25', davNo:'', yer:'Büro', not:'Danışmanlık sözleşmesi görüşmesi' },
+    { id:'etk05', baslik:'Altın Yapı - Duruşma', tarih:'2026-04-07', saat:'13:00', tur:'Duruşma', muvId:'muv19', davNo:'2024/0019', yer:'Bursa Adliyesi Salon 12', not:'' },
+    { id:'etk06', baslik:'Taner Altın - Temyiz Son Gün', tarih:'2026-03-10', saat:'', tur:'Son Gün', muvId:'muv05', davNo:'2023/0005', yer:'', not:'Temyiz dilekçesi bugün teslim edilmeli' },
+    { id:'etk07', baslik:'Ege Tekstil - Duruşma', tarih:'2026-04-15', saat:'09:30', tur:'Duruşma', muvId:'muv23', davNo:'2022/0023', yer:'Sincan Adliyesi Salon 12', not:'İstinaf sonucu bekleniyor' },
+    { id:'etk08', baslik:'Merve Duman - İcra Satışı', tarih:'2026-03-22', saat:'10:00', tur:'İcra İşlemi', muvId:'muv06', davNo:'', yer:'İstanbul Adliyesi İcra Dairesi', not:'Satış ihalesi' },
+  ];
+  etkinlikDemo.forEach(e => { if (!state.etkinlikler.find(x => x.id === e.id)) state.etkinlikler.push(e); });
+}
 function demoVeriYukle() {
   if (state.muvekkillar.length > 0) {
     if (!confirm('Mevcut verilerinizin üzerine demo veriler eklenecek. Devam?')) return;
   }
   seedTestData();
+  seedDemoEkstra();
   saveData();
   renderMuvekkillar(); renderDavalar(); renderDavaCards();
   renderIcra(); renderIcraCards(); renderDashboard(); updateBadges();
-  notify('✅ Demo veriler yüklendi — 27 müvekkil, 50 dava, 28 icra dosyası');
+  if(typeof renderArabuluculuk==='function') renderArabuluculuk();
+  if(typeof renderDanismanlik==='function') renderDanismanlik();
+  if(typeof renderIhtarname==='function') renderIhtarname();
+  if(typeof renderTodo==='function') renderTodo();
+  notify('✅ Demo veriler yüklendi — 27 müvekkil, 50 dava, 28 icra, 5 arabuluculuk, 6 danışmanlık, 5 ihtarname, 7 görev, 8 etkinlik');
 }
 
 function demoVeriSil() {
-  if (!confirm('Tüm demo veriler (muv01-muv27, dav01-dav50, icr01-icr28) silinecek. Devam?')) return;
+  if (!confirm('Tüm demo veriler silinecek. Devam?')) return;
   state.muvekkillar   = state.muvekkillar.filter(m => !/^muv\d+$/.test(m.id));
   state.davalar       = state.davalar.filter(d => !/^dav\d+$/.test(d.id));
   state.icra          = state.icra.filter(i => !/^icr\d+$/.test(i.id));
   state.karsiTaraflar = (state.karsiTaraflar||[]).filter(k => !/^kt\d+$/.test(k.id));
   state.vekillar      = (state.vekillar||[]).filter(v => !/^vek\d+$/.test(v.id));
+  state.arabuluculuk  = (state.arabuluculuk||[]).filter(a => !/^ara\d+$/.test(a.id));
+  state.danismanlik   = (state.danismanlik||[]).filter(d => !/^dan\d+$/.test(d.id));
+  state.ihtarnameler  = (state.ihtarnameler||[]).filter(i => !/^iht\d+$/.test(i.id));
+  state.todolar       = (state.todolar||[]).filter(t => !/^tod\d+$/.test(t.id));
+  state.etkinlikler   = (state.etkinlikler||[]).filter(e => !/^etk\d+$/.test(e.id));
   saveData();
   renderMuvekkillar(); renderDavalar(); renderDavaCards();
   renderIcra(); renderIcraCards(); renderDashboard(); updateBadges();
+  if(typeof renderArabuluculuk==='function') renderArabuluculuk();
+  if(typeof renderDanismanlik==='function') renderDanismanlik();
+  if(typeof renderIhtarname==='function') renderIhtarname();
+  if(typeof renderTodo==='function') renderTodo();
   notify('🗑️ Demo veriler silindi');
 }
 
