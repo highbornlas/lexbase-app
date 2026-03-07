@@ -4,26 +4,28 @@
 // ================================================================
 
 function saveDava(){
-  const no=document.getElementById('d-no').value.trim(),konu=document.getElementById('d-konu').value.trim(),muvId=document.getElementById('d-muv').value;
-  const derdest=document.getElementById('d-derdest').value;
-  if(derdest==='kesinlesti'&&!document.getElementById('d-kesin-tarih').value){notify('⚠️ Kesinleşme tarihi zorunlu');return;}
+  let no=document.getElementById('d-no').value.trim();
+  const konu=document.getElementById('d-konu').value.trim(),muvId=document.getElementById('d-muv').value;
+  const derdest=(document.getElementById('d-derdest')||{}).value||'';
   if(!zorunluKontrol([
-    {id:'d-no', deger:no, label:'Dosya No'},
     {id:'d-konu', deger:konu, label:'Konu'},
     {id:'d-muv', deger:muvId, label:'Müvekkil'},
   ])){notify('⚠️ Zorunlu alanları doldurun.');return;}
   if(!limitKontrol('dava')) return;
-  // Otomatik numara — boşsa ata
-  if(!no) { const autoN=autoNo('dava'); document.getElementById('d-no').value=autoN; } // ← Plan limit kontrolü
+  // Otomatik numara
+  if(!no) no = autoNo('dava');
   const yeniDava={
     id:uid(),sira:nextSira('davalar'),no,konu,muvId,
     il:document.getElementById('d-il').value,adliye:document.getElementById('d-adliye').value,mtur:document.getElementById('d-mtur').value,
     mno:document.getElementById('d-mno').value.trim(),
     esasYil:document.getElementById('d-esas-yil').value.trim(),esasNo:document.getElementById('d-esas-no').value.trim(),
     kararYil:document.getElementById('d-karar-yil').value.trim(),kararNo:document.getElementById('d-karar-no').value.trim(),
-    hakim:document.getElementById('d-hakim').value.trim(),
-    asama:document.getElementById('d-asama').value,durum:document.getElementById('d-durum').value,
-    derdest:document.getElementById('d-derdest').value,taraf:document.getElementById('d-taraf').value,
+    hakim:(document.getElementById('d-hakim')||{}).value||'',
+    asama:document.getElementById('d-asama').value,
+    durum:(document.getElementById('d-durum')||{}).value||'Aktif',
+    durumTag:(document.getElementById('d-durum-tag')||{}).value||'',
+    durumAciklama:(document.getElementById('d-durum-aciklama')||{}).value||'',
+    derdest:derdest,taraf:document.getElementById('d-taraf').value,
     tarih:document.getElementById('d-tarih').value,durusma:document.getElementById('d-durusma').value,
     ktarih:document.getElementById('d-ktarih').value,kesin:document.getElementById('d-kesin').value,
     icrano:document.getElementById('d-icrano').value.trim(),
@@ -89,6 +91,8 @@ function renderDavalar(search='',fk='',fa='',fd=''){
     const renk=MRENK[tur]||'#566573';
     const rows=davalar.map(d=>{
       const bc=d.durum==='Aktif'?'aktif':d.durum==='Beklemede'?'beklemede':'kapali';
+      const durumTag = d.durumTag || '';
+      const tagRenk = durumTag.includes('🔴')?'#e74c3c':durumTag.includes('🟡')?'#f39c12':durumTag.includes('🔵')?'#3498db':durumTag.includes('🏁')?'#27ae60':'var(--green)';
       return`<tr class="dava-row" onclick="openDavaDetay('${d.id}')" style="cursor:pointer">
         <td style="text-align:center;font-weight:700;color:var(--text-muted);font-size:11px">${d.sira||'?'}</td>
         <td><strong style="color:var(--gold)">${d.no}</strong>${(d.esasYil||d.esasNo)?`<div style="font-size:10px;color:var(--text-dim)">Esas: ${d.esasYil||''}/${d.esasNo||''}</div>`:''}</td>
@@ -96,7 +100,7 @@ function renderDavalar(search='',fk='',fa='',fd=''){
         <td>${d.konu}${d.karsi?`<div style="font-size:10px;color:var(--text-dim)">Karşı: ${d.karsi}</div>`:''}</td>
         <td style="font-size:11px">${[d.il,d.mno].filter(Boolean).join(' ')}</td>
         <td style="color:${ARENK[d.asama]||'var(--text-muted)'};font-size:11px;font-weight:600">${d.asama||'—'}</td>
-        <td><span class="badge badge-${bc}">${d.durum}</span></td>
+        <td>${durumTag?`<span style="font-size:10px;color:${tagRenk};font-weight:700">${durumTag}</span>`:`<span class="badge badge-${bc}">${d.durum}</span>`}</td>
         <td>${d.taraf||'—'}</td><td>${fmtD(d.durusma)}</td>
         <td>${d.icrano?`<span style="color:var(--gold);font-size:11px">⚡ ${d.icrano}</span>`:'—'}</td>
         <td><button class="ctx-btn" onclick="event.stopPropagation();CtxMenu.davaMenu(event,'${d.id}')">⋮</button></td>
@@ -151,7 +155,7 @@ function renderDdCards(d){
   const topAktarim=thList.filter(t=>t.tur==='aktarim').reduce((s,t)=>s+t.tutar,0);
   document.getElementById('dd-cards').innerHTML=`
     <div class="card"><div class="card-label">Aşama</div><div class="card-value" style="font-size:16px;color:${ARENK[d.asama]||'var(--text-muted)'}">${d.asama||'—'}</div></div>
-    <div class="card"><div class="card-label">Durum</div><div class="card-value" style="font-size:16px">${d.durum}</div></div>
+    <div class="card"><div class="card-label">Durum</div><div class="card-value" style="font-size:14px">${d.durumTag||d.durum}${d.durumAciklama?'<div style="font-size:10px;color:var(--text-muted);margin-top:2px">'+d.durumAciklama+'</div>':''}</div></div>
     <div class="card"><div class="card-label">Toplam Harcama</div><div class="card-value red">${fmt(harcToplam)}</div></div>
     <div class="card"><div class="card-label">Evrak</div><div class="card-value gold">${evrakSay}</div></div>
     ${topTahsil>0?`<div class="card"><div class="card-label">Tahsilat</div><div class="card-value green">${fmt(topTahsil)}</div></div>`:''}

@@ -585,44 +585,73 @@ function spotlightAra(q) {
   const ql = q.toLowerCase();
 
   // Müvekkiller
-  (state.muvekkillar||[]).filter(m => (m.ad||'').toLowerCase().includes(ql) || (m.tel||'').includes(q) || (m.email||'').toLowerCase().includes(ql)).slice(0,5).forEach(m => {
-    sonuclar.push({ ikon:'👤', baslik: m.ad, alt: m.tel||m.email||'Müvekkil', renk:'var(--gold)',
-      onclick: `spotlightKapat();showMuvDetay('${m.id}')` });
+  (state.muvekkillar||[]).filter(m => (m.ad||'').toLowerCase().includes(ql) || (m.tel||'').includes(q) || (m.mail||'').toLowerCase().includes(ql) || (m.tc||'').includes(q)).slice(0,5).forEach(m => {
+    const meta = [m.tip==='tuzel'?'🏢 Tüzel':'👤 Gerçek', m.tel, m.mail].filter(Boolean).join(' · ');
+    sonuclar.push({ ikon:'👤', baslik: m.ad, alt: meta, renk:'var(--gold)', tur:'Müvekkil',
+      fn: function(){ spotlightKapat(); showPage('muvekkillar',document.getElementById('ni-muvekkillar')); setTimeout(function(){ openDetay(m.id); },200); }});
+  });
+
+  // Karşı Taraflar
+  (state.karsiTaraflar||[]).filter(k => (k.ad||'').toLowerCase().includes(ql) || (k.tc||'').includes(q) || (k.tel||'').includes(q)).slice(0,3).forEach(k => {
+    sonuclar.push({ ikon:'⚔️', baslik: k.ad, alt: k.tel||k.mail||'Karşı Taraf', renk:'#e67e22', tur:'Karşı Taraf',
+      fn: function(){ spotlightKapat(); showPage('muvekkillar',document.getElementById('ni-muvekkillar')); setTimeout(function(){ rehberTab('karsitaraflar',document.querySelector('[onclick*="karsitaraflar"]')); openKTProfil(k.id); },200); }});
   });
 
   // Davalar
-  (state.davalar||[]).filter(d => (d.no||'').toLowerCase().includes(ql) || (d.konu||'').toLowerCase().includes(ql) || getMuvAd(d.muvId).toLowerCase().includes(ql)).slice(0,5).forEach(d => {
-    sonuclar.push({ ikon:'📁', baslik: `${d.no||'—'} — ${d.konu||''}`, alt: getMuvAd(d.muvId), renk:'var(--blue)',
-      onclick: `spotlightKapat();showPage('davalar',document.getElementById('ni-davalar'));openDavaDetay('${d.id}')` });
+  (state.davalar||[]).filter(d => (d.no||'').toLowerCase().includes(ql) || (d.konu||'').toLowerCase().includes(ql) || getMuvAd(d.muvId).toLowerCase().includes(ql) || (d.esasNo||'').includes(q)).slice(0,5).forEach(d => {
+    const esas = (d.esasYil&&d.esasNo) ? d.esasYil+'/'+d.esasNo+' E.' : '';
+    sonuclar.push({ ikon:'📁', baslik: d.no + (esas?' · '+esas:''), alt: d.konu+' · '+getMuvAd(d.muvId), renk:'var(--blue)', tur:'Dava',
+      fn: function(){ spotlightKapat(); showPage('davalar',document.getElementById('ni-davalar')); setTimeout(function(){ openDavaDetay(d.id); },200); }});
   });
 
   // İcra
-  (state.icra||[]).filter(i => (i.no||'').toLowerCase().includes(ql) || (i.borclu||'').toLowerCase().includes(ql) || getMuvAd(i.muvId).toLowerCase().includes(ql)).slice(0,3).forEach(i => {
-    sonuclar.push({ ikon:'⚡', baslik: `${i.no||'—'} — ${i.borclu||''}`, alt: getMuvAd(i.muvId), renk:'#e74c3c',
-      onclick: `spotlightKapat();showPage('icra',document.getElementById('ni-icra'));openIcraDetay('${i.id}')` });
+  (state.icra||[]).filter(i => (i.no||'').toLowerCase().includes(ql) || (i.borclu||'').toLowerCase().includes(ql) || getMuvAd(i.muvId).toLowerCase().includes(ql) || (i.esas||'').includes(q)).slice(0,3).forEach(i => {
+    sonuclar.push({ ikon:'⚡', baslik: i.no + (i.esas?' · '+i.esas:''), alt: i.borclu+' · '+getMuvAd(i.muvId), renk:'#e74c3c', tur:'İcra',
+      fn: function(){ spotlightKapat(); showPage('icra',document.getElementById('ni-icra')); setTimeout(function(){ openIcraDetay(i.id); },200); }});
   });
 
   // İhtarnameler
   (state.ihtarnameler||[]).filter(ih => (ih.no||'').toLowerCase().includes(ql) || (ih.konu||'').toLowerCase().includes(ql) || (ih.karsiTaraf||'').toLowerCase().includes(ql)).slice(0,3).forEach(ih => {
-    sonuclar.push({ ikon:'📨', baslik: `${ih.no||'—'} — ${ih.konu||''}`, alt: getMuvAd(ih.muvId)+' · '+ih.yon, renk:'var(--purple)',
-      onclick: `spotlightKapat();showPage('ihtarname',document.getElementById('ni-ihtarname'));openIhtarDetay('${ih.id}')` });
+    sonuclar.push({ ikon:'📨', baslik: ih.no||'—', alt: (ih.konu||'')+ ' · '+getMuvAd(ih.muvId), renk:'var(--purple)', tur:'İhtarname',
+      fn: function(){ spotlightKapat(); showPage('ihtarname',document.getElementById('ni-ihtarname')); setTimeout(function(){ if(typeof openIhtarDetay==='function') openIhtarDetay(ih.id); },200); }});
+  });
+
+  // Arabuluculuk
+  (state.arabuluculuk||[]).filter(a => (a.konu||'').toLowerCase().includes(ql) || (a.karsi||'').toLowerCase().includes(ql) || (a.uyusmazlikTur||'').toLowerCase().includes(ql)).slice(0,3).forEach(a => {
+    sonuclar.push({ ikon:'🤝', baslik: a.konu, alt: (a.tur||'')+' · '+(a.karsi||'—'), renk:'#16a085', tur:'Arabuluculuk',
+      fn: function(){ spotlightKapat(); showPage('arabuluculuk',document.getElementById('ni-arabuluculuk')); setTimeout(function(){ openArabDetay(a.id); },200); }});
+  });
+
+  // Görevler
+  (state.todolar||[]).filter(t => (t.baslik||'').toLowerCase().includes(ql)).slice(0,3).forEach(t => {
+    sonuclar.push({ ikon:'✅', baslik: t.baslik, alt: (t.durum||'')+(t.muvId?' · '+getMuvAd(t.muvId):''), renk:'#27ae60', tur:'Görev',
+      fn: function(){ spotlightKapat(); showPage('todo',document.getElementById('ni-todo')); }});
   });
 
   if (!sonuclar.length) {
-    container.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text-dim);font-size:13px">🔍 "${q}" için sonuç bulunamadı</div>`;
+    container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-dim);font-size:13px">🔍 "' + q + '" için sonuç bulunamadı</div>';
     return;
   }
 
-  container.innerHTML = sonuclar.map((s,i) => `
-    <div onclick="${s.onclick}" style="display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;border-radius:8px;margin:2px 4px;transition:background .1s" 
-      onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
-      <span style="font-size:20px;width:28px;text-align:center">${s.ikon}</span>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.baslik}</div>
-        <div style="font-size:11px;color:var(--text-muted)">${s.alt}</div>
-      </div>
-      <span style="font-size:10px;color:${s.renk};background:${s.renk}22;padding:2px 8px;border-radius:4px;font-weight:700;flex-shrink:0">↗</span>
-    </div>`).join('');
+  container.innerHTML = sonuclar.map(function(s,i) {
+    return '<div class="spotlight-item" data-idx="'+i+'" style="display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;border-radius:8px;margin:2px 4px;transition:background .1s" onmouseover="this.style.background=\'var(--surface2)\'" onmouseout="this.style.background=\'transparent\'">'
+      + '<span style="font-size:20px;width:28px;text-align:center">'+s.ikon+'</span>'
+      + '<div style="flex:1;min-width:0">'
+      + '<div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+s.baslik+'</div>'
+      + '<div style="font-size:11px;color:var(--text-muted)">'+s.alt+'</div>'
+      + '</div>'
+      + '<span style="font-size:10px;color:'+s.renk+';background:'+s.renk+'22;padding:2px 8px;border-radius:4px;font-weight:700;flex-shrink:0">'+s.tur+' ↗</span>'
+      + '</div>';
+  }).join('');
+
+  // Bind click handlers
+  window._spotlightSonuclar = sonuclar;
+  container.querySelectorAll('.spotlight-item').forEach(function(el) {
+    el.addEventListener('click', function() {
+      var idx = parseInt(this.dataset.idx);
+      if (window._spotlightSonuclar[idx]) window._spotlightSonuclar[idx].fn();
+    });
+  });
 }
 
 // ================================================================
@@ -1085,22 +1114,44 @@ function todoGorunumDegis(mod) {
 document.addEventListener('DOMContentLoaded', function() {
   if (typeof Wizard === 'undefined') return;
 
-  // Dava wizard
+  // Dava wizard — yeni 3 sekme yapısı
   Wizard.olustur('dav-modal', {
     adimlar: [
-      { baslik: 'Taraf Bilgileri', panelId: 'dav-wiz-1',
+      { baslik: 'Mahkeme & Konu', panelId: 'dav-wiz-1',
         dogrula: function() {
           const konu = document.getElementById('d-konu')?.value.trim();
-          const muv = document.getElementById('d-muv')?.value;
           if (!konu) { notify('⚠️ Dava konusu zorunludur'); return false; }
+          return true;
+        }
+      },
+      { baslik: 'Taraflar', panelId: 'dav-wiz-2',
+        dogrula: function() {
+          const muv = document.getElementById('d-muv')?.value;
           if (!muv) { notify('⚠️ Müvekkil seçmelisiniz'); return false; }
           return true;
         }
       },
-      { baslik: 'Mahkeme & Esas', panelId: 'dav-wiz-2' },
-      { baslik: 'Tarih & Diğer', panelId: 'dav-wiz-3' },
+      { baslik: 'Tarih & Detay', panelId: 'dav-wiz-3' },
     ],
     bitirFn: function() { saveDava(); }
   });
   Wizard.render('dav-modal');
 });
+
+// ================================================================
+// DAVA STATÜ DEĞİŞİMİ — Dinamik durum sistemi
+// ================================================================
+function davaStatuDegisti() {
+  const asama = document.getElementById('d-asama')?.value || '';
+  const durumEl = document.getElementById('d-durum');
+  const kesinWrap = document.getElementById('d-kesin-wrap');
+
+  // Eski d-durum hidden alanını statüye göre güncelle (geriye uyumluluk)
+  if (durumEl) {
+    if (asama === 'Kesinleşti') durumEl.value = 'Kapandı';
+    else durumEl.value = 'Aktif';
+  }
+
+  // Kesinleşme tarihini göster/gizle
+  if (kesinWrap) kesinWrap.style.display = (asama === 'Kesinleşti') ? 'flex' : 'none';
+}

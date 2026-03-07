@@ -235,23 +235,26 @@ function openModal(id){
     // Tüm alanları sıfırla
     ['d-no','d-konu','d-mno','d-esas-yil','d-esas-no','d-karar-yil','d-karar-no',
      'd-hakim','d-derdest','d-icrano','d-deger','d-not','d-tarih','d-durusma',
-     'd-ktarih','d-kesin'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});
+     'd-ktarih','d-kesin','d-gelecek-durusma','d-durum-aciklama'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});
     const dm=document.getElementById('d-muv');if(dm){dm.value=aktivMuvId||'';}
-    const da=document.getElementById('d-asama');if(da)da.value='';
-    const dd=document.getElementById('d-durum');if(dd)dd.value='Devam Ediyor';
+    const da=document.getElementById('d-asama');if(da)da.value='İlk Derece';
+    const dd=document.getElementById('d-durum');if(dd)dd.value='Aktif';
+    const dtag=document.getElementById('d-durum-tag');if(dtag)dtag.value='🟢 Akışında';
     const dt=document.getElementById('d-taraf');if(dt)dt.value='Davacı';
     const dmtur=document.getElementById('d-mtur');if(dmtur)dmtur.value='';
     populateIlSelect('d-il','');
     document.getElementById('d-adliye').innerHTML='<option value="">— Önce il seçin —</option>';
+    // Müvekkil widget temizle
+    const muvG=document.getElementById('d-muv-secili');if(muvG){muvG.style.display='none';muvG.innerHTML='';}
+    const muvA=document.getElementById('d-muv-ara');if(muvA)muvA.value='';
     // Çoklu karşı taraf alanlarını temizle
     const karsiWrap = document.getElementById('d-karsi-wrap');
     if (karsiWrap) {
       karsiWrap.innerHTML = `
         <div class="form-row d-karsi-satir" id="d-karsi-satir-0">
-          <div class="form-group" style="flex:2">
-            <label>Karşı Taraf</label>
+          <div class="form-group" style="flex:2"><label>Karşı Taraf</label>
             <div style="position:relative">
-              <input id="d-karsi-ara-0" class="d-karsi-ara" placeholder="Ad ile ara veya yeni ekle..." autocomplete="off"
+              <input id="d-karsi-ara-0" class="d-karsi-ara" placeholder="Ad ile ara..." autocomplete="off"
                 oninput="ktAra(this.id,this.dataset.liste,this.dataset.hidden,this.dataset.goster)"
                 onfocus="ktAra(this.id,this.dataset.liste,this.dataset.hidden,this.dataset.goster)"
                 data-liste="d-karsi-dd-0" data-hidden="d-karsi-id-0" data-goster="d-karsi-g-0">
@@ -260,10 +263,9 @@ function openModal(id){
             <div id="d-karsi-g-0" class="kt-secili" style="display:none"></div>
             <input type="hidden" id="d-karsi-id-0">
           </div>
-          <div class="form-group">
-            <label>Karşı Taraf Vekili</label>
+          <div class="form-group"><label>Vekili</label>
             <div style="position:relative">
-              <input id="d-karsav-ara-0" class="d-karsav-ara" placeholder="Ad ile ara..." autocomplete="off"
+              <input id="d-karsav-ara-0" class="d-karsav-ara" placeholder="Vekil ara..." autocomplete="off"
                 oninput="vekAra(this.id,this.dataset.liste,this.dataset.hidden,this.dataset.goster)"
                 onfocus="vekAra(this.id,this.dataset.liste,this.dataset.hidden,this.dataset.goster)"
                 data-liste="d-karsav-dd-0" data-hidden="d-karsav-id-0" data-goster="d-karsav-g-0">
@@ -275,7 +277,7 @@ function openModal(id){
         </div>`;
       if (typeof _davaKarsiSayac !== 'undefined') _davaKarsiSayac = 1;
     }
-    const dlbl=document.getElementById('dav-modal-title');if(dlbl)dlbl.textContent='Yeni Dava';
+    const dlbl=document.getElementById('dav-modal-title');if(dlbl)dlbl.textContent='Yeni Dava Dosyası';
     const dbtn=document.getElementById('dav-kaydet-btn');if(dbtn)dbtn.textContent='Kaydet';
     // Wizard ilk adıma döndür
     if (typeof Wizard !== 'undefined') Wizard.sifirla('dav-modal');

@@ -2075,45 +2075,19 @@
 </div></div>
 
 <!-- Dava Modal -->
-<div class="modal-overlay" id="dav-modal"><div class="modal modal-lg" style="max-width:700px">
+<div class="modal-overlay" id="dav-modal"><div class="modal modal-lg" style="max-width:720px">
   <div class="modal-header">
-    <div class="modal-title" id="dav-modal-title">Dava / Dosya Ekle</div>
+    <div class="modal-title" id="dav-modal-title">Yeni Dava Dosyası</div>
     <span id="dav-modal-wiz-sayac" style="font-size:11px;color:var(--text-muted)"></span>
   </div>
   <div class="modal-body">
   <!-- Wizard Progress -->
   <div id="dav-modal-wiz-progress" class="wizard-progress"></div>
 
-  <!-- ADIM 1: Taraf Bilgileri -->
+  <!-- ADIM 1: Mahkeme & Esas & Konu -->
   <div id="dav-wiz-1" class="wizard-panel active">
-    <div class="form-row">
-      <div class="form-group">
-        <label>Dosya No <span style="font-size:10px;color:var(--gold);margin-left:6px">● Otomatik atanır</span></label>
-        <input id="d-no" placeholder="D-2026-001" readonly style="background:var(--surface2);color:var(--text-muted);cursor:not-allowed;">
-      </div>
-      <div class="form-group"><label>Taraf</label>
-        <select id="d-taraf"><option>Davacı</option><option>Davalı</option><option>Katılan</option><option>Müdahil</option><option>Sanık</option></select>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group" style="flex:2">
-        <label>Müvekkil *</label>
-        <div style="position:relative">
-          <input id="d-muv-ara" placeholder="🔍 Müvekkil ara..." autocomplete="off"
-            oninput="muvAra('d-muv-ara','d-muv-liste','d-muv','d-muv-secili')"
-            onfocus="muvAra('d-muv-ara','d-muv-liste','d-muv','d-muv-secili')" style="width:100%">
-          <div id="d-muv-liste" class="kt-dropdown" style="display:none"></div>
-        </div>
-        <input type="hidden" id="d-muv">
-        <div id="d-muv-secili" class="kt-secili" style="display:none"></div>
-      </div>
-    </div>
-    <div class="form-group"><label>Dava Konusu *</label><input id="d-konu"></div>
-    <div class="form-group"><label>Dava Değeri (₺)</label><input type="number" id="d-deger"></div>
-  </div>
-
-  <!-- ADIM 2: Mahkeme & Esas -->
-  <div id="dav-wiz-2" class="wizard-panel">
+    <input type="hidden" id="d-no">
+    <div class="form-group"><label>Dava Konusu *</label><input id="d-konu" placeholder="Dava konusunu girin"></div>
     <div class="form-section-label">Mahkeme Bilgileri</div>
     <div class="form-row">
       <div class="form-group"><label>İl</label>
@@ -2129,7 +2103,7 @@
           <optgroup label="Hukuk"><option>Asliye Hukuk</option><option>Sulh Hukuk</option><option>Aile</option><option>Asliye Ticaret</option><option>Tüketici</option><option>İş</option><option>Kadastro</option><option>Fikri ve Sınai Haklar Hukuk</option></optgroup>
           <optgroup label="Ceza"><option>Asliye Ceza</option><option>Sulh Ceza</option><option>Ağır Ceza</option><option>Çocuk</option></optgroup>
           <optgroup label="İdare"><option>İdare</option><option>Vergi</option><option>Bölge İdare</option></optgroup>
-          <optgroup label="Üst"><option>Bölge Adliye (İstinaf)</option><option>Yargıtay</option><option>Anayasa</option><option>Diğer</option></optgroup>
+          <optgroup label="Üst"><option>Bölge Adliye (İstinaf)</option><option>Yargıtay</option><option>Danıştay</option><option>Anayasa</option><option>Diğer</option></optgroup>
         </select>
       </div>
       <div class="form-group"><label>Mahkeme No</label><input id="d-mno" placeholder="3. Asliye..."></div>
@@ -2152,26 +2126,97 @@
         </div>
       </div>
     </div>
-    <div class="form-group"><label>Hâkim</label><input id="d-hakim"></div>
-    <div class="form-section-label">Aşama & Durum</div>
+    <div class="form-section-label">Dava Statüsü</div>
     <div class="form-row">
-      <div class="form-group"><label>Yargılama Aşaması</label><select id="d-asama"><option>İlk Derece</option><option>İstinaf</option><option>Yargıtay</option><option>Kesinleşti</option><option>Düşürüldü</option></select></div>
-      <div class="form-group"><label>Dava Durumu</label><select id="d-durum"><option value="Aktif">Aktif</option><option value="Devam Ediyor">Devam Ediyor</option><option value="Beklemede">Beklemede</option><option value="Kapandı">Kapandı</option></select></div>
+      <div class="form-group"><label>Statü *</label>
+        <select id="d-asama" onchange="davaStatuDegisti()">
+          <option value="İlk Derece">İlk Derece</option>
+          <option value="İstinaf">İstinaf</option>
+          <option value="Yargıtay">Yargıtay</option>
+          <option value="Danıştay">Danıştay</option>
+          <option value="Kesinleşti">Kesinleşti / Arşiv</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Anlık Durum</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <select id="d-durum-tag" style="width:100px;flex-shrink:0">
+            <option value="🟢 Akışında" style="color:#27ae60">🟢 Akışında</option>
+            <option value="🟡 Beklemede" style="color:#f39c12">🟡 Beklemede</option>
+            <option value="🔵 İncelemede" style="color:#3498db">🔵 İncelemede</option>
+            <option value="🔴 KRİTİK" style="color:#e74c3c">🔴 KRİTİK</option>
+            <option value="🏁 Tamamlandı" style="color:#27ae60">🏁 Tamamlandı</option>
+          </select>
+          <input id="d-durum-aciklama" placeholder="Bilirkişi raporu bekleniyor..." style="flex:1">
+        </div>
+      </div>
     </div>
-    <div class="form-group"><label>Dosya Durumu / Derdestlik</label>
-      <select id="d-derdest" onchange="derdestDegis(this.value)">
-        <option value="">—</option><option value="derdest">Derdest (Görülmekte)</option><option value="karar_temyiz">Karar Verildi – Temyiz Bekliyor</option>
-        <option value="kesinlesti">Kesinleşmiş Karar</option><option value="dustu">Düşmüş / İptal</option><option value="feragat">Feragat Edildi</option>
-        <option value="sulh">Sulh / Uzlaşma</option><option value="beklemede">Beklemede</option><option value="kapali">Kapalı</option>
-      </select>
-    </div>
+    <!-- Eski d-durum hidden — uyumluluk için -->
+    <input type="hidden" id="d-durum" value="Aktif">
+    <input type="hidden" id="d-derdest" value="">
     <div id="d-kesin-wrap" style="display:none" class="form-row">
-      <div class="form-group"><label>Kesinleşme Tarihi <span style="color:var(--red)">*</span></label><input type="date" id="d-kesin-tarih"></div>
+      <div class="form-group"><label>Kesinleşme Tarihi</label><input type="date" id="d-kesin-tarih"></div>
       <div class="form-group"></div>
     </div>
   </div>
 
-  <!-- ADIM 3: Tarihler, Karşı Taraf & Notlar -->
+  <!-- ADIM 2: Taraflar -->
+  <div id="dav-wiz-2" class="wizard-panel">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <!-- SOL: Müvekkil -->
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">👤 Müvekkil Tarafı</div>
+        <div class="form-group"><label>Taraf Sıfatı</label>
+          <select id="d-taraf"><option>Davacı</option><option>Davalı</option><option>Katılan</option><option>Müdahil</option><option>Sanık</option></select>
+        </div>
+        <div class="form-group">
+          <label>Müvekkil *</label>
+          <div style="position:relative">
+            <input id="d-muv-ara" placeholder="🔍 Müvekkil ara..." autocomplete="off"
+              oninput="muvAra('d-muv-ara','d-muv-liste','d-muv','d-muv-secili')"
+              onfocus="muvAra('d-muv-ara','d-muv-liste','d-muv','d-muv-secili')" style="width:100%">
+            <div id="d-muv-liste" class="kt-dropdown" style="display:none"></div>
+          </div>
+          <input type="hidden" id="d-muv">
+          <div id="d-muv-secili" class="kt-secili" style="display:none"></div>
+        </div>
+      </div>
+      <!-- SAĞ: Karşı Taraf -->
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div style="font-size:11px;font-weight:700;color:#e74c3c;text-transform:uppercase;letter-spacing:.5px">⚔️ Karşı Taraf</div>
+          <button class="btn btn-sm btn-outline" onclick="davaTarafEkle()" type="button" style="font-size:10px;padding:2px 8px">+ Ekle</button>
+        </div>
+        <div id="d-karsi-wrap">
+          <div class="form-row d-karsi-satir" id="d-karsi-satir-0">
+            <div class="form-group" style="flex:2"><label>Karşı Taraf</label>
+              <div style="position:relative">
+                <input id="d-karsi-ara-0" class="d-karsi-ara" placeholder="Ad ile ara..." autocomplete="off"
+                  oninput="ktAra(this.id,this.dataset.liste,this.dataset.hidden,this.dataset.goster)"
+                  onfocus="ktAra(this.id,this.dataset.liste,this.dataset.hidden,this.dataset.goster)"
+                  data-liste="d-karsi-dd-0" data-hidden="d-karsi-id-0" data-goster="d-karsi-g-0">
+                <div id="d-karsi-dd-0" class="kt-dropdown" style="display:none"></div>
+              </div>
+              <div id="d-karsi-g-0" class="kt-secili" style="display:none"></div>
+              <input type="hidden" id="d-karsi-id-0">
+            </div>
+            <div class="form-group"><label>Vekili</label>
+              <div style="position:relative">
+                <input id="d-karsav-ara-0" class="d-karsav-ara" placeholder="Vekil ara..." autocomplete="off"
+                  oninput="vekAra(this.id,this.dataset.liste,this.dataset.hidden,this.dataset.goster)"
+                  onfocus="vekAra(this.id,this.dataset.liste,this.dataset.hidden,this.dataset.goster)"
+                  data-liste="d-karsav-dd-0" data-hidden="d-karsav-id-0" data-goster="d-karsav-g-0">
+                <div id="d-karsav-dd-0" class="kt-dropdown" style="display:none"></div>
+              </div>
+              <div id="d-karsav-g-0" class="kt-secili" style="display:none"></div>
+              <input type="hidden" id="d-karsav-id-0">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADIM 3: Tarih & Değer & Detay -->
   <div id="dav-wiz-3" class="wizard-panel">
     <div class="form-section-label">Tarihler</div>
     <div class="form-row">
@@ -2182,46 +2227,26 @@
       <div class="form-group"><label>Son Duruşma</label><input type="date" id="d-durusma"></div>
       <div class="form-group"><label>Karar Tarihi</label><input type="date" id="d-ktarih"></div>
     </div>
-    <div class="form-row"><div class="form-group"><label>Kesinleşme</label><input type="date" id="d-kesin"></div><div class="form-group"></div></div>
-    <div class="form-section-label" style="display:flex;justify-content:space-between;align-items:center">
-      <span>Karşı Taraf(lar)</span>
-      <button class="btn btn-sm btn-outline" onclick="davaTarafEkle()" type="button">+ Karşı Taraf Ekle</button>
+    <div class="form-row">
+      <div class="form-group"><label>Kesinleşme</label><input type="date" id="d-kesin"></div>
+      <div class="form-group"><label>Dava Değeri (₺)</label><input type="number" id="d-deger"></div>
     </div>
-    <div id="d-karsi-wrap">
-      <div class="form-row d-karsi-satir" id="d-karsi-satir-0">
-        <div class="form-group" style="flex:2"><label>Karşı Taraf</label>
-          <div style="position:relative">
-            <input id="d-karsi-ara-0" class="d-karsi-ara" placeholder="Ad ile ara veya yeni ekle..." autocomplete="off"
-              oninput="ktAra(this.id,this.dataset.liste,this.dataset.hidden,this.dataset.goster)"
-              onfocus="ktAra(this.id,this.dataset.liste,this.dataset.hidden,this.dataset.goster)"
-              data-liste="d-karsi-dd-0" data-hidden="d-karsi-id-0" data-goster="d-karsi-g-0">
-            <div id="d-karsi-dd-0" class="kt-dropdown" style="display:none"></div>
-          </div>
-          <div id="d-karsi-g-0" class="kt-secili" style="display:none"></div>
-          <input type="hidden" id="d-karsi-id-0">
-        </div>
-        <div class="form-group"><label>Karşı Taraf Vekili</label>
-          <div style="position:relative">
-            <input id="d-karsav-ara-0" class="d-karsav-ara" placeholder="Ad ile ara..." autocomplete="off"
-              oninput="vekAra(this.id,this.dataset.liste,this.dataset.hidden,this.dataset.goster)"
-              onfocus="vekAra(this.id,this.dataset.liste,this.dataset.hidden,this.dataset.goster)"
-              data-liste="d-karsav-dd-0" data-hidden="d-karsav-id-0" data-goster="d-karsav-g-0">
-            <div id="d-karsav-dd-0" class="kt-dropdown" style="display:none"></div>
-          </div>
-          <div id="d-karsav-g-0" class="kt-secili" style="display:none"></div>
-          <input type="hidden" id="d-karsav-id-0">
-        </div>
-      </div>
+    <div class="form-section-label">Bağlantılar</div>
+    <div class="form-row">
+      <div class="form-group"><label>İlişkili İcra No</label><input id="d-icrano"></div>
+      <div class="form-group"></div>
     </div>
-    <div class="form-row"><div class="form-group"><label>İlişkili İcra No</label><input id="d-icrano"></div><div class="form-group"></div></div>
-    <div class="form-group"><label>Notlar</label><textarea id="d-not" rows="2"></textarea></div>
+    <div class="form-section-label">Notlar</div>
+    <div class="form-group"><textarea id="d-not" rows="3" placeholder="Dava ile ilgili notlar..."></textarea></div>
   </div>
 
   <input type="hidden" id="d-karsi-id"><input type="hidden" id="d-karsav-id">
+  <input type="hidden" id="d-hakim">
   <!-- Wizard Footer -->
   <div id="dav-modal-wiz-footer" class="wizard-footer"></div>
   </div>
 </div></div>
+
 
 <!-- Karşı Taraf Kayıt Modal -->
 <div class="modal-overlay" id="kt-modal"><div class="modal modal-lg" style="max-width:720px">
@@ -3463,6 +3488,7 @@
 </div>
 
   </main>
+</div><!-- /.app -->
 </div><!-- /#app-wrapper -->
 
 <!-- ===== MODÜLLER ===== -->
