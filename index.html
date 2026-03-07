@@ -2194,33 +2194,39 @@
 </div></div>
 
 <!-- Karşı Taraf Kayıt Modal -->
-<div class="modal-overlay" id="kt-modal"><div class="modal modal-lg">
-  <div class="modal-title" id="kt-modal-title">Karşı Taraf Ekle</div>
-  <div class="form-row">
-    <div class="form-group">
-      <label>Tür</label>
-      <div style="display:flex;gap:8px;margin-top:4px">
-        <button id="kt-tip-gercek-btn" class="btn btn-gold" onclick="ktTipSec('gercek')" style="flex:1">👤 Gerçek Kişi</button>
-        <button id="kt-tip-tuzel-btn" class="btn btn-outline" onclick="ktTipSec('tuzel')" style="flex:1">🏢 Tüzel Kişi</button>
-      </div>
-      <input type="hidden" id="kt-tip" value="gercek">
-    </div>
-    <div class="form-group"><label>Ad / Unvan *</label><input id="kt-ad" placeholder="Kişi adı veya şirket unvanı"></div>
+<div class="modal-overlay" id="kt-modal"><div class="modal modal-lg" style="max-width:720px">
+  <div class="modal-header">
+    <div class="modal-title" id="kt-modal-title">Karşı Taraf Ekle</div>
   </div>
-  <!-- Gerçek Kişi Alanları -->
+
+  <!-- Tip Seçimi — müvekkil ile aynı stil -->
+  <div style="display:flex;gap:0;margin-bottom:18px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+    <button id="kt-tip-gercek-btn" onclick="ktTipSec('gercek')" style="flex:1;padding:10px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;background:var(--gold);color:#000">
+      👤 Gerçek Kişi
+    </button>
+    <button id="kt-tip-tuzel-btn" onclick="ktTipSec('tuzel')" style="flex:1;padding:10px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;background:var(--surface2);color:var(--text-muted)">
+      🏢 Tüzel Kişi
+    </button>
+  </div>
+  <input type="hidden" id="kt-tip" value="gercek">
+
+  <!-- GERÇEK KİŞİ ALANLARI -->
   <div id="kt-gercek-alanlari">
+    <div class="form-section-label">Kişisel Bilgiler</div>
     <div class="form-row">
+      <div class="form-group"><label>Ad Soyad *</label><input id="kt-ad" placeholder="Ad Soyad"></div>
       <div class="form-group"><label>Uyruk</label>
         <select id="kt-uyruk" onchange="ktUyrukDegis(this.value)"><option value="TC">T.C.</option><option value="yabanci">Yabancı Uyruklu</option></select>
       </div>
-      <div class="form-group" id="kt-kimlik-grup" style="position:relative;min-height:62px">
-        <label id="kt-kimlik-label">TC Kimlik No</label>
-        <input id="kt-tc" placeholder="11 haneli TC kimlik no" maxlength="11" style="position:absolute;width:100%;top:22px;left:0">
-        <input id="kt-pasaport" placeholder="Pasaport No" style="position:absolute;width:100%;top:22px;left:0;display:none">
-      </div>
     </div>
     <div class="form-row">
+      <div class="form-group" id="kt-kimlik-grup" style="position:relative;min-height:62px">
+        <label id="kt-kimlik-label">TC Kimlik No</label>
+        <input id="kt-tc" placeholder="11 haneli TC No" maxlength="11" style="position:absolute;width:100%;top:22px;left:0">
+        <input id="kt-pasaport" placeholder="Pasaport No" style="position:absolute;width:100%;top:22px;left:0;display:none">
+      </div>
       <div class="form-group"><label>Doğum Tarihi</label><input type="date" id="kt-dogum"></div>
+    </div>
     <div class="form-row">
       <div class="form-group"><label>Doğum Yeri</label><input id="kt-dogum-yeri" placeholder="Şehir / Ülke"></div>
       <div class="form-group"><label>Meslek</label>
@@ -2229,43 +2235,58 @@
       </div>
     </div>
   </div>
-  <!-- Tüzel Kişi Alanları -->
+
+  <!-- TÜZEL KİŞİ ALANLARI -->
   <div id="kt-tuzel-alanlari" style="display:none">
+    <div class="form-section-label">Şirket / Kurum Bilgileri</div>
     <div class="form-row">
+      <div class="form-group"><label>Unvan *</label><input id="kt-ad-tuzel" placeholder="Şirket Ünvanı" oninput="document.getElementById('kt-ad').value=this.value"></div>
       <div class="form-group"><label>Şirket Türü</label>
         <select id="kt-sirkettur"><option>A.Ş.</option><option>Ltd. Şti.</option><option>Koll. Şti.</option><option>Koop.</option><option>Vakıf</option><option>Dernek</option><option>Kamu Kurumu</option><option>Diğer</option></select>
       </div>
+    </div>
+    <div class="form-row">
       <div class="form-group"><label>Vergi No</label><input id="kt-vergino" placeholder="10 haneli vergi no" maxlength="10"></div>
-    </div>
-    <div class="form-row">
       <div class="form-group"><label>Vergi Dairesi</label><input id="kt-vergidairesi"></div>
-      <div class="form-group"><label>MERSİS No</label><input id="kt-mersis"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>Yetkili Adı</label><input id="kt-yetkili-ad" placeholder="Yetkili / Temsilci adı"></div>
-      <div class="form-group"><label>Yetkili Unvanı</label><input id="kt-yetkili-unvan" placeholder="Genel Müdür vb."></div>
+      <div class="form-group"><label>MERSİS No</label><input id="kt-mersis" placeholder="0000-0000-0000-0000"></div>
+      <div class="form-group"></div>
+    </div>
+    <div class="form-section-label">Yetkili Temsilci</div>
+    <div class="form-row">
+      <div class="form-group"><label>Yetkili Ad Soyad</label><input id="kt-yetkili-ad" placeholder="Yetkili / Temsilci adı"></div>
+      <div class="form-group"><label>Yetkili Unvanı</label><input id="kt-yetkili-unvan" placeholder="Genel Müdür, YK Başkanı..."></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label>Yetkili TC No</label><input id="kt-yetkili-tc" maxlength="11"></div>
-      <div class="form-group"><label>Yetkili Telefonu</label><input id="kt-yetkili-tel"></div>
+      <div class="form-group"><label>Yetkili Telefonu</label><input id="kt-yetkili-tel" oninput="formatTelInput(this)" maxlength="15"></div>
     </div>
   </div>
-  <div class="form-section-label">İletişim</div>
+
+  <!-- ORTAK: İLETİŞİM -->
+  <div class="form-section-label">İletişim Bilgileri</div>
   <div class="form-row">
-    <div class="form-group"><label>Telefon</label><input id="kt-tel" placeholder="(5xx) xxx xx xx" oninput="formatTelInput(this)" maxlength="15"></div>
-    <div class="form-group"><label>E-posta</label><input id="kt-mail" placeholder="ornek@mail.com"></div>
+    <div class="form-group"><label>Telefon</label><input id="kt-tel" placeholder="05XX XXX XX XX" oninput="formatTelInput(this)" maxlength="15"></div>
+    <div class="form-group"><label>E-posta</label><input id="kt-mail" type="email" placeholder="ornek@mail.com"></div>
   </div>
   <div class="form-row">
     <div class="form-group"><label>Faks</label><input id="kt-faks" placeholder="(xxx) xxx xx xx" oninput="formatTelInput(this)" maxlength="15"></div>
     <div class="form-group"><label>UETS / KEP Adresi</label><input id="kt-uets"></div>
   </div>
   <div class="form-group"><label>Adres</label><textarea id="kt-adres" rows="2"></textarea></div>
-  <div class="form-section-label">Banka Bilgileri</div>
+
+  <!-- ORTAK: BANKA -->
+  <div class="form-section-label">Banka Bilgileri <span style="font-weight:400;color:var(--text-dim)">(opsiyonel)</span></div>
   <div class="form-row">
     <div class="form-group"><label>Banka</label><input id="kt-banka" placeholder="Banka adı"></div>
-    <div class="form-group"><label>IBAN</label><input id="kt-iban" placeholder="TR00 0000 0000 0000 0000 0000 00" oninput="formatIbanInput(this)" maxlength="32"></div>
+    <div class="form-group"><label>IBAN</label><input id="kt-iban" placeholder="TR00 0000 0000 0000 0000 0000 00" maxlength="32" style="font-family:monospace;letter-spacing:1px"></div>
   </div>
-  <div class="form-group"><label>Açıklama / Not</label><input id="kt-acik"></div>
+
+  <!-- ORTAK: NOTLAR -->
+  <div class="form-section-label">Notlar</div>
+  <div class="form-group"><textarea id="kt-acik" rows="2" placeholder="Karşı tarafa özel notlar..."></textarea></div>
+
   <div class="modal-footer">
     <button class="btn btn-outline" onclick="closeModal('kt-modal')">İptal</button>
     <button class="btn btn-gold" id="kt-modal-btn" onclick="saveKarsiTaraf()">Kaydet & Seç</button>
@@ -2292,8 +2313,11 @@
 </div></div>
 
 <!-- Vekil Kayıt Modal -->
-<div class="modal-overlay" id="vek-modal"><div class="modal modal-lg">
-  <div class="modal-title" id="vek-modal-title">Karşı Taraf Vekili Ekle</div>
+<div class="modal-overlay" id="vek-modal"><div class="modal modal-lg" style="max-width:680px">
+  <div class="modal-header">
+    <div class="modal-title" id="vek-modal-title">Karşı Taraf Vekili Ekle</div>
+  </div>
+  <div class="form-section-label">Avukat Bilgileri</div>
   <div class="form-row">
     <div class="form-group"><label>Ad Soyad *</label><input id="vek-ad" placeholder="Ad Soyad"></div>
     <div class="form-group"><label>Baro</label><select id="vek-baro">
@@ -2334,15 +2358,23 @@
     <div class="form-group"><label>Baro Sicil No</label><input id="vek-sicil" placeholder="12345"></div>
     <div class="form-group"><label>TBB Sicil No</label><input id="vek-tbb" placeholder="TBB sicil no"></div>
   </div>
+  <div class="form-section-label">İletişim Bilgileri</div>
   <div class="form-row">
     <div class="form-group"><label>Telefon</label><input id="vek-tel" placeholder="(5xx) xxx xx xx" oninput="formatTelInput(this)" maxlength="15"></div>
     <div class="form-group"><label>E-posta</label><input id="vek-mail" placeholder="avukat@mail.com"></div>
   </div>
+  <div class="form-group"><label>UETS / KEP Adresi</label><input id="vek-uets" placeholder="UETS / KEP adresi"></div>
+  <div class="form-section-label">Banka Bilgileri <span style="font-weight:400;color:var(--text-dim)">(opsiyonel)</span></div>
   <div class="form-row">
-    <div class="form-group"><label>UETS / KEP Adresi</label><input id="vek-uets" placeholder="UETS / KEP adresi"></div>
-    <div class="form-group"><label>IBAN</label><input id="vek-banka" placeholder="TR00 0000 0000 0000 0000 0000 00" oninput="formatIbanInput(this)" maxlength="32"></div>
+    <div class="form-group"><label>Banka Adı</label><input id="vek-banka-ad" placeholder="Banka adı"></div>
+    <div class="form-group"><label>IBAN</label><input id="vek-banka" placeholder="TR00 0000 0000 0000 0000 0000 00" maxlength="32" style="font-family:monospace;letter-spacing:1px"></div>
   </div>
-  <div class="form-group"><label>Açıklama / Not</label><input id="vek-acik"></div>
+  <div class="form-row">
+    <div class="form-group"><label>Hesap Sahibi</label><input id="vek-hesap-ad" placeholder="Hesap sahibi adı"></div>
+    <div class="form-group"><label>Şube</label><input id="vek-sube" placeholder="Şube adı / no"></div>
+  </div>
+  <div class="form-section-label">Notlar</div>
+  <div class="form-group"><textarea id="vek-acik" rows="2" placeholder="Avukata özel notlar..."></textarea></div>
   <div class="modal-footer">
     <button class="btn btn-outline" onclick="closeModal('vek-modal')">İptal</button>
     <button class="btn btn-gold" id="vek-modal-btn" onclick="saveVekil()">Kaydet & Seç</button>

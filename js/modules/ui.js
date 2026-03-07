@@ -180,12 +180,16 @@ function saveVekil(){
   if(!state.vekillar)state.vekillar=[];
   const v={
     id:uid(),sira:nextSira('vekillar'),ad,
+    baro:document.getElementById('vek-baro').value,
     baroSicil:document.getElementById('vek-sicil').value.trim(),
     tbbSicil:document.getElementById('vek-tbb').value.trim(),
     tel:document.getElementById('vek-tel').value.trim(),
     mail:document.getElementById('vek-mail').value.trim(),
     uets:document.getElementById('vek-uets').value.trim(),
+    bankaAd:(document.getElementById('vek-banka-ad')||{}).value?.trim()||'',
     banka:document.getElementById('vek-banka').value.trim(),
+    hesapAd:(document.getElementById('vek-hesap-ad')||{}).value?.trim()||'',
+    sube:(document.getElementById('vek-sube')||{}).value?.trim()||'',
     aciklama:document.getElementById('vek-acik').value.trim()
   };
   state.vekillar.push(v);

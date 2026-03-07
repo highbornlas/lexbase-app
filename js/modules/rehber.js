@@ -466,26 +466,50 @@ function renderKarsiTaraflarListesi(filtre=''){
 function filterKarsiTaraflar(v){renderKarsiTaraflarListesi(v);}
 function ktTipSec(tip){
   document.getElementById('kt-tip').value=tip;
-  document.getElementById('kt-tip-gercek-btn').className=tip==='gercek'?'btn btn-gold':'btn btn-outline';
-  document.getElementById('kt-tip-tuzel-btn').className=tip==='tuzel'?'btn btn-gold':'btn btn-outline';
+  // Buton stilleri — müvekkil ile aynı
+  const btnG=document.getElementById('kt-tip-gercek-btn');
+  const btnT=document.getElementById('kt-tip-tuzel-btn');
+  if(btnG){btnG.style.background=tip==='gercek'?'var(--gold)':'var(--surface2)';btnG.style.color=tip==='gercek'?'#000':'var(--text-muted)';}
+  if(btnT){btnT.style.background=tip==='tuzel'?'var(--gold)':'var(--surface2)';btnT.style.color=tip==='tuzel'?'#000':'var(--text-muted)';}
   document.getElementById('kt-gercek-alanlari').style.display=tip==='gercek'?'':'none';
   document.getElementById('kt-tuzel-alanlari').style.display=tip==='tuzel'?'':'none';
+  // Tüzel seçilince kt-ad alanını gizle (unvan alanı var), gerçek kişide göster
+  const ktAd=document.getElementById('kt-ad');
+  const ktAdTuzel=document.getElementById('kt-ad-tuzel');
+  if(tip==='tuzel'){
+    if(ktAd)ktAd.closest('.form-group').style.display='none';
+    if(ktAdTuzel)ktAdTuzel.value=ktAd?ktAd.value:'';
+  } else {
+    if(ktAd)ktAd.closest('.form-group').style.display='';
+  }
 }
 function ktModalSifirla(){
-  ['kt-ad','kt-tc','kt-dogum','kt-meslek','kt-vergino','kt-vergidairesi','kt-mersis',
-   'kt-yetkili-ad','kt-yetkili-unvan','kt-tel','kt-faks','kt-mail','kt-uets',
+  ['kt-ad','kt-ad-tuzel','kt-tc','kt-dogum','kt-dogum-yeri','kt-meslek','kt-vergino','kt-vergidairesi','kt-mersis',
+   'kt-yetkili-ad','kt-yetkili-unvan','kt-yetkili-tc','kt-yetkili-tel',
+   'kt-tel','kt-faks','kt-mail','kt-uets',
    'kt-adres','kt-banka','kt-iban','kt-acik'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});
   const ku=document.getElementById('kt-uyruk');if(ku)ku.value='T.C.';
   const ks=document.getElementById('kt-sirkettur');if(ks)ks.value='A.Ş.';
+  const km=document.getElementById('kt-meslek-sel');if(km)km.value='';
+  // kt-ad alanını tekrar görünür yap
+  const ktAd=document.getElementById('kt-ad');
+  if(ktAd&&ktAd.closest('.form-group'))ktAd.closest('.form-group').style.display='';
   ktTipSec('gercek');
 }
 function ktModalDataOku(){
   const tip=document.getElementById('kt-tip').value;
+  // Tüzel modda unvan alanından al
+  let ad=document.getElementById('kt-ad').value.trim();
+  if(tip==='tuzel'){
+    const tuzelAd=document.getElementById('kt-ad-tuzel');
+    if(tuzelAd&&tuzelAd.value.trim()) ad=tuzelAd.value.trim();
+  }
   return{
     tip,
-    ad:document.getElementById('kt-ad').value.trim(),
+    ad,
     tc:document.getElementById('kt-tc').value.trim(),
     dogum:document.getElementById('kt-dogum')?.value||'',
+    dogumYeri:document.getElementById('kt-dogum-yeri')?.value.trim()||'',
     meslek:document.getElementById('kt-meslek')?.value.trim()||'',
     uyruk:document.getElementById('kt-uyruk')?.value||'T.C.',
     sirketTur:document.getElementById('kt-sirkettur')?.value||'',
@@ -530,7 +554,7 @@ function openYeniKT(){
 }
 function openYeniVek(){
   _vekCtx=null;
-  ['vek-ad','vek-sicil','vek-tbb','vek-tel','vek-mail','vek-uets','vek-banka','vek-acik'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});
+  ['vek-ad','vek-sicil','vek-tbb','vek-tel','vek-mail','vek-uets','vek-banka','vek-banka-ad','vek-hesap-ad','vek-sube','vek-acik'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});
   document.getElementById('vek-baro').value='';
   document.getElementById('vek-modal-title').textContent='Avukat / Vekil Ekle';
   document.getElementById('vek-modal-btn').textContent='Kaydet';
