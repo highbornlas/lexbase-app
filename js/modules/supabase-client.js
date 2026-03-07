@@ -230,27 +230,12 @@ async function sbTümüSenkronize() {
   };
 
   for (const [tablo, kayitlar] of Object.entries(eslemeler)) {
-    const liste = kayitlar || [];
-
-    // Upsert (mevcut kayıtları yaz)
-    if (liste.length > 0) {
-      const satirlar = liste.map(({ id, ...data }) => ({
-        id, buro_id: currentBuroId, data
-      }));
-      const { error } = await sb.from(tablo).upsert(satirlar);
-      if (error) console.warn(`${tablo} sync hatası:`, error.message);
-    }
-
-    // Orphan DELETE: Supabase'de olup local state'te olmayan kayıtları sil
-    const localIds = liste.map(k => k.id);
-    if (localIds.length > 0) {
-      const { error } = await sb.from(tablo)
-        .delete()
-        .eq('buro_id', currentBuroId)
-        .not('id', 'in', `(${localIds.join(',')})`);
-      if (error) console.warn(`${tablo} orphan silme hatası:`, error.message);
-    }
-    // Not: Liste tamamen boşsa silme yapmıyoruz (henüz yüklenmemiş olabilir)
+    if (!kayitlar || !kayitlar.length) continue;
+    const satirlar = kayitlar.map(({ id, ...data }) => ({
+      id, buro_id: currentBuroId, data
+    }));
+    const { error } = await sb.from(tablo).upsert(satirlar);
+    if (error) console.warn(`${tablo} sync hatası:`, error.message);
   }
 }
 

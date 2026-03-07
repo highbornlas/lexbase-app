@@ -2177,8 +2177,10 @@
   </div>
   <div class="form-group"><label>Adres</label><textarea id="kt-adres" rows="2"></textarea></div>
   <div class="form-section-label">Banka Bilgileri</div>
-  <div id="kt-banka-list"></div>
-  <button type="button" class="btn btn-outline btn-sm" style="margin-bottom:10px" onclick="ktBankaEkle()">+ Banka Hesabı Ekle</button>
+  <div class="form-row">
+    <div class="form-group"><label>Banka</label><input id="kt-banka" placeholder="Banka adı"></div>
+    <div class="form-group"><label>IBAN</label><input id="kt-iban" placeholder="TR00 0000 0000 0000 0000 0000 00" oninput="formatIbanInput(this)" maxlength="32"></div>
+  </div>
   <div class="form-group"><label>Açıklama / Not</label><input id="kt-acik"></div>
   <div class="modal-footer">
     <button class="btn btn-outline" onclick="closeModal('kt-modal')">İptal</button>
@@ -2253,11 +2255,9 @@
     <div class="form-group"><label>E-posta</label><input id="vek-mail" placeholder="avukat@mail.com"></div>
   </div>
   <div class="form-row">
-    <div class="form-group" style="flex:1"><label>UETS / KEP Adresi</label><input id="vek-uets" placeholder="UETS / KEP adresi"></div>
+    <div class="form-group"><label>UETS / KEP Adresi</label><input id="vek-uets" placeholder="UETS / KEP adresi"></div>
+    <div class="form-group"><label>IBAN</label><input id="vek-banka" placeholder="TR00 0000 0000 0000 0000 0000 00" oninput="formatIbanInput(this)" maxlength="32"></div>
   </div>
-  <div class="form-section-label" style="margin-top:4px">Banka Bilgileri</div>
-  <div id="vek-banka-list"></div>
-  <button type="button" class="btn btn-outline btn-sm" style="margin-bottom:10px" onclick="vekBankaEkle()">+ Banka Hesabı Ekle</button>
   <div class="form-group"><label>Açıklama / Not</label><input id="vek-acik"></div>
   <div class="modal-footer">
     <button class="btn btn-outline" onclick="closeModal('vek-modal')">İptal</button>

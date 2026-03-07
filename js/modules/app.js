@@ -157,30 +157,6 @@ function demoVeriSil() {
   state.todolar       = (state.todolar||[]).filter(t => !/^tod\d+$/.test(t.id));
   state.etkinlikler   = (state.etkinlikler||[]).filter(e => !/^etk\d+$/.test(e.id));
   saveData();
-  // Supabase'deki demo kayıtlarını da sil (sayfa yenilemede geri gelmesin)
-  if (typeof sb !== 'undefined' && currentBuroId) {
-    (async () => {
-      const demoPrefixes = [
-        ['muvekkillar',   'muv%'],
-        ['davalar',       'dav%'],
-        ['icra',          'icr%'],
-        ['karsi_taraflar','kt%'],
-        ['vekillar',      'vek%'],
-        ['arabuluculuk',  'ara%'],
-        ['danismanlik',   'dan%'],
-        ['ihtarnameler',  'iht%'],
-        ['todolar',       'tod%'],
-        ['etkinlikler',   'etk%'],
-      ];
-      for (const [tablo, prefix] of demoPrefixes) {
-        const { error } = await sb.from(tablo)
-          .delete()
-          .eq('buro_id', currentBuroId)
-          .like('id', prefix);
-        if (error) console.warn(`Demo silme hatası (${tablo}):`, error.message);
-      }
-    })();
-  }
   renderMuvekkillar(); renderDavalar(); renderDavaCards();
   renderIcra(); renderIcraCards(); renderDashboard(); updateBadges();
   if(typeof renderArabuluculuk==='function') renderArabuluculuk();

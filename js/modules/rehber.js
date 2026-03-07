@@ -20,20 +20,13 @@ function icraTab(t,el){
 // ================================================================
 // MODAL
 // ================================================================
-const _closeTimeouts = new Map();
-
 function closeModal(id){
   const overlay = document.getElementById(id);
   if (!overlay) return;
   const modal = overlay.querySelector('.modal');
   if (modal) {
     modal.style.animation = 'modalOut .18s ease forwards';
-    const tid = setTimeout(() => {
-      overlay.classList.remove('open');
-      modal.style.animation = '';
-      _closeTimeouts.delete(id);
-    }, 170);
-    _closeTimeouts.set(id, tid);
+    setTimeout(() => { overlay.classList.remove('open'); modal.style.animation = ''; }, 170);
   } else {
     overlay.classList.remove('open');
   }
@@ -54,8 +47,6 @@ function populateMuvSelects(){
 // ================================================================
 // ── Müvekkil Modal Yardımcıları ─────────────────────────────────
 let muvBankalar=[]; // [{banka,sube,iban,hesapNo,hesapAd}]
-let ktBankalar=[];  // [{banka,sube,iban,hesapNo,hesapAd}]
-let vekBankalar=[]; // [{banka,sube,iban,hesapNo,hesapAd}]
 let muvModalMod='yeni'; // 'yeni' | 'duzenle'
 
 function muvTipSec(tip){
@@ -91,52 +82,6 @@ function renderMuvBankalar(){
       <div style="grid-column:1/-1"><label style="font-size:10px;color:var(--text-muted)">IBAN</label><input value="${b.iban}" oninput="muvBankalar[${i}].iban=this.value" placeholder="TR00 0000 0000 0000 0000 0000 00" style="width:100%;margin-top:2px;font-family:monospace;letter-spacing:1px"></div>
       <div><label style="font-size:10px;color:var(--text-muted)">Hesap Adı</label><input value="${b.hesapAd}" oninput="muvBankalar[${i}].hesapAd=this.value" placeholder="Hesap sahibi adı" style="width:100%;margin-top:2px"></div>
       <div><label style="font-size:10px;color:var(--text-muted)">Hesap No</label><input value="${b.hesapNo}" oninput="muvBankalar[${i}].hesapNo=this.value" placeholder="Hesap numarası" style="width:100%;margin-top:2px"></div>
-    </div>
-  </div>`).join('');
-}
-
-// ── Karşı Taraf Banka Widget ──────────────────────────────────────
-function ktBankaEkle(data){
-  ktBankalar.push(data||{banka:'',sube:'',iban:'',hesapNo:'',hesapAd:''});
-  renderKtBankalar();
-}
-function ktBankaKaldir(idx){ ktBankalar.splice(idx,1); renderKtBankalar(); }
-function renderKtBankalar(){
-  const el=document.getElementById('kt-banka-list'); if(!el)return;
-  if(!ktBankalar.length){el.innerHTML='';return;}
-  el.innerHTML=ktBankalar.map((b,i)=>`
-  <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;position:relative">
-    <button type="button" onclick="ktBankaKaldir(${i})" style="position:absolute;top:8px;right:10px;background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:15px">✕</button>
-    <div style="font-size:10px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;font-weight:700">Banka Hesabı ${i+1}</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <div><label style="font-size:10px;color:var(--text-muted)">Banka</label><input value="${b.banka}" oninput="ktBankalar[${i}].banka=this.value" placeholder="Banka Adı" style="width:100%;margin-top:2px"></div>
-      <div><label style="font-size:10px;color:var(--text-muted)">Şube</label><input value="${b.sube}" oninput="ktBankalar[${i}].sube=this.value" placeholder="Şube Adı / No" style="width:100%;margin-top:2px"></div>
-      <div style="grid-column:1/-1"><label style="font-size:10px;color:var(--text-muted)">IBAN</label><input value="${b.iban}" oninput="ktBankalar[${i}].iban=this.value;formatIbanInput(this)" placeholder="TR00 0000 0000 0000 0000 0000 00" style="width:100%;margin-top:2px;font-family:monospace;letter-spacing:1px" maxlength="32"></div>
-      <div><label style="font-size:10px;color:var(--text-muted)">Hesap Adı</label><input value="${b.hesapAd}" oninput="ktBankalar[${i}].hesapAd=this.value" placeholder="Hesap sahibi adı" style="width:100%;margin-top:2px"></div>
-      <div><label style="font-size:10px;color:var(--text-muted)">Hesap No</label><input value="${b.hesapNo}" oninput="ktBankalar[${i}].hesapNo=this.value" placeholder="Hesap numarası" style="width:100%;margin-top:2px"></div>
-    </div>
-  </div>`).join('');
-}
-
-// ── Vekil / Avukat Banka Widget ──────────────────────────────────
-function vekBankaEkle(data){
-  vekBankalar.push(data||{banka:'',sube:'',iban:'',hesapNo:'',hesapAd:''});
-  renderVekBankalar();
-}
-function vekBankaKaldir(idx){ vekBankalar.splice(idx,1); renderVekBankalar(); }
-function renderVekBankalar(){
-  const el=document.getElementById('vek-banka-list'); if(!el)return;
-  if(!vekBankalar.length){el.innerHTML='';return;}
-  el.innerHTML=vekBankalar.map((b,i)=>`
-  <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;position:relative">
-    <button type="button" onclick="vekBankaKaldir(${i})" style="position:absolute;top:8px;right:10px;background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:15px">✕</button>
-    <div style="font-size:10px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;font-weight:700">Banka Hesabı ${i+1}</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <div><label style="font-size:10px;color:var(--text-muted)">Banka</label><input value="${b.banka}" oninput="vekBankalar[${i}].banka=this.value" placeholder="Banka Adı" style="width:100%;margin-top:2px"></div>
-      <div><label style="font-size:10px;color:var(--text-muted)">Şube</label><input value="${b.sube}" oninput="vekBankalar[${i}].sube=this.value" placeholder="Şube Adı / No" style="width:100%;margin-top:2px"></div>
-      <div style="grid-column:1/-1"><label style="font-size:10px;color:var(--text-muted)">IBAN</label><input value="${b.iban}" oninput="vekBankalar[${i}].iban=this.value;formatIbanInput(this)" placeholder="TR00 0000 0000 0000 0000 0000 00" style="width:100%;margin-top:2px;font-family:monospace;letter-spacing:1px" maxlength="32"></div>
-      <div><label style="font-size:10px;color:var(--text-muted)">Hesap Adı</label><input value="${b.hesapAd}" oninput="vekBankalar[${i}].hesapAd=this.value" placeholder="Hesap sahibi adı" style="width:100%;margin-top:2px"></div>
-      <div><label style="font-size:10px;color:var(--text-muted)">Hesap No</label><input value="${b.hesapNo}" oninput="vekBankalar[${i}].hesapNo=this.value" placeholder="Hesap numarası" style="width:100%;margin-top:2px"></div>
     </div>
   </div>`).join('');
 }
@@ -389,13 +334,6 @@ function openModal(id){
   // X butonunu her modala inject et
   const overlay = document.getElementById(id);
   if (overlay) {
-    // Pending close timeout varsa iptal et (race condition düzeltmesi)
-    if (_closeTimeouts.has(id)) {
-      clearTimeout(_closeTimeouts.get(id));
-      _closeTimeouts.delete(id);
-      const m = overlay.querySelector('.modal');
-      if (m) m.style.animation = '';
-    }
     const modal = overlay.querySelector('.modal');
     if (modal && !modal.querySelector('.modal-x-btn')) {
       const xBtn = document.createElement('button');
@@ -536,10 +474,9 @@ function ktTipSec(tip){
 function ktModalSifirla(){
   ['kt-ad','kt-tc','kt-dogum','kt-meslek','kt-vergino','kt-vergidairesi','kt-mersis',
    'kt-yetkili-ad','kt-yetkili-unvan','kt-tel','kt-faks','kt-mail','kt-uets',
-   'kt-adres','kt-acik'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});
+   'kt-adres','kt-banka','kt-iban','kt-acik'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});
   const ku=document.getElementById('kt-uyruk');if(ku)ku.value='T.C.';
   const ks=document.getElementById('kt-sirkettur');if(ks)ks.value='A.Ş.';
-  ktBankalar=[];renderKtBankalar();
   ktTipSec('gercek');
 }
 function ktModalDataOku(){
@@ -562,7 +499,8 @@ function ktModalDataOku(){
     mail:document.getElementById('kt-mail').value.trim(),
     uets:document.getElementById('kt-uets')?.value.trim()||'',
     adres:document.getElementById('kt-adres').value.trim(),
-    bankalar:JSON.parse(JSON.stringify(ktBankalar)),
+    banka:document.getElementById('kt-banka')?.value.trim()||'',
+    iban:document.getElementById('kt-iban')?.value.trim()||'',
     aciklama:document.getElementById('kt-acik').value.trim(),
   };
 }
@@ -575,8 +513,7 @@ function ktModalDataDoldur(k){
   set('kt-vergino',k.vergiNo);set('kt-vergidairesi',k.vergiDairesi);set('kt-mersis',k.mersis);
   set('kt-yetkili-ad',k.yetkiliAd);set('kt-yetkili-unvan',k.yetkiliUnvan);
   set('kt-tel',k.tel);set('kt-faks',k.faks);set('kt-mail',k.mail);set('kt-uets',k.uets);
-  set('kt-adres',k.adres);set('kt-acik',k.aciklama);
-  ktBankalar=JSON.parse(JSON.stringify(k.bankalar||[]));renderKtBankalar();
+  set('kt-adres',k.adres);set('kt-banka',k.banka);set('kt-iban',k.iban);set('kt-acik',k.aciklama);
 }
 function openYeniKT(){
   _ktCtx=null;
@@ -593,13 +530,15 @@ function openYeniKT(){
 }
 function openYeniVek(){
   _vekCtx=null;
-  ['vek-ad','vek-sicil','vek-tbb','vek-tel','vek-mail','vek-uets','vek-acik'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});
+  ['vek-ad','vek-sicil','vek-tbb','vek-tel','vek-mail','vek-uets','vek-banka','vek-acik'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});
   document.getElementById('vek-baro').value='';
-  vekBankalar=[];renderVekBankalar();
   document.getElementById('vek-modal-title').textContent='Avukat / Vekil Ekle';
   document.getElementById('vek-modal-btn').textContent='Kaydet';
   document.getElementById('vek-modal-btn').onclick=saveVekil;
   openModal('vek-modal');
+  setTimeout(()=>{
+    const vekiban=document.getElementById('vek-banka');if(vekiban&&!vekiban._fmt){vekiban._fmt=true;}
+  },50);
 }
 function openKTProfil(id){
   const k=state.karsiTaraflar.find(x=>x.id===id);if(!k)return;
@@ -628,15 +567,7 @@ function openKTProfil(id){
   if(k.mail)rows.push({l:'E-posta',v:`<a href="mailto:${k.mail}" style="color:var(--gold)">${k.mail}</a>`});
   if(k.uets)rows.push({l:'UETS/KEP',v:k.uets});
   if(k.adres)rows.push({l:'Adres',v:k.adres});
-  if(k.bankalar&&k.bankalar.length){
-    k.bankalar.forEach((b,i)=>{
-      const ibanStr=b.iban?`<span style="font-family:monospace;font-size:12px">${b.iban}</span>`:'';
-      const meta=[b.banka,b.sube,b.hesapAd].filter(Boolean).join(' · ');
-      rows.push({l:i===0?'Banka':'',v:[meta,ibanStr].filter(Boolean).join('<br>')});
-    });
-  } else if(k.iban){
-    rows.push({l:'IBAN',v:`<span style="font-family:monospace;font-size:12px">${k.iban}</span>`});
-  }
+  if(k.iban)rows.push({l:'IBAN',v:`<span style="font-family:monospace;font-size:12px">${k.iban}</span>`});
   if(k.aciklama)rows.push({l:'Not',v:k.aciklama});
   document.getElementById('kt-profil-bilgiler').innerHTML=rows.map(r=>
     `<div class="vp-bilgi-row"><div class="vp-bilgi-label">${r.l}</div><div class="vp-bilgi-val">${r.v}</div></div>`
@@ -744,10 +675,7 @@ function openVekProfil(id){
     v.tel?{l:'Telefon',val:v.tel}:null,
     v.mail?{l:'E-posta',val:`<a href="mailto:${v.mail}" style="color:var(--gold)">${v.mail}</a>`}:null,
     v.uets?{l:'UETS / KEP',val:v.uets}:null,
-    ...(v.bankalar&&v.bankalar.length
-      ? v.bankalar.map((b,i)=>({l:i===0?'Banka':'',val:[b.banka,b.sube,b.hesapAd].filter(Boolean).join(' · ')+(b.iban?`<br><span style="font-family:monospace;font-size:12px">${b.iban}</span>`:'')}))
-      : (v.banka?[{l:'IBAN',val:`<span style="font-family:monospace;font-size:12px">${v.banka}</span>`}]:[])
-    ),
+    v.banka?{l:'IBAN',val:`<span style="font-family:monospace;font-size:12px">${v.banka}</span>`}:null,
     v.aciklama?{l:'Açıklama',val:v.aciklama}:null,
   ].filter(Boolean);
   document.getElementById('vp-bilgiler').innerHTML=bilgiRows.map(r=>
@@ -807,7 +735,7 @@ function editVekModal(id){
   document.getElementById('vek-tel').value=v.tel||'';
   document.getElementById('vek-mail').value=v.mail||'';
   document.getElementById('vek-uets').value=v.uets||'';
-  vekBankalar=JSON.parse(JSON.stringify(v.bankalar||[]));renderVekBankalar();
+  document.getElementById('vek-banka').value=v.banka||'';
   document.getElementById('vek-acik').value=v.aciklama||'';
   document.getElementById('vek-modal-title').textContent='Avukat / Vekil Düzenle';
   document.getElementById('vek-modal-btn').textContent='Güncelle';
@@ -823,7 +751,7 @@ function updateVek(id){
   v.tel=document.getElementById('vek-tel').value.trim();
   v.mail=document.getElementById('vek-mail').value.trim();
   v.uets=document.getElementById('vek-uets').value.trim();
-  v.bankalar=JSON.parse(JSON.stringify(vekBankalar));
+  v.banka=document.getElementById('vek-banka').value.trim();
   v.aciklama=document.getElementById('vek-acik').value.trim();
   state.davalar.forEach(d=>{if(d.karsavId===id)d.karsav='Av. '+v.ad;});
   state.icra.forEach(i=>{if(i.karsavId===id)i.karsav='Av. '+v.ad;});
