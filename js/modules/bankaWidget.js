@@ -371,111 +371,18 @@ function bwGlobalTcknKur() {
 
 // ── Başlatıcı ────────────────────────────────────────────────────
 (function bwInit() {
-  // ── Karşı Taraf Banka Widget ─────────────────────────────────
-  function renderKtBankalarBW() {
-    const el = document.getElementById('kt-banka-list');
-    if (!el) return;
-    const arr = window.ktBankalar || [];
-    if (!arr.length) { el.innerHTML = ''; return; }
-    el.innerHTML = arr.map((b, i) => `
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;position:relative">
-        <button type="button" onclick="ktBankaKaldir(${i})" title="Kaldır"
-          style="position:absolute;top:8px;right:10px;background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:15px">✕</button>
-        <div style="font-size:10px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;font-weight:700">
-          Banka Hesabı ${i+1}${b.isDefault ? ' <span style="color:#22d3ee;font-size:9px">★ Varsayılan</span>' : ''}
-        </div>
-        <div style="margin-bottom:10px">
-          <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:4px">Banka *</label>
-          <div id="bw-kt-banka-dd-${i}"></div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div><label style="font-size:10px;color:var(--text-muted)">Şube</label>
-            <input value="${b.sube||''}" oninput="window.ktBankalar[${i}].sube=this.value" placeholder="Şube adı / no" style="width:100%;margin-top:2px"></div>
-          <div><label style="font-size:10px;color:var(--text-muted)">Hesap Adı</label>
-            <input value="${b.hesapAd||''}" oninput="window.ktBankalar[${i}].hesapAd=this.value" placeholder="Hesap sahibi adı" style="width:100%;margin-top:2px"></div>
-          <div style="grid-column:1/-1"><label style="font-size:10px;color:var(--text-muted)">IBAN</label>
-            <input id="bw-kt-iban-${i}" value="${b.iban||''}" placeholder="TR00 0000 0000 0000 0000 0000 00"
-              oninput="window.ktBankalar[${i}].iban=this.value"
-              style="width:100%;margin-top:2px;font-family:monospace;letter-spacing:1px"></div>
-          <div><label style="font-size:10px;color:var(--text-muted)">Hesap No</label>
-            <input value="${b.hesapNo||''}" oninput="window.ktBankalar[${i}].hesapNo=this.value" placeholder="Hesap numarası" style="width:100%;margin-top:2px"></div>
-        </div>
-      </div>
-    `).join('');
-    arr.forEach((b, i) => {
-      bwDropdownOlustur(`bw-kt-banka-dd-${i}`, ({ ad, kod }) => {
-        window.ktBankalar[i].banka = ad; window.ktBankalar[i].bankaKod = kod;
-      });
-      const kont = document.getElementById(`bw-kt-banka-dd-${i}`);
-      if (kont && b.banka) {
-        const si = kont.querySelector('.bw-banka-input');
-        const cb = kont.querySelector('.bw-default-cb');
-        if (si) si.value = b.banka;
-        if (cb) { cb.checked = !!b.isDefault; cb.onchange = () => {
-          window.ktBankalar.forEach((x, j) => { x.isDefault = (j===i && cb.checked); });
-          renderKtBankalarBW();
-        };}
-      }
-      const ibanEl = document.getElementById(`bw-kt-iban-${i}`);
-      if (ibanEl) { bwIbanKur(ibanEl, `bw-kt-banka-dd-${i}`); ibanEl.addEventListener('input', () => { window.ktBankalar[i].iban = ibanEl.value; }); }
-    });
-  }
-
-  // ── Avukat / Vekil Banka Widget ───────────────────────────────
-  function renderVekBankalarBW() {
-    const el = document.getElementById('vek-banka-list');
-    if (!el) return;
-    const arr = window.vekBankalar || [];
-    if (!arr.length) { el.innerHTML = ''; return; }
-    el.innerHTML = arr.map((b, i) => `
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;position:relative">
-        <button type="button" onclick="vekBankaKaldir(${i})" title="Kaldır"
-          style="position:absolute;top:8px;right:10px;background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:15px">✕</button>
-        <div style="font-size:10px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;font-weight:700">
-          Banka Hesabı ${i+1}${b.isDefault ? ' <span style="color:#22d3ee;font-size:9px">★ Varsayılan</span>' : ''}
-        </div>
-        <div style="margin-bottom:10px">
-          <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:4px">Banka *</label>
-          <div id="bw-vek-banka-dd-${i}"></div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div><label style="font-size:10px;color:var(--text-muted)">Şube</label>
-            <input value="${b.sube||''}" oninput="window.vekBankalar[${i}].sube=this.value" placeholder="Şube adı / no" style="width:100%;margin-top:2px"></div>
-          <div><label style="font-size:10px;color:var(--text-muted)">Hesap Adı</label>
-            <input value="${b.hesapAd||''}" oninput="window.vekBankalar[${i}].hesapAd=this.value" placeholder="Hesap sahibi adı" style="width:100%;margin-top:2px"></div>
-          <div style="grid-column:1/-1"><label style="font-size:10px;color:var(--text-muted)">IBAN</label>
-            <input id="bw-vek-iban-${i}" value="${b.iban||''}" placeholder="TR00 0000 0000 0000 0000 0000 00"
-              oninput="window.vekBankalar[${i}].iban=this.value"
-              style="width:100%;margin-top:2px;font-family:monospace;letter-spacing:1px"></div>
-          <div><label style="font-size:10px;color:var(--text-muted)">Hesap No</label>
-            <input value="${b.hesapNo||''}" oninput="window.vekBankalar[${i}].hesapNo=this.value" placeholder="Hesap numarası" style="width:100%;margin-top:2px"></div>
-        </div>
-      </div>
-    `).join('');
-    arr.forEach((b, i) => {
-      bwDropdownOlustur(`bw-vek-banka-dd-${i}`, ({ ad, kod }) => {
-        window.vekBankalar[i].banka = ad; window.vekBankalar[i].bankaKod = kod;
-      });
-      const kont = document.getElementById(`bw-vek-banka-dd-${i}`);
-      if (kont && b.banka) {
-        const si = kont.querySelector('.bw-banka-input');
-        const cb = kont.querySelector('.bw-default-cb');
-        if (si) si.value = b.banka;
-        if (cb) { cb.checked = !!b.isDefault; cb.onchange = () => {
-          window.vekBankalar.forEach((x, j) => { x.isDefault = (j===i && cb.checked); });
-          renderVekBankalarBW();
-        };}
-      }
-      const ibanEl = document.getElementById(`bw-vek-iban-${i}`);
-      if (ibanEl) { bwIbanKur(ibanEl, `bw-vek-banka-dd-${i}`); ibanEl.addEventListener('input', () => { window.vekBankalar[i].iban = ibanEl.value; }); }
-    });
-  }
-
   function kur() {
     bwGlobalTcknKur();
-    window.renderMuvBankalarBW = renderMuvBankalarBW;
-    window.renderKtBankalarBW  = renderKtBankalarBW;
-    window.renderVekBankalarBW = renderVekBankalarBW;
+    // renderMuvBankalarBW'yi muvBankaEkle ve renderMuvBankalar'ın yerine geçir
+    if (typeof window !== 'undefined') {
+      const orijinalEkle = window.muvBankaEkle;
+      window.muvBankaEkle = function(data) {
+        if (!window.muvBankalar) window.muvBankalar = [];
+        window.muvBankalar.push(data || { banka: '', bankaKod: '', sube: '', iban: '', hesapNo: '', hesapAd: '', isDefault: false });
+        renderMuvBankalarBW();
+      };
+      window.renderMuvBankalar = renderMuvBankalarBW;
+    }
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', kur);

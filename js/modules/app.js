@@ -144,27 +144,11 @@ function demoVeriYukle() {
   notify('✅ Demo veriler yüklendi — 27 müvekkil, 50 dava, 28 icra, 5 arabuluculuk, 6 danışmanlık, 5 ihtarname, 7 görev, 8 etkinlik');
 }
 
-async function demoVeriSil() {
+function demoVeriSil() {
   if (!confirm('Tüm demo veriler silinecek. Devam?')) return;
-
-  // Demo kayıt id'lerini topla (Supabase'den de silmek için)
-  const demoIdler = {
-    muvekkillar:   (state.muvekkillar||[]).filter(m => /^muv\d+$/.test(m.id)).map(m=>m.id),
-    davalar:       (state.davalar||[]).filter(d => /^dav\d+$/.test(d.id)).map(d=>d.id),
-    icra:          (state.icra||[]).filter(i => /^icr\d+$/.test(i.id)).map(i=>i.id),
-    karsi_taraflar:(state.karsiTaraflar||[]).filter(k => /^kt\d+$/.test(k.id)).map(k=>k.id),
-    vekillar:      (state.vekillar||[]).filter(v => /^vek\d+$/.test(v.id)).map(v=>v.id),
-    arabuluculuk:  (state.arabuluculuk||[]).filter(a => /^ara\d+$/.test(a.id)).map(a=>a.id),
-    danismanlik:   (state.danismanlik||[]).filter(d => /^dan\d+$/.test(d.id)).map(d=>d.id),
-    ihtarnameler:  (state.ihtarnameler||[]).filter(i => /^iht\d+$/.test(i.id)).map(i=>i.id),
-    todolar:       (state.todolar||[]).filter(t => /^tod\d+$/.test(t.id)).map(t=>t.id),
-    etkinlikler:   (state.etkinlikler||[]).filter(e => /^etk\d+$/.test(e.id)).map(e=>e.id),
-  };
-
-  // State'ten sil
-  state.muvekkillar   = (state.muvekkillar||[]).filter(m => !/^muv\d+$/.test(m.id));
-  state.davalar       = (state.davalar||[]).filter(d => !/^dav\d+$/.test(d.id));
-  state.icra          = (state.icra||[]).filter(i => !/^icr\d+$/.test(i.id));
+  state.muvekkillar   = state.muvekkillar.filter(m => !/^muv\d+$/.test(m.id));
+  state.davalar       = state.davalar.filter(d => !/^dav\d+$/.test(d.id));
+  state.icra          = state.icra.filter(i => !/^icr\d+$/.test(i.id));
   state.karsiTaraflar = (state.karsiTaraflar||[]).filter(k => !/^kt\d+$/.test(k.id));
   state.vekillar      = (state.vekillar||[]).filter(v => !/^vek\d+$/.test(v.id));
   state.arabuluculuk  = (state.arabuluculuk||[]).filter(a => !/^ara\d+$/.test(a.id));
@@ -172,20 +156,7 @@ async function demoVeriSil() {
   state.ihtarnameler  = (state.ihtarnameler||[]).filter(i => !/^iht\d+$/.test(i.id));
   state.todolar       = (state.todolar||[]).filter(t => !/^tod\d+$/.test(t.id));
   state.etkinlikler   = (state.etkinlikler||[]).filter(e => !/^etk\d+$/.test(e.id));
-
-  // Önce localStorage'a yaz
-  try { localStorage.setItem(SK, JSON.stringify(state)); } catch(e){}
-
-  // Supabase'den de sil (oturum açıksa)
-  if (typeof currentBuroId !== 'undefined' && currentBuroId && typeof sb !== 'undefined') {
-    try {
-      for (const [tablo, idler] of Object.entries(demoIdler)) {
-        if (!idler.length) continue;
-        await sb.from(tablo).delete().in('id', idler).eq('buro_id', currentBuroId);
-      }
-    } catch(e) { console.warn('Demo silme Supabase hatası:', e.message); }
-  }
-
+  saveData();
   renderMuvekkillar(); renderDavalar(); renderDavaCards();
   renderIcra(); renderIcraCards(); renderDashboard(); updateBadges();
   if(typeof renderArabuluculuk==='function') renderArabuluculuk();

@@ -780,7 +780,7 @@
 <!-- ===== UYGULAMA ===== -->
 <div id="app-wrapper">
 <header>
-  <div class="logo">⚖️ Hukuk Bürosu <span id="avukat-adi"></span></div>
+  <div class="logo" style="font-family:'DM Sans',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.5px"><span style="color:#00BCD4">L</span>ex<span style="color:#00BCD4">B</span>ase</div>
   <div style="display:flex;align-items:center;gap:12px;margin-left:auto">
     <button onclick="spotlightAc()" title="Ctrl+K ile arama yap" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:6px"><span>🔍</span> Ara <kbd style="font-size:9px;background:var(--surface);border:1px solid var(--border);padding:1px 5px;border-radius:3px">Ctrl+K</kbd></button>
     <div style="color:var(--text-muted);font-size:12px" id="header-date"></div>
@@ -1682,6 +1682,21 @@
         </div>
       </div>
 
+      <!-- Demo Veri -->
+      <div class="ayar-section" style="border-color:var(--border)">
+        <div class="ayar-section-header">
+          <span class="ayar-section-icon">🧪</span>
+          <div><div class="ayar-section-title">Demo Veri</div><div class="ayar-section-sub">Sistemi test etmek için örnek veriler</div></div>
+        </div>
+        <div style="padding:20px">
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px">27 müvekkil, 50 dava ve 28 icra dosyasından oluşan örnek veriyi yükleyin veya silin.</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <button class="btn btn-gold" onclick="demoVeriYukle()" style="justify-content:center">📥 Demo Veri Yükle</button>
+            <button class="btn btn-danger" onclick="demoVeriSil()" style="justify-content:center">🗑️ Demo Verileri Sil</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Tehlikeli Alan -->
       <div class="ayar-section" style="border-color:var(--red-dim)">
         <div class="ayar-section-header" style="border-bottom-color:var(--red-dim)">
@@ -1805,11 +1820,14 @@
     <div class="form-row">
       <div class="form-group"><label>Ad *</label><input id="m-ad" placeholder="Ad"></div>
       <div class="form-group"><label>Soyad *</label><input id="m-soyad" placeholder="Soyad"></div>
-      <div class="form-group"><label>T.C. Kimlik No</label><input id="m-tc" placeholder="11 haneli TC No" maxlength="11"></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label>Uyruk</label><select id="m-uyruk" onchange="muvUyrukDegis(this.value)"><option value="TC">T.C.</option><option value="yabanci">Yabancı Uyruklu</option></select></div>
-      <div class="form-group"><label>Pasaport No (yabancı)</label><input id="m-pasaport"></div>
+      <div class="form-group" id="m-kimlik-grup" style="position:relative;min-height:62px">
+        <label id="m-kimlik-label">T.C. Kimlik No</label>
+        <input id="m-tc" placeholder="11 haneli TC No" maxlength="11" style="position:absolute;width:100%;top:22px;left:0">
+        <input id="m-pasaport" placeholder="Pasaport No" style="position:absolute;width:100%;top:22px;left:0;display:none">
+      </div>
     </div>
     <div class="form-row">
       <div class="form-group"><label>Doğum Tarihi</label><input type="date" id="m-dogum"></div>
@@ -2108,15 +2126,17 @@
   <!-- Gerçek Kişi Alanları -->
   <div id="kt-gercek-alanlari">
     <div class="form-row">
-      <div class="form-group"><label>TC Kimlik No</label><input id="kt-tc" placeholder="11 haneli TC kimlik no" maxlength="11"></div>
-      <div class="form-group"><label>Doğum Tarihi</label><input type="date" id="kt-dogum"></div>
-    </div>
-    <div class="form-row">
       <div class="form-group"><label>Uyruk</label>
         <select id="kt-uyruk" onchange="ktUyrukDegis(this.value)"><option value="TC">T.C.</option><option value="yabanci">Yabancı Uyruklu</option></select>
       </div>
-      <div class="form-group"><label>Pasaport No (yabancı)</label><input id="kt-pasaport" style="display:none"></div>
+      <div class="form-group" id="kt-kimlik-grup" style="position:relative;min-height:62px">
+        <label id="kt-kimlik-label">TC Kimlik No</label>
+        <input id="kt-tc" placeholder="11 haneli TC kimlik no" maxlength="11" style="position:absolute;width:100%;top:22px;left:0">
+        <input id="kt-pasaport" placeholder="Pasaport No" style="position:absolute;width:100%;top:22px;left:0;display:none">
+      </div>
     </div>
+    <div class="form-row">
+      <div class="form-group"><label>Doğum Tarihi</label><input type="date" id="kt-dogum"></div>
     <div class="form-row">
       <div class="form-group"><label>Doğum Yeri</label><input id="kt-dogum-yeri" placeholder="Şehir / Ülke"></div>
       <div class="form-group"><label>Meslek</label>
@@ -2156,11 +2176,11 @@
     <div class="form-group"><label>UETS / KEP Adresi</label><input id="kt-uets"></div>
   </div>
   <div class="form-group"><label>Adres</label><textarea id="kt-adres" rows="2"></textarea></div>
-  <div class="form-section-label" style="display:flex;justify-content:space-between;align-items:center">
-    Banka Hesapları
-    <button type="button" class="btn btn-outline btn-sm" onclick="ktBankaEkle()" style="font-size:11px;padding:3px 10px">+ Hesap Ekle</button>
+  <div class="form-section-label">Banka Bilgileri</div>
+  <div class="form-row">
+    <div class="form-group"><label>Banka</label><input id="kt-banka" placeholder="Banka adı"></div>
+    <div class="form-group"><label>IBAN</label><input id="kt-iban" placeholder="TR00 0000 0000 0000 0000 0000 00" oninput="formatIbanInput(this)" maxlength="32"></div>
   </div>
-  <div id="kt-banka-list"></div>
   <div class="form-group"><label>Açıklama / Not</label><input id="kt-acik"></div>
   <div class="modal-footer">
     <button class="btn btn-outline" onclick="closeModal('kt-modal')">İptal</button>
@@ -2235,13 +2255,9 @@
     <div class="form-group"><label>E-posta</label><input id="vek-mail" placeholder="avukat@mail.com"></div>
   </div>
   <div class="form-row">
-    <div class="form-group" style="flex:1"><label>UETS / KEP Adresi</label><input id="vek-uets" placeholder="UETS / KEP adresi"></div>
+    <div class="form-group"><label>UETS / KEP Adresi</label><input id="vek-uets" placeholder="UETS / KEP adresi"></div>
+    <div class="form-group"><label>IBAN</label><input id="vek-banka" placeholder="TR00 0000 0000 0000 0000 0000 00" oninput="formatIbanInput(this)" maxlength="32"></div>
   </div>
-  <div class="form-section-label" style="display:flex;justify-content:space-between;align-items:center">
-    Banka Hesapları
-    <button type="button" class="btn btn-outline btn-sm" onclick="vekBankaEkle()" style="font-size:11px;padding:3px 10px">+ Hesap Ekle</button>
-  </div>
-  <div id="vek-banka-list"></div>
   <div class="form-group"><label>Açıklama / Not</label><input id="vek-acik"></div>
   <div class="modal-footer">
     <button class="btn btn-outline" onclick="closeModal('vek-modal')">İptal</button>
