@@ -1,6 +1,12 @@
 // ================================================================
-// EMD HUKUK — İHTARNAME / PROTESTO MODÜLİ
+// LEXBASE — İHTARNAME / PROTESTO MODÜLİ v2
 // js/modules/ihtarname.js
+//
+// Entegrasyonlar:
+// - Kişiler: client_id + opposing_party_id (FK dropdown)
+// - Dosyalar: case_id / icra_id (FK bağlantı)
+// - Finans: Masraf otomasyonu
+// - Görevler: Süre takibi otomasyonu
 // ================================================================
 
 let aktivIhtarId = null;
@@ -9,216 +15,293 @@ function renderIhtarname() {
   const filS = document.getElementById('ihtar-s')?.value || '';
   const filTur = document.getElementById('ihtar-ft')?.value || '';
   const filDur = document.getElementById('ihtar-fd')?.value || '';
-
   let liste = state.ihtarnameler || [];
   if (filS) {
     const q = filS.toLowerCase();
     liste = liste.filter(i =>
-      (i.no||'').toLowerCase().includes(q) ||
-      getMuvAd(i.muvId).toLowerCase().includes(q) ||
-      (i.konu||'').toLowerCase().includes(q) ||
-      (i.karsiTaraf||'').toLowerCase().includes(q)
+      (i.no||'').toLowerCase().includes(q) || getMuvAd(i.muvId).toLowerCase().includes(q) ||
+      (i.konu||'').toLowerCase().includes(q) || _getKarsiAd(i).toLowerCase().includes(q)
     );
   }
   if (filTur) liste = liste.filter(i => i.tur === filTur);
   if (filDur) liste = liste.filter(i => i.tebligDurum === filDur);
 
+  const all = state.ihtarnameler || [];
   const cards = document.getElementById('ihtar-cards');
-  const toplam = (state.ihtarnameler||[]).length;
-  const giden = (state.ihtarnameler||[]).filter(i=>i.yon==='Giden').length;
-  const gelen = (state.ihtarnameler||[]).filter(i=>i.yon==='Gelen').length;
-  const tebligBekl = (state.ihtarnameler||[]).filter(i=>i.tebligDurum==='Bekliyor').length;
-  if (cards) cards.innerHTML = `
-    <div class="card"><div class="card-label">Toplam</div><div class="card-value gold">${toplam}</div></div>
-    <div class="card"><div class="card-label">Giden</div><div class="card-value" style="color:var(--blue)">${giden}</div></div>
-    <div class="card"><div class="card-label">Gelen</div><div class="card-value" style="color:var(--purple)">${gelen}</div></div>
-    <div class="card"><div class="card-label">Tebliğ Bekliyor</div><div class="card-value" style="color:#e67e22">${tebligBekl}</div></div>`;
+  if (cards) {
+    const masraf = all.reduce((s,i) => s + (parseFloat(i.masrafTutar)||0), 0);
+    cards.innerHTML = `
+      <div class="card"><div class="card-label">Toplam</div><div class="card-value gold">${all.length}</div></div>
+      <div class="card"><div class="card-label">Giden</div><div class="card-value" style="color:var(--blue)">${all.filter(i=>i.yon==='Giden').length}</div></div>
+      <div class="card"><div class="card-label">Gelen</div><div class="card-value" style="color:var(--purple)">${all.filter(i=>i.yon==='Gelen').length}</div></div>
+      <div class="card"><div class="card-label">Tebliğ Bekliyor</div><div class="card-value" style="color:#e67e22">${all.filter(i=>i.tebligDurum==='Bekliyor').length}</div></div>
+      <div class="card"><div class="card-label">Toplam Masraf</div><div class="card-value" style="color:#e74c3c;font-size:14px">${fmt(masraf)}</div></div>`;
+  }
 
   const tbody = document.getElementById('ihtar-tbody');
   const empty = document.getElementById('ihtar-empty');
   if (!tbody) return;
   tbody.innerHTML = '';
-
   if (!liste.length) { if(empty) empty.style.display='block'; return; }
   if(empty) empty.style.display='none';
 
-  liste.sort((a,b)=>(b.tarih||'').localeCompare(a.tarih||'')).forEach(i => {
+  liste.sort((a,b) => (b.tarih||'').localeCompare(a.tarih||'')).forEach(i => {
     const durRenk = i.tebligDurum==='Tebliğ Edildi'?'var(--green)':i.tebligDurum==='Bila'?'var(--red)':'#e67e22';
     const yonRenk = i.yon==='Giden'?'var(--blue)':'var(--purple)';
+    const karsiAd = _getKarsiAd(i);
+    const gIcon = {'Noter':'🏛','KEP':'📧','PTT':'📮','Elden':'🤝'}[i.gonderimUsulu]||'📨';
+    const sureTag = (i.verilenSure && i.tebligDurum==='Tebliğ Edildi' && i.tebligTarih)
+      ? `<span style="font-size:9px;color:#e67e22;background:rgba(230,126,34,.1);padding:1px 6px;border-radius:3px;margin-left:4px">${i.verilenSure}g</span>` : '';
     tbody.innerHTML += `<tr onclick="openIhtarDetay('${i.id}')" style="cursor:pointer">
       <td><strong style="color:var(--gold)">${i.no||'—'}</strong></td>
       <td><span style="background:${yonRenk}22;color:${yonRenk};padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700">${i.yon}</span></td>
       <td style="font-size:11px">${i.tur||'—'}</td>
       <td>${getMuvAd(i.muvId)}</td>
-      <td style="font-size:12px">${i.karsiTaraf||'—'}</td>
-      <td style="font-size:11px">${i.noterlik||'—'}</td>
-      <td style="font-size:11px">${i.yevmiyeNo||'—'}</td>
+      <td style="font-size:12px">${karsiAd}</td>
+      <td style="font-size:11px">${gIcon} ${i.gonderimUsulu||'—'}</td>
       <td>${fmtD(i.tarih)}</td>
-      <td><span style="color:${durRenk};font-size:11px;font-weight:600">${i.tebligDurum||'Bekliyor'}</span>${i.tebligTarih?`<div style="font-size:10px;color:var(--text-dim)">${fmtD(i.tebligTarih)}</div>`:''}</td>
-      <td><button class="delete-btn" onclick="event.stopPropagation();deleteIhtar('${i.id}')">✕</button></td>
+      <td><span style="color:${durRenk};font-size:11px;font-weight:600">● ${i.tebligDurum||'Bekliyor'}</span>${sureTag}${i.tebligTarih?`<div style="font-size:10px;color:var(--text-dim)">${fmtD(i.tebligTarih)}</div>`:''}</td>
+      <td><button class="ctx-btn" onclick="event.stopPropagation();CtxMenu.goster(event,[{icon:'👁️',label:'Görüntüle',fn:function(){openIhtarDetay('${i.id}')}},{icon:'✏️',label:'Düzenle',fn:function(){openIhtarModal('${i.id}')}},\'---\',{icon:'🗑️',label:'Sil',danger:true,fn:function(){deleteIhtar('${i.id}')}}])">⋮</button></td>
     </tr>`;
   });
 }
 
+function _getKarsiAd(ih) {
+  if (ih.karsiTarafId) { const k = (state.karsiTaraflar||[]).find(x=>x.id===ih.karsiTarafId); return k ? k.ad : '—'; }
+  return ih.karsiTaraf || '—';
+}
+
 function openIhtarModal(id) {
-  // Müvekkil listesini doldur
   const muvSel = document.getElementById('ihtar-muv');
-  muvSel.innerHTML = '<option value="">— Müvekkil seçin —</option>';
-  state.muvekkillar.forEach(m => muvSel.innerHTML += `<option value="${m.id}">${m.ad}</option>`);
+  if (muvSel) { muvSel.innerHTML = '<option value="">— Müvekkil seçin —</option>'; (state.muvekkillar||[]).forEach(m => muvSel.innerHTML += '<option value="'+m.id+'">'+m.ad+'</option>'); }
 
-  // İlgili dosya listesini doldur
+  const karsiSel = document.getElementById('ihtar-karsi-id');
+  if (karsiSel) { karsiSel.innerHTML = '<option value="">— Karşı taraf seçin —</option>'; (state.karsiTaraflar||[]).forEach(k => karsiSel.innerHTML += '<option value="'+k.id+'">'+k.ad+'</option>'); karsiSel.innerHTML += '<option value="__yeni__">＋ Yeni Karşı Taraf Ekle</option>'; }
+
   ihtarDosyaDoldur('');
-
-  // Formu temizle
-  const fields = ['ihtar-id','ihtar-no','ihtar-konu','ihtar-karsi-taraf','ihtar-noterlik','ihtar-yevmiye','ihtar-icindekiler','ihtar-ilgili-dosya-id'];
-  fields.forEach(f => { const el=document.getElementById(f); if(el) el.value=''; });
-  document.getElementById('ihtar-tarih').value = today();
-  document.getElementById('ihtar-teblig-tarih').value = '';
-  document.getElementById('ihtar-yon').value = 'Giden';
-  document.getElementById('ihtar-tur').value = 'İhtarname';
-  document.getElementById('ihtar-teblig-durum').value = 'Bekliyor';
-  document.getElementById('ihtar-ilgili-tur').value = '';
+  ['ihtar-id','ihtar-no','ihtar-konu','ihtar-icindekiler','ihtar-noter-adi','ihtar-noter-yevmiye','ihtar-kep-adres','ihtar-kep-delil','ihtar-ptt-barkod','ihtar-masraf','ihtar-verilen-sure','ihtar-ilgili-dosya-id'].forEach(function(f) { var el=document.getElementById(f); if(el) el.value=''; });
+  var tarihEl = document.getElementById('ihtar-tarih'); if(tarihEl) tarihEl.value = today();
+  var tebTarihEl = document.getElementById('ihtar-teblig-tarih'); if(tebTarihEl) tebTarihEl.value = '';
+  var yonEl = document.getElementById('ihtar-yon'); if(yonEl) yonEl.value = 'Giden';
+  var turEl = document.getElementById('ihtar-tur'); if(turEl) turEl.value = 'İhtarname';
+  var tebDurEl = document.getElementById('ihtar-teblig-durum'); if(tebDurEl) tebDurEl.value = 'Bekliyor';
+  var gondEl = document.getElementById('ihtar-gonderim'); if(gondEl) gondEl.value = 'Noter';
+  var ilgTurEl = document.getElementById('ihtar-ilgili-tur'); if(ilgTurEl) ilgTurEl.value = '';
+  var masrafCb = document.getElementById('ihtar-masraf-yansit'); if(masrafCb) masrafCb.checked = true;
   document.getElementById('ihtar-modal-title').textContent = 'Yeni İhtarname / Protesto';
+  ihtarGonderimDegisti();
 
   if (id) {
-    const ih = (state.ihtarnameler||[]).find(x=>x.id===id);
+    var ih = (state.ihtarnameler||[]).find(function(x){return x.id===id;});
     if (ih) {
       document.getElementById('ihtar-id').value = ih.id;
       document.getElementById('ihtar-no').value = ih.no||'';
-      document.getElementById('ihtar-yon').value = ih.yon||'Giden';
-      document.getElementById('ihtar-tur').value = ih.tur||'İhtarname';
-      muvSel.value = ih.muvId||'';
-      document.getElementById('ihtar-karsi-taraf').value = ih.karsiTaraf||'';
+      if(yonEl) yonEl.value = ih.yon||'Giden';
+      if(turEl) turEl.value = ih.tur||'İhtarname';
+      if(muvSel) muvSel.value = ih.muvId||'';
+      if(karsiSel) karsiSel.value = ih.karsiTarafId||'';
       document.getElementById('ihtar-konu').value = ih.konu||'';
-      document.getElementById('ihtar-noterlik').value = ih.noterlik||'';
-      document.getElementById('ihtar-yevmiye').value = ih.yevmiyeNo||'';
-      document.getElementById('ihtar-tarih').value = ih.tarih||today();
-      document.getElementById('ihtar-teblig-durum').value = ih.tebligDurum||'Bekliyor';
-      document.getElementById('ihtar-teblig-tarih').value = ih.tebligTarih||'';
+      if(gondEl) gondEl.value = ih.gonderimUsulu||'Noter';
+      ihtarGonderimDegisti();
+      var gd = ih.gonderimDetay || {};
+      var na = document.getElementById('ihtar-noter-adi'); if(na) na.value = gd.noterAdi || ih.noterlik || '';
+      var ny = document.getElementById('ihtar-noter-yevmiye'); if(ny) ny.value = gd.yevmiyeNo || ih.yevmiyeNo || '';
+      var ka = document.getElementById('ihtar-kep-adres'); if(ka) ka.value = gd.kepAdresi || '';
+      var kd = document.getElementById('ihtar-kep-delil'); if(kd) kd.value = gd.delilNo || '';
+      var pb = document.getElementById('ihtar-ptt-barkod'); if(pb) pb.value = gd.barkodNo || '';
+      if(tarihEl) tarihEl.value = ih.tarih||today();
+      if(tebDurEl) tebDurEl.value = ih.tebligDurum||'Bekliyor';
+      if(tebTarihEl) tebTarihEl.value = ih.tebligTarih||'';
       document.getElementById('ihtar-icindekiler').value = ih.icindekiler||'';
-      document.getElementById('ihtar-ilgili-tur').value = ih.ilgiliTur||'';
+      if(ilgTurEl) ilgTurEl.value = ih.ilgiliTur||'';
       ihtarDosyaDoldur(ih.ilgiliTur||'');
-      document.getElementById('ihtar-ilgili-dosya-id').value = ih.ilgiliDosyaId||'';
+      var dosyaEl = document.getElementById('ihtar-ilgili-dosya-id'); if(dosyaEl) dosyaEl.value = ih.ilgiliDosyaId||'';
+      var masrafEl = document.getElementById('ihtar-masraf'); if(masrafEl) masrafEl.value = ih.masrafTutar||'';
+      if(masrafCb) masrafCb.checked = ih.masrafYansit !== false;
+      var sureEl = document.getElementById('ihtar-verilen-sure'); if(sureEl) sureEl.value = ih.verilenSure||'';
       document.getElementById('ihtar-modal-title').textContent = 'İhtarname Düzenle';
     }
   } else {
-    // Otomatik numara
     document.getElementById('ihtar-no').value = autoNo('ihtarname');
   }
-
   openModal('ihtar-modal');
 }
 
+function ihtarGonderimDegisti() {
+  var usul = (document.getElementById('ihtar-gonderim')||{}).value || 'Noter';
+  ['ihtar-noter-alan','ihtar-kep-alan','ihtar-ptt-alan'].forEach(function(id) { var el = document.getElementById(id); if(el) el.style.display = 'none'; });
+  var map = {'Noter':'ihtar-noter-alan','KEP':'ihtar-kep-alan','PTT':'ihtar-ptt-alan'};
+  var hedef = document.getElementById(map[usul]||'');
+  if (hedef) hedef.style.display = '';
+}
+
+function ihtarKarsiDegisti() {
+  var sel = document.getElementById('ihtar-karsi-id');
+  if (sel && sel.value === '__yeni__') { sel.value = ''; if(typeof openYeniKT==='function') openYeniKT(); }
+}
+
 function ihtarDosyaDoldur(tur) {
-  const sel = document.getElementById('ihtar-ilgili-dosya-id');
-  if (!sel) return;
+  var sel = document.getElementById('ihtar-ilgili-dosya-id'); if (!sel) return;
   sel.innerHTML = '<option value="">— Dosya seçin (opsiyonel) —</option>';
-  if (tur === 'dava') {
-    state.davalar.forEach(d => sel.innerHTML += `<option value="${d.id}">${d.no||d.id} — ${d.konu||''}</option>`);
-  } else if (tur === 'icra') {
-    state.icra.forEach(i => sel.innerHTML += `<option value="${i.id}">${i.no||i.id} — ${i.borclu||''}</option>`);
-  }
+  if (tur === 'dava') { (state.davalar||[]).forEach(function(d) { sel.innerHTML += '<option value="'+d.id+'">📁 '+(d.no||d.id)+' — '+(d.konu||'')+'</option>'; }); }
+  else if (tur === 'icra') { (state.icra||[]).forEach(function(i) { sel.innerHTML += '<option value="'+i.id+'">⚡ '+(i.no||i.id)+' — '+(i.borclu||'')+'</option>'; }); }
+}
+
+function ihtarMasrafToggle() {
+  var el = document.getElementById('ihtar-masraf-body');
+  var btn = document.getElementById('ihtar-masraf-toggle');
+  if (!el) return;
+  if (el.style.display === 'none') { el.style.display = ''; if(btn) btn.textContent = '▼'; }
+  else { el.style.display = 'none'; if(btn) btn.textContent = '▶'; }
 }
 
 function saveIhtar() {
-  const no = document.getElementById('ihtar-no').value.trim();
-  const muvId = document.getElementById('ihtar-muv').value;
-  const konu = document.getElementById('ihtar-konu').value.trim();
-
+  var no = document.getElementById('ihtar-no').value.trim();
+  var muvId = document.getElementById('ihtar-muv').value;
+  var konu = document.getElementById('ihtar-konu').value.trim();
   if (!muvId) { notify('⚠️ Müvekkil seçiniz.'); return; }
   if (!konu) { notify('⚠️ Konu alanı zorunludur.'); return; }
-
   if (!state.ihtarnameler) state.ihtarnameler = [];
 
-  const id = document.getElementById('ihtar-id').value;
-  const veri = {
-    yon: document.getElementById('ihtar-yon').value,
-    tur: document.getElementById('ihtar-tur').value,
-    muvId,
-    karsiTaraf: document.getElementById('ihtar-karsi-taraf').value.trim(),
-    konu,
-    no: no || autoNo('ihtarname'),
-    noterlik: document.getElementById('ihtar-noterlik').value.trim(),
-    yevmiyeNo: document.getElementById('ihtar-yevmiye').value.trim(),
-    tarih: document.getElementById('ihtar-tarih').value,
-    tebligDurum: document.getElementById('ihtar-teblig-durum').value,
-    tebligTarih: document.getElementById('ihtar-teblig-tarih').value,
-    icindekiler: document.getElementById('ihtar-icindekiler').value.trim(),
-    ilgiliTur: document.getElementById('ihtar-ilgili-tur').value,
-    ilgiliDosyaId: document.getElementById('ihtar-ilgili-dosya-id').value,
+  var id = document.getElementById('ihtar-id').value;
+  var gonderimUsulu = (document.getElementById('ihtar-gonderim')||{}).value || 'Noter';
+  var gonderimDetay = {};
+  if (gonderimUsulu === 'Noter') { gonderimDetay.noterAdi = (document.getElementById('ihtar-noter-adi')||{}).value||''; gonderimDetay.yevmiyeNo = (document.getElementById('ihtar-noter-yevmiye')||{}).value||''; }
+  else if (gonderimUsulu === 'KEP') { gonderimDetay.kepAdresi = (document.getElementById('ihtar-kep-adres')||{}).value||''; gonderimDetay.delilNo = (document.getElementById('ihtar-kep-delil')||{}).value||''; }
+  else if (gonderimUsulu === 'PTT') { gonderimDetay.barkodNo = (document.getElementById('ihtar-ptt-barkod')||{}).value||''; }
+
+  var tebligDurum = (document.getElementById('ihtar-teblig-durum')||{}).value || 'Bekliyor';
+  var tebligTarih = (document.getElementById('ihtar-teblig-tarih')||{}).value || '';
+  var verilenSure = parseInt((document.getElementById('ihtar-verilen-sure')||{}).value) || 0;
+  var masrafTutar = parseFloat((document.getElementById('ihtar-masraf')||{}).value) || 0;
+  var masrafYansit = document.getElementById('ihtar-masraf-yansit')?.checked !== false;
+
+  var sureSonu = (tebligTarih && verilenSure > 0) ? _hesaplaSure(tebligTarih, verilenSure) : null;
+
+  var veri = {
+    yon: (document.getElementById('ihtar-yon')||{}).value || 'Giden',
+    tur: (document.getElementById('ihtar-tur')||{}).value || 'İhtarname',
+    muvId: muvId,
+    karsiTarafId: (document.getElementById('ihtar-karsi-id')||{}).value || '',
+    karsiTaraf: _getKarsiAdById((document.getElementById('ihtar-karsi-id')||{}).value),
+    konu: konu, no: no || autoNo('ihtarname'),
+    gonderimUsulu: gonderimUsulu, gonderimDetay: gonderimDetay,
+    noterlik: gonderimDetay.noterAdi || '', yevmiyeNo: gonderimDetay.yevmiyeNo || '',
+    tarih: (document.getElementById('ihtar-tarih')||{}).value || today(),
+    tebligDurum: tebligDurum, tebligTarih: tebligTarih,
+    icindekiler: (document.getElementById('ihtar-icindekiler')||{}).value || '',
+    ilgiliTur: (document.getElementById('ihtar-ilgili-tur')||{}).value || '',
+    ilgiliDosyaId: (document.getElementById('ihtar-ilgili-dosya-id')||{}).value || '',
+    masrafTutar: masrafTutar, masrafYansit: masrafYansit,
+    verilenSure: verilenSure > 0 ? verilenSure : null,
+    sureSonu: sureSonu,
   };
 
+  var eskiDurum = id ? ((state.ihtarnameler.find(function(x){return x.id===id;})||{}).tebligDurum) : null;
+  var kayitId = id;
+
   if (id) {
-    const idx = state.ihtarnameler.findIndex(x=>x.id===id);
-    if (idx >= 0) state.ihtarnameler[idx] = {...state.ihtarnameler[idx], ...veri};
+    var idx = state.ihtarnameler.findIndex(function(x){return x.id===id;});
+    if (idx >= 0) state.ihtarnameler[idx] = Object.assign({}, state.ihtarnameler[idx], veri);
   } else {
-    state.ihtarnameler.push({id: uid(), ...veri});
+    kayitId = uid();
+    state.ihtarnameler.push(Object.assign({id: kayitId}, veri));
   }
 
-  saveData();
-  closeModal('ihtar-modal');
-  renderIhtarname();
+  // Masraf otomasyonu
+  if (masrafTutar > 0 && masrafYansit) { _masrafOto(veri, kayitId); }
+  // Görev otomasyonu
+  if (tebligDurum === 'Tebliğ Edildi' && tebligTarih && verilenSure > 0 && (!eskiDurum || eskiDurum !== 'Tebliğ Edildi')) {
+    _gorevOto(veri, kayitId);
+  }
+
+  saveData(); closeModal('ihtar-modal'); renderIhtarname(); updateBadges();
   notify('✓ İhtarname kaydedildi');
+}
+
+function _hesaplaSure(tarih, gun) { var d = new Date(tarih); d.setDate(d.getDate() + gun); return d.toISOString().split('T')[0]; }
+
+function _getKarsiAdById(id) { if(!id) return ''; var k = (state.karsiTaraflar||[]).find(function(x){return x.id===id;}); return k ? k.ad : ''; }
+
+function _masrafOto(veri, ihtarId) {
+  if (!state.avanslar) state.avanslar = [];
+  var mevcutIdx = state.avanslar.findIndex(function(a){return a._ihtarId===ihtarId && a.tur==='Masraf';});
+  var kayit = { id: mevcutIdx >= 0 ? state.avanslar[mevcutIdx].id : uid(), _ihtarId: ihtarId, muvId: veri.muvId, tur: 'Masraf', tutar: veri.masrafTutar, acik: veri.no+' numaralı '+veri.tur+' masrafı', tarih: veri.tarih, durum: 'Bekliyor', odeme: '' };
+  if (mevcutIdx >= 0) state.avanslar[mevcutIdx] = kayit;
+  else state.avanslar.push(kayit);
+}
+
+function _gorevOto(veri, ihtarId) {
+  if (!state.todolar) state.todolar = [];
+  state.todolar = state.todolar.filter(function(t){return t._ihtarId !== ihtarId || !t._otoIhtar;});
+  var sureSonu = _hesaplaSure(veri.tebligTarih, veri.verilenSure);
+  state.todolar.push({ id: uid(), _ihtarId: ihtarId, _otoIhtar: true, baslik: veri.no+' — İhtarname Süresi Doldu', aciklama: 'Tebliğ: '+fmtD(veri.tebligTarih)+' | Süre: '+veri.verilenSure+' gün | Son gün: '+fmtD(sureSonu), sonTarih: sureSonu, durum: 'Bekliyor', oncelik: 'Yüksek', muvId: veri.muvId });
 }
 
 function deleteIhtar(id) {
   if (!confirm('Bu ihtarnameyi silmek istediğinize emin misiniz?')) return;
-  state.ihtarnameler = (state.ihtarnameler||[]).filter(i=>i.id!==id);
-  saveData();
-  renderIhtarname();
+  state.avanslar = (state.avanslar||[]).filter(function(a){return a._ihtarId !== id;});
+  state.todolar = (state.todolar||[]).filter(function(t){return t._ihtarId !== id || !t._otoIhtar;});
+  state.ihtarnameler = (state.ihtarnameler||[]).filter(function(i){return i.id!==id;});
+  saveData(); renderIhtarname(); updateBadges();
+  if (aktivIhtarId === id) showPage('ihtarname', document.getElementById('ni-ihtarname'));
   notify('İhtarname silindi');
 }
 
 function openIhtarDetay(id) {
-  const ih = (state.ihtarnameler||[]).find(x=>x.id===id);
+  var ih = (state.ihtarnameler||[]).find(function(x){return x.id===id;});
   if (!ih) return;
   aktivIhtarId = id;
+  var yonRenk = ih.yon==='Giden'?'var(--blue)':'var(--purple)';
+  var durRenk = ih.tebligDurum==='Tebliğ Edildi'?'var(--green)':ih.tebligDurum==='Bila'?'var(--red)':'#e67e22';
+  var karsiAd = _getKarsiAd(ih);
 
-  const yonRenk = ih.yon==='Giden'?'var(--blue)':'var(--purple)';
-  const durRenk = ih.tebligDurum==='Tebliğ Edildi'?'var(--green)':ih.tebligDurum==='Bila'?'var(--red)':'#e67e22';
+  var dosyaBilgi = '—';
+  if (ih.ilgiliTur === 'dava' && ih.ilgiliDosyaId) { var d = (state.davalar||[]).find(function(x){return x.id===ih.ilgiliDosyaId;}); if (d) dosyaBilgi = '<span onclick="showPage(\'davalar\',document.getElementById(\'ni-davalar\'));setTimeout(function(){openDavaDetay(\''+d.id+'\')},200)" style="color:var(--gold);cursor:pointer">📁 '+d.no+' — '+d.konu+'</span>'; }
+  else if (ih.ilgiliTur === 'icra' && ih.ilgiliDosyaId) { var i = (state.icra||[]).find(function(x){return x.id===ih.ilgiliDosyaId;}); if (i) dosyaBilgi = '<span onclick="showPage(\'icra\',document.getElementById(\'ni-icra\'));setTimeout(function(){openIcraDetay(\''+i.id+'\')},200)" style="color:var(--gold);cursor:pointer">⚡ '+i.no+' — '+i.borclu+'</span>'; }
 
-  let ilgiliDosyaBilgi = '—';
-  if (ih.ilgiliTur === 'dava' && ih.ilgiliDosyaId) {
-    const d = state.davalar.find(x=>x.id===ih.ilgiliDosyaId);
-    if (d) ilgiliDosyaBilgi = `📁 Dava: ${d.no||''} — ${d.konu||''}`;
-  } else if (ih.ilgiliTur === 'icra' && ih.ilgiliDosyaId) {
-    const i = state.icra.find(x=>x.id===ih.ilgiliDosyaId);
-    if (i) ilgiliDosyaBilgi = `⚡ İcra: ${i.no||''} — ${i.borclu||''}`;
+  var gd = ih.gonderimDetay || {};
+  var gonderimBilgi = ih.gonderimUsulu || 'Noter';
+  if (ih.gonderimUsulu === 'Noter') gonderimBilgi = '🏛 '+(gd.noterAdi||ih.noterlik||'—')+' | Yev: '+(gd.yevmiyeNo||ih.yevmiyeNo||'—');
+  else if (ih.gonderimUsulu === 'KEP') gonderimBilgi = '📧 '+(gd.kepAdresi||'—')+' | Delil: '+(gd.delilNo||'—');
+  else if (ih.gonderimUsulu === 'PTT') gonderimBilgi = '📮 Barkod: '+(gd.barkodNo||'—');
+
+  var sureBilgi = '';
+  if (ih.verilenSure && ih.sureSonu) {
+    var bugun = today();
+    var kalanGun = Math.ceil((new Date(ih.sureSonu) - new Date(bugun)) / 86400000);
+    var renk = kalanGun <= 0 ? '#e74c3c' : kalanGun <= 3 ? '#e67e22' : 'var(--green)';
+    var durum = kalanGun <= 0 ? '⏰ SÜRESİ DOLDU' : kalanGun <= 3 ? '⚠️ '+kalanGun+' gün kaldı' : kalanGun+' gün kaldı';
+    sureBilgi = '<div style="background:'+renk+'11;border:1px solid '+renk+';border-radius:var(--radius);padding:14px;margin-bottom:18px;display:flex;align-items:center;gap:12px"><div style="font-size:28px">'+(kalanGun<=0?'🔴':kalanGun<=3?'🟡':'🟢')+'</div><div><div style="font-size:13px;font-weight:700;color:'+renk+'">'+durum+'</div><div style="font-size:11px;color:var(--text-muted)">Muhataba '+ih.verilenSure+' gün süre verildi · Son gün: '+fmtD(ih.sureSonu)+'</div></div></div>';
   }
 
-  document.getElementById('ihtar-detay-icerik').innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
-      <div>
-        <h2 style="font-family:'Playfair Display',serif;font-size:20px;color:var(--text)">${ih.no||'—'}</h2>
-        <div style="margin-top:4px;display:flex;gap:8px;flex-wrap:wrap">
-          <span style="background:${yonRenk}22;color:${yonRenk};padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700">${ih.yon}</span>
-          <span style="background:var(--surface2);color:var(--text-muted);padding:3px 10px;border-radius:4px;font-size:11px">${ih.tur||'İhtarname'}</span>
-          <span style="color:${durRenk};font-size:11px;font-weight:600">● ${ih.tebligDurum||'Bekliyor'}</span>
-        </div>
-      </div>
-      <button class="btn btn-gold" onclick="openIhtarModal('${ih.id}')">✏️ Düzenle</button>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px">
-      ${bilgiKutusu('Müvekkil', getMuvAd(ih.muvId))}
-      ${bilgiKutusu('Karşı Taraf', ih.karsiTaraf||'—')}
-      ${bilgiKutusu('Noterlik', ih.noterlik||'—')}
-      ${bilgiKutusu('Yevmiye No', ih.yevmiyeNo||'—')}
-      ${bilgiKutusu('Düzenleme Tarihi', fmtD(ih.tarih))}
-      ${bilgiKutusu('Tebliğ Durumu', `<span style="color:${durRenk};font-weight:600">${ih.tebligDurum||'Bekliyor'}</span>`)}
-      ${ih.tebligTarih ? bilgiKutusu('Tebliğ Tarihi', fmtD(ih.tebligTarih)) : ''}
-      ${bilgiKutusu('İlgili Dosya', ilgiliDosyaBilgi)}
-    </div>
-    ${ih.konu ? `<div class="section"><div class="section-header"><div class="section-title">Konu</div></div><div class="section-body"><p style="font-size:13px;line-height:1.7">${ih.konu}</p></div></div>` : ''}
-    ${ih.icindekiler ? `<div class="section"><div class="section-header"><div class="section-title">İçindekiler / Talepler</div></div><div class="section-body"><p style="font-size:13px;line-height:1.7;white-space:pre-wrap">${ih.icindekiler}</p></div></div>` : ''}
-  `;
+  document.getElementById('ihtar-detay-icerik').innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px"><div>'
+    + '<h2 style="font-family:\'Playfair Display\',serif;font-size:20px;color:var(--text)">'+(ih.no||'—')+'</h2>'
+    + '<div style="margin-top:4px;display:flex;gap:8px;flex-wrap:wrap">'
+    + '<span style="background:'+yonRenk+'22;color:'+yonRenk+';padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700">'+ih.yon+'</span>'
+    + '<span style="background:var(--surface2);color:var(--text-muted);padding:3px 10px;border-radius:4px;font-size:11px">'+(ih.tur||'İhtarname')+'</span>'
+    + '<span style="color:'+durRenk+';font-size:11px;font-weight:600">● '+(ih.tebligDurum||'Bekliyor')+'</span>'
+    + '</div></div>'
+    + '<div style="display:flex;gap:8px"><button class="btn btn-outline" onclick="openIhtarModal(\''+ih.id+'\')">✏️ Düzenle</button><button class="btn btn-outline" style="color:var(--red);border-color:var(--red)" onclick="deleteIhtar(\''+ih.id+'\')">🗑️</button></div></div>'
+    + sureBilgi
+    + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px">'
+    + bilgiKutusu('Müvekkil', getMuvAd(ih.muvId))
+    + bilgiKutusu('Karşı Taraf', karsiAd)
+    + bilgiKutusu('Gönderim Usulü', gonderimBilgi)
+    + bilgiKutusu('Düzenleme Tarihi', fmtD(ih.tarih))
+    + bilgiKutusu('Tebliğ Durumu', '<span style="color:'+durRenk+';font-weight:600">'+(ih.tebligDurum||'Bekliyor')+'</span>')
+    + (ih.tebligTarih ? bilgiKutusu('Tebliğ Tarihi', fmtD(ih.tebligTarih)) : '')
+    + (ih.masrafTutar ? bilgiKutusu('Masraf', '<span style="color:#e74c3c;font-weight:700">'+fmt(ih.masrafTutar)+'</span>'+(ih.masrafYansit?' <span style="font-size:10px;color:var(--green)">✓ Yansıtıldı</span>':'')) : '')
+    + bilgiKutusu('İlgili Dosya', dosyaBilgi)
+    + '</div>'
+    + (ih.konu ? '<div class="section"><div class="section-header"><div class="section-title">Konu</div></div><div class="section-body"><p style="font-size:13px;line-height:1.7">'+ih.konu+'</p></div></div>' : '')
+    + (ih.icindekiler ? '<div class="section"><div class="section-header"><div class="section-title">İçindekiler / Talepler</div></div><div class="section-body"><p style="font-size:13px;line-height:1.7;white-space:pre-wrap">'+ih.icindekiler+'</p></div></div>' : '');
 
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
   document.getElementById('page-ihtar-detay').classList.add('active');
 }
 
 function bilgiKutusu(label, val) {
-  return `<div style="background:var(--surface2);border-radius:var(--radius);padding:12px">
-    <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">${label}</div>
-    <div style="font-size:13px;font-weight:500">${val}</div>
-  </div>`;
+  return '<div style="background:var(--surface2);border-radius:var(--radius);padding:12px"><div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">'+label+'</div><div style="font-size:13px;font-weight:500">'+val+'</div></div>';
 }

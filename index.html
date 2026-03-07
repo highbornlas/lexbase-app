@@ -1095,11 +1095,11 @@
     <input class="search-bar" placeholder="🔍 Ara..." id="ihtar-s" oninput="renderIhtarname()" style="width:200px">
     <select class="search-bar" style="width:140px" id="ihtar-ft" onchange="renderIhtarname()">
       <option value="">Tür — Tümü</option>
-      <option>İhtarname</option><option>Protesto</option><option>İhbar</option><option>Diğer</option>
+      <option>İhtarname</option><option>Protesto</option><option>İhbar</option><option>Fesih Bildirimi</option><option>Diğer</option>
     </select>
     <select class="search-bar" style="width:160px" id="ihtar-fd" onchange="renderIhtarname()">
       <option value="">Tebliğ — Tümü</option>
-      <option>Bekliyor</option><option>Tebliğ Edildi</option><option>Bila</option><option>Posta</option>
+      <option>Bekliyor</option><option>Tebliğ Edildi</option><option>Bila</option><option>İade</option><option>Posta</option>
     </select>
     <button class="btn btn-gold" onclick="openIhtarModal()" style="margin-left:auto">+ Yeni İhtarname</button>
   </div>
@@ -1107,7 +1107,7 @@
     <table>
       <thead><tr>
         <th>No</th><th>Yön</th><th>Tür</th><th>Müvekkil</th><th>Karşı Taraf</th>
-        <th>Noterlik</th><th>Yevmiye No</th><th>Tarih</th><th>Tebliğ Durumu</th><th></th>
+        <th>Gönderim</th><th>Tarih</th><th>Tebliğ Durumu</th><th></th>
       </tr></thead>
       <tbody id="ihtar-tbody"></tbody>
     </table>
@@ -3545,10 +3545,9 @@
 
 <!-- İHTARNAME MODAL -->
 <div class="modal-overlay" id="ihtar-modal">
-  <div class="modal modal-lg">
+  <div class="modal modal-lg" style="max-width:720px">
     <div class="modal-header">
       <div class="modal-title" id="ihtar-modal-title">Yeni İhtarname / Protesto</div>
-      <button class="modal-close" onclick="closeModal('ihtar-modal')">✕</button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="ihtar-id">
@@ -3561,7 +3560,7 @@
         </div>
         <div class="form-group"><label>Tür</label>
           <select id="ihtar-tur">
-            <option>İhtarname</option><option>Protesto</option><option>İhbar</option><option>Diğer</option>
+            <option>İhtarname</option><option>Protesto</option><option>İhbar</option><option>Fesih Bildirimi</option><option>Diğer</option>
           </select>
         </div>
       </div>
@@ -3573,24 +3572,49 @@
           <select id="ihtar-muv"></select>
         </div>
       </div>
-      <div class="form-group"><label>Karşı Taraf Adı / Unvanı</label>
-        <input id="ihtar-karsi-taraf" placeholder="Karşı taraf adını yazın">
+      <div class="form-group"><label>Karşı Taraf</label>
+        <select id="ihtar-karsi-id" onchange="ihtarKarsiDegisti()">
+          <option value="">— Karşı taraf seçin —</option>
+        </select>
       </div>
       <div class="form-group"><label>Konu *</label>
         <textarea id="ihtar-konu" rows="3" placeholder="İhtarname konusunu açıklayın..."></textarea>
       </div>
-      <div class="form-section-label">Noterlik Bilgileri</div>
-      <div class="form-row">
-        <div class="form-group"><label>Noterlik Adı</label>
-          <input id="ihtar-noterlik" placeholder="İstanbul 1. Noterliği">
-        </div>
-        <div class="form-group"><label>Yevmiye No</label>
-          <input id="ihtar-yevmiye" placeholder="12345">
+
+      <!-- GÖNDERIM USULÜ (Dinamik Alanlar) -->
+      <div class="form-section-label">Gönderim Usulü</div>
+      <div class="form-group"><label>Gönderim Yöntemi</label>
+        <select id="ihtar-gonderim" onchange="ihtarGonderimDegisti()">
+          <option value="Noter">🏛 Noter</option>
+          <option value="KEP">📧 KEP (Kayıtlı Elektronik Posta)</option>
+          <option value="PTT">📮 PTT / Kargo</option>
+          <option value="Elden">🤝 Elden Teslim</option>
+          <option value="Diğer">📨 Diğer</option>
+        </select>
+      </div>
+      <!-- Noter Alanları -->
+      <div id="ihtar-noter-alan">
+        <div class="form-row">
+          <div class="form-group"><label>Noterlik Adı</label><input id="ihtar-noter-adi" placeholder="İstanbul 1. Noterliği"></div>
+          <div class="form-group"><label>Yevmiye No</label><input id="ihtar-noter-yevmiye" placeholder="12345"></div>
         </div>
       </div>
+      <!-- KEP Alanları -->
+      <div id="ihtar-kep-alan" style="display:none">
+        <div class="form-row">
+          <div class="form-group"><label>KEP Adresi</label><input id="ihtar-kep-adres" placeholder="firma@hs01.kep.tr"></div>
+          <div class="form-group"><label>Delil No</label><input id="ihtar-kep-delil" placeholder="KEP delil numarası"></div>
+        </div>
+      </div>
+      <!-- PTT Alanları -->
+      <div id="ihtar-ptt-alan" style="display:none">
+        <div class="form-group"><label>Barkod / Takip No</label><input id="ihtar-ptt-barkod" placeholder="RR123456789TR"></div>
+      </div>
+
       <div class="form-group"><label>Düzenleme Tarihi</label>
         <input type="date" id="ihtar-tarih">
       </div>
+
       <div class="form-section-label">Tebliğ Bilgileri</div>
       <div class="form-row">
         <div class="form-group"><label>Tebliğ Durumu</label>
@@ -3598,6 +3622,7 @@
             <option value="Bekliyor">⏳ Bekliyor</option>
             <option value="Tebliğ Edildi">✅ Tebliğ Edildi</option>
             <option value="Bila">❌ Bila (Tebliğ Edilemedi)</option>
+            <option value="İade">↩️ İade</option>
             <option value="Posta">📮 Posta ile Gönderildi</option>
           </select>
         </div>
@@ -3605,6 +3630,26 @@
           <input type="date" id="ihtar-teblig-tarih">
         </div>
       </div>
+
+      <!-- MASRAF VE TAKİP (Akordeon) -->
+      <div class="form-section-label" style="cursor:pointer;display:flex;align-items:center;gap:8px" onclick="ihtarMasrafToggle()">
+        <span id="ihtar-masraf-toggle" style="font-size:10px">▶</span>
+        Masraf ve Takip Bilgileri <span style="font-weight:400;color:var(--text-dim)">(gelişmiş)</span>
+      </div>
+      <div id="ihtar-masraf-body" style="display:none">
+        <div class="form-row">
+          <div class="form-group"><label>Masraf Tutarı (₺)</label><input type="number" id="ihtar-masraf" placeholder="0.00" step="0.01"></div>
+          <div class="form-group" style="display:flex;align-items:center;gap:8px;padding-top:22px">
+            <input type="checkbox" id="ihtar-masraf-yansit" checked style="accent-color:var(--gold);width:16px;height:16px">
+            <label for="ihtar-masraf-yansit" style="cursor:pointer;font-size:12px">Müvekkil hesabına yansıtılsın</label>
+          </div>
+        </div>
+        <div class="form-group"><label>Muhataba Verilen Süre (Gün)</label>
+          <input type="number" id="ihtar-verilen-sure" placeholder="15" min="0" max="365">
+          <div style="font-size:10px;color:var(--text-dim);margin-top:4px">Tebliğ tarihine eklenir. Süre dolunca otomatik görev oluşturulur.</div>
+        </div>
+      </div>
+
       <div class="form-section-label">İlgili Dosya (Opsiyonel)</div>
       <div class="form-row">
         <div class="form-group"><label>Dosya Türü</label>
