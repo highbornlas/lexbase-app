@@ -45,22 +45,23 @@ async function kayitOl() {
     const kayitData = await sbKayitOl(email, sifre, ad);
     btn.textContent = 'Kayıt Ol & Başla'; btn.disabled = false;
     loginHata('✅ Kayıt başarılı! E-postanızı doğrulayın, ardından giriş yapın.');
-    // Admin DB'ye yeni müşteri kaydını arka planda gönder
+  } catch(e) {
+    btn.textContent = 'Kayıt Ol & Başla'; btn.disabled = false;
+    if (e.message && e.message.includes('already registered')) loginHata('Bu e-posta zaten kayıtlı. Giriş yapın.');
+    else loginHata('Hata: ' + (e.message || e));
+    return; // hata varsa admin kaydı yapma
+  }
+  // Admin DB'ye yeni müşteri kaydını arka planda gönder (try/catch dışında — her zaman çalışsın)
+  try {
     if (typeof adminMusteriKayit === 'function') {
-      const authUser = kayitData?.user || kayitData?.data?.user;
-      const userId = authUser?.id || crypto.randomUUID();
       adminMusteriKayit({
-        id:       userId,
+        id:       crypto.randomUUID(),
         ad_soyad: ad,
         email:    email,
         buro_ad:  buroAd,
       });
     }
-  } catch(e) {
-    btn.textContent = 'Kayıt Ol & Başla'; btn.disabled = false;
-    if (e.message.includes('already registered')) loginHata('Bu e-posta zaten kayıtlı. Giriş yapın.');
-    else loginHata('Hata: ' + e.message);
-  }
+  } catch(e2) { console.warn('adminMusteriKayit hata:', e2); }
 }
 
 function sifreSifirla() {
