@@ -996,7 +996,7 @@ function renderMdIletisim(){
           <div style="flex:1">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
               <span style="font-size:11px;color:${renk};font-weight:600">${k.kanal}</span>
-              ${k.konu?`<span style="font-size:11px;color:var(--text-muted)">— ${escHTML(k.konu)}</span>`:''}
+              ${k.konu?`<span style="font-size:11px;color:var(--text-muted)">— ${k.konu}</span>`:''}
             </div>
             <div style="font-size:13px;color:var(--text);line-height:1.5;white-space:pre-wrap">${k.ozet}</div>
           </div>
@@ -1253,12 +1253,12 @@ function renderMdRapor(){
     <div style="flex:1">
       <div style="font-size:18px;font-weight:700;margin-bottom:4px">${muv.ad}</div>
       <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">
-        ${isTuzel?`${escHTML(muv.sirketTur||'')}} · VKN: ${muv.vergiNo||'—'} · MERSİS: ${muv.mersis||'—'}`:`TC: ${muv.tc||'—'} · ${muv.meslek||''}`}
+        ${isTuzel?`${muv.sirketTur||''} · VKN: ${muv.vergiNo||'—'} · MERSİS: ${muv.mersis||'—'}`:`TC: ${muv.tc||'—'} · ${muv.meslek||''}`}
       </div>
       <div style="display:flex;gap:16px;font-size:12px">
         ${muv.tel?`<span>📞 ${muv.tel}</span>`:''}
         ${muv.mail?`<span>✉ ${muv.mail}</span>`:''}
-        ${muv.adres?`<span>📍 ${escHTML(muv.adres)}</span>`:''}
+        ${muv.adres?`<span>📍 ${muv.adres}</span>`:''}
       </div>
     </div>
     <div style="text-align:center;min-width:80px">
@@ -1290,11 +1290,11 @@ function renderMdRapor(){
     <div class="section-body" style="padding:0">
       ${davalar.length?`<table><thead><tr><th>Dosya No</th><th>Konu</th><th>Mahkeme</th><th>Aşama</th><th>Durum</th><th>Son Duruşma</th></tr></thead><tbody>
       ${davalar.map(d=>`<tr>
-        <td style="color:var(--gold);font-weight:600">${escHTML(d.no)}</td>
-        <td>${escHTML(d.konu)}</td>
-        <td style="font-size:11px">${escHTML([d.il,d.mtur].filter(Boolean).join(' '))}</td>
-        <td style="font-size:11px;color:${escHTML(ARENK[d.asama]||'var(--text-muted)')}">${escHTML(d.asama||'—')}</td>
-        <td><span class="badge badge-${escHTML(d.durum==='Aktif'?'aktif':d.durum==='Beklemede'?'beklemede':'kapali')}">${escHTML(d.durum)}</span></td>
+        <td style="color:var(--gold);font-weight:600">${d.no}</td>
+        <td>${d.konu}</td>
+        <td style="font-size:11px">${[d.il,d.mtur].filter(Boolean).join(' ')}</td>
+        <td style="font-size:11px;color:${ARENK[d.asama]||'var(--text-muted)'}">${d.asama||'—'}</td>
+        <td><span class="badge badge-${d.durum==='Aktif'?'aktif':d.durum==='Beklemede'?'beklemede':'kapali'}">${d.durum}</span></td>
         <td>${fmtD(d.durusma)}</td>
       </tr>`).join('')}
       </tbody></table>`:
@@ -1302,11 +1302,11 @@ function renderMdRapor(){
       ${icralar.length?`<div style="padding:10px 18px;font-size:11px;font-weight:700;color:var(--text-muted);border-top:1px solid var(--border)">İCRA DOSYALARI</div>
       <table><thead><tr><th>Dosya No</th><th>Borçlu</th><th>Alacak</th><th>Tahsil</th><th>Durum</th></tr></thead><tbody>
       ${icralar.map(i=>`<tr>
-        <td style="color:var(--blue);font-weight:600">${escHTML(i.no)}</td>
-        <td>${escHTML(i.borclu||'—')}</td>
+        <td style="color:var(--blue);font-weight:600">${i.no}</td>
+        <td>${i.borclu||'—'}</td>
         <td style="color:var(--green);font-weight:600">${fmt(i.alacak)}</td>
         <td>${fmt(i.tahsil||0)}</td>
-        <td><span style="color:${escHTML(IDRENK[i.durum]||'var(--text-muted)')};">${escHTML(i.durum)}</span></td>
+        <td><span style="color:${IDRENK[i.durum]||'var(--text-muted)'};">${i.durum}</span></td>
       </tr>`).join('')}
       </tbody></table>`:''}
     </div>
@@ -1340,7 +1340,7 @@ function renderMdRapor(){
         const bitmis=v.bitis&&v.bitis<today();
         const yaklasan=v.bitis&&!bitmis&&v.bitis<new Date(Date.now()+30*24*3600000).toISOString().slice(0,10);
         return`<div style="padding:10px 18px;border-top:1px solid var(--border);display:flex;gap:16px;align-items:center">
-          <div style="flex:1;font-size:12px">${escHTML(v.noter||'Belirtilmemiş')} ${v.yevmiye?'/ Yev: '+v.yevmiye:''}</div>
+          <div style="flex:1;font-size:12px">${v.noter||'Belirtilmemiş'} ${v.yevmiye?'/ Yev: '+v.yevmiye:''}</div>
           ${bitmis?`<span style="color:#e74c3c;font-weight:700;font-size:12px">⛔ Süresi Doldu (${fmtD(v.bitis)})</span>`:
             yaklasan?`<span style="color:#e67e22;font-weight:700;font-size:12px">⚠ ${fmtD(v.bitis)}'de Sona Eriyor</span>`:
             v.bitis?`<span style="color:var(--green);font-size:12px">✓ Geçerli — ${fmtD(v.bitis)}</span>`:'<span style="color:var(--text-dim);font-size:12px">Bitiş belirtilmemiş</span>'}
@@ -1379,11 +1379,11 @@ function renderMdDavalar(){
   list.forEach(d=>{
     const bc=d.durum==='Aktif'?'aktif':d.durum==='Beklemede'?'beklemede':'kapali';
     tb.innerHTML+=`<tr style="cursor:pointer" onclick="openDavaDetay('${d.id}')">
-      <td><strong style="color:var(--gold)">${escHTML(d.no)}</strong></td>
-      <td>${escHTML(d.konu)}</td><td style="font-size:11px">${escHTML([d.il,d.mtur].filter(Boolean).join(' '))}</td>
-      <td style="color:${escHTML(ARENK[d.asama]||'var(--text-muted)')};font-size:11px">${escHTML(d.asama||'—')}</td>
-      <td><span class="badge badge-${bc}">${escHTML(d.durum)}</span></td>
-      <td>${fmtD(d.durusma)}</td><td style="font-size:11px;color:var(--blue)">${escHTML(d.icrano||'—')}</td>
+      <td><strong style="color:var(--gold)">${d.no}</strong></td>
+      <td>${d.konu}</td><td style="font-size:11px">${[d.il,d.mtur].filter(Boolean).join(' ')}</td>
+      <td style="color:${ARENK[d.asama]||'var(--text-muted)'};font-size:11px">${d.asama||'—'}</td>
+      <td><span class="badge badge-${bc}">${d.durum}</span></td>
+      <td>${fmtD(d.durusma)}</td><td style="font-size:11px;color:var(--blue)">${d.icrano||'—'}</td>
       <td><button class="delete-btn" onclick="event.stopPropagation();deleteDavaById('${d.id}')">✕</button></td>
     </tr>`;
   });
@@ -1396,10 +1396,10 @@ function renderMdDavalar(){
     ilist.forEach(i=>{
       const kalan=(i.alacak||0)-(i.tahsil||0);
       itb.innerHTML+=`<tr style="cursor:pointer" onclick="openIcraDetay('${i.id}')">
-        <td><span style="font-size:9px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:1px">#${i.sira||'?'}</span><strong style="color:var(--gold)">${escHTML(i.no)}</strong></td>
-        <td>${escHTML(i.borclu)}</td><td style="font-size:11px">${escHTML([i.il,i.adliye,i.daire].filter(Boolean).join(' — '))}</td>
+        <td><span style="font-size:9px;font-weight:700;color:var(--text-muted);display:block;margin-bottom:1px">#${i.sira||'?'}</span><strong style="color:var(--gold)">${i.no}</strong></td>
+        <td>${i.borclu}</td><td style="font-size:11px">${[i.il,i.adliye,i.daire].filter(Boolean).join(' — ')}</td>
         <td>${fmt(i.alacak)}</td><td style="color:var(--green)">${fmt(i.tahsil)}</td>
-        <td style="color:${escHTML(IDRENK[i.durum]||'var(--text-muted)')};font-size:11px">${escHTML(i.durum)}</td>
+        <td style="color:${IDRENK[i.durum]||'var(--text-muted)'};font-size:11px">${i.durum}</td>
         <td><button class="delete-btn" onclick="event.stopPropagation();deleteIcraById('${i.id}')">✕</button></td>
       </tr>`;
     });
@@ -1415,11 +1415,11 @@ function renderMdHarcamalar(){
   list.forEach(h=>{
     tb.innerHTML+=`<tr>
       <td>${fmtD(h.tarih)}</td>
-      <td><span class="badge badge-${escHTML(h.kaynak==='Dava'?'durusma':'avans')}">${escHTML(h.kaynak)}</span></td>
-      <td style="font-size:11px">${escHTML(h.mahkeme||'')} ${escHTML(h.kaynakNo?'/ '+h.kaynakNo:'')}</td>
-      <td>${escHTML(h.kat||h.kategori||'—')}</td><td>${escHTML(h.acik||h.aciklama||'—')}</td>
+      <td><span class="badge badge-${h.kaynak==='Dava'?'durusma':'avans'}">${h.kaynak}</span></td>
+      <td style="font-size:11px">${h.mahkeme||''} ${h.kaynakNo?'/ '+h.kaynakNo:''}</td>
+      <td>${h.kat||h.kategori||'—'}</td><td>${h.acik||h.aciklama||'—'}</td>
       <td style="color:#e74c3c;font-weight:600">${fmt(h.tutar)}</td>
-      <td><button class="delete-btn" onclick="deleteHarcamaById('${h.id}','${escHTML(h.kaynak)}')">✕</button></td>
+      <td><button class="delete-btn" onclick="deleteHarcamaById('${h.id}','${h.kaynak}')">✕</button></td>
     </tr>`;
   });
   document.getElementById('md-harc-total').textContent=fmt(list.reduce((s,h)=>s+h.tutar,0));
@@ -1443,7 +1443,7 @@ function renderMdAvans(){
   list.forEach(a=>{
     const bc=a.durum==='Ödendi'?'odendi':a.durum==='Bekliyor'?'bekliyor':'kismi';
     const dosyaBadge=a.dosyaNo?`<div style="font-size:9px;color:var(--blue);margin-top:2px">${a.dosyaTur==='dava'?'📁':'⚡'} ${a.dosyaNo}</div>`:'';
-    tb.innerHTML+=`<tr><td>${fmtD(a.tarih)}</td><td><span class="badge badge-avans">${escHTML(a.tur)}</span></td><td>${escHTML(a.acik||'—')}${dosyaBadge}</td><td style="font-weight:600">${fmt(a.tutar)}</td><td><span class="badge badge-${bc}">${escHTML(a.durum)}</span></td><td>${fmtD(a.odeme)}</td><td style="white-space:nowrap"><button class="btn btn-outline btn-sm" style="padding:2px 7px;font-size:11px;margin-right:4px" onclick="editAvans('${a.id}')">✏</button><button class="delete-btn" onclick="deleteAvans('${a.id}')">✕</button></td></tr>`;
+    tb.innerHTML+=`<tr><td>${fmtD(a.tarih)}</td><td><span class="badge badge-avans">${a.tur}</span></td><td>${a.acik||'—'}${dosyaBadge}</td><td style="font-weight:600">${fmt(a.tutar)}</td><td><span class="badge badge-${bc}">${a.durum}</span></td><td>${fmtD(a.odeme)}</td><td style="white-space:nowrap"><button class="btn btn-outline btn-sm" style="padding:2px 7px;font-size:11px;margin-right:4px" onclick="editAvans('${a.id}')">✏</button><button class="delete-btn" onclick="deleteAvans('${a.id}')">✕</button></td></tr>`;
   });
   document.getElementById('md-avans-alinan').textContent=fmt(list.filter(a=>a.tur==='Avans Alındı').reduce((s,a)=>s+a.tutar,0));
   document.getElementById('md-avans-bekleyen').textContent=fmt(list.filter(a=>a.durum==='Bekliyor').reduce((s,a)=>s+a.tutar,0));
@@ -1550,7 +1550,7 @@ function renderBelgeler(){
     html+=`<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">${groups[tur]}</div>`;
     items.forEach(b=>{
       const gorunt=b.data?`<button class="btn btn-outline btn-sm" onclick="openBelgeViewer('${b.id}')" title="Görüntüle">👁</button>`:'';
-      html+=`<div class="file-item"><div class="file-icon">${fileIcon(b.dosyaAd)}</div><div class="file-info"><div class="file-name">${escHTML(b.ad)}</div><div class="file-meta">${fmtD(b.yukleme)} · ${fileSize(b.data)}${escHTML(b.acik?' · '+b.acik:'')}</div></div><div class="file-actions">${gorunt}<button class="btn btn-outline btn-sm" onclick="dlBelge('${b.id}')">⬇</button><button class="delete-btn" onclick="delBelge('${b.id}')">✕</button></div></div>`;
+      html+=`<div class="file-item"><div class="file-icon">${fileIcon(b.dosyaAd)}</div><div class="file-info"><div class="file-name">${b.ad}</div><div class="file-meta">${fmtD(b.yukleme)} · ${fileSize(b.data)}${b.acik?' · '+b.acik:''}</div></div><div class="file-actions">${gorunt}<button class="btn btn-outline btn-sm" onclick="dlBelge('${b.id}')">⬇</button><button class="delete-btn" onclick="delBelge('${b.id}')">✕</button></div></div>`;
     });
     html+='</div>';
   });

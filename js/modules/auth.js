@@ -85,6 +85,7 @@ function uygulamayiBaslatLocal() {
   planBilgisiGuncelle(); // ← Plan badge güncelle
   renderMuvekkillar(); renderDavalar(); renderDavaCards(); renderIcra(); renderIcraCards();
   renderButce(); renderDanismanlik(); renderDashboard(); updateBadges();
+  if (typeof Bildirim !== 'undefined') Bildirim.baslat();
   addAktiviteLog('Giriş Yapıldı', currentUser.ad_soyad, 'Genel');
   // Admin entegrasyon (sessizce, arka planda)
   if (currentUser.rol === 'sahip') {

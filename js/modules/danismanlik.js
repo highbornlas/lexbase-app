@@ -37,10 +37,10 @@ function renderDanismanlik() {
     const kalan = (d.ucret || 0) - (d.tahsilEdildi || 0);
     return `<tr style="cursor:pointer" onclick="openDanDetay('${d.id}')">
       <td style="font-size:12px">${fmtD(d.tarih)}</td>
-      <td><span style="background:${turRenk}22;color:${turRenk};font-size:11px;padding:2px 7px;border-radius:10px;font-weight:600;white-space:nowrap">${escHTML(d.tur)}</span></td>
-      <td style="font-size:12px">${escHTML(getMuvAd(d.muvId))}</td>
-      <td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHTML(d.konu)}</td>
-      <td><span style="background:${durRenk}22;color:${durRenk};font-size:11px;padding:2px 7px;border-radius:10px;font-weight:600">${escHTML(d.durum)}</span></td>
+      <td><span style="background:${turRenk}22;color:${turRenk};font-size:11px;padding:2px 7px;border-radius:10px;font-weight:600;white-space:nowrap">${d.tur}</span></td>
+      <td style="font-size:12px">${getMuvAd(d.muvId)}</td>
+      <td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.konu}</td>
+      <td><span style="background:${durRenk}22;color:${durRenk};font-size:11px;padding:2px 7px;border-radius:10px;font-weight:600">${d.durum}</span></td>
       <td style="font-size:12px">${d.teslimTarih ? fmtD(d.teslimTarih) : '—'}</td>
       <td style="font-size:12px;color:var(--green)">${d.ucret ? fmt(d.ucret) : '—'}</td>
       <td style="font-size:12px;color:${kalan > 0 ? '#e74c3c' : 'var(--green)'}">${d.ucret ? fmt(d.tahsilEdildi || 0) : '—'}</td>
@@ -80,10 +80,10 @@ function renderDanDetayBilgi(d) {
   document.getElementById('ddt-bilgi-content').innerHTML = `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
       <div><div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">HİZMET TÜRÜ</div>
-        <span style="background:${turRenk}22;color:${turRenk};font-size:12px;padding:3px 10px;border-radius:10px;font-weight:600">${escHTML(d.tur)}</span></div>
+        <span style="background:${turRenk}22;color:${turRenk};font-size:12px;padding:3px 10px;border-radius:10px;font-weight:600">${d.tur}</span></div>
       <div><div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">DURUM</div>
-        <span style="background:${durRenk}22;color:${durRenk};font-size:12px;padding:3px 10px;border-radius:10px;font-weight:600">${escHTML(d.durum)}</span></div>
-      <div><div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">MÜVEKKİL</div><div style="font-size:13px;font-weight:600">${escHTML(getMuvAd(d.muvId))}</div></div>
+        <span style="background:${durRenk}22;color:${durRenk};font-size:12px;padding:3px 10px;border-radius:10px;font-weight:600">${d.durum}</span></div>
+      <div><div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">MÜVEKKİL</div><div style="font-size:13px;font-weight:600">${getMuvAd(d.muvId)}</div></div>
       <div><div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">BAŞLANGIÇ TARİHİ</div><div style="font-size:13px">${fmtD(d.tarih)}</div></div>
       <div><div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">TESLİM TARİHİ</div><div style="font-size:13px">${d.teslimTarih ? fmtD(d.teslimTarih) : '—'}</div></div>
       <div><div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">TAKVİM</div><div style="font-size:12px;color:var(--text-muted)">${d.takvimId ? '✅ Takvime eklendi' : '—'}</div></div>
@@ -93,15 +93,15 @@ function renderDanDetayBilgi(d) {
       <div><div style="font-size:11px;color:var(--text-muted)">TAHSİL EDİLEN</div><div style="font-size:16px;font-weight:700;color:var(--green)">${fmt(d.tahsilEdildi || 0)}</div></div>
       <div><div style="font-size:11px;color:var(--text-muted)">KALAN</div><div style="font-size:16px;font-weight:700;color:${kalan > 0 ? '#e74c3c' : 'var(--green)'}">${fmt(Math.max(0, kalan))}</div></div>
     </div>
-    ${d.aciklama ? `<div><div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">AÇIKLAMA / NOTLAR</div><div style="font-size:13px;line-height:1.6;white-space:pre-wrap;padding:12px;background:var(--surface2);border-radius:8px">${escHTML(d.aciklama)}</div></div>` : ''}
+    ${d.aciklama ? `<div><div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">AÇIKLAMA / NOTLAR</div><div style="font-size:13px;line-height:1.6;white-space:pre-wrap;padding:12px;background:var(--surface2);border-radius:8px">${d.aciklama}</div></div>` : ''}
     <div style="margin-top:16px">
       <select id="dan-detay-durum" style="padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;margin-right:8px">
-        <option ${escHTML(d.durum==='Taslak'?'selected':'')}>Taslak</option>
-        <option ${escHTML(d.durum==='Devam Ediyor'?'selected':'')}>Devam Ediyor</option>
-        <option ${escHTML(d.durum==='Müvekkil Onayında'?'selected':'')}>Müvekkil Onayında</option>
-        <option ${escHTML(d.durum==='Gönderildi'?'selected':'')}>Gönderildi</option>
-        <option ${escHTML(d.durum==='Tamamlandı'?'selected':'')}>Tamamlandı</option>
-        <option ${escHTML(d.durum==='İptal'?'selected':'')}>İptal</option>
+        <option ${d.durum==='Taslak'?'selected':''}>Taslak</option>
+        <option ${d.durum==='Devam Ediyor'?'selected':''}>Devam Ediyor</option>
+        <option ${d.durum==='Müvekkil Onayında'?'selected':''}>Müvekkil Onayında</option>
+        <option ${d.durum==='Gönderildi'?'selected':''}>Gönderildi</option>
+        <option ${d.durum==='Tamamlandı'?'selected':''}>Tamamlandı</option>
+        <option ${d.durum==='İptal'?'selected':''}>İptal</option>
       </select>
       <button class="btn btn-gold btn-sm" onclick="danDurumGuncelle()">Durum Güncelle</button>
     </div>`;
@@ -130,7 +130,7 @@ function renderDanDetayEvraklar(d) {
       html += `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface2);border-radius:8px">
         <div style="display:flex;align-items:center;gap:10px">
           <span style="font-size:20px">${fileIcon(ev.ad)}</span>
-          <div><div style="font-size:12px;font-weight:600">${escHTML(ev.ad)}</div>
+          <div><div style="font-size:12px;font-weight:600">${ev.ad}</div>
           <div style="font-size:11px;color:var(--text-muted)">${fileSize(ev.data)} · ${fmtD(ev.tarih)}</div></div>
         </div>
         <div style="display:flex;gap:6px">
@@ -238,9 +238,9 @@ function renderMdDanismanlik() {
       const durRenk = DAN_DURUM_RENK[d.durum] || '#7f8c8d';
       html += `<tr style="cursor:pointer" onclick="openDanDetay('${d.id}')">
         <td style="font-size:12px">${fmtD(d.tarih)}</td>
-        <td><span style="background:${turRenk}22;color:${turRenk};font-size:11px;padding:2px 7px;border-radius:10px;font-weight:600">${escHTML(d.tur)}</span></td>
-        <td style="font-size:12px">${escHTML(d.konu)}</td>
-        <td><span style="background:${durRenk}22;color:${durRenk};font-size:11px;padding:2px 7px;border-radius:10px;font-weight:600">${escHTML(d.durum)}</span></td>
+        <td><span style="background:${turRenk}22;color:${turRenk};font-size:11px;padding:2px 7px;border-radius:10px;font-weight:600">${d.tur}</span></td>
+        <td style="font-size:12px">${d.konu}</td>
+        <td><span style="background:${durRenk}22;color:${durRenk};font-size:11px;padding:2px 7px;border-radius:10px;font-weight:600">${d.durum}</span></td>
         <td style="font-size:12px">${d.teslimTarih ? fmtD(d.teslimTarih) : '—'}</td>
         <td style="font-size:12px;color:var(--green)">${d.ucret ? fmt(d.ucret) : '—'}</td>
         <td style="font-size:12px">${d.ucret ? fmt(d.tahsilEdildi || 0) : '—'}</td>
@@ -266,9 +266,9 @@ function renderDashDanismanlik() {
   return devam.length ? devam.slice(0, 5).map(d => {
     const durRenk = DAN_DURUM_RENK[d.durum] || '#7f8c8d';
     return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)">
-      <div><div style="font-size:12px;font-weight:600">${escHTML(d.konu)}</div>
-      <div style="font-size:10px;color:var(--text-muted)">${escHTML(getMuvAd(d.muvId))} · ${escHTML(d.tur)}</div></div>
-      <span style="background:${durRenk}22;color:${durRenk};font-size:11px;padding:2px 7px;border-radius:10px;font-weight:600">${escHTML(d.durum)}</span>
+      <div><div style="font-size:12px;font-weight:600">${d.konu}</div>
+      <div style="font-size:10px;color:var(--text-muted)">${getMuvAd(d.muvId)} · ${d.tur}</div></div>
+      <span style="background:${durRenk}22;color:${durRenk};font-size:11px;padding:2px 7px;border-radius:10px;font-weight:600">${d.durum}</span>
     </div>`;
   }).join('') : '<div class="empty"><div class="empty-icon">⚖️</div><p>Devam eden hizmet yok</p></div>';
 }

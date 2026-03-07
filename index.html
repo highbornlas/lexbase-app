@@ -787,6 +787,24 @@
   <div class="logo" style="font-family:'DM Sans',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.5px"><span style="color:#00BCD4">L</span>ex<span style="color:#00BCD4">B</span>ase</div>
   <div style="display:flex;align-items:center;gap:12px;margin-left:auto">
     <button onclick="spotlightAc()" title="Ctrl+K ile arama yap" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:6px"><span>🔍</span> Ara <kbd style="font-size:9px;background:var(--surface);border:1px solid var(--border);padding:1px 5px;border-radius:3px">Ctrl+K</kbd></button>
+    <!-- Bildirim Çanı -->
+    <div style="position:relative">
+      <button id="bildirim-btn" onclick="Bildirim.panelToggle()" class="bildirim-btn" title="Bildirimler">
+        🔔
+        <span id="bildirim-badge" class="bildirim-badge" style="display:none">0</span>
+      </button>
+      <!-- Bildirim Paneli -->
+      <div id="bildirim-panel" class="bildirim-panel">
+        <div class="bildirim-panel-header">
+          <div style="font-weight:700;font-size:14px">🔔 Bildirimler</div>
+          <button onclick="Bildirim.tumunuOku()" class="bildirim-tumunu-oku" title="Tümünü okundu işaretle">✓ Tümü</button>
+        </div>
+        <div id="bildirim-liste" class="bildirim-liste"></div>
+        <div class="bildirim-panel-footer">
+          <span onclick="showPage('ayarlar',document.getElementById('ni-ayarlar'))" style="cursor:pointer;color:var(--text-muted);font-size:11px">⚙️ Bildirim Ayarları</span>
+        </div>
+      </div>
+    </div>
     <div style="color:var(--text-muted);font-size:12px" id="header-date"></div>
     <div id="plan-badge" onclick="showPlanSayfasi()" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;border:1px solid;cursor:pointer;transition:all .2s" title="Planınızı görüntüle">🌱 Deneme</div>
     <div id="header-user" style="display:flex;align-items:center;gap:8px">
@@ -1630,6 +1648,50 @@
 
     <!-- SAĞ -->
     <div>
+      <!-- Bildirimler -->
+      <div class="ayar-section">
+        <div class="ayar-section-header">
+          <span class="ayar-section-icon">🔔</span>
+          <div><div class="ayar-section-title">Bildirim Ayarları</div><div class="ayar-section-sub">Hatırlatma ve uyarı tercihleri</div></div>
+        </div>
+        <div style="padding:20px">
+          <div class="bld-toggle-row">
+            <div><div style="font-weight:600;font-size:13px">Bildirimleri Aç</div><div style="font-size:11px;color:var(--text-muted)">Duruşma ve süre hatırlatmaları</div></div>
+            <label class="bld-switch"><input type="checkbox" id="bld-aktif" onchange="Bildirim.ayarDegisti('aktif',this.checked)"><span class="bld-slider"></span></label>
+          </div>
+          <div class="bld-toggle-row">
+            <div><div style="font-weight:600;font-size:13px">Tarayıcı Bildirimleri</div><div style="font-size:11px;color:var(--text-muted)">Masaüstü/telefon bildirimi al</div></div>
+            <label class="bld-switch"><input type="checkbox" id="bld-browser" onchange="Bildirim.ayarDegisti('browser',this.checked)"><span class="bld-slider"></span></label>
+          </div>
+          <div class="bld-toggle-row">
+            <div><div style="font-weight:600;font-size:13px">Sesli Uyarı</div><div style="font-size:11px;color:var(--text-muted)">Bildirim gelince ses çalsın</div></div>
+            <label class="bld-switch"><input type="checkbox" id="bld-ses" onchange="Bildirim.ayarDegisti('sesli',this.checked)"><span class="bld-slider"></span></label>
+          </div>
+
+          <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Hatırlatma Zamanları</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <label class="bld-chip"><input type="checkbox" id="bld-gun-0" onchange="Bildirim.ayarDegisti('gun_0',this.checked)"><span>Aynı gün</span></label>
+              <label class="bld-chip"><input type="checkbox" id="bld-gun-1" onchange="Bildirim.ayarDegisti('gun_1',this.checked)"><span>1 gün önce</span></label>
+              <label class="bld-chip"><input type="checkbox" id="bld-gun-3" onchange="Bildirim.ayarDegisti('gun_3',this.checked)"><span>3 gün önce</span></label>
+              <label class="bld-chip"><input type="checkbox" id="bld-gun-7" onchange="Bildirim.ayarDegisti('gun_7',this.checked)"><span>7 gün önce</span></label>
+            </div>
+          </div>
+
+          <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Bildirim Türleri</div>
+            <div class="bld-tur-grid">
+              <label class="bld-tur"><input type="checkbox" id="bld-tur-durusma" onchange="Bildirim.ayarDegisti('tur_durusma',this.checked)"><span>⚖️ Duruşmalar</span></label>
+              <label class="bld-tur"><input type="checkbox" id="bld-tur-sonGun" onchange="Bildirim.ayarDegisti('tur_sonGun',this.checked)"><span>🔴 Süre Son Günleri</span></label>
+              <label class="bld-tur"><input type="checkbox" id="bld-tur-itiraz" onchange="Bildirim.ayarDegisti('tur_itiraz',this.checked)"><span>⚡ İcra İtiraz</span></label>
+              <label class="bld-tur"><input type="checkbox" id="bld-tur-teslim" onchange="Bildirim.ayarDegisti('tur_teslim',this.checked)"><span>📋 Danışmanlık Teslim</span></label>
+              <label class="bld-tur"><input type="checkbox" id="bld-tur-gorev" onchange="Bildirim.ayarDegisti('tur_gorev',this.checked)"><span>✅ Görev Son Tarihi</span></label>
+              <label class="bld-tur"><input type="checkbox" id="bld-tur-arabuluculuk" onchange="Bildirim.ayarDegisti('tur_arabuluculuk',this.checked)"><span>🤝 Arabuluculuk</span></label>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Tema -->
       <div class="ayar-section">
         <div class="ayar-section-header">
@@ -3280,6 +3342,7 @@
 <script src="js/modules/yedekleme.js"></script>
 <script src="js/modules/bankData.js"></script>
 <script src="js/modules/bankaWidget.js"></script>
+<script src="js/modules/bildirim.js"></script>
 <script src="js/modules/validasyon.js"></script>
 
 <!-- SPOTLIGHT ARAMA -->

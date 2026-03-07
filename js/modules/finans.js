@@ -461,13 +461,13 @@ function openSureModal(editId) {
   // Dava select
   const davaSel = document.getElementById('sure-dava-id');
   davaSel.innerHTML = '<option value="">— Dava/İcra seçin —</option>';
-  state.davalar.forEach(d => davaSel.innerHTML += `<option value="dava_${d.id}">📁 ${escHTML(d.no||d.id.slice(0,6))} — ${escHTML(d.konu||'')} (${escHTML(getMuvAd(d.muvId))})</option>`);
-  state.icra.forEach(i => davaSel.innerHTML += `<option value="icra_${i.id}">⚡ ${escHTML(i.no||i.id.slice(0,6))} — ${escHTML(i.borclu||'')}</option>`);
+  state.davalar.forEach(d => davaSel.innerHTML += `<option value="dava_${d.id}">📁 ${d.no||d.id.slice(0,6)} — ${d.konu||''} (${getMuvAd(d.muvId)})</option>`);
+  state.icra.forEach(i => davaSel.innerHTML += `<option value="icra_${i.id}">⚡ ${i.no||i.id.slice(0,6)} — ${i.borclu||''}</option>`);
 
   // Müvekkil select
   const muvSel = document.getElementById('sure-muv-id');
   muvSel.innerHTML = '<option value="">— Müvekkil seçin —</option>';
-  state.muvekkillar.forEach(m => muvSel.innerHTML += `<option value="${m.id}">${escHTML(m.ad)}</option>`);
+  state.muvekkillar.forEach(m => muvSel.innerHTML += `<option value="${m.id}">${m.ad}</option>`);
 
   sureGunHesapla();
   openModal('sure-modal');

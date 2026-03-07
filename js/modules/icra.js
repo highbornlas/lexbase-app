@@ -62,14 +62,14 @@ function renderIcra(s='',ft='',fd=''){
     const kalan=(i.alacak||0)-(i.tahsil||0),oran=i.alacak>0?Math.round((i.tahsil/i.alacak)*100):0;
     tb.innerHTML+=`<tr onclick="openIcraDetay('${i.id}')" style="cursor:pointer">
       <td style="text-align:center;font-weight:700;color:var(--text-muted);font-size:11px">${i.sira||'?'}</td>
-      <td><strong style="color:var(--gold)">${escHTML(i.no)}</strong></td>
-      <td><span style="color:var(--gold-light)">${escHTML(getMuvAd(i.muvId))}</span></td>
-      <td><strong>${escHTML(i.borclu)}</strong>${i.btc?`<div style="font-size:10px;color:var(--text-dim)">${escHTML(i.btc)}</div>`:''}</td>
-      <td style="font-size:11px">${escHTML([i.il,i.adliye,i.daire].filter(Boolean).join(' — '))}</td>
-      <td style="font-size:11px;color:var(--text-muted)">${escHTML(i.tur)}</td>
+      <td><strong style="color:var(--gold)">${i.no}</strong></td>
+      <td><span style="color:var(--gold-light)">${getMuvAd(i.muvId)}</span></td>
+      <td><strong>${i.borclu}</strong>${i.btc?`<div style="font-size:10px;color:var(--text-dim)">${i.btc}</div>`:''}</td>
+      <td style="font-size:11px">${[i.il,i.adliye,i.daire].filter(Boolean).join(' — ')}</td>
+      <td style="font-size:11px;color:var(--text-muted)">${i.tur}</td>
       <td><strong>${fmt(i.alacak)}</strong></td>
       <td><span style="color:var(--green)">${fmt(i.tahsil)}</span><div class="progress-bar"><div class="progress-fill" style="width:${oran}%"></div></div><div style="font-size:9px;color:var(--text-dim)">%${oran}</div></td>
-      <td style="color:${escHTML(IDRENK[i.durum]||'var(--text-muted)')};font-size:11px;font-weight:600">${escHTML(i.durum)}</td>
+      <td style="color:${IDRENK[i.durum]||'var(--text-muted)'};font-size:11px;font-weight:600">${i.durum}</td>
       <td>${fmtD(i.tarih)}</td>
       <td>${i.davno?`<span style="color:var(--blue);font-size:11px">📁 ${i.davno}</span>`:'—'}</td>
       <td><button class="delete-btn" onclick="event.stopPropagation();deleteIcraById('${i.id}')">✕</button></td>
@@ -86,7 +86,7 @@ function openIcraDetay(icraId){
   ensureArrays(i,['evraklar','notlar','harcamalar','tahsilatlar']);if(!i.anlasma)i.anlasma={};
   document.getElementById('id-bc').textContent=i.no;
   document.getElementById('id-baslik').textContent=`${i.no} — ${i.borclu}`;
-  document.getElementById('id-meta').innerHTML=`${escHTML(getMuvAd(i.muvId))} · ${escHTML([i.il,i.adliye,i.daire].filter(Boolean).join(' '))} · ${escHTML(i.tur)}`;
+  document.getElementById('id-meta').innerHTML=`${getMuvAd(i.muvId)} · ${[i.il,i.adliye,i.daire].filter(Boolean).join(' ')} · ${i.tur}`;
   document.getElementById('id-edit-btn').onclick=()=>notify('Düzenleme yakında');
   renderIdCards(i);
   document.querySelectorAll('#page-icra-detay .tab').forEach((t,idx)=>t.classList.toggle('active',idx===0));
@@ -108,7 +108,7 @@ function renderIdCards(i){
     <div class="card"><div class="card-label">Dosya Harcaması</div><div class="card-value" style="color:#e74c3c">${fmt(harcToplam)}</div></div>
     ${topTahsil>0?`<div class="card"><div class="card-label">Avukatlık Tahsilatı</div><div class="card-value green">${fmt(topTahsil)}</div></div>`:''}
     ${topAktarim>0?`<div class="card"><div class="card-label">Müvekkile Aktarım</div><div class="card-value" style="color:var(--blue)">${fmt(topAktarim)}</div></div>`:''}
-    <div class="card"><div class="card-label">Durum</div><div class="card-value" style="font-size:14px;color:${escHTML(IDRENK[i.durum]||'var(--text-muted)')}">${escHTML(i.durum)}</div></div>`;
+    <div class="card"><div class="card-label">Durum</div><div class="card-value" style="font-size:14px;color:${IDRENK[i.durum]||'var(--text-muted)'}">${i.durum}</div></div>`;
 }
 function renderIcraTabContent(t){
   const i=getIcra(aktivIcraId);if(!i)return;
@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function openButceModal() {
   const sel = document.getElementById('b-muv');
   sel.innerHTML = '<option value="">—</option>';
-  state.muvekkillar.forEach(m => sel.innerHTML += `<option value="${m.id}">${escHTML(m.ad)}</option>`);
+  state.muvekkillar.forEach(m => sel.innerHTML += `<option value="${m.id}">${m.ad}</option>`);
   document.getElementById('b-tarih').value = today();
   document.getElementById('b-kdv-oran').value = '0';
   document.getElementById('b-kdv-tutar').value = '';

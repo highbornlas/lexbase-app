@@ -312,4 +312,6 @@ function uygulamayiBaslat() {
   if (typeof renderIhtarname === 'function') renderIhtarname();
   if (typeof renderTodo === 'function') renderTodo();
   updateBadges();
+  // Bildirim sistemi başlat
+  if (typeof Bildirim !== 'undefined') Bildirim.baslat();
 }

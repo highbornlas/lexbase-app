@@ -294,23 +294,23 @@ function renderMuvBankalarBW() {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <div>
           <label style="font-size:10px;color:var(--text-muted)">Şube</label>
-          <input value="${escHTML(b.sube||'')}" oninput="muvBankalar[${i}].sube=this.value" placeholder="Şube adı / no"
+          <input value="${b.sube||''}" oninput="muvBankalar[${i}].sube=this.value" placeholder="Şube adı / no"
             style="width:100%;margin-top:2px">
         </div>
         <div>
           <label style="font-size:10px;color:var(--text-muted)">Hesap Adı</label>
-          <input value="${escHTML(b.hesapAd||'')}" oninput="muvBankalar[${i}].hesapAd=this.value" placeholder="Hesap sahibi adı"
+          <input value="${b.hesapAd||''}" oninput="muvBankalar[${i}].hesapAd=this.value" placeholder="Hesap sahibi adı"
             style="width:100%;margin-top:2px">
         </div>
         <div style="grid-column:1/-1">
           <label style="font-size:10px;color:var(--text-muted)">IBAN</label>
-          <input id="bw-muv-iban-${i}" value="${escHTML(b.iban||'')}" placeholder="TR00 0000 0000 0000 0000 0000 00"
+          <input id="bw-muv-iban-${i}" value="${b.iban||''}" placeholder="TR00 0000 0000 0000 0000 0000 00"
             oninput="muvBankalar[${i}].iban=this.value"
             style="width:100%;margin-top:2px;font-family:monospace;letter-spacing:1px">
         </div>
         <div>
           <label style="font-size:10px;color:var(--text-muted)">Hesap No</label>
-          <input value="${escHTML(b.hesapNo||'')}" oninput="muvBankalar[${i}].hesapNo=this.value" placeholder="Hesap numarası"
+          <input value="${b.hesapNo||''}" oninput="muvBankalar[${i}].hesapNo=this.value" placeholder="Hesap numarası"
             style="width:100%;margin-top:2px">
         </div>
       </div>

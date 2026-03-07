@@ -261,10 +261,10 @@ function renderAnlasmaTab(ctx,obj){
     let aciklama='';
     if(an.tur==='pesin') aciklama=`Sabit ücret: ${fmt(an.ucret||0)}`;
     else if(an.tur==='taksit') aciklama=`${fmt(an.ucret||0)} — ${an.taksitSayi||'?'} taksit × ${an.taksitAralik===1?'Aylık':an.taksitAralik+'lı'} = Taksit: ${fmt(Math.round((an.ucret||0)/(an.taksitSayi||1)*100)/100)}`;
-    else if(an.tur==='basari'||an.tur==='tahsilat') aciklama=`%${escHTML(an.yuzde||0)} × ${fmt(an.baz||deger)} = ${fmt(hesaplananHakediş)}`;
-    else if(an.tur==='karma') aciklama=`Peşin ${fmt(an.karmaP||0)} + %${escHTML(an.karmaYuzde||0)} × ${fmt(an.baz||deger)} = ${fmt(hesaplananHakediş)}`;
+    else if(an.tur==='basari'||an.tur==='tahsilat') aciklama=`%${an.yuzde||0} × ${fmt(an.baz||deger)} = ${fmt(hesaplananHakediş)}`;
+    else if(an.tur==='karma') aciklama=`Peşin ${fmt(an.karmaP||0)} + %${an.karmaYuzde||0} × ${fmt(an.baz||deger)} = ${fmt(hesaplananHakediş)}`;
     html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
-      <div class="hakediş-box"><div class="hakediş-label">Anlaşma Türü</div><div class="hakediş-value" style="font-size:17px;color:var(--gold-light)">${escHTML(turLabels[an.tur]||an.tur)}</div></div>
+      <div class="hakediş-box"><div class="hakediş-label">Anlaşma Türü</div><div class="hakediş-value" style="font-size:17px;color:var(--gold-light)">${turLabels[an.tur]||an.tur}</div></div>
       <div class="hakediş-box" style="border-color:var(--gold)"><div class="hakediş-label">Toplam Ücret</div><div class="hakediş-value" style="color:var(--gold)">${fmt(an.ucret||hesaplananHakediş)}</div><div style="font-size:10px;color:var(--text-dim);margin-top:4px">${aciklama}</div></div>
       ${an.tur==='taksit'?`
         <div class="hakediş-box"><div class="hakediş-label">Taksit Sayısı</div><div class="hakediş-value">${an.taksitSayi||'—'} Taksit</div></div>
@@ -273,10 +273,10 @@ function renderAnlasmaTab(ctx,obj){
         ${an.otarih?`<div class="hakediş-box"><div class="hakediş-label">İlk Ödeme</div><div class="hakediş-value" style="font-size:15px">${fmtD(an.otarih)}</div></div>`:''}
       `:''}
       ${an.tur==='pesin'&&an.otarih?`<div class="hakediş-box"><div class="hakediş-label">Ödeme Vadesi</div><div class="hakediş-value" style="font-size:15px">${fmtD(an.otarih)}</div></div>`:''}
-      ${(an.tur==='basari'||an.tur==='tahsilat')&&an.yuzde?`<div class="hakediş-box"><div class="hakediş-label">Oran</div><div class="hakediş-value">%${escHTML(an.yuzde)}</div></div>`:''}
+      ${(an.tur==='basari'||an.tur==='tahsilat')&&an.yuzde?`<div class="hakediş-box"><div class="hakediş-label">Oran</div><div class="hakediş-value">%${an.yuzde}</div></div>`:''}
       ${an.tur==='karma'?`<div class="hakediş-box"><div class="hakediş-label">Peşin Kısım</div><div class="hakediş-value">${fmt(an.karmaP||0)}</div></div><div class="hakediş-box"><div class="hakediş-label">Tahsilat Payı</div><div class="hakediş-value">%${an.karmaYuzde||0}</div></div>`:''}
     </div>
-    ${an.not?`<div style="background:var(--surface2);border-radius:var(--radius);padding:12px 14px;font-size:12px;color:var(--text-muted);line-height:1.6;white-space:pre-wrap;margin-bottom:14px">${escHTML(an.not)}</div>`:''}
+    ${an.not?`<div style="background:var(--surface2);border-radius:var(--radius);padding:12px 14px;font-size:12px;color:var(--text-muted);line-height:1.6;white-space:pre-wrap;margin-bottom:14px">${an.not}</div>`:''}
     <div style="padding:12px 14px;background:var(--gold-dim);border:1px solid var(--gold);border-radius:var(--radius);font-size:12px;color:var(--gold-light)">
       💡 Tahsilat ve hakediş hareketlerini kaydetmek için <strong>Tahsilat & Hakediş</strong> sekmesini kullanın.
     </div>`;
@@ -368,8 +368,8 @@ function patchDashAlacaklar(){
   da.innerHTML=al.map(a=>`
     <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
       <div>
-        <div style="font-size:12px;font-weight:600">${escHTML(getMuvAd(a.muvId)||'—')}</div>
-        <div style="font-size:10px;color:var(--text-muted)">${escHTML(a.tur)} · ${escHTML(a.aciklama||'')} · ${fmtD(a.tarih)}</div>
+        <div style="font-size:12px;font-weight:600">${getMuvAd(a.muvId)||'—'}</div>
+        <div style="font-size:10px;color:var(--text-muted)">${a.tur} · ${a.aciklama||''} · ${fmtD(a.tarih)}</div>
       </div>
       <span style="color:#e74c3c;font-weight:700;font-size:12px">${fmt(a.tutar)}</span>
     </div>`).join('');

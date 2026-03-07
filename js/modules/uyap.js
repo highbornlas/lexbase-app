@@ -108,14 +108,14 @@ function renderSureler() {
         <div style="flex:1">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
             <span style="font-size:11px;padding:2px 8px;border-radius:20px;background:${renk}22;color:${renk};font-weight:700">${durumLabel[s.durumHesap]||s.durumHesap}</span>
-            <span style="font-size:11px;color:var(--text-muted);background:var(--surface2);padding:2px 8px;border-radius:20px">${escHTML(s.tur)}</span>
+            <span style="font-size:11px;color:var(--text-muted);background:var(--surface2);padding:2px 8px;border-radius:20px">${s.tur}</span>
             ${s.oncelik === 'yuksek' ? '<span style="font-size:10px;color:#e74c3c;font-weight:700">● YÜKSEK ÖNCELİK</span>' : ''}
           </div>
-          <div style="font-weight:600;font-size:14px;margin-bottom:4px">${escHTML(s.aciklama)}</div>
+          <div style="font-weight:600;font-size:14px;margin-bottom:4px">${s.aciklama}</div>
           <div style="font-size:12px;color:var(--text-muted)">
             Başlangıç: ${fmtD(s.baslangic)} | ${s.gun} gün | Son: <strong style="color:${renk}">${fmtD(s.sonTarih)}</strong>
-            ${dava ? ` | ${escHTML(dava.no||dava.id.slice(0,6))}` : ''}
-            ${s.muvId ? ` | ${escHTML(getMuvAd(s.muvId))}` : ''}
+            ${dava ? ` | ${dava.no||dava.id.slice(0,6)}` : ''}
+            ${s.muvId ? ` | ${getMuvAd(s.muvId)}` : ''}
           </div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
@@ -170,8 +170,8 @@ function openDurusmaCekModal() {
   const muvSel = document.getElementById('dc-muv-id');
   davaSel.innerHTML = '<option value="">— Seçin —</option>';
   muvSel.innerHTML = '<option value="">— Seçin —</option>';
-  state.davalar.forEach(d => davaSel.innerHTML += `<option value="${d.id}">📁 ${escHTML(d.no||'')} — ${escHTML(d.konu||'')}</option>`);
-  state.muvekkillar.forEach(m => muvSel.innerHTML += `<option value="${m.id}">${escHTML(m.ad)}</option>`);
+  state.davalar.forEach(d => davaSel.innerHTML += `<option value="${d.id}">📁 ${d.no||''} — ${d.konu||''}</option>`);
+  state.muvekkillar.forEach(m => muvSel.innerHTML += `<option value="${m.id}">${m.ad}</option>`);
   document.getElementById('dc-metin').value = '';
   document.getElementById('dc-onizleme').style.display = 'none';
   document.getElementById('dc-aktar-btn').style.display = 'none';
@@ -212,7 +212,7 @@ function dcOnizle() {
   onizEl.style.display = 'block';
   onizEl.innerHTML = `<div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:8px;font-size:12px">
     <div style="font-weight:700;color:var(--gold);margin-bottom:8px">✅ ${_dcAktarilacak.length} duruşma bulundu:</div>
-    ${_dcAktarilacak.map(d => `<div style="padding:4px 0;border-bottom:1px solid var(--border)">📅 <strong>${fmtD(d.tarih)}</strong> ${d.saat} — ${escHTML(d.baslik)}</div>`).join('')}
+    ${_dcAktarilacak.map(d => `<div style="padding:4px 0;border-bottom:1px solid var(--border)">📅 <strong>${fmtD(d.tarih)}</strong> ${d.saat} — ${d.baslik}</div>`).join('')}
   </div>`;
   document.getElementById('dc-aktar-btn').style.display = '';
   notify(`${_dcAktarilacak.length} duruşma analiz edildi`);
@@ -252,7 +252,7 @@ function renderDurusmalar() {
   // Müvekkil select doldur
   const muvSel = document.getElementById('durusma-filtre-muv');
   if (muvSel && muvSel.options.length <= 1) {
-    state.muvekkillar.forEach(m => muvSel.innerHTML += `<option value="${m.id}">${escHTML(m.ad)}</option>`);
+    state.muvekkillar.forEach(m => muvSel.innerHTML += `<option value="${m.id}">${m.ad}</option>`);
   }
 
   let durusmalar = state.etkinlikler.filter(e => e.tur === 'Duruşma');
@@ -270,13 +270,13 @@ function renderDurusmalar() {
     return `<div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid ${bugunMu?'var(--red)':gecmis?'var(--border)':'var(--blue)'};border-radius:var(--radius);padding:12px 16px;margin-bottom:8px;opacity:${gecmis?'.6':'1'}">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
         <div>
-          <div style="font-weight:600;font-size:14px">${escHTML(d.baslik)}</div>
+          <div style="font-weight:600;font-size:14px">${d.baslik}</div>
           <div style="font-size:12px;color:var(--text-muted)">
             📅 ${fmtD(d.tarih)} ${d.saat ? '| ⏰ '+d.saat : ''}
             ${d.muvId ? '| 👤 '+getMuvAd(d.muvId) : ''}
             ${bugunMu ? '<span style="color:var(--red);font-weight:700"> | BUGÜN!</span>' : ''}
           </div>
-          ${d.notlar ? `<div style="font-size:11px;color:var(--text-dim);margin-top:3px">${escHTML(d.notlar)}</div>` : ''}
+          ${d.notlar ? `<div style="font-size:11px;color:var(--text-dim);margin-top:3px">${d.notlar}</div>` : ''}
         </div>
         <button class="btn" style="font-size:11px;padding:3px 10px;background:#25D366;color:#fff;border-color:#25D366" onclick="openWpDurusmaModal('${d.id}')">📱 Hatırlat</button>
       </div>
@@ -331,7 +331,7 @@ function renderZamanasimi() {
       html += `<div style="background:var(--surface);border:1px solid var(--border);border-left:4px solid ${renk};border-radius:var(--radius);padding:14px;margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
           <div>
-            <div style="font-weight:600;font-size:14px">${escHTML(s.aciklama)}</div>
+            <div style="font-weight:600;font-size:14px">${s.aciklama}</div>
             <div style="font-size:12px;color:var(--text-muted)">Başlangıç: ${fmtD(s.baslangic)} | Son: ${fmtD(s.sonTarih)} ${s.muvId?'| '+getMuvAd(s.muvId):''}</div>
           </div>
           <div style="font-size:15px;font-weight:700;color:${renk}">${kalan<0?'❌ DOLDU':kalan<180?`⚠️ ${kalan} gün`:`${kalan} gün`}</div>

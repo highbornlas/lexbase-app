@@ -36,16 +36,16 @@ function renderArabuluculuk(){
   listEl.innerHTML=list.map(a=>`
     <div class="arab-row" onclick="openArabDetay('${a.id}')">
       <div class="arab-row-left">
-        <div class="arab-row-title">${escHTML(a.konu)}</div>
+        <div class="arab-row-title">${a.konu}</div>
         <div class="arab-row-meta">
-          <span style="background:var(--surface2);padding:1px 7px;border-radius:10px;font-size:10px;margin-right:6px">${escHTML(a.tur)}</span>
+          <span style="background:var(--surface2);padding:1px 7px;border-radius:10px;font-size:10px;margin-right:6px">${a.tur}</span>
           ${a.muvId?getMuvAd(a.muvId)+'  ·  ':''} 
-          ${escHTML(a.karsi?'Karşı: '+a.karsi:'')}
+          ${a.karsi?'Karşı: '+a.karsi:''}
           ${a.basvuruTarih?' · '+fmtD(a.basvuruTarih):''}
         </div>
       </div>
       <div class="arab-row-right">
-        ${escHTML(a.ilgiliDavaId?'<span style="font-size:10px;color:var(--purple);border:1px solid var(--purple);border-radius:10px;padding:1px 8px">⚖️ Dava bağlı</span>':'')}
+        ${a.ilgiliDavaId?'<span style="font-size:10px;color:var(--purple);border:1px solid var(--purple);border-radius:10px;padding:1px 8px">⚖️ Dava bağlı</span>':''}
         ${arabDurumBadge(a.durum||'Başvuru Yapıldı')}
       </div>
     </div>`).join('');
@@ -98,7 +98,7 @@ function renderArabBilgi(a){
         <div class="hakediş-box"><div class="hakediş-label">Arabuluculuk Türü</div><div class="hakediş-value">${a.tur}</div></div>
         <div class="hakediş-box"><div class="hakediş-label">Başvuru Tarihi</div><div class="hakediş-value" style="font-size:15px">${fmtD(a.basvuruTarih)||'—'}</div></div>
         <div class="hakediş-box"><div class="hakediş-label">Müvekkil</div><div class="hakediş-value" style="font-size:14px">${getMuvAd(a.muvId)||'—'}</div></div>
-        <div class="hakediş-box"><div class="hakediş-label">Karşı Taraf</div><div class="hakediş-value" style="font-size:14px">${escHTML(a.karsi||'—')}</div></div>
+        <div class="hakediş-box"><div class="hakediş-label">Karşı Taraf</div><div class="hakediş-value" style="font-size:14px">${a.karsi||'—'}</div></div>
         ${a.ilkTarih?`<div class="hakediş-box"><div class="hakediş-label">İlk Toplantı</div><div class="hakediş-value" style="font-size:15px">${fmtD(a.ilkTarih)} ${a.ilkSaat||''}</div></div>`:''}
         ${a.yer?`<div class="hakediş-box"><div class="hakediş-label">Toplantı Yeri</div><div class="hakediş-value" style="font-size:13px">${a.yer}</div></div>`:''}
       </div>
@@ -106,7 +106,7 @@ function renderArabBilgi(a){
       <div style="background:var(--surface2);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px">
         <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px">Arabulucu Bilgileri</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div><div style="font-size:10px;color:var(--text-dim)">Adı</div><div style="font-size:13px;color:var(--text)">${escHTML(a.arabulucuAd)}</div></div>
+          <div><div style="font-size:10px;color:var(--text-dim)">Adı</div><div style="font-size:13px;color:var(--text)">${a.arabulucuAd}</div></div>
           ${a.arabulucuSicil?`<div><div style="font-size:10px;color:var(--text-dim)">Sicil No</div><div style="font-size:13px;color:var(--text)">${a.arabulucuSicil}</div></div>`:''}
           ${a.arabulucuTel?`<div><div style="font-size:10px;color:var(--text-dim)">Telefon</div><div style="font-size:13px;color:var(--text)">${a.arabulucuTel}</div></div>`:''}
           ${a.arabulucuBuro?`<div><div style="font-size:10px;color:var(--text-dim)">Büro / Merkez</div><div style="font-size:13px;color:var(--text)">${a.arabulucuBuro}</div></div>`:''}
@@ -114,7 +114,7 @@ function renderArabBilgi(a){
       </div>`:''}
       ${a.notlar?`<div style="background:var(--surface2);border-radius:var(--radius);padding:12px 14px;font-size:12px;color:var(--text-muted);line-height:1.6;white-space:pre-wrap">${a.notlar}</div>`:''}
       ${bDava?`<div style="margin-top:14px;padding:12px 14px;background:rgba(142,68,173,.12);border:1px solid #8e44ad;border-radius:var(--radius);font-size:12px">
-        <span style="color:#8e44ad;font-weight:700">⚖️ Bağlı Dava:</span> ${escHTML(bDava.no||'')} — ${escHTML(bDava.konu)}
+        <span style="color:#8e44ad;font-weight:700">⚖️ Bağlı Dava:</span> ${bDava.no||''} — ${bDava.konu}
         <button class="btn btn-outline btn-sm" style="margin-left:10px" onclick="showPage('davalar',document.getElementById('ni-davalar'));setTimeout(()=>openDavaDetay('${bDava.id}'),300)">Davaya Git →</button>
       </div>`:''}
     </div></div>`;
@@ -130,10 +130,10 @@ function renderArabToplanti(a){
     html+=`<div style="display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--border)">
       <div style="width:32px;height:32px;border-radius:50%;background:var(--gold-dim);border:1px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--gold);flex-shrink:0">${i+1}</div>
       <div style="flex:1">
-        <div style="font-size:13px;font-weight:600;color:var(--text)">${escHTML(t.baslik||((i+1)+'. Toplantı'))}</div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${fmtD(t.tarih)} ${t.saat?'· '+t.saat:''} ${escHTML(t.yer?'· '+t.yer:'')}</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text)">${t.baslik||((i+1)+'. Toplantı')}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${fmtD(t.tarih)} ${t.saat?'· '+t.saat:''} ${t.yer?'· '+t.yer:''}</div>
         ${t.sonuc?`<div style="margin-top:5px">${arabDurumBadge(t.sonuc)}</div>`:''}
-        ${t.notlar?`<div style="margin-top:7px;font-size:11px;color:var(--text-muted);background:var(--surface2);border-radius:6px;padding:7px 10px;line-height:1.5;white-space:pre-wrap">${escHTML(t.notlar)}</div>`:''}
+        ${t.notlar?`<div style="margin-top:7px;font-size:11px;color:var(--text-muted);background:var(--surface2);border-radius:6px;padding:7px 10px;line-height:1.5;white-space:pre-wrap">${t.notlar}</div>`:''}
       </div>
       <button class="delete-btn" onclick="delArabToplanti('${t.id}')">✕</button>
     </div>`;
@@ -156,14 +156,14 @@ function renderArabTaraflar(a){
       else items.forEach(t=>{
         html+=`<div style="background:var(--surface2);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;border-left:3px solid ${taraf==='Müvekkil'?'var(--gold)':'var(--red)'}">
           <div style="display:flex;justify-content:space-between;align-items:flex-start">
-            <div style="font-size:13px;font-weight:600;color:var(--text)">${escHTML(t.konu)}</div>
+            <div style="font-size:13px;font-weight:600;color:var(--text)">${t.konu}</div>
             <div style="display:flex;align-items:center;gap:6px">
               ${t.tutar?`<span style="color:var(--green);font-weight:700;font-size:12px">${fmt(t.tutar)}</span>`:''}
               <button class="delete-btn" onclick="delArabTalep('${t.id}')">✕</button>
             </div>
           </div>
           ${t.tarih?`<div style="font-size:10px;color:var(--text-dim);margin-top:3px">${fmtD(t.tarih)}</div>`:''}
-          ${t.detay?`<div style="font-size:11px;color:var(--text-muted);margin-top:7px;line-height:1.5;white-space:pre-wrap">${escHTML(t.detay)}</div>`:''}
+          ${t.detay?`<div style="font-size:11px;color:var(--text-muted);margin-top:7px;line-height:1.5;white-space:pre-wrap">${t.detay}</div>`:''}
         </div>`;
       });
       html+='</div>';
@@ -178,7 +178,7 @@ function renderArabTutanaklar(a){
     <div class="section-body">`;
   if(!list.length)html+=`<div class="empty"><div class="empty-icon">📄</div><p>Tutanak yüklenmedi</p></div>`;
   else list.forEach(e=>{
-    html+=`<div class="file-item"><div class="file-icon">${fileIcon(e.ad)}</div><div class="file-info"><div class="file-name">${escHTML(e.ad)}</div><div class="file-meta">${e.tarih?fmtD(e.tarih)+' · ':''}${fileSize(e.data)}${escHTML(e.kat?' · '+e.kat:'')}</div></div>
+    html+=`<div class="file-item"><div class="file-icon">${fileIcon(e.ad)}</div><div class="file-info"><div class="file-name">${e.ad}</div><div class="file-meta">${e.tarih?fmtD(e.tarih)+' · ':''}${fileSize(e.data)}${e.kat?' · '+e.kat:''}</div></div>
       <div class="file-actions"><button class="btn btn-outline btn-sm" onclick="dlArabEvrak('${e.id}')">⬇</button><button class="delete-btn" onclick="delArabEvrak('${e.id}')">✕</button></div></div>`;
   });
   html+='</div></div>';return html;
@@ -195,7 +195,7 @@ function renderArabNotlar(a){
         <span style="font-size:10px;color:var(--text-muted)">${fmtD(n.tarih)}</span>
         <button class="delete-btn" onclick="delArabNot('${n.id}')">✕</button>
       </div>
-      <div style="font-size:12px;color:var(--text);line-height:1.6;white-space:pre-wrap">${escHTML(n.icerik)}</div>
+      <div style="font-size:12px;color:var(--text);line-height:1.6;white-space:pre-wrap">${n.icerik}</div>
     </div>`;
   });
   html+='</div></div>';return html;
@@ -207,7 +207,7 @@ function openArabModal(id){
   document.getElementById('arab-modal-title').textContent=id?'Arabuluculuk Dosyasını Düzenle':'Yeni Arabuluculuk Dosyası';
   document.getElementById('arab-edit-id').value=id||'';
   const muvSel=document.getElementById('arab-muv');
-  muvSel.innerHTML='<option value="">— Seçiniz —</option>'+state.muvekkillar.map(m=>`<option value="${m.id}"${edit&&edit.muvId===m.id?' selected':''}>${escHTML(m.ad)}</option>`).join('');
+  muvSel.innerHTML='<option value="">— Seçiniz —</option>'+state.muvekkillar.map(m=>`<option value="${m.id}"${edit&&edit.muvId===m.id?' selected':''}>${m.ad}</option>`).join('');
   document.getElementById('arab-konu').value=edit?.konu||'';
   document.getElementById('arab-tur').value=edit?.tur||'Zorunlu';
   document.getElementById('arab-basvuru-tarih').value=edit?.basvuruTarih||today();
@@ -271,7 +271,7 @@ function openArabDurumModal(){
   const a=getArab(aktivArabId);if(!a)return;
   document.getElementById('arab-yeni-durum').value=a.durum||'Başvuru Yapıldı';
   const davaSel=document.getElementById('arab-ilgili-dava');
-  davaSel.innerHTML='<option value="">— Dava seçin —</option>'+state.davalar.map(d=>`<option value="${d.id}"${a.ilgiliDavaId===d.id?' selected':''}>${escHTML(d.no||'')} ${escHTML(d.konu)}</option>`).join('');
+  davaSel.innerHTML='<option value="">— Dava seçin —</option>'+state.davalar.map(d=>`<option value="${d.id}"${a.ilgiliDavaId===d.id?' selected':''}>${d.no||''} ${d.konu}</option>`).join('');
   arabDurumChange();
   document.getElementById('arab-durum-modal').classList.add('open');
 }

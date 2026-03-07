@@ -39,6 +39,8 @@ function ayarlarSayfasiDoldur() {
     const el = document.getElementById('tema-' + t);
     if(el) el.classList.toggle('aktif', t === tema);
   });
+  // Bildirim ayarlarını doldur
+  if (typeof Bildirim !== 'undefined') Bildirim.ayarlarRender();
 }
 
 async function profilGuncelle() {

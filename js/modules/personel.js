@@ -31,12 +31,12 @@ function renderPersonelListe() {
         ${avatarI(p.ad)}
       </div>
       <div class="personel-bilgi">
-        <div class="personel-ad">${escHTML(p.ad)}${p._sahip?' <span style="font-size:10px;color:var(--text-dim)">(Siz)</span>':''}</div>
+        <div class="personel-ad">${p.ad}${p._sahip?' <span style="font-size:10px;color:var(--text-dim)">(Siz)</span>':''}</div>
         ${rolBadgeHTML(p.rol)}
-        <div class="personel-meta">${escHTML(p.email||'')}${escHTML(p.tel?' · '+p.tel:'')}</div>
+        <div class="personel-meta">${p.email||''}${p.tel?' · '+p.tel:''}</div>
       </div>
       ${gorevSayisi > 0 ? `<div style="background:var(--gold-dim);border:1px solid var(--gold);border-radius:20px;padding:2px 10px;font-size:11px;color:var(--gold);font-weight:600">${gorevSayisi} görev</div>` : ''}
-      <div class="personel-durum ${escHTML(p.durum||'aktif')}"></div>
+      <div class="personel-durum ${p.durum||'aktif'}"></div>
       ${!p._sahip && yetkiVar('per_yonet') ? `<button class="btn" style="padding:5px 10px;font-size:11px" onclick="event.stopPropagation();openPersonelDuzenle('${p.id}')">✏️</button>` : ''}
     </div>`;
   }).join('');
@@ -86,7 +86,7 @@ function openPersonelDuzenle(id) {
   if (p.hesap?.email) {
     const el = document.getElementById('hesap-mevcut-bilgi');
     el.style.display = '';
-    el.innerHTML = `✅ Mevcut hesap: <strong>${escHTML(p.hesap.email)}</strong>`;
+    el.innerHTML = `✅ Mevcut hesap: <strong>${p.hesap.email}</strong>`;
   } else {
     document.getElementById('hesap-mevcut-bilgi').style.display = 'none';
   }
@@ -111,13 +111,13 @@ function renderYetkiGrid(rol, mevcutYetkiler) {
 
   let html = '';
   YETKI_GRUPLARI.forEach(grup => {
-    html += `<div class="yetki-grup"><div class="yetki-grup-header"><span>${grup.icon}</span>${escHTML(grup.ad)}</div>`;
+    html += `<div class="yetki-grup"><div class="yetki-grup-header"><span>${grup.icon}</span>${grup.ad}</div>`;
     grup.yetkiler.forEach(y => {
       const mevcut = tumYetkiler ? 'tam' : (varsayilan[y.id] || 'yok');
       html += `
       <div class="yetki-satir">
         <div class="yetki-satir-sol">
-          <div class="yetki-satir-ad">${escHTML(y.ad)}</div>
+          <div class="yetki-satir-ad">${y.ad}</div>
           <div class="yetki-satir-sub">${y.sub}</div>
         </div>
         <select class="yetki-select" id="yetki-${y.id}">
@@ -264,20 +264,20 @@ function renderGorevPersonelSelect() {
   if (!sel) return;
   sel.innerHTML = '<option value="">— Personel Seçin —</option>';
   (state.personel||[]).filter(p=>p.durum!=='pasif').forEach(p => {
-    sel.innerHTML += `<option value="${p.id}">${escHTML(p.ad)} (${p.rol})</option>`;
+    sel.innerHTML += `<option value="${p.id}">${p.ad} (${p.rol})</option>`;
   });
   // Filtre select'i de güncelle
   const fsel = document.getElementById('gorev-filtre-personel');
   if (fsel) {
     fsel.innerHTML = '<option value="">Tüm Personel</option>';
-    (state.personel||[]).forEach(p => { fsel.innerHTML += `<option value="${p.id}">${escHTML(p.ad)}</option>`; });
+    (state.personel||[]).forEach(p => { fsel.innerHTML += `<option value="${p.id}">${p.ad}</option>`; });
   }
   // Dosya select
   const dsel = document.getElementById('g-dosya');
   if (dsel) {
     dsel.innerHTML = '<option value="">— Seçin —</option>';
-    (state.davalar||[]).forEach(d => { dsel.innerHTML += `<option value="dava:${d.id}">📁 ${escHTML(d.no)} - ${escHTML(d.konu?.slice(0,30))}</option>`; });
-    (state.icra||[]).forEach(i => { dsel.innerHTML += `<option value="icra:${i.id}">⚡ ${escHTML(i.no)} - ${escHTML(i.borclu?.slice(0,30))}</option>`; });
+    (state.davalar||[]).forEach(d => { dsel.innerHTML += `<option value="dava:${d.id}">📁 ${d.no} - ${d.konu?.slice(0,30)}</option>`; });
+    (state.icra||[]).forEach(i => { dsel.innerHTML += `<option value="icra:${i.id}">⚡ ${i.no} - ${i.borclu?.slice(0,30)}</option>`; });
   }
 }
 
@@ -407,20 +407,20 @@ function gorevKartHTML(g, kucuk=false) {
     <div class="gorev-header">
       <div style="display:flex;align-items:center;gap:8px">
         <span>${oncelikMap[g.oncelik]||'⚪'}</span>
-        <span class="gorev-baslik">${escHTML(g.baslik)}</span>
-        <span class="gorev-badge ${escHTML(durumMap[g.durum]||'gorev-bekliyor')}">${escHTML(durumLbl[g.durum]||g.durum)}</span>
+        <span class="gorev-baslik">${g.baslik}</span>
+        <span class="gorev-badge ${durumMap[g.durum]||'gorev-bekliyor'}">${durumLbl[g.durum]||g.durum}</span>
       </div>
       ${g.durum==='bekliyor' && yapabilir ? `<button class="btn btn-gold" style="padding:4px 10px;font-size:11px" onclick="openGorevOnay('${g.id}')">✅ Tamamla</button>` : ''}
       ${yetkiVar('per_gorev') ? `<button class="btn btn-danger" style="padding:4px 8px;font-size:11px" onclick="gorevSil('${g.id}')">🗑</button>` : ''}
     </div>
     <div class="gorev-meta">
-      ${p ? `<span>👤 ${escHTML(p.ad)}</span>` : ''}
-      ${g.tur ? `<span>📌 ${escHTML(g.tur)}</span>` : ''}
+      ${p ? `<span>👤 ${p.ad}</span>` : ''}
+      ${g.tur ? `<span>📌 ${g.tur}</span>` : ''}
       ${dosyaLink ? `<span>${dosyaLink}</span>` : ''}
       ${g.sonTarih ? `<span>📅 Son: ${fmtD(g.sonTarih)}</span>` : ''}
       ${g.olusturanAd ? `<span>Atan: ${g.olusturanAd}</span>` : ''}
     </div>
-    ${g.aciklama ? `<div style="font-size:11px;color:var(--text-muted);margin-top:6px">${escHTML(g.aciklama)}</div>` : ''}
+    ${g.aciklama ? `<div style="font-size:11px;color:var(--text-muted);margin-top:6px">${g.aciklama}</div>` : ''}
     ${g.durum==='yapildi'&&g.tamamlamaAciklama ? `
     <div class="gorev-onay-kutu">
       <div style="font-size:11px;font-weight:600;color:var(--green);margin-bottom:4px">✅ Tamamlandı — ${fmtD(g.tamamlamaTarih)}</div>
@@ -433,7 +433,7 @@ function openGorevOnay(gorevId) {
   const g = (state.gorevler||[]).find(x=>x.id===gorevId);
   if (!g) return;
   gorevOnayId = gorevId;
-  document.getElementById('gorev-onay-bilgi').innerHTML = `<strong>${escHTML(g.baslik)}</strong>${escHTML(g.aciklama?'<br><span style="color:var(--text-muted)">'+escHTML(g.aciklama)+'</span>':'')}`;
+  document.getElementById('gorev-onay-bilgi').innerHTML = `<strong>${g.baslik}</strong>${g.aciklama?'<br><span style="color:var(--text-muted)">'+g.aciklama+'</span>':''}`;
   document.getElementById('gorev-onay-aciklama').value = '';
   document.getElementById('gorev-onay-modal').classList.add('open');
 }
@@ -445,7 +445,7 @@ function renderAktiviteKisiSelect() {
   sel.innerHTML = '<option value="">Tüm Kullanıcılar</option>';
   // Benzersiz kullanıcıları ekle
   const kisiler = [...new Map((state.aktiviteLog||[]).map(l=>[l.kullaniciId,{id:l.kullaniciId,ad:l.kullaniciAd}])).values()];
-  kisiler.forEach(k => { sel.innerHTML += `<option value="${k.id}">${escHTML(k.ad)}</option>`; });
+  kisiler.forEach(k => { sel.innerHTML += `<option value="${k.id}">${k.ad}</option>`; });
 }
 
 function renderAktiviteLog() {
@@ -466,8 +466,8 @@ function renderAktiviteLog() {
   <div class="aktivite-satir" style="padding:10px 16px">
     <div class="aktivite-icon">${modulIcon[l.modul]||'📝'}</div>
     <div class="aktivite-bilgi">
-      <div class="aktivite-islem"><strong>${escHTML(l.kullaniciAd)}</strong> — ${escHTML(l.islem)}</div>
-      ${l.detay ? `<div class="aktivite-detay">${escHTML(l.detay)}</div>` : ''}
+      <div class="aktivite-islem"><strong>${l.kullaniciAd}</strong> — ${l.islem}</div>
+      ${l.detay ? `<div class="aktivite-detay">${l.detay}</div>` : ''}
     </div>
     <div class="aktivite-zaman">${fmtD(l.tarih)} ${l.saat}</div>
   </div>`).join('')}

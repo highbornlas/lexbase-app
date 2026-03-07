@@ -36,12 +36,12 @@ function renderCalendar(){
     return`<div style="padding:10px 14px;border-bottom:1px solid var(--border)">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div style="flex:1;cursor:pointer" onclick="openTakModal('${e.id}')">
-          <div style="font-size:12px;font-weight:600;margin-bottom:2px">${escHTML(e.baslik)} ${yaklasanBadge}</div>
-          <div style="font-size:10px;color:var(--text-muted)">${fmtD(e.tarih)}${e.saat?' – '+e.saat:''}${escHTML(e.yer?' · 📍'+e.yer:'')}</div>
+          <div style="font-size:12px;font-weight:600;margin-bottom:2px">${e.baslik} ${yaklasanBadge}</div>
+          <div style="font-size:10px;color:var(--text-muted)">${fmtD(e.tarih)}${e.saat?' – '+e.saat:''}${e.yer?' · 📍'+e.yer:''}</div>
           ${e.muvId?`<div style="font-size:10px;color:var(--text-dim)">👤 ${getMuvAd(e.muvId)}${e.davNo?' · 📁'+e.davNo:''}</div>`:''}
         </div>
         <div style="display:flex;align-items:center;gap:5px">
-          <span class="badge badge-${bc}">${escHTML(e.tur)}</span>
+          <span class="badge badge-${bc}">${e.tur}</span>
           <button class="delete-btn" onclick="delEtkinlik('${e.id}')">✕</button>
         </div>
       </div>

@@ -2522,3 +2522,307 @@ select:focus, textarea:focus {
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+
+/* ================================================================
+   BİLDİRİM SİSTEMİ
+   ================================================================ */
+
+/* ── Çan Butonu ────────────────────────────────────────────── */
+.bildirim-btn {
+  position: relative;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 16px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all .2s;
+  line-height: 1;
+}
+.bildirim-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.bildirim-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #e74c3c;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  box-shadow: 0 2px 6px rgba(231,76,60,.4);
+  animation: bildirimPulse 2s ease-in-out infinite;
+}
+
+@keyframes bildirimPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* ── Panel ─────────────────────────────────────────────────── */
+.bildirim-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 380px;
+  max-height: 500px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.03);
+  z-index: 1000;
+  display: none;
+  overflow: hidden;
+}
+.bildirim-panel.acik {
+  display: flex;
+  flex-direction: column;
+  animation: bildirimPanelIn .2s ease;
+}
+
+@keyframes bildirimPanelIn {
+  from { opacity: 0; transform: translateY(-8px) scale(.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.bildirim-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.bildirim-tumunu-oku {
+  background: none;
+  border: none;
+  color: var(--gold);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+.bildirim-tumunu-oku:hover {
+  background: var(--gold-dim);
+}
+
+.bildirim-liste {
+  overflow-y: auto;
+  max-height: 380px;
+  flex: 1;
+}
+
+.bildirim-panel-footer {
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* ── Bildirim Item ─────────────────────────────────────────── */
+.bildirim-item {
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background .15s;
+}
+.bildirim-item:hover {
+  background: var(--surface2);
+}
+.bildirim-item:last-child {
+  border-bottom: none;
+}
+.bildirim-item.okunan {
+  opacity: 0.5;
+}
+.bildirim-item.acil {
+  background: rgba(231,76,60,.05);
+  border-left: 3px solid #e74c3c;
+}
+
+.bildirim-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  width: 28px;
+  text-align: center;
+  padding-top: 2px;
+}
+
+.bildirim-icerik {
+  flex: 1;
+  min-width: 0;
+}
+
+.bildirim-baslik {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.bildirim-detay {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bildirim-muv {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.bildirim-zaman {
+  flex-shrink: 0;
+  text-align: right;
+  min-width: 60px;
+}
+
+.bildirim-gun {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.bildirim-tarih {
+  font-size: 9px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+/* ── Ayarlar: Toggle Switch ──────────────────────────────── */
+.bld-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.bld-toggle-row:last-child {
+  border-bottom: none;
+}
+
+.bld-switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  flex-shrink: 0;
+}
+.bld-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.bld-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  transition: .3s;
+}
+.bld-slider::before {
+  content: '';
+  position: absolute;
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background: var(--text-muted);
+  border-radius: 50%;
+  transition: .3s;
+}
+.bld-switch input:checked + .bld-slider {
+  background: var(--gold-dim);
+  border-color: var(--gold);
+}
+.bld-switch input:checked + .bld-slider::before {
+  background: var(--gold);
+  transform: translateX(18px);
+}
+
+/* ── Ayarlar: Chip (hatırlatma günleri) ────────────────── */
+.bld-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all .2s;
+}
+.bld-chip:has(input:checked) {
+  background: var(--gold-dim);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.bld-chip input {
+  display: none;
+}
+
+/* ── Ayarlar: Tür grid ─────────────────────────────────── */
+.bld-tur-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.bld-tur {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all .2s;
+}
+.bld-tur:has(input:checked) {
+  border-color: var(--gold);
+  color: var(--text);
+}
+.bld-tur input {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--gold);
+  flex-shrink: 0;
+}
+
+/* ── Responsive ────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .bildirim-panel {
+    position: fixed;
+    top: 52px;
+    right: 0;
+    left: 0;
+    width: 100%;
+    max-height: calc(100vh - 52px);
+    border-radius: 0;
+  }
+  .bld-tur-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -16,7 +16,7 @@ function renderTodo() {
   const atananSel = document.getElementById('todo-fil-atanan');
   if (atananSel && atananSel.options.length <= 1) {
     state.personel.filter(p=>p.durum==='Aktif').forEach(p => {
-      atananSel.innerHTML += `<option value="${p.id}">${escHTML(p.ad)}</option>`;
+      atananSel.innerHTML += `<option value="${p.id}">${p.ad}</option>`;
     });
   }
 
@@ -72,21 +72,21 @@ function renderTodo() {
       const tamamlandi = t.durum === 'Tamamlandı' || t.durum === 'İptal';
       html += `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;margin-bottom:6px;display:flex;align-items:flex-start;gap:12px;${tamamlandi?'opacity:.6':''}">
         <div style="margin-top:2px;cursor:pointer;font-size:18px" onclick="todoToggleTamamla('${t.id}')" title="${tamamlandi?'Geri al':'Tamamlandı olarak işaretle'}">
-          ${escHTML(t.durum === 'Tamamlandı' ? '☑️' : '⬜')}
+          ${t.durum === 'Tamamlandı' ? '☑️' : '⬜'}
         </div>
         <div style="flex:1;min-width:0">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
-            <span style="font-size:13px;font-weight:600;${tamamlandi?'text-decoration:line-through;color:var(--text-muted)':''}">${escHTML(t.baslik)}</span>
+            <span style="font-size:13px;font-weight:600;${tamamlandi?'text-decoration:line-through;color:var(--text-muted)':''}">${t.baslik}</span>
             <span style="font-size:10px">${TODO_ONCELIK_IKON[t.oncelik]||'🟡'}</span>
-            <span style="font-size:10px;font-weight:700;color:${durRenk};background:${durRenk}22;padding:1px 6px;border-radius:3px">${escHTML(t.durum)}</span>
+            <span style="font-size:10px;font-weight:700;color:${durRenk};background:${durRenk}22;padding:1px 6px;border-radius:3px">${t.durum}</span>
           </div>
           <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--text-muted)">
             ${t.sonTarih ? `<span>📅 ${fmtD(t.sonTarih)}</span>` : ''}
             <span>👤 ${atanan}</span>
             ${dosyaLink ? `<span>${dosyaLink}</span>` : ''}
-            ${t.muvId ? `<span>🧑 ${escHTML(getMuvAd(t.muvId))}</span>` : ''}
+            ${t.muvId ? `<span>🧑 ${getMuvAd(t.muvId)}</span>` : ''}
           </div>
-          ${t.aciklama ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px">${escHTML(t.aciklama)}</div>` : ''}
+          ${t.aciklama ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px">${t.aciklama}</div>` : ''}
         </div>
         <div style="display:flex;gap:4px;flex-shrink:0">
           <button class="btn" style="padding:4px 8px;font-size:11px" onclick="openTodoModal('${t.id}')">✏️</button>
@@ -139,13 +139,13 @@ function openTodoModal(id) {
   const atananSel = document.getElementById('todo-atanan');
   atananSel.innerHTML = '<option value="">— Kendim (atanmamış) —</option>';
   state.personel.filter(p=>p.durum==='Aktif').forEach(p => {
-    atananSel.innerHTML += `<option value="${p.id}">${escHTML(p.ad)} (${p.rol})</option>`;
+    atananSel.innerHTML += `<option value="${p.id}">${p.ad} (${p.rol})</option>`;
   });
 
   // Müvekkil listesi
   const muvSel = document.getElementById('todo-muv-id');
   muvSel.innerHTML = '<option value="">— Opsiyonel —</option>';
-  state.muvekkillar.forEach(m => muvSel.innerHTML += `<option value="${m.id}">${escHTML(m.ad)}</option>`);
+  state.muvekkillar.forEach(m => muvSel.innerHTML += `<option value="${m.id}">${m.ad}</option>`);
 
   // Formu temizle
   ['todo-id','todo-baslik','todo-aciklama'].forEach(f => { const el=document.getElementById(f); if(el) el.value=''; });
@@ -177,8 +177,8 @@ function openTodoModal(id) {
 function todoDosyaDoldur(tur, seciliId) {
   const sel = document.getElementById('todo-dosya-id');
   sel.innerHTML = '<option value="">— Seçin —</option>';
-  if (tur === 'dava') state.davalar.forEach(d => sel.innerHTML += `<option value="${d.id}"${d.id===seciliId?' selected':''}>${escHTML(d.no||d.id)} — ${escHTML(d.konu||'')}</option>`);
-  else if (tur === 'icra') state.icra.forEach(i => sel.innerHTML += `<option value="${i.id}"${i.id===seciliId?' selected':''}>${escHTML(i.no||i.id)} — ${escHTML(i.borclu||'')}</option>`);
+  if (tur === 'dava') state.davalar.forEach(d => sel.innerHTML += `<option value="${d.id}"${d.id===seciliId?' selected':''}>${d.no||d.id} — ${d.konu||''}</option>`);
+  else if (tur === 'icra') state.icra.forEach(i => sel.innerHTML += `<option value="${i.id}"${i.id===seciliId?' selected':''}>${i.no||i.id} — ${i.borclu||''}</option>`);
   else if (tur === 'danismanlik') state.danismanlik.forEach(d => sel.innerHTML += `<option value="${d.id}"${d.id===seciliId?' selected':''}>${d.konu||d.id}</option>`);
   else if (tur === 'arabuluculuk') (state.arabuluculuk||[]).forEach(a => sel.innerHTML += `<option value="${a.id}"${a.id===seciliId?' selected':''}>${a.no||a.id}</option>`);
 }

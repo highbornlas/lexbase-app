@@ -53,11 +53,11 @@ function renderDashSureler() {
   el.innerHTML = items.map(i => {
     const acil = i.gun <= 3 ? 'background:rgba(231,76,60,.08);border-left:3px solid #e74c3c;' : i.gun <= 7 ? 'border-left:3px solid #e67e22;' : 'border-left:3px solid var(--border);';
     const gunText = i.gun === 0 ? '<span style="color:#e74c3c;font-weight:700">BUGÜN</span>' : i.gun === 1 ? '<span style="color:#e74c3c;font-weight:700">YARIN</span>' : `<span style="color:${i.gun<=7?'#e67e22':'var(--text-muted)'};">${i.gun} gün</span>`;
-    return `<div onclick="showPage('${safeId(i.hedef)}',document.getElementById('ni-${safeId(i.hedef)}'))" style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;margin-bottom:4px;border-radius:6px;cursor:pointer;transition:background .15s;${acil}" onmouseover="this.style.background='rgba(255,255,255,.04)'" onmouseout="this.style.background='${i.gun<=3?'rgba(231,76,60,.08)':'transparent'}'">
+    return `<div onclick="showPage('${i.hedef}',document.getElementById('ni-${i.hedef}'))" style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;margin-bottom:4px;border-radius:6px;cursor:pointer;transition:background .15s;${acil}" onmouseover="this.style.background='rgba(255,255,255,.04)'" onmouseout="this.style.background='${i.gun<=3?'rgba(231,76,60,.08)':'transparent'}'">
       <div>
-        <span style="display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;background:${i.renk}22;color:${i.renk};margin-right:6px">${escHTML(i.tur)}</span>
-        <span style="font-size:12px;font-weight:600">${escHTML(i.baslik)}</span>
-        ${i.muvAd ? `<span style="font-size:10px;color:var(--text-muted);margin-left:6px">${escHTML(i.muvAd)}</span>` : ''}
+        <span style="display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;background:${i.renk}22;color:${i.renk};margin-right:6px">${i.tur}</span>
+        <span style="font-size:12px;font-weight:600">${i.baslik}</span>
+        ${i.muvAd ? `<span style="font-size:10px;color:var(--text-muted);margin-left:6px">${i.muvAd}</span>` : ''}
       </div>
       <div style="text-align:right;flex-shrink:0;margin-left:12px">
         ${gunText}
@@ -106,14 +106,14 @@ function renderDashboard(){
   const up=state.etkinlikler.filter(e=>e.tarih>=t&&e.tarih<=fS).sort((a,b)=>a.tarih.localeCompare(b.tarih));
   const de=document.getElementById('dash-etkinlikler');
   if(!up.length)de.innerHTML='<div class="empty"><div class="empty-icon">📅</div><p>Yaklaşan etkinlik yok</p></div>';
-  else de.innerHTML=up.map(e=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)"><div><div style="font-size:12px;font-weight:600">${escHTML(e.baslik)}</div><div style="font-size:10px;color:var(--text-muted)">${escHTML(fmtD(e.tarih))} ${e.saat?'– '+escHTML(e.saat):''} ${e.muvId?'· '+escHTML(getMuvAd(e.muvId)):''}</div></div><span class="badge badge-${e.tur==='Duruşma'?'durusma':e.tur==='Son Gün'?'son':'beklemede'}">${escHTML(e.tur)}</span></div>`).join('');
+  else de.innerHTML=up.map(e=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)"><div><div style="font-size:12px;font-weight:600">${e.baslik}</div><div style="font-size:10px;color:var(--text-muted)">${fmtD(e.tarih)} ${e.saat?'– '+e.saat:''} ${e.muvId?'· '+getMuvAd(e.muvId):''}</div></div><span class="badge badge-${e.tur==='Duruşma'?'durusma':e.tur==='Son Gün'?'son':'beklemede'}">${e.tur}</span></div>`).join('');
   renderDashSureler();
   const dd=document.getElementById('dash-danismanlik');
   if(dd)dd.innerHTML=renderDashDanismanlik();
   const al=state.avanslar.filter(a=>a.durum==='Bekliyor');
   const da=document.getElementById('dash-alacaklar');
   if(!al.length)da.innerHTML='<div class="empty"><div class="empty-icon">💸</div><p>Bekleyen alacak yok</p></div>';
-  else da.innerHTML=al.map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)"><div><div style="font-size:12px;font-weight:600">${escHTML(getMuvAd(a.muvId))}</div><div style="font-size:10px;color:var(--text-muted)">${escHTML(a.tur)} · ${escHTML(fmtD(a.tarih))}</div></div><span style="color:#e74c3c;font-weight:700;font-size:12px">${fmt(a.tutar)}</span></div>`).join('');
+  else da.innerHTML=al.map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)"><div><div style="font-size:12px;font-weight:600">${getMuvAd(a.muvId)}</div><div style="font-size:10px;color:var(--text-muted)">${a.tur} · ${fmtD(a.tarih)}</div></div><span style="color:#e74c3c;font-weight:700;font-size:12px">${fmt(a.tutar)}</span></div>`).join('');
 }
 
 // ================================================================
