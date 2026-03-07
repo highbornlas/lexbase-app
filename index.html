@@ -1820,11 +1820,14 @@
     <div class="form-row">
       <div class="form-group"><label>Ad *</label><input id="m-ad" placeholder="Ad"></div>
       <div class="form-group"><label>Soyad *</label><input id="m-soyad" placeholder="Soyad"></div>
-      <div class="form-group"><label>T.C. Kimlik No</label><input id="m-tc" placeholder="11 haneli TC No" maxlength="11"></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label>Uyruk</label><select id="m-uyruk" onchange="muvUyrukDegis(this.value)"><option value="TC">T.C.</option><option value="yabanci">Yabancı Uyruklu</option></select></div>
-      <div class="form-group"><label>Pasaport No (yabancı)</label><input id="m-pasaport"></div>
+      <div class="form-group" id="m-kimlik-grup" style="position:relative;min-height:62px">
+        <label id="m-kimlik-label">T.C. Kimlik No</label>
+        <input id="m-tc" placeholder="11 haneli TC No" maxlength="11" style="position:absolute;width:100%;top:22px;left:0">
+        <input id="m-pasaport" placeholder="Pasaport No" style="position:absolute;width:100%;top:22px;left:0;display:none">
+      </div>
     </div>
     <div class="form-row">
       <div class="form-group"><label>Doğum Tarihi</label><input type="date" id="m-dogum"></div>
@@ -2123,15 +2126,17 @@
   <!-- Gerçek Kişi Alanları -->
   <div id="kt-gercek-alanlari">
     <div class="form-row">
-      <div class="form-group"><label>TC Kimlik No</label><input id="kt-tc" placeholder="11 haneli TC kimlik no" maxlength="11"></div>
-      <div class="form-group"><label>Doğum Tarihi</label><input type="date" id="kt-dogum"></div>
-    </div>
-    <div class="form-row">
       <div class="form-group"><label>Uyruk</label>
         <select id="kt-uyruk" onchange="ktUyrukDegis(this.value)"><option value="TC">T.C.</option><option value="yabanci">Yabancı Uyruklu</option></select>
       </div>
-      <div class="form-group"><label>Pasaport No (yabancı)</label><input id="kt-pasaport" style="display:none"></div>
+      <div class="form-group" id="kt-kimlik-grup" style="position:relative;min-height:62px">
+        <label id="kt-kimlik-label">TC Kimlik No</label>
+        <input id="kt-tc" placeholder="11 haneli TC kimlik no" maxlength="11" style="position:absolute;width:100%;top:22px;left:0">
+        <input id="kt-pasaport" placeholder="Pasaport No" style="position:absolute;width:100%;top:22px;left:0;display:none">
+      </div>
     </div>
+    <div class="form-row">
+      <div class="form-group"><label>Doğum Tarihi</label><input type="date" id="kt-dogum"></div>
     <div class="form-row">
       <div class="form-group"><label>Doğum Yeri</label><input id="kt-dogum-yeri" placeholder="Şehir / Ülke"></div>
       <div class="form-group"><label>Meslek</label>

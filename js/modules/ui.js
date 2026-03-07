@@ -602,15 +602,18 @@ function spotlightAra(q) {
 // DİNAMİK FORM FONKSİYONLARI
 // ================================================================
 function muvUyrukDegis(uyruk) {
-  const tcGrup = document.getElementById('m-tc')?.closest('.form-group');
-  const pasGrup = document.getElementById('m-pasaport')?.closest('.form-group');
-  if (!tcGrup || !pasGrup) return;
+  const tcEl  = document.getElementById('m-tc');
+  const pasEl = document.getElementById('m-pasaport');
+  const lbl   = document.getElementById('m-kimlik-label');
+  if (!tcEl || !pasEl) return;
   if (uyruk === 'yabanci') {
-    tcGrup.style.display = 'none';
-    pasGrup.style.display = 'block';
+    tcEl.style.display  = 'none';
+    pasEl.style.display = 'block';
+    if (lbl) lbl.textContent = 'Pasaport No';
   } else {
-    tcGrup.style.display = 'block';
-    pasGrup.style.display = 'none';
+    tcEl.style.display  = 'block';
+    pasEl.style.display = 'none';
+    if (lbl) lbl.textContent = 'T.C. Kimlik No';
   }
 }
 
@@ -713,15 +716,18 @@ function muvWidgetDoldur(muvId, araId, listeId, hiddenId, gosterId) {
 
 // Karşı taraf form dinamikleri
 function ktUyrukDegis(uyruk) {
-  const tcGrup = document.getElementById('kt-tc')?.closest('.form-group');
+  const tcEl  = document.getElementById('kt-tc');
   const pasEl = document.getElementById('kt-pasaport');
-  if (!tcGrup || !pasEl) return;
+  const lbl   = document.getElementById('kt-kimlik-label');
+  if (!tcEl || !pasEl) return;
   if (uyruk === 'yabanci') {
-    tcGrup.style.display = 'none';
+    tcEl.style.display  = 'none';
     pasEl.style.display = 'block';
+    if (lbl) lbl.textContent = 'Pasaport No';
   } else {
-    tcGrup.style.display = 'block';
+    tcEl.style.display  = 'block';
     pasEl.style.display = 'none';
+    if (lbl) lbl.textContent = 'TC Kimlik No';
   }
 }
 

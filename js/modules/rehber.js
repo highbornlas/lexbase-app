@@ -132,7 +132,7 @@ function muvModalDataDoldur(m){
   muvTipSec(m.tip||'gercek');
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v||'';};
   set('m-ad',m.ad);set('m-tc',m.tc);set('m-dogum',m.dogum);set('m-pasaport',m.pasaport);set('m-meslek',m.meslek);
-  const ur=document.getElementById('m-uyruk');if(ur)ur.value=m.uyruk||'T.C.';
+  const ur=document.getElementById('m-uyruk');if(ur){ur.value=m.uyruk||'T.C.';muvUyrukDegis(ur.value);}
   set('m-unvan',m.unvan||m.ad);
   const st=document.getElementById('m-sirket-tur');if(st)st.value=m.sirketTur||'A.Ş.';
   set('m-vergino',m.vergiNo);set('m-vergidairesi',m.vergiDairesi);set('m-mersis',m.mersis);set('m-ticaretsicil',m.ticaretSicil);
