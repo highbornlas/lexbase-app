@@ -121,3 +121,68 @@ function silmeOnay(oge, detay) {
     { onayText: 'Evet, Sil', tehlikeli: true }
   );
 }
+
+// ================================================================
+// MODAL Z-INDEX & STACKING FIX
+// ================================================================
+// Sorun: Tüm modal-overlay elementleri <main> içinde.
+// <main>'in overflow-y:auto ve flex layout'u bazı tarayıcılarda
+// stacking context oluşturup fixed-position modalların arkada
+// kalmasına neden olabiliyor.
+//
+// Çözüm: Modal '.open' class'ı aldığında otomatik olarak
+// document.body'ye taşı. Kapandığında geri koy.
+// ================================================================
+(function() {
+  const _modalOrigins = new WeakMap();
+
+  function modalBodyeTasi(overlay) {
+    if (overlay.parentNode === document.body) return;
+    _modalOrigins.set(overlay, {
+      parent: overlay.parentNode,
+      next: overlay.nextSibling
+    });
+    document.body.appendChild(overlay);
+  }
+
+  function modalGeriKoy(overlay) {
+    const origin = _modalOrigins.get(overlay);
+    if (!origin || !origin.parent) return;
+    if (origin.parent.isConnected) {
+      if (origin.next && origin.next.parentNode === origin.parent) {
+        origin.parent.insertBefore(overlay, origin.next);
+      } else {
+        origin.parent.appendChild(overlay);
+      }
+    }
+    _modalOrigins.delete(overlay);
+  }
+
+  const observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(m) {
+      if (m.type !== 'attributes' || m.attributeName !== 'class') return;
+      const el = m.target;
+      if (!el.classList || !el.classList.contains('modal-overlay')) return;
+
+      if (el.classList.contains('open')) {
+        modalBodyeTasi(el);
+      } else {
+        setTimeout(function() { modalGeriKoy(el); }, 250);
+      }
+    });
+  });
+
+  function baslat() {
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['class'],
+      subtree: true
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', baslat);
+  } else {
+    baslat();
+  }
+})();

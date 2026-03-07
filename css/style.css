@@ -2826,3 +2826,17 @@ select:focus, textarea:focus {
     grid-template-columns: 1fr;
   }
 }
+
+/* ================================================================
+   MODAL STACKING FIX — body seviyesine taşınan modallar için
+   ================================================================ */
+body > .modal-overlay {
+  z-index: 10000 !important;
+}
+body > .modal-overlay.open {
+  display: flex !important;
+}
+/* İç içe modal: ikinci modal birincinin üstünde */
+body > .modal-overlay.open ~ .modal-overlay.open {
+  z-index: 10010 !important;
+}
