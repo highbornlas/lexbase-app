@@ -52,7 +52,7 @@ function openPersonelModal() {
   document.getElementById('p-sifre-label').textContent = 'Şifre *';
   document.getElementById('hesap-mevcut-bilgi').style.display = 'none';
   // Formu temizle
-  ['p-ad','p-tel','p-email','p-tc','p-baro-sicil','p-notlar','p-hesap-sifre','p-hesap-sifre2','p-hesap-kadi'].forEach(id=>{
+  ['p-ad','p-tel','p-email','p-tc','p-baro-sicil','p-notlar'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
   document.getElementById('p-rol').value = 'avukat';
@@ -87,13 +87,9 @@ function openPersonelDuzenle(id) {
     const el = document.getElementById('hesap-mevcut-bilgi');
     el.style.display = '';
     el.innerHTML = `✅ Mevcut hesap: <strong>${p.hesap.email}</strong>`;
-    document.getElementById('p-hesap-kadi').value = p.hesap?.kullanici_adi || '';
   } else {
     document.getElementById('hesap-mevcut-bilgi').style.display = 'none';
-    document.getElementById('p-hesap-kadi').value = p.hesap?.kullanici_adi || '';
   }
-  document.getElementById('p-hesap-sifre').value = '';
-  document.getElementById('p-hesap-sifre2').value = '';
   // Yetkiler
   renderYetkiGrid(p.rol, p.yetkiler);
   personelModalTab('bilgi', document.getElementById('pmt-bilgi'));
@@ -158,12 +154,7 @@ async function savePersonel() {
     notify('⚠️ Zorunlu alanları doldurun.'); return;
   }
   const rol = document.getElementById('p-rol').value;
-  const hesapKadi = (document.getElementById('p-hesap-kadi')?.value || '').trim().toLowerCase();
-  const hesapSifre = document.getElementById('p-hesap-sifre').value;
-  const hesapSifre2 = document.getElementById('p-hesap-sifre2').value;
-  if (hesapSifre && hesapSifre !== hesapSifre2) { notify('⚠️ Şifreler eşleşmiyor.'); return; }
-  if (hesapSifre && hesapSifre.length < 6) { notify('⚠️ Şifre en az 6 karakter olmalı.'); return; }
-  if (hesapKadi && !/^[a-z0-9_]{3,20}$/.test(hesapKadi)) { notify('⚠️ Kullanıcı adı geçersiz (3-20 karakter, harf/rakam/alt çizgi).'); return; }
+
 
   const tel = document.getElementById('p-tel').value.trim();
   const email = document.getElementById('p-email').value.trim();
@@ -195,56 +186,20 @@ async function savePersonel() {
       notify('✅ Personel güncellendi');
 
     } else {
-      // Yeni personel — büro sahibinin emailine bağlı internal hesap
-      if (!hesapKadi) { notify('⚠️ Personel için kullanıcı adı zorunlu.'); btn.disabled=false; btn.textContent='💾 Kaydet'; return; }
-      if (!hesapSifre) { notify('⚠️ Yeni personel için şifre zorunlu.'); btn.disabled=false; btn.textContent='💾 Kaydet'; return; }
+      // Yeni personel — davet e-postası gönder
+      if (!email) { notify('⚠️ Çalışanın e-posta adresi zorunlu.'); btn.disabled=false; btn.textContent='💾 Kaydet'; return; }
+      if (!limitKontrol('personel')) return;
 
-      // Kullanıcı adı müsait mi?
-      const { data: kadiMevcut } = await sb.from('kullanicilar').select('id').eq('kullanici_adi', hesapKadi).maybeSingle();
-      if (kadiMevcut) { notify('⚠️ Bu kullanıcı adı zaten kullanımda.'); btn.disabled=false; btn.textContent='💾 Kaydet'; return; }
+      const davetSonuc = await sbCalisanDavet(email, ad, rol, yetkiler);
 
-      // Büro sahibinin e-postasını al (buro_email = giriş e-postası)
-      const { data: sahipKul } = await sb.from('kullanicilar').select('buro_email, email').eq('id', currentUser.id).single();
-      const buroEmail = sahipKul?.buro_email || sahipKul?.email || currentUser.email;
-
-      // Internal fake email oluştur — Supabase Auth'a kayıt için
-      const internalEmail = hesapKadi + '+' + currentBuroId.substring(0,8) + '@emd-hukuk.internal';
-
-      // Supabase Auth'a personel hesabı ekle
-      const { data: authData, error: authErr } = await sb.auth.signUp({
-        email: internalEmail,
-        password: hesapSifre,
-        options: { data: { ad, kullanici_adi: hesapKadi } }
-      });
-      if (authErr) throw authErr;
-
-      const newAuthId = authData.user?.id;
-      if (!newAuthId) throw new Error('Kullanıcı ID alınamadı');
-
-      // kullanicilar tablosuna ekle
-      if (currentBuroId) {
-        const { error: dbErr } = await sb.from('kullanicilar').insert({
-          auth_id: newAuthId,
-          buro_id: currentBuroId,
-          ad: ad, rol,
-          email: email,            // personelin gerçek e-postası (iletişim)
-          auth_email: internalEmail, // Supabase Auth'taki email
-          buro_email: buroEmail,    // giriş sırasında kullanılacak büro e-postası
-          kullanici_adi: hesapKadi,
-          telefon: tel, tc_kimlik: tc, baro_sicil: baroSicil,
-          baslama_tarihi: baslama, durum, notlar, yetkiler,
-        });
-        if (dbErr) throw dbErr;
-      }
-
-      if(!limitKontrol('personel')) return;
-      const yeniPersonelId = newAuthId;
       state.personel.push({
-        id: yeniPersonelId, ad, rol, tel, email, tc, baroSicil, baslama, durum, notlar, yetkiler,
-        hesap: { kullanici_adi: hesapKadi, buro_email: buroEmail },
+        id: davetSonuc.userId || uid(),
+        ad, rol, tel, email, tc, baroSicil, baslama,
+        durum: 'davet_gonderildi', notlar, yetkiler,
+        hesap: { davet: true },
       });
       addAktiviteLog('Personel Eklendi', `${ad} | ${rol}`, 'Personel');
-      notify('✅ Personel eklendi ve giriş hesabı oluşturuldu');
+      notify('✅ ' + ad + ' adresine davet e-postası gönderildi. Link ile şifresini belirleyecek.');
     }
 
     saveData();

@@ -12,70 +12,43 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // AUTH
 // ================================================================
 
-// Ana hesap kaydı: email + kullaniciAdi + sifre + ad
-async function sbKayitOl(email, sifre, ad, kullaniciAdi) {
+// Büro sahibi kaydı: email + sifre + ad
+async function sbKayitOl(email, sifre, ad) {
   const { data, error } = await sb.auth.signUp({
     email, password: sifre,
-    options: { data: { ad, kullanici_adi: kullaniciAdi } }
+    options: { data: { ad } }
   });
   if (error) throw error;
-  // Trigger handle_new_user çalışınca kullanici_adi yazılır (2sn bekle)
-  if (data.user && kullaniciAdi) {
-    setTimeout(async () => {
-      await sb.from('kullanicilar')
-        .update({ kullanici_adi: kullaniciAdi, buro_email: email })
-        .eq('auth_id', data.user.id);
-    }, 2500);
+  return data;
+}
+
+async function sbGirisYap(email, sifre) {
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: sifre });
+  if (error) {
+    if (error.message.includes('Invalid login credentials'))
+      throw new Error('E-posta veya şifre hatalı.');
+    throw error;
   }
   return data;
 }
 
-// Giriş: 3 yol desteklenir
-// 1. Büro sahibi: email + kullaniciAdi + sifre
-// 2. Personel: buroEmail + kullaniciAdi + sifre (internal email ile)
-// 3. Fallback: sadece email + sifre (eski kayıtlar için)
-async function sbGirisYap(email, kullaniciAdi, sifre) {
-  // 1. Önce tablo üzerinden kullanıcı adı + buro_email ile bul
-  if (kullaniciAdi) {
-    const { data: kul } = await sb.from('kullanicilar')
-      .select('auth_email, kullanici_adi, buro_email')
-      .eq('kullanici_adi', kullaniciAdi.toLowerCase())
-      .maybeSingle();
-
-    if (kul) {
-      // Kullanıcı adı bulundu — auth_email veya buro_email ile gir
-      const authEmail = kul.auth_email || kul.buro_email || email;
-      const { data, error } = await sb.auth.signInWithPassword({ email: authEmail, password: sifre });
-      if (!error) return data;
-      // auth_email yanlışsa email ile de dene
-      const { data: data2, error: err2 } = await sb.auth.signInWithPassword({ email, password: sifre });
-      if (!err2) return data2;
-      throw new Error('Şifre hatalı.');
-    }
-
-    // Kullanıcı adı tabloda yok — buro_email + kullanici_adi eksik olabilir (eski kayıt)
-    // Direkt email + şifre ile dene
-    const { data, error } = await sb.auth.signInWithPassword({ email, password: sifre });
-    if (!error) {
-      // Giriş başarılı — bu kullanıcının tablosunu güncelle (eksik alanları doldur)
-      setTimeout(async () => {
-        const { data: { user } } = await sb.auth.getUser();
-        if (user) {
-          await sb.from('kullanicilar')
-            .update({ kullanici_adi: kullaniciAdi.toLowerCase(), buro_email: email, auth_email: email })
-            .eq('auth_id', user.id)
-            .is('kullanici_adi', null); // sadece boşsa güncelle
-        }
-      }, 1000);
-      return data;
-    }
-    throw new Error('E-posta, kullanıcı adı veya şifre hatalı.');
-  }
-
-  // Fallback: direkt email ile giriş
-  const { data, error } = await sb.auth.signInWithPassword({ email, password: sifre });
-  if (error) throw error;
-  return data;
+// Çalışan davet — Edge Function üzerinden (admin oturumunu bozmaz)
+async function sbCalisanDavet(email, ad, rol, yetkiler = {}) {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) throw new Error('Oturum bulunamadı');
+  const EDGE_FN_URL = `${SUPABASE_URL}/functions/v1`;
+  const res = await fetch(`${EDGE_FN_URL}/invite-user`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`,
+      'apikey': SUPABASE_KEY,
+    },
+    body: JSON.stringify({ email, ad, rol, yetkiler })
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Davet gönderilemedi');
+  return json;
 }
 
 async function sbCikisYap() {

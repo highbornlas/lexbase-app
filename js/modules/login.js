@@ -110,68 +110,43 @@ function gmHataTemizle() {
 
 async function gmGiris() {
   const email = document.getElementById('gm-email').value.trim();
-  const kullaniciAdi = document.getElementById('gm-kadi').value.trim().toLowerCase();
   const sifre = document.getElementById('gm-sifre').value;
-  if (!email || !kullaniciAdi || !sifre) return gmHata('E-posta, kullanıcı adı ve şifre gerekli.');
+  if (!email || !sifre) return gmHata('E-posta ve şifre gerekli.');
   const btn = document.querySelector('#gm-f-giris .gm-submit');
   btn.textContent = 'Giriş yapılıyor...'; btn.disabled = true;
   try {
-    await sbGirisYap(email, kullaniciAdi, sifre);
+    await sbGirisYap(email, sifre);
     btn.textContent = 'Giriş Yap'; btn.disabled = false;
     gmKapat();
   } catch(e) {
     btn.textContent = 'Giriş Yap'; btn.disabled = false;
-    gmHata(e.message || 'E-posta, kullanıcı adı veya şifre hatalı.');
+    gmHata(e.message || 'E-posta veya şifre hatalı.');
   }
 }
 
 async function gmKayit() {
-  const ad = document.getElementById('gm-kad').value.trim();
+  const ad    = document.getElementById('gm-kad').value.trim();
   const email = document.getElementById('gm-kemail').value.trim();
-  const kadi = document.getElementById('gm-kayit-kadi').value.trim().toLowerCase();
-  const sifre = document.getElementById('gm-ksifre').value;
+  const sifre  = document.getElementById('gm-ksifre').value;
   const sifre2 = document.getElementById('gm-ksifre2').value;
-  if (!ad || !email || !kadi || !sifre) return gmHata('Tüm alanları doldurun.');
-  if (!/^[a-z0-9_]{3,20}$/.test(kadi)) return gmHata('Kullanıcı adı 3-20 karakter, sadece harf/rakam/alt çizgi olmalı.');
+  if (!ad || !email || !sifre) return gmHata('Tüm alanları doldurun.');
   if (sifre.length < 6) return gmHata('Şifre en az 6 karakter olmalı.');
   if (sifre !== sifre2) return gmHata('Şifreler eşleşmiyor.');
-  // Kullanıcı adı müsait mi?
-  const { data: mevcutKadi } = await sb.from('kullanicilar').select('id').eq('kullanici_adi', kadi).maybeSingle();
-  if (mevcutKadi) return gmHata('Bu kullanıcı adı alınmış, başka bir tane deneyin.');
   const btn = document.querySelector('#gm-f-kayit .gm-submit');
   btn.textContent = 'Kayıt yapılıyor...'; btn.disabled = true;
   try {
-    await sbKayitOl(email, sifre, ad, kadi);
+    await sbKayitOl(email, sifre, ad);
     btn.textContent = 'Kayıt Ol & Başla →'; btn.disabled = false;
     gmTab('giris');
-    gmBasari('✅ Kayıt başarılı! Kullanıcı adınız: ' + kadi + ' — şimdi giriş yapın.');
-    // Giriş formunu otomatik doldur
+    gmBasari('✅ Kayıt başarılı! E-posta ve şifrenizle giriş yapın.');
     const emailEl = document.getElementById('gm-email');
-    const kadiEl = document.getElementById('gm-kadi');
     if (emailEl) emailEl.value = email;
-    if (kadiEl) kadiEl.value = kadi;
   } catch(e) {
     btn.textContent = 'Kayıt Ol & Başla →'; btn.disabled = false;
-    if (e.message && e.message.includes('already registered')) gmHata('Bu e-posta zaten kayıtlı.');
+    if (e.message && e.message.includes('already registered'))
+      gmHata('Bu e-posta zaten kayıtlı. Giriş yapın.');
     else gmHata('Hata: ' + e.message);
   }
-}
-
-// Kayıt: kullanıcı adı müsaitlik kontrolü (debounce)
-let _kadiTimer;
-async function kullaniciAdiKontrol(val, durumId) {
-  const el = document.getElementById(durumId);
-  if (!el) return;
-  val = val.toLowerCase();
-  if (val.length < 3) { el.textContent = ''; return; }
-  if (!/^[a-z0-9_]+$/.test(val)) { el.style.color='var(--red)'; el.textContent='❌ Geçersiz karakter'; return; }
-  el.textContent = '⏳';
-  clearTimeout(_kadiTimer);
-  _kadiTimer = setTimeout(async () => {
-    const { data } = await sb.from('kullanicilar').select('id').eq('kullanici_adi', val).maybeSingle();
-    if (data) { el.style.color='var(--red)'; el.textContent='❌ Bu kullanıcı adı alınmış'; }
-    else { el.style.color='var(--green)'; el.textContent='✓ Müsait'; }
-  }, 600);
 }
 
 
