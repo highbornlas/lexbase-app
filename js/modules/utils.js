@@ -162,12 +162,12 @@ const MRENK = {
   'Asliye Ceza': '#c0392b', 'Sulh Ceza': '#e74c3c', 'Ağır Ceza': '#922b21',
   'Çocuk': '#e67e22', 'İdare': '#1abc9c', 'Vergi': '#0e6655',
   'Bölge İdare': '#148f77', 'Bölge Adliye (İstinaf)': '#6c3483',
-  'Yargıtay': '#4a235a', 'Anayasa': '#1b2631', 'Diğer': '#566573'
+  'Yargıtay': '#4a235a', 'Temyiz (Yargıtay)': '#4a235a', 'Temyiz (Danıştay)': '#4a235a', 'Anayasa': '#1b2631', 'Diğer': '#566573'
 };
 
 const ARENK = {
   'İlk Derece': 'var(--blue)', 'İstinaf': 'var(--gold)',
-  'Yargıtay': '#8e44ad', 'Kesinleşti': 'var(--green)', 'Düşürüldü': 'var(--text-dim)'
+  'Temyiz (Yargıtay)': '#8e44ad', 'Temyiz (Danıştay)': '#8e44ad', 'Yargıtay': '#8e44ad', 'Kesinleşti': 'var(--green)', 'Düşürüldü': 'var(--text-dim)'
 };
 
 const IDRENK = {

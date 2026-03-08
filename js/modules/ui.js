@@ -122,15 +122,16 @@ function _saveKtMenfaatKontrol(d) {
   }
   _saveKtDevam(d);
 }
-function _saveKtDevam(d) {
+async function _saveKtDevam(d) {
   if(!state.karsiTaraflar)state.karsiTaraflar=[];
   const kt={id:uid(),sira:nextSira('karsiTaraflar'),...d};
   state.karsiTaraflar.push(kt);
   if (typeof LexSubmit !== 'undefined') {
     var ktBtn = document.querySelector('#kt-modal .btn-gold') || document.getElementById('kt-modal-btn');
-    LexSubmit.formKaydet({tablo:'karsiTaraflar', kayit:kt, modalId:'kt-modal', butonEl:ktBtn, basariMesaj:'✓ Karşı taraf kaydedildi',
+    var ok = await LexSubmit.formKaydet({tablo:'karsiTaraflar', kayit:kt, modalId:'kt-modal', butonEl:ktBtn, basariMesaj:'✓ Karşı taraf kaydedildi',
       renderFn:function(){ if(aktifRehberTab==='karsitaraflar')renderKarsiTaraflarListesi(); }
     });
+    if(!ok){state.karsiTaraflar.pop();return;}
   } else { saveData();closeModal('kt-modal');notify('✓ Karşı taraf kaydedildi'); }
   if(aktifRehberTab==='karsitaraflar')renderKarsiTaraflarListesi();
   if(_ktCtx){

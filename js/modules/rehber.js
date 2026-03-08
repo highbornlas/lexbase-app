@@ -47,6 +47,7 @@ function populateMuvSelects(){
 // ================================================================
 // ── Müvekkil Modal Yardımcıları ─────────────────────────────────
 var muvBankalar=[]; // [{banka,sube,iban,hesapNo,hesapAd}] — var kullanılmalı (bankaWidget.js window.muvBankalar'a erişir)
+var ktBankalar=[]; // Karşı taraf banka hesapları
 var muvModalMod='yeni'; // 'yeni' | 'duzenle'
 
 function muvTipSec(tip){
@@ -86,6 +87,30 @@ function renderMuvBankalar(){
   </div>`).join('');
 }
 
+function ktBankaEkle(data){
+  ktBankalar.push(data||{banka:'',sube:'',iban:'',hesapNo:'',hesapAd:''});
+  renderKtBankalar();
+}
+function ktBankaKaldir(idx){
+  ktBankalar.splice(idx,1);renderKtBankalar();
+}
+function renderKtBankalar(){
+  const el=document.getElementById('kt-banka-list');if(!el)return;
+  if(!ktBankalar.length){el.innerHTML='';return;}
+  el.innerHTML=ktBankalar.map((b,i)=>`
+  <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;position:relative">
+    <button type="button" onclick="ktBankaKaldir(${i})" style="position:absolute;top:8px;right:10px;background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:15px">✕</button>
+    <div style="font-size:10px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;font-weight:700">Banka Hesabı ${i+1}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div><label style="font-size:10px;color:var(--text-muted)">Banka</label><input value="${b.banka}" oninput="ktBankalar[${i}].banka=this.value" placeholder="Banka Adı" style="width:100%;margin-top:2px"></div>
+      <div><label style="font-size:10px;color:var(--text-muted)">Şube</label><input value="${b.sube}" oninput="ktBankalar[${i}].sube=this.value" placeholder="Şube Adı / No" style="width:100%;margin-top:2px"></div>
+      <div style="grid-column:1/-1"><label style="font-size:10px;color:var(--text-muted)">IBAN</label><input value="${b.iban}" oninput="ktBankalar[${i}].iban=this.value" placeholder="TR00 0000 0000 0000 0000 0000 00" style="width:100%;margin-top:2px;font-family:monospace;letter-spacing:1px"></div>
+      <div><label style="font-size:10px;color:var(--text-muted)">Hesap Adı</label><input value="${b.hesapAd}" oninput="ktBankalar[${i}].hesapAd=this.value" placeholder="Hesap sahibi adı" style="width:100%;margin-top:2px"></div>
+      <div><label style="font-size:10px;color:var(--text-muted)">Hesap No</label><input value="${b.hesapNo}" oninput="ktBankalar[${i}].hesapNo=this.value" placeholder="Hesap numarası" style="width:100%;margin-top:2px"></div>
+    </div>
+  </div>`).join('');
+}
+
 function muvModalSifirla(){
   const msoyad=document.getElementById('m-soyad');if(msoyad)msoyad.value='';
   ['m-ad','m-tc','m-pasaport','m-meslek','m-unvan','m-vergino','m-vergidairesi','m-mersis','m-ticaretsicil','m-yetkili-ad','m-yetkili-unvan','m-yetkili-tc','m-yetkili-tel','m-tel','m-mail','m-faks','m-web','m-adres','m-not'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
@@ -102,6 +127,7 @@ function muvModalDataOku(){
     // gerçek kişi
     tc: document.getElementById('m-tc').value.trim(),
     dogum: document.getElementById('m-dogum')?.value||'',
+    dogumYeri: document.getElementById('m-dogum-yeri')?.value.trim()||'',
     uyruk: document.getElementById('m-uyruk')?.value||'T.C.',
     pasaport: document.getElementById('m-pasaport').value.trim(),
     meslek: document.getElementById('m-meslek').value.trim(),
@@ -121,6 +147,7 @@ function muvModalDataOku(){
     mail: document.getElementById('m-mail').value.trim(),
     faks: document.getElementById('m-faks').value.trim(),
     web: document.getElementById('m-web').value.trim(),
+    uets: document.getElementById('m-uets')?.value.trim()||'',
     adres: document.getElementById('m-adres').value.trim(),
     bankalar: JSON.parse(JSON.stringify(muvBankalar)),
     not: document.getElementById('m-not').value.trim(),
@@ -131,13 +158,13 @@ function muvModalDataOku(){
 function muvModalDataDoldur(m){
   muvTipSec(m.tip||'gercek');
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v||'';};
-  set('m-ad',m.ad);set('m-tc',m.tc);set('m-dogum',m.dogum);set('m-pasaport',m.pasaport);set('m-meslek',m.meslek);
+  set('m-ad',m.ad);set('m-tc',m.tc);set('m-dogum',m.dogum);set('m-dogum-yeri',m.dogumYeri);set('m-pasaport',m.pasaport);set('m-meslek',m.meslek);
   const ur=document.getElementById('m-uyruk');if(ur){ur.value=m.uyruk||'T.C.';muvUyrukDegis(ur.value);}
   set('m-unvan',m.unvan||m.ad);
   const st=document.getElementById('m-sirket-tur');if(st)st.value=m.sirketTur||'A.Ş.';
   set('m-vergino',m.vergiNo);set('m-vergidairesi',m.vergiDairesi);set('m-mersis',m.mersis);set('m-ticaretsicil',m.ticaretSicil);
   set('m-yetkili-ad',m.yetkiliAd);set('m-yetkili-unvan',m.yetkiliUnvan);set('m-yetkili-tc',m.yetkiliTc);set('m-yetkili-tel',m.yetkiliTel);
-  set('m-tel',m.tel);set('m-mail',m.mail);set('m-faks',m.faks);set('m-web',m.web);set('m-adres',m.adres);set('m-not',m.not);
+  set('m-tel',m.tel);set('m-mail',m.mail);set('m-faks',m.faks);set('m-web',m.web);set('m-uets',m.uets);set('m-adres',m.adres);set('m-not',m.not);
   muvBankalar=JSON.parse(JSON.stringify(m.bankalar||[]));renderMuvBankalar();
 }
 
@@ -519,7 +546,8 @@ function ktModalSifirla(){
   ['kt-ad','kt-ad-tuzel','kt-tc','kt-dogum','kt-dogum-yeri','kt-meslek','kt-vergino','kt-vergidairesi','kt-mersis',
    'kt-yetkili-ad','kt-yetkili-unvan','kt-yetkili-tc','kt-yetkili-tel',
    'kt-tel','kt-faks','kt-mail','kt-uets',
-   'kt-adres','kt-banka','kt-iban','kt-acik'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});
+   'kt-adres','kt-acik'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});
+  ktBankalar=[];renderKtBankalar();
   const ku=document.getElementById('kt-uyruk');if(ku)ku.value='T.C.';
   const ks=document.getElementById('kt-sirkettur');if(ks)ks.value='A.Ş.';
   const km=document.getElementById('kt-meslek-sel');if(km)km.value='';
@@ -548,15 +576,18 @@ function ktModalDataOku(){
     vergiNo:document.getElementById('kt-vergino')?.value.trim()||'',
     vergiDairesi:document.getElementById('kt-vergidairesi')?.value.trim()||'',
     mersis:document.getElementById('kt-mersis')?.value.trim()||'',
+    pasaport:document.getElementById('kt-pasaport')?.value.trim()||'',
     yetkiliAd:document.getElementById('kt-yetkili-ad')?.value.trim()||'',
     yetkiliUnvan:document.getElementById('kt-yetkili-unvan')?.value.trim()||'',
+    yetkiliTc:document.getElementById('kt-yetkili-tc')?.value.trim()||'',
+    yetkiliTel:document.getElementById('kt-yetkili-tel')?.value.trim()||'',
+    ticaretSicil:document.getElementById('kt-ticaretsicil')?.value.trim()||'',
     tel:document.getElementById('kt-tel').value.trim(),
     faks:document.getElementById('kt-faks')?.value.trim()||'',
     mail:document.getElementById('kt-mail').value.trim(),
     uets:document.getElementById('kt-uets')?.value.trim()||'',
     adres:document.getElementById('kt-adres').value.trim(),
-    banka:document.getElementById('kt-banka')?.value.trim()||'',
-    iban:document.getElementById('kt-iban')?.value.trim()||'',
+    bankalar:JSON.parse(JSON.stringify(ktBankalar.filter(b=>b.banka||b.iban))),
     aciklama:document.getElementById('kt-acik').value.trim(),
   };
 }
@@ -568,8 +599,19 @@ function ktModalDataDoldur(k){
   const ks=document.getElementById('kt-sirkettur');if(ks)ks.value=k.sirketTur||'A.Ş.';
   set('kt-vergino',k.vergiNo);set('kt-vergidairesi',k.vergiDairesi);set('kt-mersis',k.mersis);
   set('kt-yetkili-ad',k.yetkiliAd);set('kt-yetkili-unvan',k.yetkiliUnvan);
+  set('kt-yetkili-tc',k.yetkiliTc);set('kt-yetkili-tel',k.yetkiliTel);
+  set('kt-ticaretsicil',k.ticaretSicil);set('kt-pasaport',k.pasaport);set('kt-dogum-yeri',k.dogumYeri);
   set('kt-tel',k.tel);set('kt-faks',k.faks);set('kt-mail',k.mail);set('kt-uets',k.uets);
-  set('kt-adres',k.adres);set('kt-banka',k.banka);set('kt-iban',k.iban);set('kt-acik',k.aciklama);
+  set('kt-adres',k.adres);set('kt-acik',k.aciklama);
+  // Banka widget — eski (tekli banka/iban) ve yeni (bankalar dizisi) formatı destekle
+  if(k.bankalar&&k.bankalar.length){
+    ktBankalar=JSON.parse(JSON.stringify(k.bankalar));
+  } else if(k.banka||k.iban){
+    ktBankalar=[{banka:k.banka||'',sube:'',iban:k.iban||'',hesapNo:'',hesapAd:''}];
+  } else {
+    ktBankalar=[];
+  }
+  renderKtBankalar();
 }
 function openYeniKT(){
   _ktCtx=null;
@@ -956,10 +998,10 @@ function renderMdKimlik(){
   if(bitmisVek.length||yaklaVek.length){
     var uyariRenk=bitmisVek.length?'#e74c3c':'#e67e22';
     html+='<div style="background:rgba(231,76,60,.1);border:1px solid '+uyariRenk+';border-radius:var(--radius);padding:12px 16px;margin-top:0">';
-    if(bitmisVek.length)html+='<div style="color:#e74c3c;font-size:12px;font-weight:600">⛔ '+bitmisVek.length+' vekaletname süresi doldu!</div>';
-    if(yaklaVek.length)html+='<div style="color:#e67e22;font-size:12px;font-weight:600">⚠ '+yaklaVek.length+' vekaletname 30 gün içinde sona eriyor</div>';
+    if(bitmisVek.length)html+='<div style="color:#e74c3c;font-size:12px;font-weight:600">⛔ '+bitmisVek.length+' vekâletname süresi doldu!</div>';
+    if(yaklaVek.length)html+='<div style="color:#e67e22;font-size:12px;font-weight:600">⚠ '+yaklaVek.length+' vekâletname 30 gün içinde sona eriyor</div>';
     html+='<button class="btn btn-sm" style="margin-top:8px;background:'+uyariRenk+';color:#fff;border:none;padding:4px 10px;border-radius:5px;cursor:pointer" '
-      +'onclick="muvTab(\'iliskiler\',document.querySelectorAll(\'#page-muv-detay .tab\')[6])">Vekaletnamelere Git →</button></div>';
+      +'onclick="muvTab(\'iliskiler\',document.querySelectorAll(\'#page-muv-detay .tab\')[6])">Vekâletnamelere Git →</button></div>';
   }
 
   document.getElementById('mt-kimlik-content').innerHTML=html;
@@ -1146,11 +1188,11 @@ function renderMdIliskiler(){
   const bugun=today();
   html+=`<div class="section" style="margin-top:0">
     <div class="section-header">
-      <div class="section-title">📜 Vekaletname Takibi</div>
-      <button class="btn btn-gold btn-sm" onclick="openVekaletnameModal()">+ Vekaletname Ekle</button>
+      <div class="section-title">📜 Vekâletname Takibi</div>
+      <button class="btn btn-gold btn-sm" onclick="openVekaletnameModal()">+ Vekâletname Ekle</button>
     </div>`;
   if(!vekaletnameler.length){
-    html+=`<div class="empty" style="padding:32px"><div class="empty-icon">📜</div><p>Vekaletname kaydı yok</p></div>`;
+    html+=`<div class="empty" style="padding:32px"><div class="empty-icon">📜</div><p>Vekâletname kaydı yok</p></div>`;
   } else {
     html+=`<div style="padding:0"><table><thead><tr><th>Tarih</th><th>Noter</th><th>Yevmiye</th><th>Vekil</th><th>Geçerlilik</th><th>Özel Yetki</th><th>İlgili Dosya</th><th></th></tr></thead><tbody>`;
     vekaletnameler.forEach(v=>{
@@ -1194,13 +1236,13 @@ function openVekaletnameModal(editId){
     document.getElementById('vk-ozel').checked=!!v.ozel;
     document.getElementById('vk-ozel-alan').style.display=v.ozel?'block':'none';
     document.getElementById('vk-ozel-acik').value=v.ozelAcik||'';
-    document.getElementById('vk-modal-title').textContent='📜 Vekaletname Düzenle';
+    document.getElementById('vk-modal-title').textContent='📜 Vekâletname Düzenle';
     btn.style.display='inline-flex';
   } else {
     ['vk-tarih','vk-bitis','vk-noter','vk-yevmiye','vk-vekil','vk-dosyalar','vk-not','vk-ozel-acik'].forEach(i=>document.getElementById(i).value='');
     document.getElementById('vk-ozel').checked=false;
     document.getElementById('vk-ozel-alan').style.display='none';
-    document.getElementById('vk-modal-title').textContent='📜 Vekaletname Ekle';
+    document.getElementById('vk-modal-title').textContent='📜 Vekâletname Ekle';
     btn.style.display='none';
   }
   document.getElementById('vekaletname-modal').classList.add('open');
@@ -1225,11 +1267,11 @@ function saveVekaletname(){
   } else {
     muv.vekaletnameler.push({id:uid(),...veri});
   }
-  closeModal('vekaletname-modal');saveData();renderMdIliskiler();notify('✓ Vekaletname kaydedildi');
+  closeModal('vekaletname-modal');saveData();renderMdIliskiler();notify('✓ Vekâletname kaydedildi');
 }
 function deleteVekaletname(){
   if(!vekaletnameEditId)return;
-  if(!confirm('Vekaletname kaydını silmek istiyor musunuz?'))return;
+  if(!confirm('Vekâletname kaydını silmek istiyor musunuz?'))return;
   const muv=getMuv(aktivMuvId);if(!muv)return;
   muv.vekaletnameler=(muv.vekaletnameler||[]).filter(x=>x.id!==vekaletnameEditId);
   closeModal('vekaletname-modal');saveData();renderMdIliskiler();notify('Silindi');
@@ -1391,7 +1433,7 @@ function renderMdRapor(){
 
   <!-- Vekaletname Durumu -->
   ${(muv.vekaletnameler||[]).length?`<div class="section">
-    <div class="section-header"><div class="section-title">📜 Vekaletname Durumu</div></div>
+    <div class="section-header"><div class="section-title">📜 Vekâletname Durumu</div></div>
     <div class="section-body" style="padding:0">
       ${(muv.vekaletnameler||[]).map(v=>{
         const bitmis=v.bitis&&v.bitis<today();
@@ -1608,7 +1650,7 @@ function openBelgeModal(tur){
   document.getElementById('bg-file-lbl').textContent='Tıklayın veya sürükleyin';
   ['bg-ad','bg-acik'].forEach(i=>document.getElementById(i).value='');
   document.getElementById('bg-file').value='';
-  const t={sozlesme:'Sözleşme Yükle',vekaletname:'Vekaletname Yükle',diger:'Belge Yükle'};
+  const t={sozlesme:'Sözleşme Yükle',vekaletname:'Vekâletname Yükle',diger:'Belge Yükle'};
   document.getElementById('bg-title').textContent=t[tur]||'Belge Yükle';
   document.getElementById('belge-modal').classList.add('open');
 }
@@ -1630,7 +1672,7 @@ function renderBelgeler(){
   const el=document.getElementById('belge-list'),em=document.getElementById('belge-empty');
   const list=state.belgeler.filter(b=>b.muvId===aktivMuvId);
   if(!list.length){el.innerHTML='';em.style.display='block';return;}em.style.display='none';
-  const groups={sozlesme:'📋 Sözleşmeler',vekaletname:'🤝 Vekaletnameler',diger:'📄 Diğer'};
+  const groups={sozlesme:'📋 Sözleşmeler',vekaletname:'🤝 Vekâletnameler',diger:'📄 Diğer'};
   let html='';
   ['sozlesme','vekaletname','diger'].forEach(tur=>{
     const items=list.filter(b=>b.tur===tur);if(!items.length)return;

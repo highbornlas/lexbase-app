@@ -16,7 +16,7 @@ var EvrakUretici = (function () {
     { id: 'istinaf-dilekce', ad: 'İstinaf Dilekçesi', ikon: '📝', kat: 'Dilekçe', ctx: 'dava' },
     { id: 'temyiz-dilekce', ad: 'Temyiz Dilekçesi', ikon: '📝', kat: 'Dilekçe', ctx: 'dava' },
     { id: 'ihtarname', ad: 'İhtarname', ikon: '📩', kat: 'İhtarname', ctx: 'genel' },
-    { id: 'vekaletname', ad: 'Genel Vekaletname', ikon: '📜', kat: 'Vekaletname', ctx: 'genel' },
+    { id: 'vekaletname', ad: 'Genel Vekâletname', ikon: '📜', kat: 'Vekâletname', ctx: 'genel' },
     { id: 'icra-takip', ad: 'İcra Takip Talebi', ikon: '⚡', kat: 'İcra', ctx: 'icra' },
     { id: 'haciz-talep', ad: 'Haciz Talebi', ikon: '⚡', kat: 'İcra', ctx: 'icra' },
     { id: 'sulh-protokol', ad: 'Sulh Protokolü', ikon: '🤝', kat: 'Sözleşme', ctx: 'dava' },

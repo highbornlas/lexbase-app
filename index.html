@@ -1022,7 +1022,7 @@
   <div class="tab-panel" id="mt-kimlik"><div id="mt-kimlik-content"></div></div>
   <div class="tab-panel" id="mt-belgeler">
     <div class="section"><div class="section-header"><div class="section-title">Müvekkil Belgeleri</div>
-    <div style="display:flex;gap:6px"><button class="btn btn-outline btn-sm" onclick="openBelgeModal('sozlesme')">+ Sözleşme</button><button class="btn btn-outline btn-sm" onclick="openBelgeModal('vekaletname')">+ Vekaletname</button><button class="btn btn-outline btn-sm" onclick="openBelgeModal('diger')">+ Diğer</button></div></div>
+    <div style="display:flex;gap:6px"><button class="btn btn-outline btn-sm" onclick="openBelgeModal('sozlesme')">+ Sözleşme</button><button class="btn btn-outline btn-sm" onclick="openBelgeModal('vekaletname')">+ Vekâletname</button><button class="btn btn-outline btn-sm" onclick="openBelgeModal('diger')">+ Diğer</button></div></div>
     <div class="section-body"><div id="belge-list"></div><div class="empty" id="belge-empty" style="display:none"><div class="empty-icon">📄</div><p>Belge yok</p></div></div></div>
   </div>
   <div class="tab-panel" id="mt-harcamalar">
@@ -1071,7 +1071,7 @@
       <optgroup label="İdare"><option>İdare</option><option>Vergi</option><option>Bölge İdare</option></optgroup>
       <optgroup label="Üst"><option>Bölge Adliye (İstinaf)</option><option>Yargıtay</option><option>Anayasa</option><option>Diğer</option></optgroup>
     </select>
-    <select class="search-bar" style="width:145px" onchange="filterDavalar()" id="dav-fa"><option value="">Tüm Aşamalar</option><option>İlk Derece</option><option>İstinaf</option><option>Yargıtay</option><option>Kesinleşti</option><option>Düşürüldü</option></select>
+    <select class="search-bar" style="width:145px" onchange="filterDavalar()" id="dav-fa"><option value="">Tüm Aşamalar</option><option>İlk Derece</option><option>İstinaf</option><option>Temyiz (Yargıtay)</option><option>Temyiz (Danıştay)</option><option>Kesinleşti</option><option>Düşürüldü</option></select>
     <select class="search-bar" style="width:130px" onchange="filterDavalar()" id="dav-fd"><option value="">Tüm Durumlar</option><option>Aktif</option><option>Beklemede</option><option>Kapalı</option></select>
     <button class="btn btn-gold" onclick="openModal('dav-modal');setTimeout(()=>{const e=document.getElementById('d-no');if(e&&!e.value)e.value=autoNo('dava');Wizard.sifirla('dav-modal');},50)" style="margin-left:auto">+ Yeni Dava</button>
   </div>
@@ -2026,7 +2026,11 @@
     </div>
     <div class="form-row">
       <div class="form-group"><label>Doğum Tarihi</label><input type="date" id="m-dogum"></div>
+      <div class="form-group"><label>Doğum Yeri</label><input id="m-dogum-yeri" placeholder="Şehir / Ülke"></div>
+    </div>
+    <div class="form-row">
       <div class="form-group"><label>Meslek</label><select id="m-meslek-sel" onchange="muvMeslekSec(this.value)"><option value="">— Seçin —</option><option>Avukat</option><option>Doktor</option><option>Mühendis</option><option>Mimar</option><option>Öğretmen</option><option>Esnaf</option><option>Emekli</option><option>İşçi</option><option>Memur</option><option>Serbest Meslek</option><option>Yönetici</option><option value="diger">Diğer...</option></select><input id="m-meslek" placeholder="Meslek yazın" style="margin-top:6px;display:none"></div>
+      <div class="form-group"></div>
     </div>
   </div>
 
@@ -2065,6 +2069,10 @@
   <div class="form-row">
     <div class="form-group"><label>Faks</label><input id="m-faks"></div>
     <div class="form-group"><label>Web Sitesi</label><input id="m-web" placeholder="https://"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>UETS / KEP Adresi</label><input id="m-uets" placeholder="KEP adresi"></div>
+    <div class="form-group"></div>
   </div>
   <div class="form-group"><label>Adres</label><textarea id="m-adres" rows="2"></textarea></div>
 
@@ -2132,7 +2140,7 @@
 
 <!-- Vekaletname Takip Modal -->
 <div class="modal-overlay" id="vekaletname-modal"><div class="modal modal-lg">
-  <div class="modal-title" id="vk-modal-title">📜 Vekaletname Bilgisi</div>
+  <div class="modal-title" id="vk-modal-title">📜 Vekâletname Bilgisi</div>
   <div class="form-row">
     <div class="form-group"><label>Düzenlenme Tarihi</label><input type="date" id="vk-tarih"></div>
     <div class="form-group"><label>Geçerlilik Bitiş Tarihi</label><input type="date" id="vk-bitis"></div>
@@ -2220,8 +2228,8 @@
         <select id="d-asama" onchange="davaStatuDegisti()">
           <option value="İlk Derece">İlk Derece</option>
           <option value="İstinaf">İstinaf</option>
-          <option value="Yargıtay">Yargıtay</option>
-          <option value="Danıştay">Danıştay</option>
+          <option value="Temyiz (Yargıtay)">Temyiz (Yargıtay)</option>
+          <option value="Temyiz (Danıştay)">Temyiz (Danıştay)</option>
           <option value="Kesinleşti">Kesinleşti / Arşiv</option>
         </select>
       </div>
@@ -2394,7 +2402,7 @@
     </div>
     <div class="form-row">
       <div class="form-group"><label>MERSİS No</label><input id="kt-mersis" placeholder="0000-0000-0000-0000"></div>
-      <div class="form-group"></div>
+      <div class="form-group"><label>Ticaret Sicil No</label><input id="kt-ticaretsicil" placeholder="Ticaret sicil numarası"></div>
     </div>
     <div class="form-section-label">Yetkili Temsilci</div>
     <div class="form-row">
@@ -2420,11 +2428,11 @@
   <div class="form-group"><label>Adres</label><textarea id="kt-adres" rows="2"></textarea></div>
 
   <!-- ORTAK: BANKA -->
-  <div class="form-section-label">Banka Bilgileri <span style="font-weight:400;color:var(--text-dim)">(opsiyonel)</span></div>
-  <div class="form-row">
-    <div class="form-group"><label>Banka</label><input id="kt-banka" placeholder="Banka adı"></div>
-    <div class="form-group"><label>IBAN</label><input id="kt-iban" placeholder="TR00 0000 0000 0000 0000 0000 00" maxlength="32" style="font-family:monospace;letter-spacing:1px"></div>
+  <div class="form-section-label" style="display:flex;align-items:center;justify-content:space-between">
+    Banka Bilgileri <span style="font-weight:400;color:var(--text-dim)">(opsiyonel)</span>
+    <button type="button" class="btn btn-outline btn-sm" onclick="ktBankaEkle()">+ Hesap Ekle</button>
   </div>
+  <div id="kt-banka-list"></div>
 
   <!-- ORTAK: NOTLAR -->
   <div class="form-section-label">Notlar</div>
@@ -2610,7 +2618,7 @@
     <div class="form-group"></div>
   </div>
   <div class="form-row"><div class="form-group"><label>Esas No<span style="font-size:10px;color:var(--text-muted);margin-left:6px">İcra dairesi esas no</span></label><input id="i-esas"></div>
-  <div class="form-group"><label>Tür</label><select id="i-tur"><option>İlamlı İcra</option><option>İlamsız İcra</option><option>Kambiyo Senedi</option><option>İpoteğin Paraya Çevrilmesi</option><option>Nafaka İcrası</option><option>Diğer</option></select></div></div>
+  <div class="form-group"><label>Tür</label><select id="i-tur"><option>İlamlı İcra</option><option>İlamsız İcra (Genel Haciz Yolu)</option><option>Kambiyo Senetlerine Özgü Haciz Yoluyla İcra</option><option>İpoteğin Paraya Çevrilmesi</option><option>Nafaka İcrası</option><option>Kiralanan Taşınmazın Tahliyesi</option><option>Diğer</option></select></div></div>
   <div class="form-section-label">Alacak Bilgileri</div>
   <div class="form-row"><div class="form-group"><label>Takip Açılışı (₺) *</label><input type="number" id="i-alacak"></div><div class="form-group"><label>Tahsil Edilen (₺)</label><input type="number" id="i-tahsil" value="0"></div></div>
   <div class="form-row"><div class="form-group"><label>Faiz (%)</label><input type="number" id="i-faiz"></div><div class="form-group"><label>Alacak Türü</label><select id="i-atur"><option>Kira Alacağı</option><option>Borç / Senet</option><option>Tazminat</option><option>İşçilik Alacağı</option><option>Nafaka</option><option>Diğer</option></select></div></div>
@@ -2619,7 +2627,7 @@
     <div class="form-group">
       <label>Durum</label>
       <select id="i-durum" onchange="icraDurumDegis(this.value)">
-        <option value="derdest">Derdest</option>
+        <option value="derdest">Derdest (Görülmekte Olan)</option>
         <option value="itiraz_durduruldu">İtiraz Üzerine Durduruldu</option>
         <option value="infaz">İnfaz</option>
         <option value="infaz_haricen">İnfaz (Haricen Tahsil)</option>
@@ -2630,6 +2638,7 @@
     </div>
     <div class="form-group"><label>Takip Tarihi</label><input type="date" id="i-tarih"></div>
   </div>
+  <div class="form-group"><label>Durum Açıklaması</label><input id="i-durum-aciklama" placeholder="Durumla ilgili kısa açıklama..."></div>
   <div class="form-row">
     <div class="form-group"><label>Ödeme Emri Tarihi</label><input type="date" id="i-otarih"></div>
     <div class="form-group"><label>İtiraz Son Tarihi</label><input type="date" id="i-itarih"></div>
@@ -2797,7 +2806,7 @@
     <div class="form-group"><label>Hareket Türü *</label>
       <select id="th-tur" onchange="tahsilatTurChange()">
         <option value="tahsilat">💰 Tahsilat (Karşı Taraftan Alınan)</option>
-        <option value="akdi_vekalet">📋 Akdi Vekalet Ücreti (Müvekkil Ödemesi)</option>
+        <option value="akdi_vekalet">📋 Akdî Vekâlet Ücreti (Müvekkil Ödemesi)</option>
         <option value="hakediş">⚖️ Karşı Taraf Vekalet Hakedişi</option>
         <option value="aktarim">📤 Müvekkile Aktarım / Ödeme</option>
         <option value="iade">↩️ İade / Düzeltme</option>
@@ -2849,7 +2858,7 @@
     <div class="form-group"><label>Tarih</label><input type="date" id="b-tarih"></div>
   </div>
   <div class="form-row">
-    <div class="form-group"><label>Kategori</label><select id="b-kat"><option>Akdi Vekalet Ücreti</option><option>Avukatlık Hakedişi</option><option>Tahsilat (Karşı Taraf)</option><option>Masraf Alacağı (Bekliyor)</option><option>Akdi Vekalet Ücreti (Bekliyor)</option><option>Müvekkile Aktarım</option><option>Müvekkile Aktarım (Bekliyor)</option><option>Ofis Gideri</option><option>Personel</option><option>İade / Düzeltme</option><option>Danışmanlık</option><option>Ulaşım</option><option>Harç / Masraf</option><option>Diğer</option></select></div>
+    <div class="form-group"><label>Kategori</label><select id="b-kat"><option>Akdî Vekâlet Ücreti</option><option>Avukatlık Hakedişi</option><option>Tahsilat (Karşı Taraf)</option><option>Masraf Alacağı (Bekliyor)</option><option>Akdî Vekâlet Ücreti (Bekliyor)</option><option>Müvekkile Aktarım</option><option>Müvekkile Aktarım (Bekliyor)</option><option>Ofis Gideri</option><option>Personel</option><option>İade / Düzeltme</option><option>Danışmanlık</option><option>Ulaşım</option><option>Harç / Masraf</option><option>Diğer</option></select></div>
     <div class="form-group"><label>Tutar (₺) *</label><input type="number" id="b-tutar" placeholder="0.00"></div>
   </div>
   <div class="form-row">

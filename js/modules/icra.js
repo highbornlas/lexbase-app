@@ -4,7 +4,8 @@
 // ================================================================
 
 function saveIcra(){
-  const no=document.getElementById('i-no').value.trim(),muvId=document.getElementById('i-muv').value,borclu=document.getElementById('i-borclu').value.trim();
+  const no=document.getElementById('i-no').value.trim(),muvId=document.getElementById('i-muv').value;
+  let borclu=document.getElementById('i-borclu').value.trim();
   const alacak=parseFloat(document.getElementById('i-alacak').value);
   if(!zorunluKontrol([
     {id:'i-no', deger:no, label:'Dosya No'},
@@ -14,15 +15,25 @@ function saveIcra(){
   ])){notify('⚠️ Zorunlu alanları doldurun.');return;}
   if(!limitKontrol('icra')) return;
   const karsavId=document.getElementById('i-karsav-id').value;
+  // Karşı tarafları topla (çoklu karşı taraf desteği)
+  const karsiIds = typeof icraKarsiTaraflariTopla === 'function' ? icraKarsiTaraflariTopla() : [];
+  const karsiAdlar = karsiIds.map(function(kid){ return typeof getKTAd === 'function' ? getKTAd(kid) : ''; }).filter(Boolean);
+  // İlk karşı tarafı borclu alanına yaz (geriye uyumluluk)
+  if(karsiAdlar.length > 0 && !borclu) borclu = karsiAdlar[0];
   const yeniIcra = {
     id:uid(),sira:nextSira('icra'),no,muvId,borclu,btc:document.getElementById('i-btc').value.trim(),
     il:document.getElementById('i-il').value,adliye:document.getElementById('i-adliye').value,daire:document.getElementById('i-daire').value.trim(),
     esas:document.getElementById('i-esas').value.trim(),tur:document.getElementById('i-tur').value,
     alacak,tahsil:parseFloat(document.getElementById('i-tahsil').value)||0,
     faiz:parseFloat(document.getElementById('i-faiz').value)||0,atur:document.getElementById('i-atur').value,
-    durum:document.getElementById('i-durum').value,tarih:document.getElementById('i-tarih').value,
+    durum:document.getElementById('i-durum').value,
+    durumAciklama:(document.getElementById('i-durum-aciklama')||{}).value||'',
+    tarih:document.getElementById('i-tarih').value,
     otarih:document.getElementById('i-otarih').value,itarih:document.getElementById('i-itarih').value,
+    karsiIds:karsiIds, karsiAdlar:karsiAdlar,
+    karsiId:karsiIds[0]||'', karsi:karsiAdlar[0]||borclu,
     karsavId,karsav:getVekAd(karsavId),
+    muvRol:(document.getElementById('i-muv-rol')||{}).value||'alacakli',
     davno:document.getElementById('i-davno').value.trim(),dayanak:document.getElementById('i-dayanak').value.trim(),
     not:document.getElementById('i-not').value.trim(),evraklar:[],notlar:[],harcamalar:[],anlasma:{}
   };
@@ -41,10 +52,19 @@ function _saveIcraDevam(yeniIcra) {
 }
 async function _saveIcraDevamAsync(yeniIcra) {
   if (yeniIcra.otarih && (!yeniIcra.itarih || yeniIcra.itarih === '')) {
-    var yasalSure = {'İlamsız İcra':7,'Kambiyo Senedi':5,'İlamlı İcra':7}[yeniIcra.tur] || 7;
-    var itarih = new Date(yeniIcra.otarih);
-    itarih.setDate(itarih.getDate() + yasalSure);
-    yeniIcra.itarih = itarih.toISOString().split('T')[0];
+    // İİK'ya göre itiraz/ödeme süreleri
+    var yasalSure = {
+      'İlamsız İcra (Genel Haciz Yolu)': 7,   // İİK md.62
+      'İlamsız İcra': 7,                       // geriye uyumluluk
+      'Kambiyo Senetlerine Özgü Haciz Yoluyla İcra': 5, // İİK md.168
+      'Kambiyo Senedi': 5,                     // geriye uyumluluk
+    }[yeniIcra.tur];
+    // İlamlı icrada klasik itiraz süresi yoktur (İİK md.33 farklı bir süreçtir)
+    if (yasalSure) {
+      var itarih = new Date(yeniIcra.otarih);
+      itarih.setDate(itarih.getDate() + yasalSure);
+      yeniIcra.itarih = itarih.toISOString().split('T')[0];
+    }
   }
 
   if (typeof LexSubmit !== 'undefined') {

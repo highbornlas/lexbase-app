@@ -53,6 +53,51 @@ function loadData() {
       if (!x.sira) { x.sira = sonraki++; }
     });
   });
+
+  // Terminoloji göçü — eski terimler yeni değerlere eşlenir
+  _terminolojiGoc();
+}
+
+/**
+ * Mevcut kayıtlardaki eski terminolojiyi yeni değerlere dönüştürür.
+ * Sadece bilinen eski değerleri günceller, bilinmeyen değerlere dokunmaz.
+ */
+function _terminolojiGoc() {
+  var degisti = false;
+
+  // Dava aşama göçü
+  var asamaMap = { 'Yargıtay': 'Temyiz (Yargıtay)', 'Danıştay': 'Temyiz (Danıştay)' };
+  (state.davalar || []).forEach(function(d) {
+    if (d.asama && asamaMap[d.asama]) {
+      d.asama = asamaMap[d.asama];
+      degisti = true;
+    }
+  });
+
+  // İcra türü göçü
+  var icraTurMap = {
+    'Kambiyo Senedi': 'Kambiyo Senetlerine Özgü Haciz Yoluyla İcra',
+    'İlamsız İcra': 'İlamsız İcra (Genel Haciz Yolu)'
+  };
+  (state.icra || []).forEach(function(i) {
+    if (i.tur && icraTurMap[i.tur]) {
+      i.tur = icraTurMap[i.tur];
+      degisti = true;
+    }
+  });
+
+  // Bütçe kategorisi göçü
+  var katMap = { 'Akdi Vekalet Ücreti': 'Akdî Vekâlet Ücreti' };
+  (state.butce || []).forEach(function(b) {
+    if (b.kat && katMap[b.kat]) {
+      b.kat = katMap[b.kat];
+      degisti = true;
+    }
+  });
+
+  if (degisti) {
+    console.info('[LexBase] Terminoloji göçü uygulandı.');
+  }
 }
 
 /**

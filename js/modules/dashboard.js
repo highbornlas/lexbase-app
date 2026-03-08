@@ -82,15 +82,16 @@ function renderDashboard(){
   // ── KPI hesaplamaları ──
   var muvSayi = state.muvekkillar.length;
   var aktifDava = state.davalar.filter(function(d){return d.durum === 'Aktif' || d.durum === 'Devam Ediyor';}).length;
-  var aktifIcra = state.icra.filter(function(i){return i.durum !== 'kapandi' && i.durum !== 'Kapandı';}).length;
+  var aktifIcra = state.icra.filter(function(i){return i.durum !== 'Kapandı';}).length;
   var aktifArab = (state.arabuluculuk||[]).filter(function(a){return a.durum !== 'Uzlaşma Sağlandı' && a.durum !== 'Dava Açıldı';}).length;
   var aktifDan = state.danismanlik.filter(function(d){return d.durum !== 'Tamamlandı' && d.durum !== 'İptal';}).length;
   var bekGorev = (state.todolar||[]).filter(function(td){return td.durum === 'Bekliyor' || td.durum === 'Devam Ediyor';}).length;
 
-  // Finansal
-  var yilG = state.butce.filter(function(b){return b.tur==='Gelir' && b.tarih && b.tarih.startsWith(yil);}).reduce(function(s,b){return s+b.tutar;},0);
-  var yilD = state.butce.filter(function(b){return b.tur==='Gider' && b.tarih && b.tarih.startsWith(yil);}).reduce(function(s,b){return s+b.tutar;},0);
-  var yilNet = yilG - yilD;
+  // Finansal — merkezi hesaplama (tüm kaynaklar: bütçe + dava/icra harcamaları + tahsilatlar + danışmanlık)
+  var yilFinans = typeof tumFinansHesapla === 'function' ? tumFinansHesapla({yil: yil}) : {gelir:0, gider:0, net:0};
+  var yilG = yilFinans.gelir;
+  var yilD = yilFinans.gider;
+  var yilNet = yilFinans.net;
 
   // İcra toplam alacak/tahsil
   var topAlacak = state.icra.reduce(function(s,i){return s+(i.alacak||0);},0);
@@ -178,9 +179,9 @@ function renderDashboard(){
     var maxVal = 1;
     var ayData = [];
     for (var ai = 0; ai < 12; ai++) {
-      var ayStr = yil + '-' + String(ai+1).padStart(2,'0');
-      var g = state.butce.filter(function(b){return b.tur==='Gelir' && b.tarih && b.tarih.startsWith(ayStr);}).reduce(function(s,b){return s+b.tutar;},0);
-      var d2 = state.butce.filter(function(b){return b.tur==='Gider' && b.tarih && b.tarih.startsWith(ayStr);}).reduce(function(s,b){return s+b.tutar;},0);
+      var ayFinans = typeof tumFinansHesapla === 'function' ? tumFinansHesapla({yil: yil, ay: ai}) : {gelir:0, gider:0};
+      var g = ayFinans.gelir;
+      var d2 = ayFinans.gider;
       if (g > maxVal) maxVal = g;
       if (d2 > maxVal) maxVal = d2;
       ayData.push({ay:aylar[ai], gelir:g, gider:d2, aktif:ai===ay});

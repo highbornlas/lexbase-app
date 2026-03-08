@@ -7,13 +7,14 @@ function saveDava(){
   let no=document.getElementById('d-no').value.trim();
   const konu=document.getElementById('d-konu').value.trim(),muvId=document.getElementById('d-muv').value;
   const derdest=(document.getElementById('d-derdest')||{}).value||'';
+  // Otomatik numara (boşsa üret)
+  if(!no){ no = autoNo('dava'); document.getElementById('d-no').value=no; }
   if(!zorunluKontrol([
+    {id:'d-no', deger:no, label:'Dosya No'},
     {id:'d-konu', deger:konu, label:'Konu'},
     {id:'d-muv', deger:muvId, label:'Müvekkil'},
   ])){notify('⚠️ Zorunlu alanları doldurun.');return;}
   if(!limitKontrol('dava')) return;
-  // Otomatik numara
-  if(!no) no = autoNo('dava');
   const yeniDava={
     id:uid(),sira:nextSira('davalar'),no,konu,muvId,
     il:document.getElementById('d-il').value,adliye:document.getElementById('d-adliye').value,mtur:document.getElementById('d-mtur').value,
@@ -67,7 +68,9 @@ async function _saveDavaDevamAsync(yeniDava) {
   } else {
     state.davalar.push(yeniDava);
     addLog(yeniDava.muvId,'Dava Eklendi', yeniDava.no+' | '+yeniDava.konu);
-    closeModal('dav-modal');saveData();renderDavalar();renderDavaCards();renderMdDavalar();updateBadges();notify('✓ Dava eklendi');
+    closeModal('dav-modal');saveData();renderDavalar();renderDavaCards();renderMdDavalar();updateBadges();
+    if(typeof refreshFinansViews==='function') refreshFinansViews({muvId:yeniDava.muvId});
+    notify('✓ Dava eklendi');
   }
 }
 
@@ -85,8 +88,8 @@ function openDavModalForMuv(){openModal('dav-modal');setTimeout(()=>{const e=doc
 
 function renderDavaCards(){
   const t=state.davalar.length,a=state.davalar.filter(d=>d.durum==='Aktif').length;
-  const is=state.davalar.filter(d=>d.asama==='İstinaf').length,yr=state.davalar.filter(d=>d.asama==='Yargıtay').length,ks=state.davalar.filter(d=>d.asama==='Kesinleşti').length;
-  document.getElementById('dav-cards').innerHTML=`<div class="card"><div class="card-label">Toplam</div><div class="card-value gold">${t}</div></div><div class="card"><div class="card-label">Aktif</div><div class="card-value green">${a}</div></div><div class="card"><div class="card-label">İstinaf</div><div class="card-value" style="color:#8e44ad">${is}</div></div><div class="card"><div class="card-label">Yargıtay</div><div class="card-value" style="color:#6c3483">${yr}</div></div><div class="card"><div class="card-label">Kesinleşmiş</div><div class="card-value" style="color:var(--text-muted)">${ks}</div></div>`;
+  const is=state.davalar.filter(d=>d.asama==='İstinaf').length,yr=state.davalar.filter(d=>d.asama&&d.asama.startsWith('Temyiz')||d.asama==='Yargıtay').length,ks=state.davalar.filter(d=>d.asama==='Kesinleşti').length;
+  document.getElementById('dav-cards').innerHTML=`<div class="card"><div class="card-label">Toplam</div><div class="card-value gold">${t}</div></div><div class="card"><div class="card-label">Aktif</div><div class="card-value green">${a}</div></div><div class="card"><div class="card-label">İstinaf</div><div class="card-value" style="color:#8e44ad">${is}</div></div><div class="card"><div class="card-label">Temyiz</div><div class="card-value" style="color:#6c3483">${yr}</div></div><div class="card"><div class="card-label">Kesinleşmiş</div><div class="card-value" style="color:var(--text-muted)">${ks}</div></div>`;
 }
 
 function filterDavalar(){
@@ -383,6 +386,9 @@ async function saveHarcama(){
   if(!hedefObj.harcamalar)hedefObj.harcamalar=[];
   hedefObj.harcamalar.push(h);
 
+  // İcra harcama → avans senkronizasyonu
+  if(hedefCtx==='icra' && typeof _icraHarcamaSync==='function') _icraHarcamaSync(hedefObj);
+
   if (typeof LexSubmit !== 'undefined') {
     var btn=document.querySelector('#harc-modal .btn-gold');
     var ok=await LexSubmit.formKaydet({ tablo:hedefTablo, kayit:hedefObj, modalId:'harc-modal', butonEl:btn, basariMesaj:'✓ Harcama eklendi',
@@ -396,6 +402,7 @@ async function saveHarcama(){
     if(hedefCtx==='dava'){renderDavaTabContent('harcamalar');renderDdCards(hedefObj);}
     else{renderIcraTabContent('harcamalar');renderIdCards(hedefObj);}
     if(aktifSekme==='muv'){renderMdHarcamalar();renderMdCards();}
+    if(typeof refreshFinansViews==='function') refreshFinansViews({dosyaTur:hedefCtx, dosyaId:hedefObj.id, muvId:hedefObj.muvId});
     notify('✓ Harcama eklendi');
   }
 }
@@ -442,7 +449,7 @@ let tahsilatCtx={};  // {type:'dava'|'icra', editId:null}
 
 const TH_TUR_LABEL={
   tahsilat:'💰 Tahsilat (Karşı Taraf)',
-  akdi_vekalet:'📋 Akdi Vekalet Ücreti',
+  akdi_vekalet:'📋 Akdî Vekâlet Ücreti',
   hakediş:'⚖️ Karşı Taraf Vekalet Hakedişi',
   aktarim:'📤 Müvekkile Aktarım',
   iade:'↩️ İade / Düzeltme',
@@ -636,7 +643,12 @@ async function saveTahsilatHareket(){
   } else {
     closeModal('tahsilat-modal');saveData();
     if(tahsilatCtx.type==='dava'){renderDavaTabContent('tahsilat');renderDdCards(getDava(aktivDavaId));}
-    else{renderIcraTabContent('tahsilat');renderIdCards(getIcra(aktivIcraId));}
+    else{
+      renderIcraTabContent('tahsilat');renderIdCards(getIcra(aktivIcraId));
+      // İcra tahsilat senkronizasyonu
+      if(typeof _icraTahsilatSync==='function') _icraTahsilatSync(obj);
+    }
+    if(typeof refreshFinansViews==='function') refreshFinansViews({dosyaTur:tahsilatCtx.type, dosyaId:tahsilatCtx.type==='dava'?aktivDavaId:aktivIcraId, muvId:obj.muvId});
     notify(tahsilatCtx.editId?'✓ Hareket güncellendi':'✓ Hareket eklendi');
   }
 }
@@ -664,7 +676,7 @@ function syncTahsilatBudget(obj, ctx){
     if(h.tur==='tahsilat'){
       state.butce.push({id:butId,tur:'Gelir',tarih:h.tarih,tutar:h.tutar,kat:'Tahsilat (Karşı Taraf)',muvId:obj.muvId,acik:`${obj.no} — ${h.acik||'Tahsilat'}`});
     } else if(h.tur==='akdi_vekalet'){
-      state.butce.push({id:butId,tur:'Gelir',tarih:h.tarih,tutar:h.tutar,kat:'Akdi Vekalet Ücreti',muvId:obj.muvId,acik:`${obj.no} — ${h.acik||'Akdi vekalet ücreti tahsilatı'}`});
+      state.butce.push({id:butId,tur:'Gelir',tarih:h.tarih,tutar:h.tutar,kat:'Akdî Vekâlet Ücreti',muvId:obj.muvId,acik:`${obj.no} — ${h.acik||'Akdî vekâlet ücreti tahsilatı'}`});
     } else if(h.tur==='hakediş'){
       state.butce.push({id:butId,tur:'Gelir',tarih:h.tarih,tutar:h.tutar,kat:'Avukatlık Hakedişi',muvId:obj.muvId,acik:`${obj.no} — ${h.acik||'Hakediş'}`});
     } else if(h.tur==='aktarim'){
@@ -709,7 +721,7 @@ function renderTahsilatTab(ctx, obj){
       ${topHakediş>0?`<div style="font-size:10px;margin-top:3px;color:${Math.abs(topHakediş-otomatikPay)<0.01?'var(--green)':'#e74c3c'}">${Math.abs(topHakediş-otomatikPay)<0.01?'✓ Kaydedildi':topHakediş<otomatikPay?`⚠ Eksik: ${fmt(otomatikPay-topHakediş)}`:`Fazla: ${fmt(topHakediş-otomatikPay)}`}</div>`:`<div style="font-size:10px;color:var(--text-dim);margin-top:3px">Hakediş kaydı yok</div>`}
     </div>`:''}
     <div class="card" style="border-color:#2ecc71">
-      <div class="card-label">Akdi Vekalet Ücreti</div>
+      <div class="card-label">Akdî Vekâlet Ücreti</div>
       <div class="card-value" style="color:#2ecc71">${fmt(topAkdiVekalet)}</div>
       ${muvKalanBorc>0.01?`<div style="font-size:10px;color:#e74c3c;margin-top:3px">Kalan: ${fmt(muvKalanBorc)}</div>`:`<div style="font-size:10px;color:var(--green);margin-top:3px">${topAkdiVekalet>0?'✓ Tamamlandı':'—'}</div>`}
     </div>
@@ -795,7 +807,7 @@ function renderTahsilatTab(ctx, obj){
     <div style="padding:11px 16px;border-top:1px solid var(--border);display:flex;gap:18px;flex-wrap:wrap;font-size:12px;background:var(--surface2);border-radius:0 0 var(--radius) var(--radius)">
       <span>Karşı Taraf Tahsilatı: <strong style="color:var(--green)">${fmt(topTahsil)}</strong></span>
       ${tahsilatPay?`<span>→ Avukatlık Payı (%${tahsilatPay.oran}): <strong style="color:var(--gold)">${fmt(otomatikPay)}</strong></span>`:''}
-      ${topAkdiVekalet>0?`<span>Akdi Vekalet: <strong style="color:#2ecc71">${fmt(topAkdiVekalet)}</strong></span>`:''}
+      ${topAkdiVekalet>0?`<span>Akdî Vekâlet: <strong style="color:#2ecc71">${fmt(topAkdiVekalet)}</strong></span>`:''}
       <span>Kayd. Hakediş: <strong style="color:var(--gold)">${fmt(topHakediş)}</strong></span>
       <span>Aktarılan: <strong style="color:var(--blue)">${fmt(topAktarim)}</strong></span>
       ${topIade>0?`<span>İade: <strong style="color:#e74c3c">${fmt(topIade)}</strong></span>`:''}

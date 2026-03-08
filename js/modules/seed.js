@@ -52,7 +52,7 @@ var LexSeed = (function () {
     {konu:'Ortaklığın Giderilmesi (İzale-i Şuyu)', mtur:'Sulh Hukuk', asama:'İlk Derece'},
     {konu:'Tüketici Hakem Heyeti İtirazı', mtur:'Tüketici', asama:'İlk Derece'},
     {konu:'Ayıplı Mal Tazminatı', mtur:'Tüketici', asama:'İlk Derece'},
-    {konu:'Haksız Fesih Tazminatı', mtur:'İş', asama:'Yargıtay'},
+    {konu:'Haksız Fesih Tazminatı', mtur:'İş', asama:'Temyiz (Yargıtay)'},
     {konu:'Miras Paylaşımı', mtur:'Sulh Hukuk', asama:'İlk Derece'},
     {konu:'Tapu İptal ve Tescil', mtur:'Asliye Hukuk', asama:'İstinaf'},
     {konu:'Kat Mülkiyeti Uyuşmazlığı', mtur:'Sulh Hukuk', asama:'İlk Derece'},

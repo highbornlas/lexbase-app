@@ -3,6 +3,87 @@
 // js/modules/finans.js
 // ================================================================
 
+// ── Merkezi Finansal Hesaplama ────────────────────────────────────
+// Tüm finansal kaynakları birleştirerek gelir/gider hesaplar.
+// filtre: { yil, ay, muvId } — hepsi opsiyonel
+// ay: 0-indexed (Ocak=0) — yalnızca yil ile birlikte kullanılır
+function tumFinansHesapla(filtre) {
+  filtre = filtre || {};
+  var yil = filtre.yil || '';
+  var ay = filtre.ay !== undefined ? filtre.ay : -1; // -1 = tüm aylar
+  var muvId = filtre.muvId || '';
+
+  var gelir = 0, gider = 0, kdv = 0;
+
+  // Tarih prefix oluştur (yil veya yil-ay)
+  var tarihPrefix = '';
+  if (yil && ay >= 0) {
+    tarihPrefix = yil + '-' + String(ay + 1).padStart(2, '0');
+  } else if (yil) {
+    tarihPrefix = yil;
+  }
+
+  function tarihUygun(tarih) {
+    if (!tarih) return !tarihPrefix; // tarih yoksa sadece filtresiz modda say
+    if (!tarihPrefix) return true;
+    return tarih.startsWith(tarihPrefix);
+  }
+
+  // 1. state.butce[] — Ana bütçe kayıtları
+  (state.butce || []).forEach(function(b) {
+    if (muvId && b.muvId !== muvId) return;
+    if (!tarihUygun(b.tarih)) return;
+    var tutar = parseFloat(b.tutar) || 0;
+    if (b.tur === 'Gelir') gelir += tutar;
+    else if (b.tur === 'Gider') gider += tutar;
+    kdv += parseFloat(b.kdvTutar) || 0;
+  });
+
+  // 2. state.finansIslemler[] — Yeni cari hesap sistemi
+  //    Çift sayımı önle: butce'den gelmiş kayıtları atla (_butceId varsa)
+  (state.finansIslemler || []).forEach(function(fi) {
+    if (fi._butceId) return; // butce'ye zaten yansımış
+    if (muvId && fi.muvId !== muvId) return;
+    if (!tarihUygun(fi.tarih)) return;
+    var tutar = parseFloat(fi.tutar) || 0;
+    if (fi.yon === 'alacak' || fi.yön === 'alacak') gelir += tutar;
+    else if (fi.yon === 'borc' || fi.yön === 'borc') gider += tutar;
+  });
+
+  // 3. Dava harcamaları → Gider
+  (state.davalar || []).forEach(function(d) {
+    if (muvId && d.muvId !== muvId) return;
+    (d.harcamalar || []).forEach(function(h) {
+      if (!tarihUygun(h.tarih)) return;
+      gider += parseFloat(h.tutar) || 0;
+    });
+  });
+
+  // 4. İcra harcamaları → Gider, tahsilatları → Gelir
+  (state.icra || []).forEach(function(i) {
+    if (muvId && i.muvId !== muvId) return;
+    (i.harcamalar || []).forEach(function(h) {
+      if (!tarihUygun(h.tarih)) return;
+      gider += parseFloat(h.tutar) || 0;
+    });
+    (i.tahsilatlar || []).forEach(function(t) {
+      if (t.tur !== 'tahsilat') return;
+      if (!tarihUygun(t.tarih)) return;
+      gelir += parseFloat(t.tutar) || 0;
+    });
+  });
+
+  // 5. Danışmanlık tahsil edilen ücretler → Gelir
+  (state.danismanlik || []).forEach(function(d) {
+    if (muvId && d.muvId !== muvId) return;
+    if (!tarihUygun(d.tarih)) return;
+    var tahsil = parseFloat(d.tahsilEdildi) || 0;
+    if (tahsil > 0) gelir += tahsil;
+  });
+
+  return { gelir: gelir, gider: gider, net: gelir - gider, kdv: kdv };
+}
+
 function renderButce() {
   const tb = document.getElementById('but-tbody'), em = document.getElementById('but-empty');
   const ft = document.getElementById('butce-filtre-tur')?.value || '';
@@ -46,12 +127,12 @@ function renderButce() {
     });
   }
 
-  // Özet kartlar
-  const tg = state.butce.filter(b => b.tur === 'Gelir').reduce((s, b) => s + b.tutar, 0);
-  const td_ = state.butce.filter(b => b.tur === 'Gider').reduce((s, b) => s + b.tutar, 0);
+  // Özet kartlar — parseFloat ile güvenli hesaplama
+  const tg = state.butce.filter(b => b.tur === 'Gelir').reduce((s, b) => s + (parseFloat(b.tutar)||0), 0);
+  const td_ = state.butce.filter(b => b.tur === 'Gider').reduce((s, b) => s + (parseFloat(b.tutar)||0), 0);
   const net = tg - td_;
-  const topKdv = state.butce.reduce((s, b) => s + (b.kdvTutar || 0), 0);
-  const bekleyen = state.butce.filter(b => b.kat && b.kat.includes('Bekliyor')).reduce((s, b) => s + b.tutar, 0);
+  const topKdv = state.butce.reduce((s, b) => s + (parseFloat(b.kdvTutar)||0), 0);
+  const bekleyen = state.butce.filter(b => b.kat && b.kat.includes('Bekliyor')).reduce((s, b) => s + (parseFloat(b.tutar)||0), 0);
 
   document.getElementById('b-gelir').textContent = fmt(tg);
   document.getElementById('b-gider').textContent = fmt(td_);
@@ -60,8 +141,8 @@ function renderButce() {
   document.getElementById('b-bekleyen').textContent = fmt(bekleyen);
 
   const now = new Date(), ayP = now.getFullYear() + '-' + (now.getMonth()+1).toString().padStart(2,'0');
-  const ayG = state.butce.filter(b => b.tur === 'Gelir' && b.tarih?.startsWith(ayP)).reduce((s, b) => s + b.tutar, 0);
-  const ayD = state.butce.filter(b => b.tur === 'Gider' && b.tarih?.startsWith(ayP)).reduce((s, b) => s + b.tutar, 0);
+  const ayG = state.butce.filter(b => b.tur === 'Gelir' && b.tarih?.startsWith(ayP)).reduce((s, b) => s + (parseFloat(b.tutar)||0), 0);
+  const ayD = state.butce.filter(b => b.tur === 'Gider' && b.tarih?.startsWith(ayP)).reduce((s, b) => s + (parseFloat(b.tutar)||0), 0);
   const ae = document.getElementById('b-ay'); ae.textContent = fmt(ayG - ayD); ae.style.color = (ayG-ayD) >= 0 ? 'var(--green)' : '#e74c3c';
 }
 
@@ -79,24 +160,20 @@ function renderMuvekkilBakiye() {
   const muvler = state.muvekkillar;
   if (!muvler.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">👤</div><p>Müvekkil yok</p></div>'; return; }
 
-  // ── Birleşik hesaplama: finansIslemler + butce + avanslar ──
+  // ── Birleşik hesaplama: tumFinansHesapla + avanslar ──
   let html = '';
   muvler.forEach(m => {
-    // Yeni sistem (finans_islemler)
-    const fi = (state.finansIslemler||[]).filter(i => i.muvId === m.id);
-    const fiBorc = fi.filter(i => i.yön === 'borc').reduce((s,i) => s + (i.tutar||0), 0);
-    const fiAlacak = fi.filter(i => i.yön === 'alacak').reduce((s,i) => s + (i.tutar||0), 0);
+    // Merkezi hesaplama (bütçe + finansIslemler + dava/icra harcamaları + tahsilatlar + danışmanlık)
+    const muvFinans = typeof tumFinansHesapla === 'function' ? tumFinansHesapla({muvId: m.id}) : {gelir:0, gider:0};
 
-    // Eski sistem (butce + avanslar) — geriye uyumluluk
-    const eskiGelir = state.butce.filter(b => b.muvId === m.id && b.tur === 'Gelir').reduce((s, b) => s + b.tutar, 0);
-    const eskiGider = state.butce.filter(b => b.muvId === m.id && b.tur === 'Gider').reduce((s, b) => s + b.tutar, 0);
+    // Avanslar — ayrı hesaplanır (cari hesap detayı için)
     const avanslar = (state.avanslar||[]).filter(a => a.muvId === m.id);
-    const avansAlinan = avanslar.filter(a => a.tur === 'Avans Alındı').reduce((s, a) => s + (a.tutar||0), 0);
-    const beklAlacak = avanslar.filter(a => a.durum === 'Bekliyor').reduce((s, a) => s + (a.tutar||0), 0);
+    const avansAlinan = avanslar.filter(a => a.tur === 'Avans Alındı').reduce((s, a) => s + (parseFloat(a.tutar)||0), 0);
+    const beklAlacak = avanslar.filter(a => a.durum === 'Bekliyor').reduce((s, a) => s + (parseFloat(a.tutar)||0), 0);
 
     // Birleşik
-    const topBorc = fiBorc + eskiGider;
-    const topAlacak = fiAlacak + eskiGelir + avansAlinan;
+    const topBorc = muvFinans.gider;
+    const topAlacak = muvFinans.gelir + avansAlinan;
     const bakiye = topAlacak - topBorc;
 
     const faturalar = (state.faturalar||[]).filter(f => f.muvId === m.id);
@@ -111,7 +188,7 @@ function renderMuvekkilBakiye() {
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
           <div>
             <div style="font-weight:600;font-size:14px">${m.ad}</div>
-            <div style="font-size:11px;color:var(--text-dim)">${fi.length + avanslar.length} işlem</div>
+            <div style="font-size:11px;color:var(--text-dim)">${avanslar.length + (state.butce||[]).filter(b=>b.muvId===m.id).length + (state.finansIslemler||[]).filter(i=>i.muvId===m.id).length} işlem</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center">
             <div style="text-align:right">
@@ -152,10 +229,10 @@ function renderFinansRapor() {
 
   let topG = 0, topD = 0, topKdv = 0;
   for (let i = 0; i < 12; i++) {
-    const ayStr = yil + '-' + String(i+1).padStart(2,'0');
-    const g = state.butce.filter(b => b.tur === 'Gelir' && b.tarih?.startsWith(ayStr)).reduce((s, b) => s + b.tutar, 0);
-    const d = state.butce.filter(b => b.tur === 'Gider' && b.tarih?.startsWith(ayStr)).reduce((s, b) => s + b.tutar, 0);
-    const kdv = state.butce.filter(b => b.tarih?.startsWith(ayStr)).reduce((s, b) => s + (b.kdvTutar||0), 0);
+    const ayFinans = typeof tumFinansHesapla === 'function' ? tumFinansHesapla({yil: yil, ay: i}) : {gelir:0, gider:0, kdv:0};
+    const g = ayFinans.gelir;
+    const d = ayFinans.gider;
+    const kdv = ayFinans.kdv;
     topG += g; topD += d; topKdv += kdv;
     const net = g - d;
     const satir = g === 0 && d === 0 ? `style="opacity:0.4"` : '';
