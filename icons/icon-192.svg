@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" rx="32" fill="#0D1117"/>
+  <rect x="12" y="12" width="168" height="168" rx="24" fill="#1a1917" stroke="#c9a84c" stroke-width="2"/>
+  <!-- Scales of justice -->
+  <g transform="translate(96,58)">
+    <line x1="0" y1="-20" x2="0" y2="30" stroke="#c9a84c" stroke-width="3" stroke-linecap="round"/>
+    <line x1="-35" y1="-12" x2="35" y2="-12" stroke="#c9a84c" stroke-width="3" stroke-linecap="round"/>
+    <!-- Left pan -->
+    <line x1="-35" y1="-12" x2="-35" y2="8" stroke="#c9a84c" stroke-width="2"/>
+    <path d="M-48,8 Q-35,22 -22,8" fill="none" stroke="#c9a84c" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- Right pan -->
+    <line x1="35" y1="-12" x2="35" y2="2" stroke="#c9a84c" stroke-width="2"/>
+    <path d="M22,2 Q35,16 48,2" fill="none" stroke="#c9a84c" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- Base -->
+    <rect x="-14" y="30" width="28" height="4" rx="2" fill="#c9a84c"/>
+  </g>
+  <!-- Text -->
+  <text x="96" y="130" text-anchor="middle" font-family="Georgia,serif" font-size="28" font-weight="700" fill="#c9a84c">LexBase</text>
+  <text x="96" y="150" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#8a8070" letter-spacing="2">HUKUK</text>
+</svg>

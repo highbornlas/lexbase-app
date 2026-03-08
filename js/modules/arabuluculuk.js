@@ -264,16 +264,28 @@ function saveArab(){
     if(!state.arabuluculuk)state.arabuluculuk=[];
     state.arabuluculuk.push(kayit);
   }
-  closeModal('arab-modal');saveData();renderArabuluculuk();updateBadges();
-  notify(editId?'✓ Güncellendi':'✓ Arabuluculuk dosyası oluşturuldu');
-  if(editId){openArabDetay(editId);}
+  if (typeof LexSubmit !== 'undefined') {
+    var abtn = document.querySelector('#arab-modal .btn-gold');
+    LexSubmit.formKaydet({tablo:'arabuluculuk', kayit:kayit, modalId:'arab-modal', butonEl:abtn,
+      basariMesaj:editId?'✓ Güncellendi':'✓ Arabuluculuk dosyası oluşturuldu',
+      renderFn:function(){ renderArabuluculuk();updateBadges();if(editId)openArabDetay(editId); }
+    });
+  } else {
+    closeModal('arab-modal');saveData();renderArabuluculuk();updateBadges();
+    notify(editId?'✓ Güncellendi':'✓ Arabuluculuk dosyası oluşturuldu');
+    if(editId)openArabDetay(editId);
+  }
 }
-function deleteArab(){
-  if(!confirm('Bu arabuluculuk dosyasını silmek istediğinize emin misiniz?'))return;
-  state.arabuluculuk=(state.arabuluculuk||[]).filter(a=>a.id!==aktivArabId);
-  closeModal('arab-modal');saveData();updateBadges();
-  showPage('arabuluculuk',document.getElementById('ni-arabuluculuk'));
-  notify('Silindi');
+async function deleteArab(){
+  if (typeof LexSubmit !== 'undefined') {
+    await LexSubmit.formSil({tablo:'arabuluculuk', id:aktivArabId, onayMesaj:'Bu arabuluculuk dosyasını silmek istediğinize emin misiniz?',
+      basariMesaj:'Silindi', renderFn:function(){ renderArabuluculuk();updateBadges();showPage('arabuluculuk',document.getElementById('ni-arabuluculuk')); }
+    });
+  } else {
+    if(!confirm('Bu arabuluculuk dosyasını silmek istediğinize emin misiniz?'))return;
+    state.arabuluculuk=(state.arabuluculuk||[]).filter(a=>a.id!==aktivArabId);
+    saveData();updateBadges();showPage('arabuluculuk',document.getElementById('ni-arabuluculuk'));notify('Silindi');
+  }
 }
 
 // DURUM MODAL
@@ -300,7 +312,7 @@ function saveArabDurum(){
   a.durum=document.getElementById('arab-yeni-durum').value;
   const davaId=document.getElementById('arab-ilgili-dava').value;
   if(davaId)a.ilgiliDavaId=davaId;
-  closeModal('arab-durum-modal');saveData();
+  closeModal('arab-durum-modal');saveData();renderArabuluculuk();if(aktivArabId)openArabDetay(aktivArabId);
   openArabDetay(aktivArabId);updateBadges();
   notify('✓ Durum güncellendi');
 }

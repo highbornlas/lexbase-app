@@ -67,7 +67,6 @@ async function _saveDavaDevamAsync(yeniDava) {
   } else {
     state.davalar.push(yeniDava);
     addLog(yeniDava.muvId,'Dava Eklendi', yeniDava.no+' | '+yeniDava.konu);
-    if(currentBuroId) saveToSupabase('davalar', yeniDava);
     closeModal('dav-modal');saveData();renderDavalar();renderDavaCards();renderMdDavalar();updateBadges();notify('✓ Dava eklendi');
   }
 }

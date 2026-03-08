@@ -49,7 +49,6 @@ function saveSure() {
       muvId: sure.muvId,
     };
     state.etkinlikler.push(etk);
-    if (currentBuroId) saveToSupabase('etkinlikler', etk);
   }
 
   saveData();
@@ -231,7 +230,6 @@ function dcAktar() {
       renk: '#2980b9', davaId, muvId,
     };
     state.etkinlikler.push(etk);
-    if (currentBuroId) saveToSupabase('etkinlikler', etk);
     eklenen++;
   });
 
@@ -527,28 +525,44 @@ function saveEtkinlik(){
     not:document.getElementById('t-not').value.trim(),
     yer:document.getElementById('t-yer').value.trim(),
     hatirlatma:document.getElementById('t-hatirlatma').value};
+  var kayit;
   if(takModalEditId){
     const e=state.etkinlikler.find(x=>x.id===takModalEditId);
-    if(e)Object.assign(e,veri);
+    if(e){ kayit=Object.assign({},e,veri); } else return;
   } else {
-    const _etk={id:uid(),...veri};
-    state.etkinlikler.push(_etk);
-    if(currentBuroId) saveToSupabase('etkinlikler',_etk);
+    kayit={id:uid(),...veri};
   }
-  closeModal('tak-modal');saveData();renderCalendar();updateBadges();
-  // Müvekkil planlama sekmesi açıksa güncelle
-  const planEl=document.getElementById('mt-planlama-content');
-  if(planEl&&planEl.innerHTML)renderMdPlanlama();
-  notify(takModalEditId?'✓ Güncellendi':'✓ Etkinlik eklendi');
-  takModalEditId=null;
+  if (typeof LexSubmit !== 'undefined') {
+    var eBtn=document.querySelector('#tak-modal .btn-gold');
+    LexSubmit.formKaydet({tablo:'etkinlikler', kayit:kayit, modalId:'tak-modal', butonEl:eBtn,
+      basariMesaj:takModalEditId?'✓ Güncellendi':'✓ Etkinlik eklendi',
+      renderFn:function(){
+        renderCalendar();updateBadges();renderDashboard();
+        var planEl2=document.getElementById('mt-planlama-content');
+        if(planEl2&&planEl2.innerHTML)renderMdPlanlama();
+        takModalEditId=null;
+      }
+    });
+  } else {
+    if(takModalEditId){const e2=state.etkinlikler.find(x=>x.id===takModalEditId);if(e2)Object.assign(e2,veri);}
+    else state.etkinlikler.push(kayit);
+    closeModal('tak-modal');saveData();renderCalendar();updateBadges();
+    var planEl=document.getElementById('mt-planlama-content');
+    if(planEl&&planEl.innerHTML)renderMdPlanlama();
+    notify(takModalEditId?'✓ Güncellendi':'✓ Etkinlik eklendi');takModalEditId=null;
+  }
 }
 
-function delEtkinlik(id){
-  state.etkinlikler=state.etkinlikler.filter(e=>e.id!==id);
-  saveData();renderCalendar();updateBadges();
-  const planEl=document.getElementById('mt-planlama-content');
-  if(planEl&&planEl.innerHTML)renderMdPlanlama();
-  notify('Silindi');
+async function delEtkinlik(id){
+  if (typeof LexSubmit !== 'undefined') {
+    await LexSubmit.formSil({tablo:'etkinlikler', id:id, basariMesaj:'Silindi',
+      renderFn:function(){ renderCalendar();updateBadges();renderDashboard();
+        var p=document.getElementById('mt-planlama-content');if(p&&p.innerHTML)renderMdPlanlama(); }
+    });
+  } else {
+    state.etkinlikler=state.etkinlikler.filter(e=>e.id!==id);
+    saveData();renderCalendar();updateBadges();notify('Silindi');
+  }
 }
 
 // ================================================================

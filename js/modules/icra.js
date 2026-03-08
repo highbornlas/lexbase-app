@@ -206,7 +206,7 @@ function openIcraDetay(icraId){
   }
 
   document.getElementById('id-meta').innerHTML=`${getMuvAd(i.muvId)} · ${[i.il,i.adliye,i.daire].filter(Boolean).join(' ')} · ${i.tur}${davaBilgi}`;
-  document.getElementById('id-edit-btn').onclick=function(){ notify('⚠️ Düzenleme yakında eklenecek'); };
+  document.getElementById('id-edit-btn').onclick=function(){ editIcraModal(icraId); };
   renderIdCards(i);
   document.querySelectorAll('#page-icra-detay .tab').forEach((t,idx)=>t.classList.toggle('active',idx===0));
   document.querySelectorAll('#page-icra-detay .tab-panel').forEach((p,idx)=>p.classList.toggle('active',idx===0));
@@ -271,6 +271,83 @@ function renderIcraTabContent(t){
 }
 
 // ================================================================
+// İCRA DÜZENLEME
+// ================================================================
+function editIcraModal(icraId) {
+  var i = getIcra(icraId); if (!i) return;
+  populateMuvSelects();
+  populateIlSelect('i-il', i.il || '');
+  if (i.il) populateAdliyeSelect('i-adliye', i.il, i.adliye || '');
+  // Alanları doldur
+  var fields = {'i-no':i.no,'i-daire':i.daire||'','i-esas':i.esas||'','i-alacak':i.alacak||'','i-tahsil':i.tahsil||0,'i-faiz':i.faiz||'','i-davno':i.davno||'','i-dayanak':i.dayanak||'','i-not':i.not||'','i-tarih':i.tarih||'','i-otarih':i.otarih||'','i-itarih':i.itarih||''};
+  Object.keys(fields).forEach(function(id) { var el = document.getElementById(id); if (el) el.value = fields[id]; });
+  // Select'ler
+  var turEl = document.getElementById('i-tur'); if (turEl) turEl.value = i.tur || 'İlamlı İcra';
+  var aturEl = document.getElementById('i-atur'); if (aturEl) aturEl.value = i.atur || '';
+  var durEl = document.getElementById('i-durum'); if (durEl) durEl.value = i.durum || 'derdest';
+  if (typeof icraDurumDegis === 'function') icraDurumDegis(i.durum);
+  // Müvekkil widget
+  setTimeout(function(){ muvWidgetDoldur(i.muvId, 'i-muv-ara', 'i-muv-liste', 'i-muv', 'i-muv-secili'); }, 50);
+  document.getElementById('i-muv').value = i.muvId;
+  // Karşı taraf vekili widget
+  ktWidgetTemizle('i-karsav-ara','i-karsav-liste','i-karsav-id','i-karsav-goster');
+  if (i.karsavId) vekWidgetDoldur(i.karsavId, 'i-karsav-ara', 'i-karsav-liste', 'i-karsav-id', 'i-karsav-goster');
+  // Borçlu — hidden input
+  document.getElementById('i-borclu').value = i.borclu || '';
+  document.getElementById('i-btc').value = i.btc || '';
+  // Kaydet butonunu düzenleme moduna al
+  var kaydetBtn = document.getElementById('icra-kaydet-btn');
+  if (kaydetBtn) {
+    kaydetBtn.onclick = function() { updateIcra(icraId); };
+    kaydetBtn.textContent = 'Güncelle';
+  }
+  document.getElementById('icra-modal-title').textContent = 'İcra Dosyası Düzenle';
+  openModal('icra-modal');
+}
+
+async function updateIcra(id) {
+  var i = getIcra(id); if (!i) return;
+  // Alanları güncelle
+  i.no = document.getElementById('i-no').value.trim();
+  i.muvId = document.getElementById('i-muv').value;
+  i.borclu = document.getElementById('i-borclu').value.trim();
+  i.btc = document.getElementById('i-btc').value.trim();
+  i.il = document.getElementById('i-il').value;
+  i.adliye = document.getElementById('i-adliye').value;
+  i.daire = document.getElementById('i-daire').value.trim();
+  i.esas = document.getElementById('i-esas').value.trim();
+  i.tur = document.getElementById('i-tur').value;
+  i.alacak = parseFloat(document.getElementById('i-alacak').value) || 0;
+  i.tahsil = parseFloat(document.getElementById('i-tahsil').value) || 0;
+  i.faiz = parseFloat(document.getElementById('i-faiz').value) || 0;
+  i.atur = document.getElementById('i-atur').value;
+  i.durum = document.getElementById('i-durum').value;
+  i.tarih = document.getElementById('i-tarih').value;
+  i.otarih = document.getElementById('i-otarih').value;
+  i.itarih = document.getElementById('i-itarih').value;
+  i.karsavId = document.getElementById('i-karsav-id').value;
+  i.karsav = getVekAd(i.karsavId);
+  i.davno = document.getElementById('i-davno').value.trim();
+  i.dayanak = document.getElementById('i-dayanak').value.trim();
+  i.not = document.getElementById('i-not').value.trim();
+
+  // Kaydet butonunu normal moda geri al
+  var kaydetBtn = document.getElementById('icra-kaydet-btn');
+  if (kaydetBtn) { kaydetBtn.onclick = function(){ saveIcra(); }; kaydetBtn.textContent = 'Kaydet'; }
+  document.getElementById('icra-modal-title').textContent = 'İcra Dosyası Ekle';
+
+  if (typeof LexSubmit !== 'undefined') {
+    var btn = document.getElementById('icra-kaydet-btn');
+    var ok = await LexSubmit.formKaydet({tablo:'icra', kayit:i, modalId:'icra-modal', butonEl:btn, basariMesaj:'✓ İcra dosyası güncellendi',
+      renderFn:function(){ renderIcra();renderIcraCards();openIcraDetay(id);if(typeof refreshFinansViews==='function')refreshFinansViews({muvId:i.muvId}); }
+    });
+    if (!ok) return;
+  } else {
+    closeModal('icra-modal');saveData();openIcraDetay(id);renderIcra();renderIcraCards();notify('✓ İcra dosyası güncellendi');
+  }
+}
+
+// ================================================================
 // BÜTÇE / FİNANS
 // ================================================================
 
@@ -329,7 +406,6 @@ async function saveButce() {
     if(!ok) return;
   } else {
     state.butce.push(_butKayit);
-    if (currentBuroId) saveToSupabase('finans', _butKayit);
     closeModal('but-modal'); saveData(); renderButce(); notify('✓ Hareket eklendi');
     addAktiviteLog('Finans Hareketi Eklendi', _butKayit.tur + ' — ' + fmt(tutar), 'Finans');
   }

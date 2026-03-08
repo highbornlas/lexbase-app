@@ -202,23 +202,35 @@ function saveTodo() {
     olusturanId: currentUser?.id || 'sahip',
   };
 
+  var kayit;
   if (id) {
     const idx = state.todolar.findIndex(x=>x.id===id);
-    if (idx >= 0) state.todolar[idx] = {...state.todolar[idx], ...veri};
+    if (idx >= 0) { kayit = {...state.todolar[idx], ...veri}; }
+    else return;
   } else {
-    state.todolar.push({ id: uid(), durum: 'Bekliyor', olusturmaTarih: today(), ...veri });
+    kayit = { id: uid(), durum: 'Bekliyor', olusturmaTarih: today(), ...veri };
   }
 
-  saveData();
-  closeModal('todo-modal');
-  renderTodo();
-  notify('✓ Görev kaydedildi');
+  if (typeof LexSubmit !== 'undefined') {
+    var btn = document.querySelector('#todo-modal .btn-gold');
+    LexSubmit.formKaydet({tablo:'todolar', kayit:kayit, modalId:'todo-modal', butonEl:btn, basariMesaj:'✓ Görev kaydedildi',
+      renderFn:function(){ renderTodo(); updateBadges(); }
+    });
+  } else {
+    if (id) { const idx2 = state.todolar.findIndex(x=>x.id===id); if(idx2>=0) state.todolar[idx2]=kayit; }
+    else state.todolar.push(kayit);
+    saveData(); closeModal('todo-modal'); renderTodo(); notify('✓ Görev kaydedildi');
+  }
 }
 
-function deleteTodo(id) {
-  if (!confirm('Bu görevi silmek istediğinize emin misiniz?')) return;
-  state.todolar = (state.todolar||[]).filter(t=>t.id!==id);
-  saveData();
-  renderTodo();
-  notify('Görev silindi');
+async function deleteTodo(id) {
+  if (typeof LexSubmit !== 'undefined') {
+    await LexSubmit.formSil({tablo:'todolar', id:id, onayMesaj:'Bu görevi silmek istediğinize emin misiniz?', basariMesaj:'Görev silindi',
+      renderFn:function(){ renderTodo(); updateBadges(); }
+    });
+  } else {
+    if (!confirm('Bu görevi silmek istediğinize emin misiniz?')) return;
+    state.todolar = (state.todolar||[]).filter(t=>t.id!==id);
+    saveData(); renderTodo(); notify('Görev silindi');
+  }
 }

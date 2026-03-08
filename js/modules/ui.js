@@ -126,10 +126,12 @@ function _saveKtDevam(d) {
   if(!state.karsiTaraflar)state.karsiTaraflar=[];
   const kt={id:uid(),sira:nextSira('karsiTaraflar'),...d};
   state.karsiTaraflar.push(kt);
-  saveData();
-  if(currentBuroId) saveToSupabase('karsiTaraflar', kt);
-  closeModal('kt-modal');
-  notify('✓ Karşı taraf kaydedildi');
+  if (typeof LexSubmit !== 'undefined') {
+    var ktBtn = document.querySelector('#kt-modal .btn-gold') || document.getElementById('kt-modal-btn');
+    LexSubmit.formKaydet({tablo:'karsiTaraflar', kayit:kt, modalId:'kt-modal', butonEl:ktBtn, basariMesaj:'✓ Karşı taraf kaydedildi',
+      renderFn:function(){ if(aktifRehberTab==='karsitaraflar')renderKarsiTaraflarListesi(); }
+    });
+  } else { saveData();closeModal('kt-modal');notify('✓ Karşı taraf kaydedildi'); }
   if(aktifRehberTab==='karsitaraflar')renderKarsiTaraflarListesi();
   if(_ktCtx){
     ktSec(kt.id,_ktCtx.araId,_ktCtx.listeId,_ktCtx.hiddenId,_ktCtx.gosterId);
@@ -211,10 +213,12 @@ function saveVekil(){
   };
   state.vekillar.push(v);
   vekBankalar = [];
-  saveData();
-  if(currentBuroId) saveToSupabase('vekillar', v);
-  closeModal('vek-modal');
-  notify('✓ Vekil kaydedildi');
+  if (typeof LexSubmit !== 'undefined') {
+    var vekBtn = document.querySelector('#vek-modal .btn-gold') || document.getElementById('vek-modal-btn');
+    LexSubmit.formKaydet({tablo:'vekillar', kayit:v, modalId:'vek-modal', butonEl:vekBtn, basariMesaj:'✓ Vekil kaydedildi',
+      renderFn:function(){ if(aktifRehberTab==='avukatlar')renderVekillarListesi(); }
+    });
+  } else { saveData();closeModal('vek-modal');notify('✓ Vekil kaydedildi'); }
   if(aktifRehberTab==='avukatlar')renderVekillarListesi();
   if(_vekCtx){
     vekSec(v.id,_vekCtx.araId,_vekCtx.listeId,_vekCtx.hiddenId,_vekCtx.gosterId);

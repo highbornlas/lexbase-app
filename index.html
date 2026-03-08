@@ -3,6 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#c9a84c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LexBase">
+<meta name="description" content="Avukatlar için modern hukuk otomasyon platformu — Dava, İcra, Finans, Takvim ve Müvekkil Yönetimi">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icons/icon-192.svg">
+<link rel="apple-touch-icon" href="icons/icon-192.svg">
 <title>Hukuk Bürosu Yönetim Sistemi</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -11,6 +19,8 @@
 <!-- Supabase devre dışı - localStorage modu -->
 </head>
 <body>
+<!-- PWA Offline Göstergesi -->
+<div class="offline-indicator" id="offline-bar">📡 Çevrimdışı — veriler yerel olarak saklanıyor</div>
 
 <!-- ===== LANDING PAGE ===== -->
 
@@ -849,25 +859,90 @@
 
 <!-- ===== ANA SAYFA ===== -->
 <div class="page active" id="page-anasayfa">
-  <div class="page-title">Genel Bakış</div>
-  <div class="page-sub">Büronuzun anlık durumu</div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px">
+    <div><div class="page-title">Genel Bakış</div><div class="page-sub" id="dash-hosgeldin">Büronuzun anlık durumu</div></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline btn-sm" onclick="openDanModal()">+ Hizmet</button>
+      <button class="btn btn-outline btn-sm" onclick="openTakModal()">+ Etkinlik</button>
+      <button class="btn btn-outline btn-sm" onclick="EvrakUretici.ac('genel')">📄 Evrak</button>
+      <button class="btn btn-gold btn-sm" onclick="openModal('dav-modal');Wizard.sifirla('dav-modal')">+ Dava</button>
+    </div>
+  </div>
+
+  <!-- KPI KARTLARI -->
   <div class="cards" id="dash-cards"></div>
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px">
-    <div class="section" style="border:1px solid rgba(201,168,76,.3);background:rgba(201,168,76,.03)"><div class="section-header"><div class="section-title">⚠️ Yaklaşan İşler <span style="font-size:11px;color:var(--text-muted);font-weight:400">(30 gün)</span></div></div><div class="section-body" style="padding:12px"><div id="dash-sureler"></div></div></div>
-    <div class="section"><div class="section-header"><div class="section-title">📅 Yaklaşan Etkinlikler</div></div><div class="section-body" style="padding:12px"><div id="dash-etkinlikler"></div></div></div>
-    <div class="section"><div class="section-header"><div class="section-title">💸 Bekleyen Alacaklar</div></div><div class="section-body" style="padding:12px"><div id="dash-alacaklar"></div></div></div>
-  </div>
-  <!-- Menfaat Çakışması Hızlı Kontrol -->
-  <div class="section" style="border:1px solid rgba(231,76,60,.2);margin-top:18px">
-    <div class="section-header" style="border-bottom-color:rgba(231,76,60,.2)">
-      <div class="section-title">🔍 Menfaat Çakışması Kontrolü</div>
-      <button class="btn btn-outline btn-sm" onclick="MenfaatKontrol.raporGoster()" style="border-color:var(--red);color:var(--red)">🔍 Tam Tarama Yap</button>
+
+  <!-- ANA GRID: 3 kolon -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:18px">
+    <!-- SOL: Yaklaşan Duruşmalar + Görevler -->
+    <div>
+      <div class="section" style="border:1px solid rgba(41,128,185,.25);margin-bottom:18px">
+        <div class="section-header" style="border-bottom-color:rgba(41,128,185,.2)">
+          <div class="section-title">⚖️ Yaklaşan Duruşmalar</div>
+          <a onclick="showPage('takvim',document.getElementById('ni-takvim'))" style="font-size:11px;color:var(--gold);cursor:pointer">Takvim ›</a>
+        </div>
+        <div class="section-body" style="padding:12px;max-height:280px;overflow-y:auto"><div id="dash-durusmalar"></div></div>
+      </div>
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">✅ Acil Görevler</div>
+          <a onclick="showPage('todo',document.getElementById('ni-todo'))" style="font-size:11px;color:var(--gold);cursor:pointer">Tümü ›</a>
+        </div>
+        <div class="section-body" style="padding:12px;max-height:240px;overflow-y:auto"><div id="dash-gorevler"></div></div>
+      </div>
     </div>
-    <div class="section-body" style="padding:12px">
-      <div id="dash-menfaat"></div>
+
+    <!-- ORTA: Finansal Özet + Bekleyen Alacaklar -->
+    <div>
+      <div class="section" style="border:1px solid rgba(39,174,96,.25);margin-bottom:18px">
+        <div class="section-header" style="border-bottom-color:rgba(39,174,96,.2)">
+          <div class="section-title">💰 Aylık Performans</div>
+          <a onclick="showPage('butce',document.getElementById('ni-butce'))" style="font-size:11px;color:var(--gold);cursor:pointer">Finans ›</a>
+        </div>
+        <div class="section-body" style="padding:12px"><div id="dash-performans"></div></div>
+      </div>
+      <div class="section" style="border:1px solid rgba(231,76,60,.2)">
+        <div class="section-header" style="border-bottom-color:rgba(231,76,60,.15)">
+          <div class="section-title">🔴 Vadesi Geçen Alacaklar</div>
+        </div>
+        <div class="section-body" style="padding:12px;max-height:240px;overflow-y:auto"><div id="dash-vadesi-gecen"></div></div>
+      </div>
+    </div>
+
+    <!-- SAĞ: Yaklaşan İşler + Menfaat -->
+    <div>
+      <div class="section" style="border:1px solid rgba(201,168,76,.3);background:rgba(201,168,76,.03);margin-bottom:18px">
+        <div class="section-header" style="border-bottom-color:rgba(201,168,76,.2)">
+          <div class="section-title">⚠️ Kritik Süreler <span style="font-size:11px;color:var(--text-muted);font-weight:400">(30 gün)</span></div>
+        </div>
+        <div class="section-body" style="padding:12px;max-height:280px;overflow-y:auto"><div id="dash-sureler"></div></div>
+      </div>
+      <div class="section" style="border:1px solid rgba(231,76,60,.2)">
+        <div class="section-header" style="border-bottom-color:rgba(231,76,60,.2)">
+          <div class="section-title">🔍 Menfaat Çakışması</div>
+          <button class="btn btn-outline btn-sm" onclick="MenfaatKontrol.raporGoster()" style="border-color:var(--red);color:var(--red);font-size:10px;padding:2px 8px">Tara</button>
+        </div>
+        <div class="section-body" style="padding:12px"><div id="dash-menfaat"></div></div>
+      </div>
     </div>
   </div>
-    <div class="section"><div class="section-header"><div class="section-title">⚖️ Devam Eden Hizmetler</div><a onclick="showPage('danismanlik',document.getElementById('ni-danismanlik'))" style="font-size:11px;color:var(--gold);cursor:pointer">Tümü ›</a></div><div class="section-body" style="padding:12px"><div id="dash-danismanlik"></div></div></div>
+
+  <!-- ALT GRID: 2 kolon -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">📊 Son Aktiviteler</div>
+      </div>
+      <div class="section-body" style="padding:12px;max-height:260px;overflow-y:auto"><div id="dash-aktivite"></div></div>
+    </div>
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">⚖️ Devam Eden Hizmetler</div>
+        <a onclick="showPage('danismanlik',document.getElementById('ni-danismanlik'))" style="font-size:11px;color:var(--gold);cursor:pointer">Tümü ›</a>
+      </div>
+      <div class="section-body" style="padding:12px;max-height:260px;overflow-y:auto"><div id="dash-danismanlik"></div></div>
+    </div>
+  </div>
 </div>
 
 <!-- ===== REHBER ===== -->
@@ -919,7 +994,7 @@
   <div class="breadcrumb"><a onclick="showPage('muvekkillar',document.getElementById('ni-muvekkillar'))">📒 Rehber</a><span>›</span><span id="md-bc"></span></div>
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
     <div><div class="page-title" id="md-ad"></div><div id="md-meta" style="color:var(--text-muted);font-size:12px;margin-top:4px"></div></div>
-    <div style="display:flex;gap:8px"><button class="btn btn-green" onclick="exportMuvExcel()">⬇ Excel</button><button class="btn btn-outline" onclick="openLogModal()">📋 Geçmiş</button><button class="btn btn-outline" onclick="openMuvEdit()">✏ Düzenle</button></div>
+    <div style="display:flex;gap:8px"><button class="btn btn-outline" onclick="EvrakUretici.ac('genel')">📄 Evrak</button><button class="btn btn-green" onclick="exportMuvExcel()">⬇ Excel</button><button class="btn btn-outline" onclick="openLogModal()">📋 Geçmiş</button><button class="btn btn-outline" onclick="openMuvEdit()">✏ Düzenle</button></div>
   </div>
   <div class="cards" id="md-cards"></div>
   <div class="tabs">
@@ -1009,7 +1084,7 @@
   <div class="breadcrumb"><a onclick="showPage('davalar',document.getElementById('ni-davalar'))">📁 Davalar</a><span>›</span><span id="dd-bc"></span></div>
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
     <div><div class="page-title" id="dd-baslik"></div><div id="dd-meta" style="color:var(--text-muted);font-size:12px;margin-top:4px"></div></div>
-    <div style="display:flex;gap:8px"><button class="btn btn-outline btn-sm" id="dd-edit-btn">✏ Düzenle</button></div>
+    <div style="display:flex;gap:8px"><button class="btn btn-outline btn-sm" onclick="EvrakUretici.ac('dava',aktivDavaId)">📄 Evrak Oluştur</button><button class="btn btn-outline btn-sm" id="dd-edit-btn">✏ Düzenle</button></div>
   </div>
   <div class="cards" id="dd-cards"></div>
   <div class="tabs">
@@ -1065,7 +1140,7 @@
   <div class="breadcrumb"><a onclick="showPage('icra',document.getElementById('ni-icra'))">⚡ İcra</a><span>›</span><span id="id-bc"></span></div>
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
     <div><div class="page-title" id="id-baslik"></div><div id="id-meta" style="color:var(--text-muted);font-size:12px;margin-top:4px"></div></div>
-    <div style="display:flex;gap:8px"><button class="btn btn-outline btn-sm" id="id-edit-btn">✏ Düzenle</button></div>
+    <div style="display:flex;gap:8px"><button class="btn btn-outline btn-sm" onclick="EvrakUretici.ac('icra',aktivIcraId)">📄 Evrak Oluştur</button><button class="btn btn-outline btn-sm" id="id-edit-btn">✏ Düzenle</button></div>
   </div>
   <div class="cards" id="id-cards"></div>
   <div class="tabs">
@@ -3550,6 +3625,7 @@
 <script src="js/modules/mukerrer.js"></script>
 <script src="js/modules/validasyon.js"></script>
 <script src="js/modules/seed.js"></script>
+<script src="js/modules/evrakUretici.js"></script>
 
 <!-- SPOTLIGHT ARAMA -->
 <div id="spotlight-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:99999;align-items:flex-start;justify-content:center;padding-top:15vh">
@@ -3827,6 +3903,53 @@ document.addEventListener('DOMContentLoaded', function () {
     activateMock(first.dataset.mock, first.dataset.url);
   }
 });
+</script>
+<script>
+// PWA Service Worker kaydı
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/sw.js').then(function(reg) {
+      console.log('[PWA] Service Worker kayıtlı — scope:', reg.scope);
+      reg.addEventListener('updatefound', function() {
+        var newWorker = reg.installing;
+        newWorker.addEventListener('statechange', function() {
+          if (newWorker.state === 'activated') {
+            if (typeof notify === 'function') notify('🔄 Yeni sürüm yüklendi — sayfayı yenileyin');
+          }
+        });
+      });
+    }).catch(function(err) { console.warn('[PWA] SW kayıt hatası:', err); });
+  });
+}
+
+// PWA Install Prompt
+var deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Daha önce kapatılmadıysa banner göster
+  if (localStorage.getItem('pwa_dismiss') === 'true') return;
+  var banner = document.createElement('div');
+  banner.className = 'pwa-install-banner';
+  banner.id = 'pwa-banner';
+  banner.innerHTML = '<div style="display:flex;align-items:center;gap:10px"><img src="icons/icon-192.svg" width="36" height="36" style="border-radius:8px"><div><div style="font-weight:700;font-size:13px">LexBase Uygulamasını Yükle</div><div style="font-size:11px;color:var(--text-muted)">Ana ekrana ekleyerek daha hızlı erişin</div></div></div><div style="display:flex;gap:8px"><button class="btn btn-outline btn-sm" onclick="document.getElementById(\'pwa-banner\').remove();localStorage.setItem(\'pwa_dismiss\',\'true\')">Şimdi değil</button><button class="btn btn-gold btn-sm" onclick="pwaYukle()">📲 Yükle</button></div>';
+  document.body.appendChild(banner);
+});
+
+function pwaYukle() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(function(result) {
+    if (result.outcome === 'accepted') { if(typeof notify==='function') notify('✅ LexBase ana ekrana eklendi!'); }
+    deferredPrompt = null;
+    var b = document.getElementById('pwa-banner'); if(b) b.remove();
+  });
+}
+
+// Offline / Online algılama
+window.addEventListener('online', function() { document.body.classList.remove('is-offline'); if(typeof notify==='function') notify('✅ İnternet bağlantısı geri geldi'); });
+window.addEventListener('offline', function() { document.body.classList.add('is-offline'); if(typeof notify==='function') notify('📡 Çevrimdışı — veriler yerel olarak saklanıyor'); });
+if (!navigator.onLine) document.body.classList.add('is-offline');
 </script>
 </body>
 </html>

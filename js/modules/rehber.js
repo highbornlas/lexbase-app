@@ -165,9 +165,12 @@ function saveMuvekkil(){
     const m=getMuv(aktivMuvId);if(!m)return;
     Object.assign(m,d);
     addLog(aktivMuvId,'Müvekkil Düzenlendi',`${d.ad}${d.tel?' | '+d.tel:''}${d.mail?' | '+d.mail:''}`);
-    closeModal('m-modal');saveData();
-    if(currentBuroId) saveToSupabase('muvekkillar', m);
-    openDetay(aktivMuvId);renderMuvekkillar();notify('✓ Güncellendi');
+    if (typeof LexSubmit !== 'undefined') {
+      var btn = document.querySelector('#m-modal .btn-gold');
+      LexSubmit.formKaydet({tablo:'muvekkillar', kayit:m, modalId:'m-modal', butonEl:btn, basariMesaj:'✓ Güncellendi',
+        renderFn:function(){ openDetay(aktivMuvId);renderMuvekkillar();if(typeof refreshFinansViews==='function')refreshFinansViews({muvId:aktivMuvId}); }
+      });
+    } else { closeModal('m-modal');saveData();openDetay(aktivMuvId);renderMuvekkillar();notify('✓ Güncellendi'); }
   } else {
     if(!limitKontrol('muvekkil')) return;
     // ── 1. Mükerrer kayıt kontrolü ──
@@ -197,9 +200,12 @@ function _saveMuvDevam(d) {
     const yeniKayit={id:yeniId,sira:nextSira('muvekkillar'),...d};
     state.muvekkillar.push(yeniKayit);
     addLog(yeniId,'Müvekkil Oluşturuldu',`${d.ad}${d.tel?' | '+d.tel:''}${d.mail?' | '+d.mail:''}`);
-    closeModal('m-modal');saveData();
-    if(currentBuroId) saveToSupabase('muvekkillar', yeniKayit);
-    renderMuvekkillar();updateBadges();notify('✓ Müvekkil eklendi');
+    if (typeof LexSubmit !== 'undefined') {
+      var btn2 = document.querySelector('#m-modal .btn-gold');
+      LexSubmit.formKaydet({tablo:'muvekkillar', kayit:yeniKayit, modalId:'m-modal', butonEl:btn2, basariMesaj:'✓ Müvekkil eklendi',
+        renderFn:function(){ renderMuvekkillar();updateBadges(); }
+      });
+    } else { closeModal('m-modal');saveData();renderMuvekkillar();updateBadges();notify('✓ Müvekkil eklendi'); }
     // Dava modalından açıldıysa widget'ı güncelle
     if(typeof muvWidgetGuncelle==='function') muvWidgetGuncelle(yeniId);
 }
@@ -1003,7 +1009,6 @@ function saveIletisim(){
     const konu=document.getElementById('il-konu').value.trim();
     const _ilEntry={id:uid(),muvId:aktivMuvId,tarih,saat:document.getElementById('il-saat').value,kanal,konu,ozet};
   state.iletisimler.push(_ilEntry);
-  if(currentBuroId) saveToSupabase('iletisimler', _ilEntry);
     addLog(aktivMuvId,'İletişim Eklendi',`${kanal} | ${fmtD(tarih)}${konu?' | '+konu:''}`);
   }
   closeModal('iletisim-modal');saveData();renderMdIletisim();notify('✓ İletişim kaydedildi');

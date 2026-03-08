@@ -1,0 +1,47 @@
+{
+  "name": "LexBase — Hukuk Bürosu Yönetim Sistemi",
+  "short_name": "LexBase",
+  "description": "Avukatlar için modern hukuk otomasyon platformu. Dava, icra, finans, takvim ve müvekkil yönetimi.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0D1117",
+  "theme_color": "#c9a84c",
+  "lang": "tr",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Yeni Dava Ekle",
+      "short_name": "Dava",
+      "url": "/?action=yeni-dava",
+      "icons": [{ "src": "icons/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Takvim",
+      "short_name": "Takvim",
+      "url": "/?page=takvim",
+      "icons": [{ "src": "icons/icon-192.svg", "sizes": "192x192" }]
+    }
+  ]
+}

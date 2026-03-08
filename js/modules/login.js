@@ -366,6 +366,9 @@ function saveNot(){
   }
   document.getElementById('not-icerik').value='';
   closeModal('not-modal');saveData();
+  // Not kaydı sonrası ilgili sekmeyi yenile
+  if(notModalCtx.type==='dava'){try{renderDavaTabContent('notlar');}catch(e){}}
+  else if(notModalCtx.type==='icra'){try{renderIcraTabContent('notlar');}catch(e){}}
   if(ctx==='dava')renderDavaTabContent('notlar');else renderIcraTabContent('notlar');
 }
 function delNot(id,ctx){
