@@ -483,13 +483,135 @@ const ZAMANASIMI = {
 };
 
 function uyapTab(tab, el) {
-  ['sureler','durusmalar','zamanasimi','sorgula'].forEach(t => {
-    document.getElementById('uyap-tab-' + t).style.display = t === tab ? '' : 'none';
-    document.getElementById('ut-' + t).classList.toggle('active', t === tab);
+  ['faiz','sure-hesap','ucret','sureler','durusmalar'].forEach(function(t) {
+    var panel = document.getElementById('uyap-tab-' + t);
+    var tabEl = document.getElementById('ut-' + t);
+    if (panel) panel.style.display = t === tab ? '' : 'none';
+    if (tabEl) tabEl.classList.toggle('active', t === tab);
   });
   if (tab === 'sureler') renderSureler();
   if (tab === 'durusmalar') renderDurusmalar();
-  if (tab === 'zamanasimi') renderZamanasimi();
+  if (tab === 'faiz') _initPageFaiz();
+  if (tab === 'sure-hesap') _initPageSure();
+  if (tab === 'ucret') _initPageUcret();
+}
+
+function _initPageFaiz() {
+  var sel = document.getElementById('ak-page-tur');
+  if (!sel || sel.options.length > 1) return;
+  sel.innerHTML = '';
+  var gruplar = {};
+  AracKutusu.FAIZ_TURLERI.forEach(function(t) {
+    var kat = t.id.includes('gecikme') ? 'Kamu / Vergi / SGK' :
+              t.id.includes('temerr') ? 'Temerrüt' :
+              (t.id==='kidem'||t.id==='is_kazasi'||t.id==='nafaka'||t.id==='kira'||t.id==='kamuLastirma'||t.id==='sigorta') ? 'Özel Alacak Türleri' :
+              'Temel Faiz Oranları';
+    if(!gruplar[kat]) gruplar[kat]=[];
+    gruplar[kat].push(t);
+  });
+  Object.keys(gruplar).forEach(function(kat) {
+    var og = document.createElement('optgroup'); og.label = kat;
+    gruplar[kat].forEach(function(t) {
+      var o = document.createElement('option'); o.value=t.id; o.textContent=t.ad;
+      o.dataset.madde=t.madde; o.dataset.acik=t.aciklama; og.appendChild(o);
+    });
+    sel.appendChild(og);
+  });
+  document.getElementById('ak-page-bit').value = today();
+  AracKutusu._faizTurBilgiPage();
+}
+
+function _initPageSure() {
+  var sel = document.getElementById('ak-page-sure-tur');
+  if (!sel || sel.options.length > 1) return;
+  sel.innerHTML = '<option value="">— Süre türü seçin —</option>';
+  var gruplar = {};
+  AracKutusu.SURELER.forEach(function(s){if(!gruplar[s.kat])gruplar[s.kat]=[];gruplar[s.kat].push(s);});
+  Object.keys(gruplar).forEach(function(k) {
+    var og = document.createElement('optgroup'); og.label = k;
+    gruplar[k].forEach(function(s) {
+      var o = document.createElement('option'); o.value = s.gun; o.dataset.madde = s.madde;
+      o.textContent = s.ad + ' (' + s.gun + ' gün — ' + s.madde + ')'; og.appendChild(o);
+    });
+    sel.appendChild(og);
+  });
+  document.getElementById('ak-page-sure-bas').value = today();
+}
+
+function _initPageUcret() {
+  var sel = document.getElementById('ak-page-ucret-tur');
+  if (!sel || sel.options.length > 1) return;
+  sel.innerHTML = '';
+  AracKutusu.AAUT.forEach(function(a) {
+    var o = document.createElement('option'); o.value = a.ad;
+    o.textContent = a.ad + ' — ' + fmt(a.ucret); sel.appendChild(o);
+  });
+}
+
+// Sayfa içi hesaplama fonksiyonları
+function akPageFaizHesapla() {
+  var anapara = parseFloat(document.getElementById('ak-page-anapara').value);
+  var bas = document.getElementById('ak-page-bas').value;
+  var bit = document.getElementById('ak-page-bit').value;
+  var turId = document.getElementById('ak-page-tur').value;
+  if (!anapara||anapara<=0) { notify('⚠️ Anapara girin'); return; }
+  if (!bas||!bit) { notify('⚠️ Tarih aralığı girin'); return; }
+  if (bas>=bit) { notify('⚠️ Bitiş tarihi başlangıçtan sonra olmalı'); return; }
+  var sonuc = AracKutusu.faizHesapla(anapara, bas, bit, turId);
+  var el = document.getElementById('ak-page-faiz-sonuc');
+  var html = '<div style="display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:16px">' +
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">' +
+    '<div style="background:var(--surface2);border-radius:8px;padding:14px;text-align:center"><div style="font-size:10px;color:var(--text-muted)">ANAPARA</div><div style="font-size:18px;font-weight:800">' + fmt(sonuc.anapara) + '</div></div>' +
+    '<div style="background:rgba(231,76,60,.06);border:1px solid rgba(231,76,60,.2);border-radius:8px;padding:14px;text-align:center"><div style="font-size:10px;color:#e74c3c">FAİZ TUTARI</div><div style="font-size:18px;font-weight:800;color:#e74c3c">' + fmt(sonuc.toplamFaiz) + '</div></div>' +
+    '<div style="background:rgba(39,174,96,.06);border:1px solid rgba(39,174,96,.2);border-radius:8px;padding:14px;text-align:center"><div style="font-size:10px;color:var(--green)">GENEL TOPLAM</div><div style="font-size:18px;font-weight:800;color:var(--green)">' + fmt(sonuc.genelToplam) + '</div></div></div></div>';
+  html += '<div style="font-size:11px;color:var(--text-muted);margin-bottom:8px">' + sonuc.faizTuru + ' · ' + sonuc.toplamGun + ' gün · ' + sonuc.dilimSayisi + ' oran dilimi</div>';
+  html += '<table><thead><tr><th>Dönem Başlangıç</th><th>Dönem Bitiş</th><th>Gün</th><th>Oran (%)</th><th style="text-align:right">Faiz (₺)</th></tr></thead><tbody>';
+  var prevO = -1;
+  sonuc.detay.forEach(function(d) { var deg = prevO>=0&&d.oran!==prevO; prevO=d.oran;
+    html += '<tr'+(deg?' style="background:rgba(201,168,76,.06)"':'')+'><td>'+fmtD(d.baslangic)+'</td><td>'+fmtD(d.bitis)+'</td><td>'+d.gun+'</td><td>'+(deg?'<b style="color:var(--gold)">%'+d.oran+' ⬆</b>':'%'+d.oran)+'</td><td style="text-align:right;font-weight:600">'+fmt(d.faiz)+'</td></tr>';
+  });
+  html += '<tr style="font-weight:700;border-top:2px solid var(--border)"><td colspan="2">TOPLAM</td><td>'+sonuc.toplamGun+'</td><td></td><td style="text-align:right;color:#e74c3c">'+fmt(sonuc.toplamFaiz)+'</td></tr></tbody></table>';
+  el.innerHTML = html;
+}
+
+function akPageSureSecildi() {
+  var s = document.getElementById('ak-page-sure-tur');
+  document.getElementById('ak-page-sure-gun').value = s.value || 14;
+  var o = s.options[s.selectedIndex];
+  var m = document.getElementById('ak-page-sure-madde');
+  if(m) m.textContent = o && o.dataset.madde ? '📖 ' + o.dataset.madde : '';
+}
+
+function akPageSureHesapla() {
+  var bas = document.getElementById('ak-page-sure-bas').value;
+  var gun = parseInt(document.getElementById('ak-page-sure-gun').value);
+  if (!bas) { notify('⚠️ Başlangıç tarihi girin'); return; }
+  if (!gun||gun<=0) { notify('⚠️ Gün sayısı girin'); return; }
+  var sonTarih = AracKutusu.sureHesapla(bas, gun);
+  var kalan = Math.ceil((new Date(sonTarih) - new Date()) / 86400000);
+  var renk = kalan<=0?'#e74c3c':kalan<=3?'#e67e22':kalan<=7?'#f39c12':'var(--green)';
+  var durum = kalan<=0?'❌ SÜRESİ GEÇTİ':kalan<=3?'🚨 '+kalan+' gün kaldı!':'✅ '+kalan+' gün kaldı';
+  document.getElementById('ak-page-sure-sonuc').innerHTML =
+    '<div style="background:'+renk+'11;border:2px solid '+renk+';border-radius:12px;padding:24px;text-align:center">' +
+    '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">SON TARİH</div>' +
+    '<div style="font-size:32px;font-weight:800;color:'+renk+'">'+fmtD(sonTarih)+'</div>' +
+    '<div style="font-size:14px;margin-top:8px;color:'+renk+'">'+durum+'</div>' +
+    '<div style="font-size:11px;color:var(--text-muted);margin-top:8px">Başlangıç: '+fmtD(bas)+' + '+gun+' iş günü (tatiller hariç)</div></div>' +
+    '<div style="display:flex;gap:8px;margin-top:12px;justify-content:center">' +
+    '<button class="btn btn-outline btn-sm" onclick="openTakModal(\''+sonTarih+'\')">📅 Takvime Ekle</button>' +
+    '<button class="btn btn-outline btn-sm" onclick="if(typeof openTodoModal===\'function\')openTodoModal();var e=document.getElementById(\'todo-son-tarih\');if(e)e.value=\''+sonTarih+'\';">✅ Göreve Ekle</button></div>';
+}
+
+function akPageUcretHesapla() {
+  var tur = document.getElementById('ak-page-ucret-tur').value;
+  var deger = parseFloat(document.getElementById('ak-page-ucret-deger').value) || 0;
+  var s = AracKutusu.vekaletHesapla(tur, deger);
+  document.getElementById('ak-page-ucret-sonuc').innerHTML =
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">' +
+    '<div style="background:var(--surface2);border-radius:8px;padding:14px;text-align:center"><div style="font-size:10px;color:var(--text-muted)">MAKTU (AAÜT)</div><div style="font-size:18px;font-weight:800">'+fmt(s.maktu)+'</div></div>' +
+    (deger>0?'<div style="background:var(--surface2);border-radius:8px;padding:14px;text-align:center"><div style="font-size:10px;color:var(--text-muted)">NİSPİ (%15)</div><div style="font-size:18px;font-weight:800">'+fmt(s.nispi)+'</div></div>':'<div></div>') +
+    '<div style="background:rgba(201,168,76,.1);border:1px solid var(--gold);border-radius:8px;padding:14px;text-align:center"><div style="font-size:10px;color:var(--gold)">ÖNERİLEN ASGARİ</div><div style="font-size:18px;font-weight:800;color:var(--gold)">'+fmt(s.onerilen)+'</div></div></div>' +
+    '<div style="font-size:11px;color:var(--text-muted);margin-top:10px">⚠️ Nispi ücret dava değerinin %15\'idir. Maktu altında ücret kararlaştırılamaz (AAÜT 2024).</div>';
 }
 
 // ── Süre Takip ───────────────────────────────────────────────────

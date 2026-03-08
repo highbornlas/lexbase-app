@@ -68,7 +68,7 @@ function upgradeGoster(sebep) {
     personel:    { baslik: '👤 Personel limitine ulaştınız', detay: `${plan.ad} planında ${plan.limitler.personel === 0 ? 'personel hesabı ekleyemezsiniz' : 'en fazla '+plan.limitler.personel+' personel ekleyebilirsiniz'}.` },
     whatsapp:    { baslik: '📱 WhatsApp sadece üst planlarda', detay: 'WhatsApp entegrasyonu Profesyonel ve üzeri planlarda kullanılabilir.' },
     finans:      { baslik: '💰 Finans modülü üst planlarda', detay: 'Finans ve fatura modülü Profesyonel ve üzeri planlarda kullanılabilir.' },
-    uyap:        { baslik: '🏛 UYAP/Süre üst planlarda',    detay: 'UYAP ve süre takip modülü Profesyonel ve üzeri planlarda kullanılabilir.' },
+    uyap:        { baslik: '🧰 Araç Kutusu üst planlarda',    detay: 'Faiz hesaplayıcı, süre takip ve vekalet ücreti araçları Profesyonel ve üzeri planlarda kullanılabilir.' },
     bulut_yedek: { baslik: '☁️ Bulut yedekleme Kurumsal plana özel', detay: 'Verilerinizi sunucumuzda güvenle saklayın, her yerden erişin.' },
     sureDoldu:   { baslik: '⏰ Deneme süreniz doldu',        detay: 'Uygulamayı kullanmaya devam etmek için bir plan seçin.' },
   };
@@ -105,7 +105,7 @@ function renderUpgradePlanlar(mevcutId) {
         ${p.limitler.personel === 0 ? '❌ Personel' : p.limitler.personel === Infinity ? '∞ Personel' : p.limitler.personel+' Personel'}<br>
         ${p.ozellikler.whatsapp ? '✅ WhatsApp' : '❌ WhatsApp'}<br>
         ${p.ozellikler.finans ? '✅ Finans/Fatura' : '❌ Finans/Fatura'}<br>
-        ${p.ozellikler.uyap ? '✅ UYAP/Süre' : '❌ UYAP/Süre'}
+        ${p.ozellikler.uyap ? '✅ Araç Kutusu' : '❌ Araç Kutusu'}
       </div>
       <button style="width:100%;margin-top:10px;padding:8px;border-radius:var(--radius);border:none;background:${p.renk};color:#fff;font-weight:700;cursor:pointer;font-size:12px">
         Bu Planı Seç

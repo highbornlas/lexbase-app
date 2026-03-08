@@ -344,35 +344,16 @@ function renderZamanasimi() {
 
 function openSureModalZamanasimi() {
   openSureModal();
-  setTimeout(() => { document.getElementById('sure-tur').value = 'Zamanaşımı'; sureTurDegisti(); }, 100);
+  setTimeout(function() { var el = document.getElementById('sure-tur'); if(el) el.value = 'Zamanaşımı'; }, 100);
 }
 
-// ── UYAP Sorgu Linkleri ──────────────────────────────────────────
-function uyapPortalAc() {
-  window.open('https://vatandas.uyap.gov.tr', '_blank');
-}
-
-function uyapAvukatPortalAc() {
-  window.open('https://avukat.uyap.gov.tr', '_blank');
-}
-
-function uetsTebligatAc() {
-  window.open('https://uets.ptt.gov.tr', '_blank');
-}
-
-function uyapMevzuatAc() {
-  window.open('https://www.mevzuat.gov.tr', '_blank');
-}
-
-function openUyapSorguModal() {
-  uyapTab('sorgula', document.getElementById('ut-sorgula'));
-}
-
-// showPage'e UYAP ekle
+// Araç Kutusu sayfası ilk açıldığında
 function renderUyapSayfa() {
   if (!state.sureler) state.sureler = [];
   renderSureler();
   updateUyapBadge();
+  // Faiz tab'ı varsayılan açık — formu doldur
+  _initPageFaiz();
 }
 
 

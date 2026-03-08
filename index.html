@@ -1343,152 +1343,125 @@
 </div>
 
 
-<!-- ===== UYAP / SÜRE TAKİP ===== -->
+<!-- ===== AVUKAT ARAÇ KUTUSU ===== -->
 <div class="page" id="page-uyap">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
     <div>
       <div class="page-title">Avukat Araç Kutusu</div>
-      <div class="page-sub">Süre takip, faiz hesaplayıcı, vekalet ücreti ve yasal araçlar</div>
+      <div class="page-sub">Faiz hesaplayıcı, yasal süre takibi ve vekalet ücreti</div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-gold" onclick="AracKutusu.ac('faiz')">💰 Faiz Hesapla</button>
-      <button class="btn btn-outline" onclick="AracKutusu.ac('sure')">⏱ Süre Hesapla</button>
-      <button class="btn btn-outline" onclick="AracKutusu.ac('ucret')">⚖️ Vekalet Ücreti</button>
       <button class="btn" onclick="openSureModal()">+ Süre Ekle</button>
       <button class="btn" onclick="openDurusmaCekModal()">📋 Duruşma Aktar</button>
-      <button class="btn" onclick="openUyapSorguModal()">🔍 UYAP Sorgula</button>
     </div>
-  </div>
-
-  <!-- Özet Kartlar -->
-  <div class="cards" style="margin-bottom:20px">
-    <div class="card" style="border-left:3px solid var(--red)"><div class="card-label">🚨 Bugün Biten</div><div class="card-value red" id="uyap-bugun">0</div></div>
-    <div class="card" style="border-left:3px solid #f39c12"><div class="card-label">⚠️ 3 Gün İçinde</div><div class="card-value" style="color:#f39c12" id="uyap-3gun">0</div></div>
-    <div class="card" style="border-left:3px solid #f39c12"><div class="card-label">📅 7 Gün İçinde</div><div class="card-value" style="color:#f39c12" id="uyap-7gun">0</div></div>
-    <div class="card" style="border-left:3px solid var(--green)"><div class="card-label">✅ Tamamlanan</div><div class="card-value green" id="uyap-tamam">0</div></div>
-    <div class="card"><div class="card-label">📋 Toplam Süre</div><div class="card-value" id="uyap-toplam">0</div></div>
   </div>
 
   <!-- Sekmeler -->
   <div class="tabs" style="margin-bottom:16px">
-    <div class="tab active" id="ut-sureler" onclick="uyapTab('sureler',this)">⏱ Süre Takibi</div>
-    <div class="tab" id="ut-durusmalar" onclick="uyapTab('durusmalar',this)">⚖️ Duruşmalar</div>
-    <div class="tab" id="ut-zamanasimi" onclick="uyapTab('zamanasimi',this)">⌛ Zamanaşımı</div>
-    <div class="tab" id="ut-sorgula" onclick="uyapTab('sorgula',this)">🔍 UYAP Sorgula</div>
+    <div class="tab active" id="ut-faiz" onclick="uyapTab('faiz',this)">💰 Faiz Hesaplayıcı</div>
+    <div class="tab" id="ut-sure-hesap" onclick="uyapTab('sure-hesap',this)">⏱ Süre Hesaplayıcı</div>
+    <div class="tab" id="ut-ucret" onclick="uyapTab('ucret',this)">⚖️ Vekalet Ücreti</div>
+    <div class="tab" id="ut-sureler" onclick="uyapTab('sureler',this)">📋 Süre Takibi</div>
+    <div class="tab" id="ut-durusmalar" onclick="uyapTab('durusmalar',this)">🗓 Duruşmalar</div>
   </div>
 
-  <!-- SÜRE TAKİBİ -->
-  <div id="uyap-tab-sureler">
+  <!-- FAİZ HESAPLAYICI (inline) -->
+  <div id="uyap-tab-faiz">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <!-- Sol: Form -->
+      <div>
+        <div style="background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.2);border-radius:8px;padding:14px;margin-bottom:16px;font-size:12px;color:var(--text-muted);line-height:1.6">
+          ⚠️ <b>Dönemsel oran değişimi desteklenir.</b> Başlangıç-bitiş arasındaki her oran değişikliği ayrı dilim olarak hesaplanır. Tek oran hatası yapılmaz.
+        </div>
+        <div class="form-group"><label>Faiz Türü</label><select id="ak-page-tur" onchange="AracKutusu._faizTurBilgiPage()" style="width:100%"></select></div>
+        <div id="ak-page-tur-bilgi" style="font-size:11px;color:var(--text-muted);margin-bottom:12px;padding:8px 10px;background:var(--surface2);border-radius:6px"></div>
+        <div class="form-row">
+          <div class="form-group"><label>Anapara (₺)</label><input type="number" id="ak-page-anapara" value="100000" step="0.01"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Başlangıç Tarihi</label><input type="date" id="ak-page-bas"></div>
+          <div class="form-group"><label>Bitiş Tarihi</label><input type="date" id="ak-page-bit"></div>
+        </div>
+        <button class="btn btn-gold" onclick="akPageFaizHesapla()" style="width:100%;margin-top:8px">📊 Hesapla</button>
+      </div>
+      <!-- Sağ: Sonuç -->
+      <div id="ak-page-faiz-sonuc">
+        <div class="empty"><div class="empty-icon">💰</div><p>Faiz türünü ve tarih aralığını seçip "Hesapla" butonuna basın</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SÜRE HESAPLAYICI (inline) -->
+  <div id="uyap-tab-sure-hesap" style="display:none">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div>
+        <div style="background:rgba(41,128,185,.06);border:1px solid rgba(41,128,185,.2);border-radius:8px;padding:14px;margin-bottom:16px;font-size:12px;color:var(--text-muted);line-height:1.6">
+          Hafta sonları ve resmi tatiller otomatik atlanır. Son gün tatile denk gelirse bir sonraki iş gününe kaydırılır.
+        </div>
+        <div class="form-group"><label>Süre Türü (Mevzuattan Seç)</label><select id="ak-page-sure-tur" onchange="akPageSureSecildi()" style="width:100%"></select></div>
+        <div style="font-size:10px;color:var(--text-dim);margin-bottom:12px" id="ak-page-sure-madde"></div>
+        <div class="form-row">
+          <div class="form-group"><label>Tebliğ / Başlangıç Tarihi</label><input type="date" id="ak-page-sure-bas"></div>
+          <div class="form-group"><label>Gün Sayısı</label><input type="number" id="ak-page-sure-gun" min="1" value="14"></div>
+        </div>
+        <button class="btn btn-gold" onclick="akPageSureHesapla()" style="width:100%;margin-top:8px">📊 Hesapla</button>
+      </div>
+      <div id="ak-page-sure-sonuc">
+        <div class="empty"><div class="empty-icon">⏱</div><p>Süre türü ve tebliğ tarihini girip "Hesapla" butonuna basın</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VEKALET ÜCRETİ (inline) -->
+  <div id="uyap-tab-ucret" style="display:none">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div>
+        <div style="background:rgba(142,68,173,.06);border:1px solid rgba(142,68,173,.2);border-radius:8px;padding:14px;margin-bottom:16px;font-size:12px;color:var(--text-muted);line-height:1.6">
+          AAÜT 2024 tarifesi uygulanır. Nispi ücret dava değerinin %15'idir. Maktu tarife altında ücret kararlaştırılamaz.
+        </div>
+        <div class="form-group"><label>Dava / İş Türü</label><select id="ak-page-ucret-tur" style="width:100%"></select></div>
+        <div class="form-group"><label>Dava Değeri (₺, opsiyonel — nispi hesap için)</label><input type="number" id="ak-page-ucret-deger" step="0.01" placeholder="Dava değeri girin"></div>
+        <button class="btn btn-gold" onclick="akPageUcretHesapla()" style="width:100%;margin-top:8px">📊 Hesapla</button>
+      </div>
+      <div id="ak-page-ucret-sonuc">
+        <div class="empty"><div class="empty-icon">⚖️</div><p>Dava türünü seçip "Hesapla" butonuna basın</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SÜRE TAKİBİ (mevcut) -->
+  <div id="uyap-tab-sureler" style="display:none">
+    <div class="cards" style="margin-bottom:16px">
+      <div class="card" style="border-left:3px solid var(--red)"><div class="card-label">🚨 Bugün Biten</div><div class="card-value red" id="uyap-bugun">0</div></div>
+      <div class="card" style="border-left:3px solid #f39c12"><div class="card-label">⚠️ 3 Gün İçinde</div><div class="card-value" style="color:#f39c12" id="uyap-3gun">0</div></div>
+      <div class="card" style="border-left:3px solid #f39c12"><div class="card-label">📅 7 Gün İçinde</div><div class="card-value" style="color:#f39c12" id="uyap-7gun">0</div></div>
+      <div class="card" style="border-left:3px solid var(--green)"><div class="card-label">✅ Tamamlanan</div><div class="card-value green" id="uyap-tamam">0</div></div>
+      <div class="card"><div class="card-label">📋 Toplam Süre</div><div class="card-value" id="uyap-toplam">0</div></div>
+    </div>
     <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
       <select id="sure-filtre-durum" onchange="renderSureler()" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:7px 12px;font-size:13px">
-        <option value="">Tüm Durumlar</option>
-        <option value="aktif">Aktif</option>
-        <option value="kritik">🚨 Kritik (3 gün)</option>
-        <option value="tamam">✅ Tamamlandı</option>
-        <option value="gecti">❌ Geçti</option>
+        <option value="">Tüm Durumlar</option><option value="aktif">Aktif</option><option value="kritik">🚨 Kritik</option><option value="tamam">✅ Tamamlandı</option><option value="gecti">❌ Geçti</option>
       </select>
       <select id="sure-filtre-tur" onchange="renderSureler()" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:7px 12px;font-size:13px">
-        <option value="">Tüm Türler</option>
-        <option>Cevap Süresi</option>
-        <option>İtiraz Süresi</option>
-        <option>Temyiz Süresi</option>
-        <option>İstinaf Süresi</option>
-        <option>İcra Takip Süresi</option>
-        <option>Zamanaşımı</option>
-        <option>Diğer</option>
+        <option value="">Tüm Türler</option><option>Cevap Süresi</option><option>İtiraz Süresi</option><option>Temyiz Süresi</option><option>İstinaf Süresi</option><option>İcra Takip Süresi</option><option>Zamanaşımı</option><option>Diğer</option>
       </select>
+      <button class="btn btn-gold btn-sm" onclick="openSureModal()">+ Süre Ekle</button>
     </div>
     <div id="sure-liste"></div>
     <div class="empty" id="sure-empty" style="display:none"><div class="empty-icon">⏱</div><p>Henüz süre takibi eklenmemiş</p><button class="btn btn-gold" onclick="openSureModal()" style="margin-top:12px">+ Süre Ekle</button></div>
   </div>
 
-  <!-- DURUŞMALAR -->
+  <!-- DURUŞMALAR (mevcut) -->
   <div id="uyap-tab-durusmalar" style="display:none">
     <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
       <input type="month" id="durusma-filtre-ay" onchange="renderDurusmalar()" class="search-bar" style="width:160px">
       <select id="durusma-filtre-muv" onchange="renderDurusmalar()" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:7px 12px;font-size:13px;min-width:160px">
         <option value="">Tüm Müvekkiller</option>
       </select>
+      <button class="btn btn-gold btn-sm" onclick="openDurusmaCekModal()">📋 Duruşma Aktar</button>
     </div>
     <div id="durusma-listesi"></div>
-    <div class="empty" id="durusma-empty" style="display:none"><div class="empty-icon">⚖️</div><p>Duruşma kaydı yok</p><button class="btn btn-gold" onclick="openDurusmaCekModal()" style="margin-top:12px">📋 UYAP'tan Aktar</button></div>
-  </div>
-
-  <!-- ZAMANAŞIMI -->
-  <div id="uyap-tab-zamanasimi" style="display:none">
-    <div id="zamanasimi-liste"></div>
-    <div class="empty" id="zamanasimi-empty" style="display:none"><div class="empty-icon">⌛</div><p>Zamanaşımı takibi yok</p></div>
-  </div>
-
-  <!-- UYAP SORGULA -->
-  <div id="uyap-tab-sorgula" style="display:none">
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px">
-      <div style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--gold)">🔍 UYAP Avukat Portal Sorgu</div>
-      <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px">Dava numarası ile doğrudan UYAP'a yönlendirme. UYAP'ta e-imza ile giriş yapmanız gerekmektedir.</div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Mahkeme / Birim</label>
-          <select id="uyap-mahkeme-tur" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:8px 12px;font-size:13px;width:100%">
-            <option value="as">Asliye Hukuk Mahkemesi</option>
-            <option value="ac">Asliye Ceza Mahkemesi</option>
-            <option value="tum">Tüketici Mahkemesi</option>
-            <option value="is">İş Mahkemesi</option>
-            <option value="aile">Aile Mahkemesi</option>
-            <option value="tic">Ticaret Mahkemesi</option>
-            <option value="idare">İdare Mahkemesi</option>
-            <option value="icra">İcra Dairesi</option>
-            <option value="bag">Bölge Adliye Mahkemesi</option>
-            <option value="yarg">Yargıtay</option>
-            <option value="dan">Danıştay</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Esas No</label>
-          <input id="uyap-esas-no" placeholder="2024/123" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:8px 12px;font-size:13px;width:100%">
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-gold" onclick="uyapPortalAc()" style="touch-action:manipulation">🌐 UYAP Portal Aç</button>
-        <button class="btn" onclick="uyapAvukatPortalAc()" style="touch-action:manipulation">⚖️ Avukat Portal</button>
-        <button class="btn" onclick="uetsTebligatAc()" style="touch-action:manipulation">📬 UETS Tebligat</button>
-        <button class="btn" onclick="uyapMevzuatAc()" style="touch-action:manipulation">📖 Mevzuat</button>
-      </div>
-    </div>
-
-    <!-- Sorgulama Geçmişi -->
-    <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Hızlı Bağlantılar</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
-      <a href="https://avukat.uyap.gov.tr" target="_blank" style="display:block;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-decoration:none;transition:all .15s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
-        <div style="font-size:20px;margin-bottom:6px">⚖️</div>
-        <div style="font-size:13px;font-weight:600;color:var(--text)">UYAP Avukat Portal</div>
-        <div style="font-size:11px;color:var(--text-muted)">avukat.uyap.gov.tr</div>
-      </a>
-      <a href="https://uets.ptt.gov.tr" target="_blank" style="display:block;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-decoration:none;transition:all .15s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
-        <div style="font-size:20px;margin-bottom:6px">📬</div>
-        <div style="font-size:13px;font-weight:600;color:var(--text)">UETS Tebligat</div>
-        <div style="font-size:11px;color:var(--text-muted)">uets.ptt.gov.tr</div>
-      </a>
-      <a href="https://www.mevzuat.gov.tr" target="_blank" style="display:block;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-decoration:none;transition:all .15s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
-        <div style="font-size:20px;margin-bottom:6px">📖</div>
-        <div style="font-size:13px;font-weight:600;color:var(--text)">Mevzuat.gov.tr</div>
-        <div style="font-size:11px;color:var(--text-muted)">Kanun & Yönetmelik</div>
-      </a>
-      <a href="https://www.legalbank.net" target="_blank" style="display:block;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-decoration:none;transition:all .15s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
-        <div style="font-size:20px;margin-bottom:6px">🏛</div>
-        <div style="font-size:13px;font-weight:600;color:var(--text)">Legalbank</div>
-        <div style="font-size:11px;color:var(--text-muted)">İçtihat & Emsal</div>
-      </a>
-      <a href="https://karararama.yargitay.gov.tr" target="_blank" style="display:block;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-decoration:none;transition:all .15s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
-        <div style="font-size:20px;margin-bottom:6px">⚖️</div>
-        <div style="font-size:13px;font-weight:600;color:var(--text)">Yargıtay Kararları</div>
-        <div style="font-size:11px;color:var(--text-muted)">karararama.yargitay.gov.tr</div>
-      </a>
-      <a href="https://www.danistay.gov.tr" target="_blank" style="display:block;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-decoration:none;transition:all .15s" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'">
-        <div style="font-size:20px;margin-bottom:6px">🏛</div>
-        <div style="font-size:13px;font-weight:600;color:var(--text)">Danıştay</div>
-        <div style="font-size:11px;color:var(--text-muted)">danistay.gov.tr</div>
-      </a>
-    </div>
+    <div class="empty" id="durusma-empty" style="display:none"><div class="empty-icon">⚖️</div><p>Duruşma kaydı yok</p><button class="btn btn-gold" onclick="openDurusmaCekModal()" style="margin-top:12px">📋 Duruşma Aktar</button></div>
   </div>
 </div>
 
@@ -1856,18 +1829,18 @@
         </div>
       </div>
 
-      <!-- Araç Kutusu Yönetimi -->
+      <!-- Araç Kutusu -->
       <div class="ayar-section">
         <div class="ayar-section-header">
           <span class="ayar-section-icon">🧰</span>
-          <div><div class="ayar-section-title">Araç Kutusu Yönetimi</div><div class="ayar-section-sub">Faiz oranları ve hesaplayıcı ayarları</div></div>
+          <div><div class="ayar-section-title">Araç Kutusu</div><div class="ayar-section-sub">Faiz, süre ve vekalet ücreti hesaplayıcıları</div></div>
         </div>
         <div style="padding:20px">
-          <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Faiz oranlarını TCMB/Resmi Gazete güncellemelerine göre yönetin. Değişiklikler tüm hesaplamalara anında yansır.</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Faiz oranları admin panelinden merkezi olarak güncellenir ve tüm kullanıcılar için otomatik yansır.</div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
-            <button class="btn btn-gold" onclick="AracKutusu.adminOranlarAc()" style="justify-content:center">📊 Faiz Oranlarını Yönet</button>
-            <button class="btn btn-outline" onclick="AracKutusu.ac('faiz')" style="justify-content:center">💰 Faiz Hesapla</button>
+            <button class="btn btn-gold" onclick="AracKutusu.ac('faiz')" style="justify-content:center">💰 Faiz Hesapla</button>
             <button class="btn btn-outline" onclick="AracKutusu.ac('sure')" style="justify-content:center">⏱ Süre Hesapla</button>
+            <button class="btn btn-outline" onclick="AracKutusu.ac('ucret')" style="justify-content:center">⚖️ Vekalet Ücreti</button>
           </div>
         </div>
       </div>
