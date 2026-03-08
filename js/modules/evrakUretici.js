@@ -263,6 +263,25 @@ var EvrakUretici = (function () {
           'İSTİNAF DİLEKÇESİ'
         );
 
+      case 'temyiz-dilekce':
+        return wrap(
+          '<div style="text-align:center;font-weight:700;margin-bottom:20px">YARGITAY İLGİLİ HUKUK / CEZA DAİRESİ BAŞKANLIĞINA<br><span style="font-size:13px;font-weight:400">Sunulmak üzere</span><br>' + editable(v.mahkeme, '... MAHKEMESİ') + ' SAYIN HAKİMLİĞİNE</div>' +
+          '<div style="text-align:right;margin-bottom:16px">Esas No: ' + editable(v.esasNo, '20../...') + '<br>Karar No: ' + editable('', '20../...') + '</div>' +
+          '<table style="width:100%;border-collapse:collapse;margin-bottom:20px">' +
+          '<tr><td style="width:140px;font-weight:700;padding:4px 0">TEMYİZ EDEN</td><td style="padding:4px 0">: ' + editable(v.muvAd, 'Adı Soyadı') + '</td></tr>' +
+          '<tr><td style="font-weight:700;padding:4px 0">VEKİLİ</td><td style="padding:4px 0">: Av. ' + editable(v.avukatAd, '') + '</td></tr>' +
+          '<tr><td style="font-weight:700;padding:4px 0">KARŞI TARAF</td><td style="padding:4px 0">: ' + editable(v.davaKarsiAd, '') + '</td></tr>' +
+          '<tr><td style="font-weight:700;padding:4px 0">KONU</td><td style="padding:4px 0">: Bölge Adliye Mahkemesi kararının bozulması talebidir.</td></tr>' +
+          '</table>' +
+          '<div style="font-weight:700;margin-bottom:8px">TEMYİZ NEDENLERİ</div>' +
+          '<div style="text-align:justify">' + editable('', '1. Bölge Adliye Mahkemesi kararı hukuka aykırıdır.\n\n2. Karar, yeterli gerekçe içermemektedir.\n\n3. Emsal Yargıtay içtihatlarına aykırı karar verilmiştir.\n\n4. Maddi vakıalar ile hukuki nitelendirme arasında çelişki bulunmaktadır.') + '</div>' +
+          satirBos +
+          '<div style="font-weight:700;margin-bottom:8px">SONUÇ VE TALEP</div>' +
+          '<div>' + editable('', 'Yukarıda açıklanan nedenlerle; Bölge Adliye Mahkemesi kararının BOZULMASINA, yeniden yargılama yapılmak üzere dosyanın mahkemesine iadesine karar verilmesini saygıyla vekaleten arz ve talep ederiz.') + '</div>' +
+          '<div style="text-align:right;margin-top:30px"><div>' + v.bugun + '</div><div style="margin-top:8px;font-weight:700">Av. ' + editable(v.avukatAd, '') + '</div><div style="font-size:12px;color:#666">Temyiz Eden Vekili</div></div>',
+          'TEMYİZ DİLEKÇESİ'
+        );
+
       case 'ihtarname':
         return wrap(
           '<div style="text-align:center;margin-bottom:20px;font-weight:700">İ H T A R N A M E</div>' +

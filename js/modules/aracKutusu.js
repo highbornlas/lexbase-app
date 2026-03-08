@@ -285,11 +285,11 @@ function _faizTurBilgi() {
 }
 
 function hesaplaFaiz() {
-  var anapara = parseFloat(document.getElementById('ak-f-anapara').value);
+  var anapara = parseFloat(document.getElementById('ak-f-anapara').value) || 0;
   var bas = document.getElementById('ak-f-bas').value;
   var bit = document.getElementById('ak-f-bit').value;
   var turId = document.getElementById('ak-f-tur').value;
-  if (!anapara||anapara<=0) { notify('⚠️ Anapara girin'); return; }
+  if (anapara<=0) { notify('⚠️ Anapara girin'); return; }
   if (!bas||!bit) { notify('⚠️ Tarih aralığı girin'); return; }
   if (bas>=bit) { notify('⚠️ Bitiş tarihi başlangıçtan sonra olmalı'); return; }
 
@@ -342,8 +342,8 @@ function _renderSure(el) {
 function _sureSecildi(){var s=document.getElementById('ak-s-tur');document.getElementById('ak-s-gun').value=s.value||14;var o=s.options[s.selectedIndex];var m=document.getElementById('ak-s-madde');if(m)m.textContent=o.dataset.madde?'📖 '+o.dataset.madde:'';}
 
 function hesaplaSure() {
-  var bas=document.getElementById('ak-s-bas').value;var gun=parseInt(document.getElementById('ak-s-gun').value);
-  if(!bas){notify('⚠️ Başlangıç tarihi girin');return;} if(!gun||gun<=0){notify('⚠️ Gün sayısı girin');return;}
+  var bas=document.getElementById('ak-s-bas').value;var gun=parseInt(document.getElementById('ak-s-gun').value)||0;
+  if(!bas){notify('⚠️ Başlangıç tarihi girin');return;} if(gun<=0){notify('⚠️ Gün sayısı girin');return;}
   var sonTarih=sureHesapla(bas,gun);var kalan=Math.ceil((new Date(sonTarih)-new Date())/86400000);
   var renk=kalan<=0?'#e74c3c':kalan<=3?'#e67e22':kalan<=7?'#f39c12':'var(--green)';
   var durum=kalan<=0?'❌ SÜRESİ GEÇTİ':kalan<=3?'🚨 '+kalan+' gün kaldı!':'✅ '+kalan+' gün kaldı';

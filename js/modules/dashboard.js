@@ -323,7 +323,14 @@ function openDanModal(id) {
 }
 
 function toggleDanTakvim(cb) {
-  // Takvim checkbox toggle — ileride geliştirilebilir
+  var teslimEl = document.getElementById('dan-teslim');
+  if (!teslimEl) return;
+  if (cb.checked) {
+    teslimEl.style.borderColor = 'var(--gold)';
+    if (!teslimEl.value) teslimEl.focus();
+  } else {
+    teslimEl.style.borderColor = '';
+  }
 }
 
 async function saveDan() {

@@ -6,12 +6,12 @@
 function saveIcra(){
   const no=document.getElementById('i-no').value.trim(),muvId=document.getElementById('i-muv').value;
   let borclu=document.getElementById('i-borclu').value.trim();
-  const alacak=parseFloat(document.getElementById('i-alacak').value);
+  const alacak=parseFloat(document.getElementById('i-alacak').value)||0;
   if(!zorunluKontrol([
     {id:'i-no', deger:no, label:'Dosya No'},
     {id:'i-muv', deger:muvId, label:'Müvekkil'},
     {id:'i-borclu', deger:borclu, label:'Borçlu Adı'},
-    {id:'i-alacak', deger:(!isNaN(alacak)&&alacak>0)?'ok':'', label:'Alacak Tutarı'},
+    {id:'i-alacak', deger:(alacak>0)?'ok':'', label:'Alacak Tutarı'},
   ])){notify('⚠️ Zorunlu alanları doldurun.');return;}
   if(!limitKontrol('icra')) return;
   const karsavId=document.getElementById('i-karsav-id').value;

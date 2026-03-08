@@ -484,7 +484,9 @@ tr:hover td{background:var(--surface2)}
 // ── Supabase ──────────────────────────────────────────────────
 const SB_URL = 'https://ewvbpfsgmjghmbnkuvpx.supabase.co';
 const SB_KEY = 'sb_publishable_ccz6M_f4JCnnQzr0auQD7A_-A2YGb91'; // ← Supabase admin projenizin anon key'ini buraya yazın
-const ADMIN_SIFRE = 'LexBaseAdmin2025!'; // ← Bunu mutlaka değiştirin!
+// Şifre hash olarak saklanır (SHA-256). Değiştirmek için konsolda:
+// crypto.subtle.digest('SHA-256', new TextEncoder().encode('YeniSifre')).then(h=>console.log([...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,'0')).join('')))
+const ADMIN_SIFRE_HASH = 'f9370fe17bb408fa1101ce794f92f8a936343d4df7d0d7666164368d0b9c19ed';
 
 let musteriler = [];
 let loglar = [];
@@ -547,9 +549,12 @@ async function sbDelete(tablo, id) {
 }
 
 // ── Admin Giriş ───────────────────────────────────────────────
-function adminGiris() {
+async function adminGiris() {
   const sifre = document.getElementById('admin-sifre').value;
-  if (sifre === ADMIN_SIFRE) {
+  const enc = new TextEncoder().encode(sifre);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  const hash = [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+  if (hash === ADMIN_SIFRE_HASH) {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
     document.getElementById('dash-tarih').textContent = new Date().toLocaleDateString('tr-TR', {weekday:'long',year:'numeric',month:'long',day:'numeric'});

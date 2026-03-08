@@ -111,7 +111,7 @@ function danDurumGuncelle() {
   const d = state.danismanlik.find(x => x.id === aktivDanId);
   if (!d) return;
   const _ddEl = document.getElementById('dan-detay-durum'); if(_ddEl) d.durum = _ddEl.value;
-  saveData(); renderDanismanlik();
+  saveData();
   renderDanDetayBilgi(d);
   renderDanismanlik();
   if (document.getElementById('mt-danismanlik').classList.contains('active')) renderMdDanismanlik();
@@ -151,10 +151,10 @@ function danEvrakEkle(input) {
   Array.from(input.files).forEach(file => {
     const reader = new FileReader();
     reader.onload = e => {
+      if (file.size > 5 * 1024 * 1024) { notify('⚠️ Dosya çok büyük (maks 5MB)'); return; }
       d.evraklar.push({ ad: file.name, tarih: today(), data: e.target.result });
       saveData();
       renderDanDetayEvraklar(d); notify('✓ Evrak eklendi');
-      notify('✓ Evrak eklendi');
     };
     reader.readAsDataURL(file);
   });
@@ -202,7 +202,6 @@ function danNotEkle() {
   d.notlar.push({ tarih: today(), saat: new Date().toTimeString().slice(0,5), metin });
   saveData();
   renderDanDetayNotlar(d); notify('✓ Not eklendi');
-  notify('✓ Not eklendi');
 }
 
 function editDanFromDetay() {

@@ -365,9 +365,9 @@ function openHarcForDosya(ctx){
   document.getElementById('harc-modal').classList.add('open');
 }
 async function saveHarcama(){
-  const tutar=parseFloat(document.getElementById('h-tutar').value);
+  const tutar=parseFloat(document.getElementById('h-tutar').value)||0;
   const tarih=document.getElementById('h-tarih').value;
-  if(!zorunluKontrol([{id:'h-tarih',deger:tarih,label:'Tarih'},{id:'h-tutar',deger:(!isNaN(tutar)&&tutar>0)?'ok':'',label:'Tutar'}])){notify('⚠️ Zorunlu alanları doldurun.');return;}
+  if(!zorunluKontrol([{id:'h-tarih',deger:tarih,label:'Tarih'},{id:'h-tutar',deger:(tutar>0)?'ok':'',label:'Tutar'}])){notify('⚠️ Zorunlu alanları doldurun.');return;}
   const acik=document.getElementById('h-acik').value.trim();
   const kat=document.getElementById('h-kat').value;
   const h={id:uid(),tarih,tutar,kat,acik};
@@ -609,9 +609,9 @@ function openTahsilatModal(ctx, editId=null){
 }
 
 async function saveTahsilatHareket(){
-  const tutar=parseFloat(document.getElementById('th-tutar').value);
+  const tutar=parseFloat(document.getElementById('th-tutar').value)||0;
   const tarih=document.getElementById('th-tarih').value;
-  if(!zorunluKontrol([{id:'th-tarih',deger:tarih,label:'Tarih'},{id:'th-tutar',deger:(!isNaN(tutar)&&tutar>0)?'ok':'',label:'Tutar'}])){notify('⚠️ Zorunlu alanları doldurun.');return;}
+  if(!zorunluKontrol([{id:'th-tarih',deger:tarih,label:'Tarih'},{id:'th-tutar',deger:(tutar>0)?'ok':'',label:'Tutar'}])){notify('⚠️ Zorunlu alanları doldurun.');return;}
   const obj=tahsilatCtx.type==='dava'?getDava(aktivDavaId):getIcra(aktivIcraId);
   if(!obj)return;
   if(!obj.tahsilatlar)obj.tahsilatlar=[];
