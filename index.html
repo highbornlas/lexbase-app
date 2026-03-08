@@ -2365,7 +2365,10 @@
   <div id="kt-gercek-alanlari">
     <div class="form-section-label">Kişisel Bilgiler</div>
     <div class="form-row">
-      <div class="form-group"><label>Ad Soyad *</label><input id="kt-ad" placeholder="Ad Soyad"></div>
+      <div class="form-group"><label>Ad *</label><input id="kt-ad" placeholder="Ad"></div>
+      <div class="form-group"><label>Soyad *</label><input id="kt-soyad" placeholder="Soyad"></div>
+    </div>
+    <div class="form-row">
       <div class="form-group"><label>Uyruk</label>
         <select id="kt-uyruk" onchange="ktUyrukDegis(this.value)"><option value="TC">T.C.</option><option value="yabanci">Yabancı Uyruklu</option></select>
       </div>
@@ -2423,6 +2426,9 @@
   </div>
   <div class="form-row">
     <div class="form-group"><label>Faks</label><input id="kt-faks" placeholder="(xxx) xxx xx xx" oninput="formatTelInput(this)" maxlength="15"></div>
+    <div class="form-group"><label>Web Sitesi</label><input id="kt-web" placeholder="https://"></div>
+  </div>
+  <div class="form-row">
     <div class="form-group"><label>UETS / KEP Adresi</label><input id="kt-uets"></div>
   </div>
   <div class="form-group"><label>Adres</label><textarea id="kt-adres" rows="2"></textarea></div>

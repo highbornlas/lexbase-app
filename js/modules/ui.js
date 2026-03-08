@@ -90,12 +90,11 @@ function saveKarsiTaraf(){
   if(!zorunluKontrol([{id:'kt-ad', deger:d.ad, label:'Ad / Unvan'}])) {
     notify('⚠️ Zorunlu alanları doldurun.');return;
   }
-  // Numara doğrulama
+  // Numara doğrulama (IBAN artık banka widget'ında doğrulanıyor)
   if (!numaralariDogrula([
     { id:'kt-tc', tip:'tc' },
     { id:'kt-vergino', tip:'vergi' },
     { id:'kt-mersis', tip:'mersis' },
-    { id:'kt-iban', tip:'iban' },
   ])) {
     notify('⚠️ Hatalı veya eksik numara alanları var, lütfen kontrol edin.');
     return;

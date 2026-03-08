@@ -543,9 +543,9 @@ function ktTipSec(tip){
   }
 }
 function ktModalSifirla(){
-  ['kt-ad','kt-ad-tuzel','kt-tc','kt-dogum','kt-dogum-yeri','kt-meslek','kt-vergino','kt-vergidairesi','kt-mersis',
+  ['kt-ad','kt-soyad','kt-ad-tuzel','kt-tc','kt-dogum','kt-dogum-yeri','kt-meslek','kt-vergino','kt-vergidairesi','kt-mersis',
    'kt-yetkili-ad','kt-yetkili-unvan','kt-yetkili-tc','kt-yetkili-tel',
-   'kt-tel','kt-faks','kt-mail','kt-uets',
+   'kt-tel','kt-faks','kt-web','kt-mail','kt-uets',
    'kt-adres','kt-acik'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});
   ktBankalar=[];renderKtBankalar();
   const ku=document.getElementById('kt-uyruk');if(ku)ku.value='T.C.';
@@ -558,8 +558,10 @@ function ktModalSifirla(){
 }
 function ktModalDataOku(){
   const tip=document.getElementById('kt-tip').value;
-  // Tüzel modda unvan alanından al
+  // Gerçek kişi: Ad + Soyad birleştir; Tüzel: unvan alanından al
   let ad=document.getElementById('kt-ad').value.trim();
+  const soyad=(document.getElementById('kt-soyad')?.value.trim())||'';
+  if(tip==='gercek' && soyad) ad = ad + ' ' + soyad;
   if(tip==='tuzel'){
     const tuzelAd=document.getElementById('kt-ad-tuzel');
     if(tuzelAd&&tuzelAd.value.trim()) ad=tuzelAd.value.trim();
@@ -567,6 +569,7 @@ function ktModalDataOku(){
   return{
     tip,
     ad,
+    soyad,
     tc:document.getElementById('kt-tc').value.trim(),
     dogum:document.getElementById('kt-dogum')?.value||'',
     dogumYeri:document.getElementById('kt-dogum-yeri')?.value.trim()||'',
@@ -584,6 +587,7 @@ function ktModalDataOku(){
     ticaretSicil:document.getElementById('kt-ticaretsicil')?.value.trim()||'',
     tel:document.getElementById('kt-tel').value.trim(),
     faks:document.getElementById('kt-faks')?.value.trim()||'',
+    web:document.getElementById('kt-web')?.value.trim()||'',
     mail:document.getElementById('kt-mail').value.trim(),
     uets:document.getElementById('kt-uets')?.value.trim()||'',
     adres:document.getElementById('kt-adres').value.trim(),
@@ -594,14 +598,28 @@ function ktModalDataOku(){
 function ktModalDataDoldur(k){
   ktTipSec(k.tip||'gercek');
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v||'';};
-  set('kt-ad',k.ad);set('kt-tc',k.tc);set('kt-dogum',k.dogum);set('kt-meslek',k.meslek);
+  // Ad/Soyad ayrıştırma — eski veri tek ad alanında olabilir
+  if(k.soyad){
+    set('kt-ad',k.ad.replace(new RegExp('\\s+'+k.soyad.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'$'),'').trim()||k.ad);
+    set('kt-soyad',k.soyad);
+  } else {
+    // Eski format: tek ad — son kelimeyi soyad olarak ayır
+    var adParcalar=(k.ad||'').trim().split(/\s+/);
+    if(adParcalar.length>1){
+      set('kt-soyad',adParcalar.pop());
+      set('kt-ad',adParcalar.join(' '));
+    } else {
+      set('kt-ad',k.ad);set('kt-soyad','');
+    }
+  }
+  set('kt-tc',k.tc);set('kt-dogum',k.dogum);set('kt-meslek',k.meslek);
   const ku=document.getElementById('kt-uyruk');if(ku)ku.value=k.uyruk||'T.C.';
   const ks=document.getElementById('kt-sirkettur');if(ks)ks.value=k.sirketTur||'A.Ş.';
   set('kt-vergino',k.vergiNo);set('kt-vergidairesi',k.vergiDairesi);set('kt-mersis',k.mersis);
   set('kt-yetkili-ad',k.yetkiliAd);set('kt-yetkili-unvan',k.yetkiliUnvan);
   set('kt-yetkili-tc',k.yetkiliTc);set('kt-yetkili-tel',k.yetkiliTel);
   set('kt-ticaretsicil',k.ticaretSicil);set('kt-pasaport',k.pasaport);set('kt-dogum-yeri',k.dogumYeri);
-  set('kt-tel',k.tel);set('kt-faks',k.faks);set('kt-mail',k.mail);set('kt-uets',k.uets);
+  set('kt-tel',k.tel);set('kt-faks',k.faks);set('kt-web',k.web);set('kt-mail',k.mail);set('kt-uets',k.uets);
   set('kt-adres',k.adres);set('kt-acik',k.aciklama);
   // Banka widget — eski (tekli banka/iban) ve yeni (bankalar dizisi) formatı destekle
   if(k.bankalar&&k.bankalar.length){

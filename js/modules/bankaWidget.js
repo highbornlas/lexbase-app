@@ -273,44 +273,45 @@ function bwTcknKur(input) {
   });
 }
 
-// ── Müvekkil banka widget render ────────────────────────────────
-// muvBankalar dizisini zengin banka widget'ı ile yeniden render et
-function renderMuvBankalarBW() {
-  const el = document.getElementById('m-banka-list');
+// ── Ortak zengin banka widget render ─────────────────────────────
+// bankalarArr: dizi referansı, containerId: DOM container, prefix: benzersiz önek,
+// kaldirFn: silme fonksiyon adı, renderFn: yeniden render fonksiyonu
+function _renderBankalarBW(bankalarArr, containerId, prefix, kaldirFn, renderFn) {
+  const el = document.getElementById(containerId);
   if (!el) return;
-  if (!muvBankalar.length) { el.innerHTML = ''; return; }
+  if (!bankalarArr.length) { el.innerHTML = ''; return; }
 
-  el.innerHTML = muvBankalar.map((b, i) => `
+  el.innerHTML = bankalarArr.map((b, i) => `
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;position:relative">
-      <button type="button" onclick="muvBankaKaldir(${i})" title="Kaldır"
+      <button type="button" onclick="${kaldirFn}(${i})" title="Kaldır"
         style="position:absolute;top:8px;right:10px;background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:15px">✕</button>
       <div style="font-size:10px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;font-weight:700">
         Banka Hesabı ${i+1}${b.isDefault ? ' <span style="color:#22d3ee;font-size:9px">★ Varsayılan</span>' : ''}
       </div>
       <div style="margin-bottom:10px">
         <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:4px">Banka *</label>
-        <div id="bw-muv-banka-dd-${i}"></div>
+        <div id="bw-${prefix}-banka-dd-${i}"></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <div>
           <label style="font-size:10px;color:var(--text-muted)">Şube</label>
-          <input value="${b.sube||''}" oninput="muvBankalar[${i}].sube=this.value" placeholder="Şube adı / no"
+          <input value="${b.sube||''}" oninput="${prefix === 'muv' ? 'muvBankalar' : prefix === 'kt' ? 'ktBankalar' : 'vekBankalar'}[${i}].sube=this.value" placeholder="Şube adı / no"
             style="width:100%;margin-top:2px">
         </div>
         <div>
           <label style="font-size:10px;color:var(--text-muted)">Hesap Adı</label>
-          <input value="${b.hesapAd||''}" oninput="muvBankalar[${i}].hesapAd=this.value" placeholder="Hesap sahibi adı"
+          <input value="${b.hesapAd||''}" oninput="${prefix === 'muv' ? 'muvBankalar' : prefix === 'kt' ? 'ktBankalar' : 'vekBankalar'}[${i}].hesapAd=this.value" placeholder="Hesap sahibi adı"
             style="width:100%;margin-top:2px">
         </div>
         <div style="grid-column:1/-1">
           <label style="font-size:10px;color:var(--text-muted)">IBAN</label>
-          <input id="bw-muv-iban-${i}" value="${b.iban||''}" placeholder="TR00 0000 0000 0000 0000 0000 00"
-            oninput="muvBankalar[${i}].iban=this.value"
+          <input id="bw-${prefix}-iban-${i}" value="${b.iban||''}" placeholder="TR00 0000 0000 0000 0000 0000 00"
+            oninput="${prefix === 'muv' ? 'muvBankalar' : prefix === 'kt' ? 'ktBankalar' : 'vekBankalar'}[${i}].iban=this.value"
             style="width:100%;margin-top:2px;font-family:monospace;letter-spacing:1px">
         </div>
         <div>
           <label style="font-size:10px;color:var(--text-muted)">Hesap No</label>
-          <input value="${b.hesapNo||''}" oninput="muvBankalar[${i}].hesapNo=this.value" placeholder="Hesap numarası"
+          <input value="${b.hesapNo||''}" oninput="${prefix === 'muv' ? 'muvBankalar' : prefix === 'kt' ? 'ktBankalar' : 'vekBankalar'}[${i}].hesapNo=this.value" placeholder="Hesap numarası"
             style="width:100%;margin-top:2px">
         </div>
       </div>
@@ -318,14 +319,14 @@ function renderMuvBankalarBW() {
   `).join('');
 
   // Her satır için dropdown ve IBAN kurulumunu yap
-  muvBankalar.forEach((b, i) => {
-    bwDropdownOlustur(`bw-muv-banka-dd-${i}`, ({ ad, kod }) => {
-      muvBankalar[i].banka    = ad;
-      muvBankalar[i].bankaKod = kod;
+  bankalarArr.forEach((b, i) => {
+    bwDropdownOlustur(`bw-${prefix}-banka-dd-${i}`, ({ ad, kod }) => {
+      bankalarArr[i].banka    = ad;
+      bankalarArr[i].bankaKod = kod;
     });
 
     // Mevcut banka adını dropdown'a yaz
-    const kont = document.getElementById(`bw-muv-banka-dd-${i}`);
+    const kont = document.getElementById(`bw-${prefix}-banka-dd-${i}`);
     if (kont && b.banka) {
       const si = kont.querySelector('.bw-banka-input');
       const ki = kont.querySelector('.bw-banka-kod');
@@ -338,22 +339,36 @@ function renderMuvBankalarBW() {
       if (cb) {
         cb.checked = !!b.isDefault;
         cb.onchange = () => {
-          // Sadece bir tane varsayılan olabilir
-          muvBankalar.forEach((x, j) => { x.isDefault = (j === i && cb.checked); });
-          renderMuvBankalarBW();
+          bankalarArr.forEach((x, j) => { x.isDefault = (j === i && cb.checked); });
+          renderFn();
         };
       }
     }
 
     // IBAN input'unu kur
-    const ibanEl = document.getElementById(`bw-muv-iban-${i}`);
+    const ibanEl = document.getElementById(`bw-${prefix}-iban-${i}`);
     if (ibanEl) {
-      bwIbanKur(ibanEl, `bw-muv-banka-dd-${i}`);
+      bwIbanKur(ibanEl, `bw-${prefix}-banka-dd-${i}`);
       ibanEl.addEventListener('input', () => {
-        muvBankalar[i].iban = ibanEl.value;
+        bankalarArr[i].iban = ibanEl.value;
       });
     }
   });
+}
+
+// ── Müvekkil banka widget render ────────────────────────────────
+function renderMuvBankalarBW() {
+  _renderBankalarBW(muvBankalar, 'm-banka-list', 'muv', 'muvBankaKaldir', renderMuvBankalarBW);
+}
+
+// ── Karşı taraf banka widget render ─────────────────────────────
+function renderKtBankalarBW() {
+  _renderBankalarBW(ktBankalar, 'kt-banka-list', 'kt', 'ktBankaKaldir', renderKtBankalarBW);
+}
+
+// ── Vekil banka widget render ───────────────────────────────────
+function renderVekBankalarBW() {
+  _renderBankalarBW(vekBankalar, 'vek-banka-list', 'vek', 'vekBankaKaldir', renderVekBankalarBW);
 }
 
 // ── Tüm TCKN alanlarını global olarak kur ───────────────────────
@@ -373,15 +388,33 @@ function bwGlobalTcknKur() {
 (function bwInit() {
   function kur() {
     bwGlobalTcknKur();
-    // renderMuvBankalarBW'yi muvBankaEkle ve renderMuvBankalar'ın yerine geçir
+    // Zengin banka widget'ını tüm formlar için devreye al
     if (typeof window !== 'undefined') {
-      const orijinalEkle = window.muvBankaEkle;
+      var bwVarsayilan = { banka: '', bankaKod: '', sube: '', iban: '', hesapNo: '', hesapAd: '', isDefault: false };
+
+      // Müvekkil
       window.muvBankaEkle = function(data) {
         if (!window.muvBankalar) window.muvBankalar = [];
-        window.muvBankalar.push(data || { banka: '', bankaKod: '', sube: '', iban: '', hesapNo: '', hesapAd: '', isDefault: false });
+        window.muvBankalar.push(data || Object.assign({}, bwVarsayilan));
         renderMuvBankalarBW();
       };
       window.renderMuvBankalar = renderMuvBankalarBW;
+
+      // Karşı taraf
+      window.ktBankaEkle = function(data) {
+        if (!window.ktBankalar) window.ktBankalar = [];
+        window.ktBankalar.push(data || Object.assign({}, bwVarsayilan));
+        renderKtBankalarBW();
+      };
+      window.renderKtBankalar = renderKtBankalarBW;
+
+      // Vekil / Avukat
+      window.vekBankaEkle = function(data) {
+        if (!window.vekBankalar) window.vekBankalar = [];
+        window.vekBankalar.push(data || Object.assign({}, bwVarsayilan));
+        renderVekBankalarBW();
+      };
+      window.renderVekBankalar = renderVekBankalarBW;
     }
   }
 
