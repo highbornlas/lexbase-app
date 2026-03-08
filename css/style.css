@@ -433,6 +433,18 @@ th.sort-th.desc::after{content:' ▼';font-size:8px;color:var(--gold);}
 .dash-grid-bottom .dash-panel{margin-bottom:0;display:flex;flex-direction:column;}
 .dash-grid-bottom .dash-panel-body{padding:12px;overflow-y:auto;flex:1;max-height:280px;}
 
+/* ── Dashboard Panel Renkli Sol Kenar ── */
+.dash-panel.dp-blue{border-left:3px solid var(--blue);}
+.dash-panel.dp-green{border-left:3px solid var(--green);}
+.dash-panel.dp-gold{border-left:3px solid var(--gold);}
+.dash-panel.dp-red{border-left:3px solid var(--red);}
+.dash-panel.dp-purple{border-left:3px solid var(--purple);}
+
+/* ── Dashboard Drag & Drop ── */
+.dash-panel[draggable="true"]{cursor:grab;}
+.dash-panel[draggable="true"]:active{cursor:grabbing;}
+.dash-panel.dragging{opacity:0.35;transform:scale(0.98);transition:opacity .2s,transform .2s;}
+
 .section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:18px;overflow:hidden;}
 .section-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);}
 .section-title{font-size:14px;font-weight:600;color:var(--text);}

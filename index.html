@@ -860,60 +860,54 @@
 
 <!-- ===== ANA SAYFA ===== -->
 <div class="page active" id="page-anasayfa">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px">
-    <div><div class="page-title">Genel Bakış</div><div class="page-sub" id="dash-hosgeldin">Büronuzun anlık durumu</div></div>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-outline btn-sm" onclick="openDanModal()">+ Hizmet</button>
-      <button class="btn btn-outline btn-sm" onclick="openTakModal()">+ Etkinlik</button>
-      <button class="btn btn-outline btn-sm" onclick="AracKutusu.ac('faiz')">💰 Faiz</button>
-      <button class="btn btn-outline btn-sm" onclick="EvrakUretici.ac('genel')">📄 Evrak</button>
-      <button class="btn btn-gold btn-sm" onclick="openModal('dav-modal');Wizard.sifirla('dav-modal')">+ Dava</button>
-    </div>
+  <div style="margin-bottom:18px">
+    <div class="page-title">Genel Bakış</div>
+    <div class="page-sub" id="dash-hosgeldin">Büronuzun anlık durumu</div>
   </div>
 
   <!-- KPI KARTLARI — 4 kolon sabit -->
   <div class="dash-kpi" id="dash-cards"></div>
 
   <!-- ANA GRID: 3 kolon, satır yükseklikleri eşit -->
-  <div class="dash-grid-main">
+  <div class="dash-grid-main" id="dash-grid-main">
     <!-- SATIR 1: Duruşmalar / Performans / Kritik Süreler -->
-    <div class="section dash-panel" style="border-color:rgba(41,128,185,.25)">
-      <div class="section-header" style="border-bottom-color:rgba(41,128,185,.2)">
+    <div class="section dash-panel dp-blue" id="dp-durusmalar">
+      <div class="section-header">
         <div class="section-title">⚖️ Yaklaşan Duruşmalar</div>
         <a onclick="showPage('takvim',document.getElementById('ni-takvim'))" style="font-size:11px;color:var(--gold);cursor:pointer">Takvim ›</a>
       </div>
       <div class="section-body dash-panel-body"><div id="dash-durusmalar"></div></div>
     </div>
-    <div class="section dash-panel" style="border-color:rgba(39,174,96,.25)">
-      <div class="section-header" style="border-bottom-color:rgba(39,174,96,.2)">
+    <div class="section dash-panel dp-green" id="dp-performans">
+      <div class="section-header">
         <div class="section-title">💰 Aylık Performans</div>
         <a onclick="showPage('butce',document.getElementById('ni-butce'))" style="font-size:11px;color:var(--gold);cursor:pointer">Finans ›</a>
       </div>
       <div class="section-body dash-panel-body"><div id="dash-performans"></div></div>
     </div>
-    <div class="section dash-panel" style="border-color:rgba(201,168,76,.3);background:rgba(201,168,76,.03)">
-      <div class="section-header" style="border-bottom-color:rgba(201,168,76,.2)">
+    <div class="section dash-panel dp-gold" id="dp-sureler">
+      <div class="section-header">
         <div class="section-title">⚠️ Kritik Süreler <span style="font-size:11px;color:var(--text-muted);font-weight:400">(30 gün)</span></div>
       </div>
       <div class="section-body dash-panel-body"><div id="dash-sureler"></div></div>
     </div>
 
     <!-- SATIR 2: Görevler / Vadesi Geçen / Menfaat -->
-    <div class="section dash-panel">
+    <div class="section dash-panel dp-purple" id="dp-gorevler">
       <div class="section-header">
         <div class="section-title">✅ Acil Görevler</div>
         <a onclick="showPage('todo',document.getElementById('ni-todo'))" style="font-size:11px;color:var(--gold);cursor:pointer">Tümü ›</a>
       </div>
       <div class="section-body dash-panel-body"><div id="dash-gorevler"></div></div>
     </div>
-    <div class="section dash-panel" style="border-color:rgba(231,76,60,.2)">
-      <div class="section-header" style="border-bottom-color:rgba(231,76,60,.15)">
+    <div class="section dash-panel dp-red" id="dp-vadesi-gecen">
+      <div class="section-header">
         <div class="section-title">🔴 Vadesi Geçen Alacaklar</div>
       </div>
       <div class="section-body dash-panel-body"><div id="dash-vadesi-gecen"></div></div>
     </div>
-    <div class="section dash-panel" style="border-color:rgba(231,76,60,.2)">
-      <div class="section-header" style="border-bottom-color:rgba(231,76,60,.2)">
+    <div class="section dash-panel dp-red" id="dp-menfaat">
+      <div class="section-header">
         <div class="section-title">🔍 Menfaat Çakışması</div>
         <button class="btn btn-outline btn-sm" onclick="MenfaatKontrol.raporGoster()" style="border-color:var(--red);color:var(--red);font-size:10px;padding:2px 8px">Tara</button>
       </div>
@@ -922,14 +916,14 @@
   </div>
 
   <!-- ALT GRID: 2 kolon, eşit yükseklik -->
-  <div class="dash-grid-bottom">
-    <div class="section dash-panel">
+  <div class="dash-grid-bottom" id="dash-grid-bottom">
+    <div class="section dash-panel dp-blue" id="dp-aktivite">
       <div class="section-header">
         <div class="section-title">📊 Son Aktiviteler</div>
       </div>
       <div class="section-body dash-panel-body"><div id="dash-aktivite"></div></div>
     </div>
-    <div class="section dash-panel">
+    <div class="section dash-panel dp-gold" id="dp-danismanlik">
       <div class="section-header">
         <div class="section-title">⚖️ Devam Eden Hizmetler</div>
         <a onclick="showPage('danismanlik',document.getElementById('ni-danismanlik'))" style="font-size:11px;color:var(--gold);cursor:pointer">Tümü ›</a>
@@ -1819,22 +1813,6 @@
           </div>
           <div class="form-group"><label>Adres</label><textarea id="ayar-buro-adres" rows="2" placeholder="Büro adresi"></textarea></div>
           <button class="btn btn-gold" onclick="buroBilgisiGuncelle()" style="width:100%;justify-content:center;margin-top:4px">💾 Büroyu Güncelle</button>
-        </div>
-      </div>
-
-      <!-- Araç Kutusu -->
-      <div class="ayar-section">
-        <div class="ayar-section-header">
-          <span class="ayar-section-icon">🧰</span>
-          <div><div class="ayar-section-title">Araç Kutusu</div><div class="ayar-section-sub">Faiz, süre ve vekalet ücreti hesaplayıcıları</div></div>
-        </div>
-        <div style="padding:20px">
-          <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Faiz oranları admin panelinden merkezi olarak güncellenir ve tüm kullanıcılar için otomatik yansır.</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
-            <button class="btn btn-gold" onclick="AracKutusu.ac('faiz')" style="justify-content:center">💰 Faiz Hesapla</button>
-            <button class="btn btn-outline" onclick="AracKutusu.ac('sure')" style="justify-content:center">⏱ Süre Hesapla</button>
-            <button class="btn btn-outline" onclick="AracKutusu.ac('ucret')" style="justify-content:center">⚖️ Vekalet Ücreti</button>
-          </div>
         </div>
       </div>
 

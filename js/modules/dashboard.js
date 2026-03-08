@@ -48,7 +48,7 @@ function renderDashSureler() {
 
   const el = document.getElementById('dash-sureler');
   if (!el) return;
-  if (!items.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">✅</div><p>30 gün içinde kritik işlem yok</p></div>'; return; }
+  if (!items.length) { el.innerHTML = '<div style="padding:24px;text-align:center;font-size:12px;color:var(--text-dim)">30 gün içinde kritik işlem yok</div>'; return; }
 
   el.innerHTML = items.map(i => {
     const acil = i.gun <= 3 ? 'background:rgba(231,76,60,.08);border-left:3px solid #e74c3c;' : i.gun <= 7 ? 'border-left:3px solid #e67e22;' : 'border-left:3px solid var(--border);';
@@ -77,7 +77,16 @@ function renderDashboard(){
   var saat = now.getHours();
   var selamlama = saat < 12 ? 'Günaydın' : saat < 18 ? 'İyi günler' : 'İyi akşamlar';
   var hgEl = document.getElementById('dash-hosgeldin');
-  if (hgEl) hgEl.textContent = selamlama + (currentUser ? ', ' + (currentUser.ad || currentUser.ad_soyad || '') : '') + ' — ' + new Date().toLocaleDateString('tr-TR', {weekday:'long', day:'numeric', month:'long'});
+  if (hgEl) {
+    var tarihStr = new Date().toLocaleDateString('tr-TR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+    var ozetParcalar = [];
+    var _aktifD = state.davalar.filter(function(d){return d.durum === 'Aktif' || d.durum === 'Devam Ediyor';}).length;
+    var _aktifI = state.icra.filter(function(i){return i.durum !== 'Kapandı';}).length;
+    if (_aktifD) ozetParcalar.push(_aktifD + ' aktif dava');
+    if (_aktifI) ozetParcalar.push(_aktifI + ' icra takibi');
+    var ozetMetin = ozetParcalar.length ? ' · ' + ozetParcalar.join(', ') : '';
+    hgEl.textContent = selamlama + (currentUser ? ', ' + (currentUser.ad || currentUser.ad_soyad || '') : '') + ' — ' + tarihStr + ozetMetin;
+  }
 
   // ── KPI hesaplamaları ──
   var muvSayi = state.muvekkillar.length;
@@ -92,6 +101,21 @@ function renderDashboard(){
   var yilG = yilFinans.gelir;
   var yilD = yilFinans.gider;
   var yilNet = yilFinans.net;
+
+  // Geçen ay karşılaştırma (trend)
+  var gecenAy = ay > 0 ? ay - 1 : 11;
+  var gecenAyYil = ay > 0 ? yil : (parseInt(yil)-1).toString();
+  var gecenFinans = typeof tumFinansHesapla === 'function' ? tumFinansHesapla({yil: gecenAyYil, ay: gecenAy}) : {gelir:0, gider:0};
+  var buAyFinans = typeof tumFinansHesapla === 'function' ? tumFinansHesapla({yil: yil, ay: ay}) : {gelir:0, gider:0};
+  function _trendHtml(buAy, gecen) {
+    if (!gecen || gecen === 0) return '';
+    var fark = buAy - gecen;
+    var yuzde = Math.round(Math.abs(fark) / gecen * 100);
+    if (yuzde === 0) return '';
+    var renk = fark >= 0 ? 'var(--green)' : '#e74c3c';
+    var ok = fark >= 0 ? '↑' : '↓';
+    return '<div style="font-size:10px;color:' + renk + ';margin-top:4px;font-weight:600">' + ok + ' %' + yuzde + '</div>';
+  }
 
   // İcra toplam alacak/tahsil
   var topAlacak = state.icra.reduce(function(s,i){return s+(i.alacak||0);},0);
@@ -114,8 +138,8 @@ function renderDashboard(){
     '<div class="card"><div class="card-label">Aktif Dava</div><div class="card-value gold">' + aktifDava + '</div></div>' +
     '<div class="card"><div class="card-label">Aktif İcra</div><div class="card-value" style="color:#e74c3c">' + aktifIcra + '</div></div>' +
     '<div class="card" style="border:1px solid rgba(41,128,185,.3)"><div class="card-label">Bu Hafta Duruşma</div><div class="card-value" style="color:#2980b9">' + yakDurusma + '</div></div>' +
-    '<div class="card"><div class="card-label">' + yil + ' Gelir</div><div class="card-value green">' + fmt(yilG) + '</div></div>' +
-    '<div class="card"><div class="card-label">' + yil + ' Gider</div><div class="card-value red">' + fmt(yilD) + '</div></div>' +
+    '<div class="card"><div class="card-label">' + yil + ' Gelir</div><div class="card-value green">' + fmt(yilG) + '</div>' + _trendHtml(buAyFinans.gelir, gecenFinans.gelir) + '</div>' +
+    '<div class="card"><div class="card-label">' + yil + ' Gider</div><div class="card-value red">' + fmt(yilD) + '</div>' + _trendHtml(buAyFinans.gider, gecenFinans.gider) + '</div>' +
     '<div class="card"><div class="card-label">' + yil + ' Net</div><div class="card-value" style="color:' + (yilNet>=0?'var(--green)':'#e74c3c') + '">' + fmt(yilNet) + '</div></div>' +
     '<div class="card"><div class="card-label">İcra Tahsilat</div><div class="card-value green">' + fmt(topTahsil) + '<div class="progress-bar" style="margin-top:4px"><div class="progress-fill" style="width:' + tahsilOran + '%"></div></div><div style="font-size:9px;color:var(--text-dim)">%' + tahsilOran + ' — Kalan: ' + fmt(topKalan) + '</div></div></div>' +
     (beklAlacak > 0 ? '<div class="card" style="border:1px solid rgba(231,76,60,.3)"><div class="card-label">Bekleyen Alacak</div><div class="card-value" style="color:#e74c3c">' + fmt(beklAlacak) + '</div></div>' : '') +
@@ -135,7 +159,7 @@ function renderDashboard(){
   var durEl = document.getElementById('dash-durusmalar');
   if (durEl) {
     if (!durusmalar.length) {
-      durEl.innerHTML = '<div class="empty"><div class="empty-icon">⚖️</div><p>Yaklaşan duruşma yok</p></div>';
+      durEl.innerHTML = '<div style="padding:24px;text-align:center;font-size:12px;color:var(--text-dim)">Yaklaşan duruşma yok</div>';
     } else {
       durEl.innerHTML = durusmalar.slice(0,8).map(function(d) {
         var gun = Math.ceil((new Date(d.tarih) - now) / 86400000);
@@ -157,7 +181,7 @@ function renderDashboard(){
   var grvEl = document.getElementById('dash-gorevler');
   if (grvEl) {
     if (!gorevler.length) {
-      grvEl.innerHTML = '<div class="empty"><div class="empty-icon">✅</div><p>Açık görev yok</p></div>';
+      grvEl.innerHTML = '<div style="padding:24px;text-align:center;font-size:12px;color:var(--text-dim)">Açık görev yok</div>';
     } else {
       grvEl.innerHTML = gorevler.slice(0,6).map(function(td) {
         var gecikme = td.sonTarih && td.sonTarih < t;
@@ -220,7 +244,7 @@ function renderDashboard(){
     var topVG = gecenler.reduce(function(s,g){return s+g.tutar;},0);
 
     if (!gecenler.length) {
-      vgEl.innerHTML = '<div class="empty"><div class="empty-icon">✅</div><p>Vadesi geçen alacak yok</p></div>';
+      vgEl.innerHTML = '<div style="padding:24px;text-align:center;font-size:12px;color:var(--text-dim)">Vadesi geçen alacak yok</div>';
     } else {
       vgEl.innerHTML = '<div style="text-align:center;padding:8px 0;margin-bottom:8px;background:rgba(231,76,60,.06);border-radius:6px"><div style="font-size:10px;color:#e74c3c">TOPLAM</div><div style="font-size:20px;font-weight:800;color:#e74c3c">' + fmt(topVG) + '</div></div>' +
         gecenler.slice(0,6).map(function(g) {
@@ -239,7 +263,7 @@ function renderDashboard(){
   if (aktEl) {
     var log = (state.aktiviteLog||[]).slice(-10).reverse();
     if (!log.length) {
-      aktEl.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><p>Henüz aktivite yok</p></div>';
+      aktEl.innerHTML = '<div style="padding:24px;text-align:center;font-size:12px;color:var(--text-dim)">Henüz aktivite yok</div>';
     } else {
       aktEl.innerHTML = log.map(function(l) {
         var ikon = {'Giriş':'🔑','Dava':'📁','İcra':'⚡','Finans':'💰','İhtarname':'📩','Avans':'🏦','Müvekkil':'👤','Personel':'👥','Genel':'📋'}[l.module||''] || '📋';
@@ -259,6 +283,86 @@ function renderDashboard(){
   // ── DANIŞMANLIK ──
   var dd = document.getElementById('dash-danismanlik');
   if (dd) dd.innerHTML = typeof renderDashDanismanlik === 'function' ? renderDashDanismanlik() : '';
+
+  // ── Drag & Drop başlat ──
+  initDashDragDrop();
+}
+
+// ================================================================
+// DASHBOARD DRAG & DROP
+// ================================================================
+
+function initDashDragDrop() {
+  var containers = document.querySelectorAll('#dash-grid-main, #dash-grid-bottom');
+  containers.forEach(function(container) {
+    var panels = container.querySelectorAll('.dash-panel');
+    panels.forEach(function(panel) {
+      panel.setAttribute('draggable', 'true');
+      panel.addEventListener('dragstart', _dashDragStart);
+      panel.addEventListener('dragend', _dashDragEnd);
+      panel.addEventListener('dragover', _dashDragOver);
+      panel.addEventListener('drop', _dashDrop);
+    });
+  });
+  // Sıralama varsa geri yükle
+  restoreDashOrder();
+}
+
+function _dashDragStart(e) {
+  this.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', this.id);
+}
+
+function _dashDragEnd(e) {
+  this.classList.remove('dragging');
+  document.querySelectorAll('.dash-panel.drag-over').forEach(function(el) { el.classList.remove('drag-over'); });
+  saveDashOrder();
+}
+
+function _dashDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  var container = this.parentElement;
+  var dragging = container.querySelector('.dragging');
+  if (!dragging || dragging === this) return;
+  var rect = this.getBoundingClientRect();
+  var midX = rect.left + rect.width / 2;
+  if (e.clientX < midX) {
+    container.insertBefore(dragging, this);
+  } else {
+    container.insertBefore(dragging, this.nextSibling);
+  }
+}
+
+function _dashDrop(e) {
+  e.preventDefault();
+}
+
+function saveDashOrder() {
+  var order = {};
+  ['dash-grid-main', 'dash-grid-bottom'].forEach(function(gid) {
+    var container = document.getElementById(gid);
+    if (!container) return;
+    var ids = [];
+    container.querySelectorAll('.dash-panel').forEach(function(p) { ids.push(p.id); });
+    order[gid] = ids;
+  });
+  try { localStorage.setItem('dashboardSiralama', JSON.stringify(order)); } catch(e) {}
+}
+
+function restoreDashOrder() {
+  var saved;
+  try { saved = JSON.parse(localStorage.getItem('dashboardSiralama')); } catch(e) { return; }
+  if (!saved) return;
+  ['dash-grid-main', 'dash-grid-bottom'].forEach(function(gid) {
+    var container = document.getElementById(gid);
+    if (!container || !saved[gid]) return;
+    saved[gid].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el && el.parentElement === container) container.appendChild(el);
+    });
+  });
 }
 
 // ================================================================
