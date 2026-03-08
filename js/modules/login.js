@@ -222,15 +222,14 @@ async function saveAnlasma(){
     var btn=document.querySelector('#anlasma-modal .btn-gold');
     var ok=await LexSubmit.formKaydet({ tablo:hedefTablo, kayit:obj, modalId:'anlasma-modal', butonEl:btn, basariMesaj:'✓ Ücret anlaşması kaydedildi',
       renderFn:function(){
-        // Avans kaydını da Supabase'e yaz
         if(avansKayit){
           var mi=state.avanslar.findIndex(a=>a.id===avansKayit.id);
           if(mi>=0)state.avanslar[mi]=avansKayit;else state.avanslar.push(avansKayit);
-          LexSubmit.kaydet('avanslar', avansKayit); // fire-and-forget for secondary record
+          LexSubmit.kaydet('avanslar', avansKayit);
         }
-        if(anlasmaCtx.type==='dava'){renderDavaTabContent('anlasma');renderDdCards(getDava(aktivDavaId));}
-        else{renderIcraTabContent('anlasma');renderIdCards(getIcra(aktivIcraId));}
-        renderDashboard();
+        if(anlasmaCtx.type==='dava') try{renderDavaTabContent('anlasma');}catch(e){}
+        else try{renderIcraTabContent('anlasma');}catch(e){}
+        refreshFinansViews({dosyaTur:anlasmaCtx.type, dosyaId:anlasmaCtx.type==='dava'?aktivDavaId:aktivIcraId});
       }
     });
     if(!ok) return;

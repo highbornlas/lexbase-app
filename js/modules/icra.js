@@ -57,7 +57,8 @@ async function _saveIcraDevamAsync(yeniIcra) {
       basariMesaj: '✓ İcra dosyası eklendi',
       renderFn: function() {
         if (yeniIcra.itarih) _icraItirazGorev(yeniIcra);
-        saveData(); renderIcra(); renderIcraCards(); renderMdDavalar(); updateBadges();
+        saveData(); renderIcra(); renderIcraCards(); renderMdDavalar();
+        if(typeof refreshFinansViews==='function') refreshFinansViews({muvId:yeniIcra.muvId});
       }
     });
     if (!basarili) return;
@@ -323,7 +324,7 @@ async function saveButce() {
   if (typeof LexSubmit !== 'undefined') {
     var btn = document.querySelector('#but-modal .btn-gold');
     var ok = await LexSubmit.formKaydet({ tablo:'butce', kayit:_butKayit, modalId:'but-modal', butonEl:btn, basariMesaj:'✓ Hareket eklendi',
-      renderFn:function(){ renderButce(); addAktiviteLog('Finans Hareketi Eklendi', _butKayit.tur + ' — ' + fmt(tutar), 'Finans'); }
+      renderFn:function(){ refreshFinansViews({muvId:_butKayit.muvId}); addAktiviteLog('Finans Hareketi Eklendi', _butKayit.tur + ' — ' + fmt(tutar), 'Finans'); }
     });
     if(!ok) return;
   } else {

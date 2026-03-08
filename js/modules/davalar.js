@@ -59,7 +59,8 @@ async function _saveDavaDevamAsync(yeniDava) {
       basariMesaj: '✓ Dava eklendi',
       renderFn: function() {
         addLog(yeniDava.muvId,'Dava Eklendi', yeniDava.no+' | '+yeniDava.konu);
-        renderDavalar();renderDavaCards();renderMdDavalar();updateBadges();
+        renderDavalar();renderDavaCards();renderMdDavalar();
+        if(typeof refreshFinansViews==='function') refreshFinansViews({muvId:yeniDava.muvId});
       }
     });
     if (!basarili) return; // Hata — modal açık
@@ -387,9 +388,7 @@ async function saveHarcama(){
     var btn=document.querySelector('#harc-modal .btn-gold');
     var ok=await LexSubmit.formKaydet({ tablo:hedefTablo, kayit:hedefObj, modalId:'harc-modal', butonEl:btn, basariMesaj:'✓ Harcama eklendi',
       renderFn:function(){
-        if(hedefCtx==='dava'){renderDavaTabContent('harcamalar');renderDdCards(hedefObj);}
-        else{renderIcraTabContent('harcamalar');renderIdCards(hedefObj);}
-        if(aktifSekme==='muv'){renderMdHarcamalar();renderMdCards();}
+        refreshFinansViews({dosyaTur:hedefCtx, dosyaId:hedefObj.id, muvId:hedefObj.muvId});
       }
     });
     if(!ok){hedefObj.harcamalar.pop();return;} // Hata: geri al
@@ -628,8 +627,10 @@ async function saveTahsilatHareket(){
     var btn=document.querySelector('#tahsilat-modal .btn-gold');
     var ok=await LexSubmit.formKaydet({ tablo:hedefTablo, kayit:obj, modalId:'tahsilat-modal', butonEl:btn, basariMesaj:tahsilatCtx.editId?'✓ Hareket güncellendi':'✓ Hareket eklendi',
       renderFn:function(){
-        if(tahsilatCtx.type==='dava'){renderDavaTabContent('tahsilat');renderDdCards(getDava(aktivDavaId));}
-        else{renderIcraTabContent('tahsilat');renderIdCards(getIcra(aktivIcraId));}
+        var ctx=tahsilatCtx.type;
+        if(ctx==='dava') try{renderDavaTabContent('tahsilat');}catch(e){}
+        else try{renderIcraTabContent('tahsilat');}catch(e){}
+        refreshFinansViews({dosyaTur:ctx, dosyaId:ctx==='dava'?aktivDavaId:aktivIcraId});
       }
     });
     if(!ok){if(!tahsilatCtx.editId)obj.tahsilatlar.pop();return;}

@@ -812,9 +812,7 @@ async function saveFinansIslem() {
       butonEl: btn,
       basariMesaj: '✓ ' + tur + ' kaydedildi — ' + fmt(tutar),
       renderFn: function() {
-        renderMuvekkilBakiye();
-        renderButce();
-        updateBadges();
+        refreshFinansViews({muvId: kayit.muvId, dosyaTur: dosyaTur, dosyaId: dosyaId});
       }
     });
     if (!ok) return; // Hata → modal açık, veri korunur
@@ -828,4 +826,60 @@ async function saveFinansIslem() {
     renderButce();
     notify('✓ ' + tur + ' kaydedildi');
   }
+}
+
+// ================================================================
+// GLOBAL FİNANS REFRESH — Tüm finansal bileşenleri yeniler
+// ================================================================
+// Her finansal LexSubmit.renderFn içinden çağrılmalı.
+// Tek çağrıda: cari bakiye, dosya kartları, bütçe, dashboard,
+// avans listesi, badge'ler hepsi güncellenir.
+//
+// Kullanım: refreshFinansViews({ muvId, dosyaTur, dosyaId })
+// ================================================================
+function refreshFinansViews(opts) {
+  opts = opts || {};
+
+  // 1. Müvekkil cari bakiye (Finans → Müvekkil sekmesi)
+  if (typeof renderMuvekkilBakiye === 'function') {
+    try { renderMuvekkilBakiye(); } catch(e) {}
+  }
+
+  // 2. Bütçe / finans hareketleri
+  if (typeof renderButce === 'function') {
+    try { renderButce(); } catch(e) {}
+  }
+
+  // 3. Dosya detay kartları (açık dosya varsa)
+  if (opts.dosyaTur === 'dava' || aktivDavaId) {
+    var dava = typeof getDava === 'function' ? getDava(opts.dosyaId || aktivDavaId) : null;
+    if (dava) {
+      try { if (typeof renderDdCards === 'function') renderDdCards(dava); } catch(e) {}
+      try { if (typeof renderDavaTabContent === 'function') renderDavaTabContent('harcamalar'); } catch(e) {}
+    }
+  }
+  if (opts.dosyaTur === 'icra' || aktivIcraId) {
+    var icra = typeof getIcra === 'function' ? getIcra(opts.dosyaId || aktivIcraId) : null;
+    if (icra) {
+      try { if (typeof renderIdCards === 'function') renderIdCards(icra); } catch(e) {}
+      try { if (typeof renderIcraTabContent === 'function') renderIcraTabContent('harcamalar'); } catch(e) {}
+    }
+  }
+
+  // 4. Müvekkil detay sayfası (avans, harcama, kartlar)
+  if (opts.muvId || aktivMuvId) {
+    try { if (typeof renderMdAvans === 'function') renderMdAvans(); } catch(e) {}
+    try { if (typeof renderMdHarcamalar === 'function') renderMdHarcamalar(); } catch(e) {}
+    try { if (typeof renderMdCards === 'function') renderMdCards(); } catch(e) {}
+  }
+
+  // 5. İcra ve Dava liste kartları
+  try { if (typeof renderIcraCards === 'function') renderIcraCards(); } catch(e) {}
+  try { if (typeof renderDavaCards === 'function') renderDavaCards(); } catch(e) {}
+
+  // 6. Dashboard
+  try { if (typeof renderDashboard === 'function') renderDashboard(); } catch(e) {}
+
+  // 7. Badge'ler
+  try { if (typeof updateBadges === 'function') updateBadges(); } catch(e) {}
 }

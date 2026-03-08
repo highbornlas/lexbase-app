@@ -1542,7 +1542,7 @@ async function saveAvans(){
       if (typeof LexSubmit !== 'undefined') {
         var btn = document.querySelector('#avans-modal .btn-gold');
         var ok = await LexSubmit.formKaydet({ tablo:'avanslar', kayit:guncel, modalId:'avans-modal', butonEl:btn, basariMesaj:'✓ Kayıt güncellendi',
-          renderFn:function(){ addLog(aktivMuvId,'Avans Düzenlendi',eskiOzet+' → '+tur+' | '+fmt(tutar)); renderMdAvans();renderMdCards(); }
+          renderFn:function(){ addLog(aktivMuvId,'Avans Düzenlendi',eskiOzet+' → '+tur+' | '+fmt(tutar)); refreshFinansViews({muvId:aktivMuvId}); }
         });
         if(!ok) return;
       } else {
@@ -1568,7 +1568,7 @@ async function saveAvans(){
           else if(dosyaTur==='icra'){const i=getIcra(dosyaId);if(i){if(!i.harcamalar)i.harcamalar=[];i.harcamalar.push(harc);}}
           saveData();
         }
-        renderMdAvans();renderMdCards();
+        refreshFinansViews({muvId:aktivMuvId, dosyaTur:dosyaTur, dosyaId:dosyaId});
       }
     });
     if(!ok2) return;
@@ -1586,7 +1586,7 @@ async function saveAvans(){
 async function deleteAvans(id){
   if (typeof LexSubmit !== 'undefined') {
     await LexSubmit.formSil({ tablo:'avanslar', id:id, onayMesaj:'Bu kaydı silmek istediğinize emin misiniz?', basariMesaj:'Silindi',
-      renderFn:function(){ renderMdAvans();renderMdCards(); }
+      renderFn:function(){ refreshFinansViews({muvId:aktivMuvId}); }
     });
   } else {
     const a=state.avanslar.find(x=>x.id===id);

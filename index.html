@@ -1777,17 +1777,23 @@
         </div>
       </div>
 
-      <!-- Demo Veri -->
-      <div class="ayar-section" style="border-color:var(--border)">
-        <div class="ayar-section-header">
+      <!-- Demo Veri v2 — Kapsamlı Seed Sistemi -->
+      <div class="ayar-section" style="border-color:var(--gold-dim)">
+        <div class="ayar-section-header" style="border-bottom-color:var(--gold-dim)">
           <span class="ayar-section-icon">🧪</span>
-          <div><div class="ayar-section-title">Demo Veri</div><div class="ayar-section-sub">Sistemi test etmek için örnek veriler</div></div>
+          <div><div class="ayar-section-title">Demo Veri Sistemi</div><div class="ayar-section-sub">Türk hukuk sistemine uygun gerçekçi demo veri seti</div></div>
         </div>
         <div style="padding:20px">
-          <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px">27 müvekkil, 50 dava ve 28 icra dosyasından oluşan örnek veriyi yükleyin veya silin.</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.6">
+            25 Müvekkil, 25 Dava, 20 İcra, 15 İhtarname, 10 Arabuluculuk, 12 Danışmanlık,
+            30 Avans, 40 Bütçe Hareketi, 20 Finans İşlemi, 20 Görev, 15 Takvim Etkinliği
+            ve 10 Ücret Anlaşması — tüm veriler ilişkisel bütünlükle bağlı.
+          </div>
+          <!-- İlerleme alanı -->
+          <div id="seed-progress" style="max-height:200px;overflow-y:auto;margin-bottom:14px;padding:10px;background:var(--surface2);border-radius:var(--radius);display:none"></div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            <button class="btn btn-gold" onclick="demoVeriYukle()" style="justify-content:center">📥 Demo Veri Yükle</button>
-            <button class="btn btn-danger" onclick="demoVeriSil()" style="justify-content:center">🗑️ Demo Verileri Sil</button>
+            <button class="btn btn-gold" id="seed-yukle-btn" onclick="seedYukle()" style="justify-content:center">🚀 Demo Veri Oluştur</button>
+            <button class="btn btn-outline" onclick="seedTemizle()" style="justify-content:center;border-color:#e74c3c;color:#e74c3c">🗑️ Tüm Verileri Temizle</button>
           </div>
         </div>
       </div>
@@ -3543,6 +3549,7 @@
 <script src="js/modules/menfaat.js"></script>
 <script src="js/modules/mukerrer.js"></script>
 <script src="js/modules/validasyon.js"></script>
+<script src="js/modules/seed.js"></script>
 
 <!-- SPOTLIGHT ARAMA -->
 <div id="spotlight-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:99999;align-items:flex-start;justify-content:center;padding-top:15vh">

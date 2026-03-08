@@ -221,10 +221,10 @@ async function saveIhtar() {
       butonEl: btn,
       basariMesaj: '✓ İhtarname kaydedildi',
       renderFn: function() {
-        // Otomasyonları state'e yaz (sadece başarıda!)
         if (masrafKayit) _masrafOtoUygula(masrafKayit, kayitId);
         if (gorevKayit) _gorevOtoUygula(gorevKayit, kayitId);
-        renderIhtarname(); updateBadges();
+        renderIhtarname();
+        if (typeof refreshFinansViews === 'function') refreshFinansViews({muvId: veri.muvId});
       }
     });
     if (!basarili) return; // Hata — modal açık, veri form'da duruyor
@@ -278,11 +278,11 @@ async function deleteIhtar(id) {
       onayMesaj: 'Bu ihtarnameyi silmek istediğinize emin misiniz?',
       basariMesaj: 'İhtarname silindi',
       renderFn: function() {
-        // İlişkili otomatik kayıtları da temizle
         state.avanslar = (state.avanslar||[]).filter(function(a){return a._ihtarId !== id;});
         state.todolar = (state.todolar||[]).filter(function(t){return t._ihtarId !== id || !t._otoIhtar;});
         saveData();
-        renderIhtarname(); updateBadges();
+        renderIhtarname();
+        if (typeof refreshFinansViews === 'function') refreshFinansViews();
         if (aktivIhtarId === id) showPage('ihtarname', document.getElementById('ni-ihtarname'));
       }
     });
