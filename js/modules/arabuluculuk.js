@@ -3,54 +3,69 @@
 // js/modules/arabuluculuk.js
 // ================================================================
 
-function renderArabuluculuk(){
-  // Sayfayı en üste kaydır
-  const sayfaEl = document.getElementById('page-arabuluculuk');
-  if (sayfaEl) sayfaEl.scrollTop = 0;
-  const mainEl = document.querySelector('.main-content');
-  if (mainEl) mainEl.scrollTop = 0;
-  if(!state.arabuluculuk)state.arabuluculuk=[];
-  const ara=(document.getElementById('arab-s')||{}).value||'';
-  const ft=(document.getElementById('arab-ft')||{}).value||'';
-  const fd=(document.getElementById('arab-fd')||{}).value||'';
-  let list=[...state.arabuluculuk];
-  if(ft)list=list.filter(a=>a.tur===ft || (a.tur||'').startsWith(ft));
-  if(fd)list=list.filter(a=>a.durum===fd);
-  if(ara)list=list.filter(a=>(a.konu+(a.karsi||'')+(a.arabulucuAd||'')+(a.uyusmazlikTur||'')).toLowerCase().includes(ara.toLowerCase()));
+// ── ListeMotoru kaydı ──
+ListeMotoru.register('arabuluculuk', {
+  stateKey: 'arabuluculuk',
+  containerId: 'arab-liste-body',
+  kpiBarId: 'arab-cards',
+  filterRowId: 'arab-filter-row',
+  chipContainerId: 'arab-chips',
+  searchInputId: 'arab-s',
+  sortTabloKey: 'arab',
+  defaultSort: { key: 'basvuruTarih', dir: -1 },
+  dateField: 'basvuruTarih',
+  renderMode: 'card',
+  emptyText: 'Henüz arabuluculuk dosyası yok',
 
-  // Özet kartlar
-  const toplam=state.arabuluculuk.length;
-  const devam=state.arabuluculuk.filter(a=>a.durum==='Görüşmeler Devam Ediyor'||a.durum==='İlk Toplantı Bekleniyor').length;
-  const uzlasma=state.arabuluculuk.filter(a=>a.durum==='Uzlaşma Sağlandı').length;
-  const daval=state.arabuluculuk.filter(a=>a.durum==='Dava Açıldı').length;
-  document.getElementById('arab-cards').innerHTML=`
-    <div class="card"><div class="card-label">Toplam Dosya</div><div class="card-value gold">${toplam}</div></div>
-    <div class="card"><div class="card-label">Devam Eden</div><div class="card-value" style="color:#e67e22">${devam}</div></div>
-    <div class="card"><div class="card-label">Uzlaşma Sağlandı</div><div class="card-value green">${uzlasma}</div></div>
-    <div class="card"><div class="card-label">Dava Açıldı</div><div class="card-value" style="color:#8e44ad">${daval}</div></div>`;
+  cardRenderer: function(a, isYeni) {
+    return '<div class="arab-row" onclick="openArabDetay(\'' + a.id + '\')" style="' + (isYeni ? 'border-left:3px solid var(--gold);' : '') + '">' +
+      '<div class="arab-row-left">' +
+        '<div class="arab-row-title">' + a.konu + (isYeni ? ' <span class="lm-yeni-badge">YENİ</span>' : '') + '</div>' +
+        '<div class="arab-row-meta">' +
+          '<span style="background:var(--surface2);padding:1px 7px;border-radius:10px;font-size:10px;margin-right:6px">' + a.tur + '</span>' +
+          (a.uyusmazlikTur ? '<span style="background:rgba(0,188,212,.1);color:#00BCD4;padding:1px 7px;border-radius:10px;font-size:10px;margin-right:6px">' + a.uyusmazlikTur + '</span>' : '') +
+          (a.muvId ? getMuvAd(a.muvId) + '  ·  ' : '') +
+          (a.karsi ? 'Karşı: ' + a.karsi : '') +
+          (a.basvuruTarih ? ' · ' + fmtD(a.basvuruTarih) : '') +
+        '</div>' +
+      '</div>' +
+      '<div class="arab-row-right">' +
+        (a.ilgiliDavaId ? '<span style="font-size:10px;color:var(--purple);border:1px solid var(--purple);border-radius:10px;padding:1px 8px">Dava bagli</span>' : '') +
+        arabDurumBadge(a.durum || 'Başvuru Yapıldı') +
+      '</div>' +
+    '</div>';
+  },
 
-  const listEl=document.getElementById('arab-list');
-  const emptyEl=document.getElementById('arab-empty');
-  if(!list.length){listEl.innerHTML='';emptyEl.style.display='flex';return;}
-  emptyEl.style.display='none';
-  listEl.innerHTML=list.map(a=>`
-    <div class="arab-row" onclick="openArabDetay('${a.id}')">
-      <div class="arab-row-left">
-        <div class="arab-row-title">${a.konu}</div>
-        <div class="arab-row-meta">
-          <span style="background:var(--surface2);padding:1px 7px;border-radius:10px;font-size:10px;margin-right:6px">${a.tur}</span>
-          ${a.uyusmazlikTur?`<span style="background:rgba(0,188,212,.1);color:#00BCD4;padding:1px 7px;border-radius:10px;font-size:10px;margin-right:6px">${a.uyusmazlikTur}</span>`:''}
-          ${a.muvId?getMuvAd(a.muvId)+'  ·  ':''} 
-          ${a.karsi?'Karşı: '+a.karsi:''}
-          ${a.basvuruTarih?' · '+fmtD(a.basvuruTarih):''}
-        </div>
-      </div>
-      <div class="arab-row-right">
-        ${a.ilgiliDavaId?'<span style="font-size:10px;color:var(--purple);border:1px solid var(--purple);border-radius:10px;padding:1px 8px">⚖️ Dava bağlı</span>':''}
-        ${arabDurumBadge(a.durum||'Başvuru Yapıldı')}
-      </div>
-    </div>`).join('');
-}
+  filters: [
+    { key: 'tur', label: 'Tür', options: function(allData) {
+      var t = {}; allData.forEach(function(a) { if (a.tur) t[a.tur] = true; }); return Object.keys(t);
+    } },
+    { key: 'durum', label: 'Durum', options: ['Başvuru Yapıldı','İlk Toplantı Bekleniyor','Görüşmeler Devam Ediyor','Uzlaşma Sağlandı','Uzlaşma Sağlanamadı','Dava Açıldı'] },
+  ],
+
+  kpiCards: [
+    { label: 'Toplam Dosya', valueClass: 'gold', calc: function(all) { return all.length; } },
+    { label: 'Devam Eden', valueColor: '#e67e22', calc: function(all) {
+      return all.filter(function(a) { return a.durum === 'Görüşmeler Devam Ediyor' || a.durum === 'İlk Toplantı Bekleniyor'; }).length;
+    }, filterOnClick: { key: 'durum', value: 'Görüşmeler Devam Ediyor' } },
+    { label: 'Uzlaşma', valueColor: 'var(--green)', calc: function(all) {
+      return all.filter(function(a) { return a.durum === 'Uzlaşma Sağlandı'; }).length;
+    }, filterOnClick: { key: 'durum', value: 'Uzlaşma Sağlandı' } },
+    { label: 'Dava Açıldı', valueColor: '#8e44ad', calc: function(all) {
+      return all.filter(function(a) { return a.durum === 'Dava Açıldı'; }).length;
+    }, filterOnClick: { key: 'durum', value: 'Dava Açıldı' } },
+  ],
+
+  searchFn: function(item, q) {
+    return (item.konu || '').toLowerCase().includes(q) ||
+      (item.karsi || '').toLowerCase().includes(q) ||
+      (item.arabulucuAd || '').toLowerCase().includes(q) ||
+      (item.uyusmazlikTur || '').toLowerCase().includes(q) ||
+      getMuvAd(item.muvId).toLowerCase().includes(q);
+  },
+});
+
+function renderArabuluculuk() { ListeMotoru.render('arabuluculuk'); }
 
 function openArabDetay(id){
   aktivArabId=id;

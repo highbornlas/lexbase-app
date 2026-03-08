@@ -445,6 +445,53 @@ th.sort-th.desc::after{content:' ▼';font-size:8px;color:var(--gold);}
 .dash-panel[draggable="true"]:active{cursor:grabbing;}
 .dash-panel.dragging{opacity:0.35;transform:scale(0.98);transition:opacity .2s,transform .2s;}
 
+/* ================================================================
+   LİSTE MOTORU — Birleşik Liste Bileşen Sistemi
+================================================================ */
+
+/* --- Araç Çubuğu --- */
+.lm-toolbar{display:flex;flex-direction:column;gap:10px;margin-bottom:16px;}
+.lm-toolbar-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+
+/* --- Geniş Arama Çubuğu --- */
+.lm-search-wrap{position:relative;flex:1;min-width:200px;}
+.lm-search{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px 10px 36px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .15s;}
+.lm-search:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-dim);}
+.lm-search-wrap::before{content:'🔍';position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:13px;pointer-events:none;}
+
+/* --- Chip Filtre Butonları --- */
+.lm-filter-row{display:flex;gap:14px;flex-wrap:wrap;padding:2px 0;}
+.lm-filter-group{display:flex;align-items:center;gap:4px;}
+.lm-filter-label{font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;margin-right:2px;}
+.lm-filter-btn{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--text-muted);font-family:'DM Sans',sans-serif;transition:all .15s;}
+.lm-filter-btn:hover{border-color:var(--gold);color:var(--gold);}
+.lm-filter-btn.active{background:var(--gold-dim);border-color:var(--gold);color:var(--gold-light);font-weight:700;}
+
+/* --- Tıklanabilir KPI Kartları --- */
+.lm-kpi-card{cursor:pointer;transition:border-color .15s,transform .1s;}
+.lm-kpi-card:hover{border-color:var(--gold);transform:translateY(-1px);}
+.lm-kpi-active{border-color:var(--gold)!important;background:var(--gold-dim)!important;}
+
+/* --- YENİ Badge --- */
+.lm-yeni-badge{display:inline-flex;align-items:center;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:800;background:var(--gold-dim);color:var(--gold);letter-spacing:.5px;margin-left:6px;animation:chipIn .3s ease;}
+
+/* --- Aşama İlerleme Çubuğu --- */
+.lm-stage-bar{display:flex;gap:2px;height:4px;width:72px;margin-top:4px;}
+.lm-stage-step{flex:1;height:100%;border-radius:2px;background:var(--border);}
+.lm-stage-step.done{background:var(--gold);}
+.lm-stage-step.active{background:var(--green);}
+
+/* --- Satır Stili --- */
+.lm-row{position:relative;transition:background .1s;}
+.lm-row:hover td{background:var(--surface2);}
+
+/* --- Responsive --- */
+@media(max-width:768px){
+  .lm-search{padding:8px 12px 8px 32px;font-size:12px;}
+  .lm-filter-row{gap:8px;}
+  .lm-filter-group{flex-wrap:wrap;}
+}
+
 .section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:18px;overflow:hidden;}
 .section-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);}
 .section-title{font-size:14px;font-weight:600;color:var(--text);}

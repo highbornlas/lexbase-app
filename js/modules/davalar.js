@@ -86,60 +86,116 @@ async function deleteDavaById(id){
 
 function openDavModalForMuv(){openModal('dav-modal');setTimeout(()=>{const e=document.getElementById('d-muv');if(aktivMuvId)e.value=aktivMuvId;},50);}
 
-function renderDavaCards(){
-  const t=state.davalar.length,a=state.davalar.filter(d=>d.durum==='Aktif').length;
-  const is=state.davalar.filter(d=>d.asama==='İstinaf').length,yr=state.davalar.filter(d=>d.asama&&d.asama.startsWith('Temyiz')||d.asama==='Yargıtay').length,ks=state.davalar.filter(d=>d.asama==='Kesinleşti').length;
-  document.getElementById('dav-cards').innerHTML=`<div class="card"><div class="card-label">Toplam</div><div class="card-value gold">${t}</div></div><div class="card"><div class="card-label">Aktif</div><div class="card-value green">${a}</div></div><div class="card"><div class="card-label">İstinaf</div><div class="card-value" style="color:#8e44ad">${is}</div></div><div class="card"><div class="card-label">Temyiz</div><div class="card-value" style="color:#6c3483">${yr}</div></div><div class="card"><div class="card-label">Kesinleşmiş</div><div class="card-value" style="color:var(--text-muted)">${ks}</div></div>`;
+// ── ListeMotoru kaydı ──
+var _davStages = ['İlk Derece','İstinaf','Temyiz','Kesinleşti'];
+function _davNormAsama(a) {
+  if (!a) return '';
+  if (a.startsWith('Temyiz') || a === 'Yargıtay') return 'Temyiz';
+  return a;
 }
 
-function filterDavalar(){
-  const s=document.getElementById('dav-s').value,k=document.getElementById('dav-fk').value,a=document.getElementById('dav-fa').value,d=document.getElementById('dav-fd').value;
-  renderDavalar(s,k,a,d);
-}
+ListeMotoru.register('davalar', {
+  stateKey: 'davalar',
+  containerId: 'dav-liste-body',
+  kpiBarId: 'dav-cards',
+  filterRowId: 'dav-filter-row',
+  chipContainerId: 'dav-chips',
+  searchInputId: 'dav-s',
+  sortTabloKey: 'dav',
+  defaultSort: { key: 'tarih', dir: -1 },
+  dateField: 'tarih',
+  renderMode: 'table',
+  emptyText: 'Henüz dava eklenmemiş',
 
-function renderDavalar(search='',fk='',fa='',fd=''){
-  const em=document.getElementById('dav-empty'),cont=document.getElementById('dav-grouped');
-  let list=state.davalar;
-  if(search)list=list.filter(d=>d.no.toLowerCase().includes(search.toLowerCase())||d.konu.toLowerCase().includes(search.toLowerCase())||getMuvAd(d.muvId).toLowerCase().includes(search.toLowerCase()));
-  if(fk)list=list.filter(d=>d.mtur===fk);if(fa)list=list.filter(d=>d.asama===fa);if(fd)list=list.filter(d=>d.durum===fd);
-  if(!list.length){cont.innerHTML='';em.style.display='block';return;}em.style.display='none';
-  list=sortArr(list,'dav');
-  const groups={};list.forEach(d=>{const k=d.mtur||'Diğer';if(!groups[k])groups[k]=[];groups[k].push(d);});
-  cont.innerHTML=Object.entries(groups).map(([tur,davalar])=>{
-    const renk=MRENK[tur]||'#566573';
-    const rows=davalar.map(d=>{
-      const bc=d.durum==='Aktif'?'aktif':d.durum==='Beklemede'?'beklemede':'kapali';
-      const durumTag = d.durumTag || '';
-      const tagRenk = durumTag.includes('🔴')?'#e74c3c':durumTag.includes('🟡')?'#f39c12':durumTag.includes('🔵')?'#3498db':durumTag.includes('🏁')?'#27ae60':'var(--green)';
-      return`<tr class="dava-row" onclick="openDavaDetay('${d.id}')" style="cursor:pointer">
-        <td style="text-align:center;font-weight:700;color:var(--text-muted);font-size:11px">${d.sira||'?'}</td>
-        <td><strong style="color:var(--gold)">${d.no}</strong>${(d.esasYil||d.esasNo)?`<div style="font-size:10px;color:var(--text-dim)">Esas: ${d.esasYil||''}/${d.esasNo||''}</div>`:''}</td>
-        <td><span style="color:var(--gold-light);cursor:pointer">${getMuvAd(d.muvId)}</span></td>
-        <td>${d.konu}${d.karsi?`<div style="font-size:10px;color:var(--text-dim)">Karşı: ${d.karsi}</div>`:''}</td>
-        <td style="font-size:11px">${[d.il,d.mno].filter(Boolean).join(' ')}</td>
-        <td style="color:${ARENK[d.asama]||'var(--text-muted)'};font-size:11px;font-weight:600">${d.asama||'—'}</td>
-        <td>${durumTag?`<span style="font-size:10px;color:${tagRenk};font-weight:700">${durumTag}</span>`:`<span class="badge badge-${bc}">${d.durum}</span>`}</td>
-        <td>${d.taraf||'—'}</td><td>${fmtD(d.durusma)}</td>
-        <td>${d.icrano?`<span style="color:var(--gold);font-size:11px">⚡ ${d.icrano}</span>`:'—'}</td>
-        <td><button class="ctx-btn" onclick="event.stopPropagation();CtxMenu.davaMenu(event,'${d.id}')">⋮</button></td>
-      </tr>`;
-    }).join('');
-    return`<div class="section" style="margin-bottom:14px"><div class="section-header" style="border-left:3px solid ${renk}">
-      <div style="display:flex;align-items:center;gap:8px"><div class="section-title">${tur}</div><span style="background:${renk}22;color:${renk};border-radius:8px;font-size:10px;font-weight:700;padding:1px 7px">${davalar.length}</span></div>
-    </div><div style="overflow-x:auto"><table style="min-width:860px"><thead><tr>
-  <th class="sort-th" onclick="toggleSort('dav','sira')" style="width:50px"># `+shIcon('dav','sira')+`</th>
-  <th class="sort-th" onclick="toggleSort('dav','no')">Dosya No `+shIcon('dav','no')+`</th>
-  <th class="sort-th" onclick="toggleSort('dav','muvId')">Müvekkil `+shIcon('dav','muvId')+`</th>
-  <th class="sort-th" onclick="toggleSort('dav','konu')">Konu `+shIcon('dav','konu')+`</th>
-  <th>Mahkeme</th>
-  <th class="sort-th" onclick="toggleSort('dav','asama')">Aşama `+shIcon('dav','asama')+`</th>
-  <th class="sort-th" onclick="toggleSort('dav','durum')">Durum `+shIcon('dav','durum')+`</th>
-  <th class="sort-th" onclick="toggleSort('dav','taraf')">Taraf `+shIcon('dav','taraf')+`</th>
-  <th class="sort-th" onclick="toggleSort('dav','durusma')">Son Duruşma `+shIcon('dav','durusma')+`</th>
-  <th>İcra</th><th></th>
-</tr></thead><tbody>${rows}</tbody></table></div></div>`;
-  }).join('');
-}
+  groupBy: {
+    key: 'mtur',
+    defaultLabel: 'Diğer',
+    colors: MRENK,
+  },
+
+  columns: [
+    { key: 'sira', label: '#', sortable: true,
+      render: function(d) { return '<span style="font-weight:700;color:var(--text-muted);font-size:11px">' + (d.sira || '?') + '</span>'; } },
+    { key: 'no', label: 'Dosya No', sortable: true,
+      render: function(d) {
+        var html = '<strong style="color:var(--gold)">' + d.no + '</strong>';
+        if (d.esasYil || d.esasNo) html += '<div style="font-size:10px;color:var(--text-dim)">Esas: ' + (d.esasYil || '') + '/' + (d.esasNo || '') + '</div>';
+        return html;
+      } },
+    { key: 'muvId', label: 'Müvekkil', sortable: true,
+      render: function(d) { return '<span style="color:var(--gold-light)">' + getMuvAd(d.muvId) + '</span>'; } },
+    { key: 'konu', label: 'Konu', sortable: true,
+      render: function(d) {
+        var html = d.konu;
+        if (d.karsi) html += '<div style="font-size:10px;color:var(--text-dim)">Karsi: ' + d.karsi + '</div>';
+        return html;
+      } },
+    { key: 'mno', label: 'Mahkeme', sortable: false,
+      render: function(d) { return '<span style="font-size:11px">' + [d.il, d.mno].filter(Boolean).join(' ') + '</span>'; } },
+    { key: 'asama', label: 'Asama', sortable: true,
+      render: function(d) {
+        var renk = ARENK[d.asama] || 'var(--text-muted)';
+        var txt = '<span style="color:' + renk + ';font-size:11px;font-weight:600">' + (d.asama || '—') + '</span>';
+        var norm = _davNormAsama(d.asama);
+        if (norm && norm !== 'Düşürüldü') txt += ListeMotoru.stageBar(norm, _davStages);
+        return txt;
+      } },
+    { key: 'durum', label: 'Durum', sortable: true,
+      render: function(d) {
+        var durumTag = d.durumTag || '';
+        if (durumTag) {
+          var tagRenk = durumTag.indexOf('kirmizi')>=0?'#e74c3c':durumTag.indexOf('sari')>=0?'#f39c12':durumTag.indexOf('mavi')>=0?'#3498db':'var(--green)';
+          return '<span style="font-size:10px;color:' + tagRenk + ';font-weight:700">' + durumTag + '</span>';
+        }
+        var bc = d.durum === 'Aktif' ? 'aktif' : d.durum === 'Beklemede' ? 'beklemede' : 'kapali';
+        return '<span class="badge badge-' + bc + '">' + d.durum + '</span>';
+      } },
+    { key: 'taraf', label: 'Taraf', sortable: true,
+      render: function(d) { return d.taraf || '—'; } },
+    { key: 'durusma', label: 'Durusma', sortable: true,
+      render: function(d) { return fmtD(d.durusma); } },
+    { key: 'icrano', label: 'Icra', sortable: false,
+      render: function(d) { return d.icrano ? '<span style="color:var(--gold);font-size:11px">' + d.icrano + '</span>' : '—'; } },
+  ],
+
+  filters: [
+    { key: 'mtur', label: 'Mahkeme', options: function(allData) {
+      var t = {}; allData.forEach(function(d) { if (d.mtur) t[d.mtur] = true; }); return Object.keys(t);
+    } },
+    { key: 'asama', label: 'Asama', options: ['İlk Derece','İstinaf','Temyiz (Yargıtay)','Temyiz (Danıştay)','Kesinleşti','Düşürüldü'] },
+    { key: 'durum', label: 'Durum', options: ['Aktif','Beklemede','Kapalı'] },
+  ],
+
+  kpiCards: [
+    { label: 'Toplam', valueClass: 'gold', calc: function(all) { return all.length; } },
+    { label: 'Aktif', valueColor: 'var(--green)', calc: function(all) {
+      return all.filter(function(d) { return d.durum === 'Aktif'; }).length;
+    }, filterOnClick: { key: 'durum', value: 'Aktif' } },
+    { label: 'Istinaf', valueColor: '#8e44ad', calc: function(all) {
+      return all.filter(function(d) { return d.asama === 'İstinaf'; }).length;
+    }, filterOnClick: { key: 'asama', value: 'İstinaf' } },
+    { label: 'Temyiz', valueColor: '#6c3483', calc: function(all) {
+      return all.filter(function(d) { return (d.asama && d.asama.startsWith('Temyiz')) || d.asama === 'Yargıtay'; }).length;
+    } },
+    { label: 'Kesinlesmi', valueColor: 'var(--text-muted)', calc: function(all) {
+      return all.filter(function(d) { return d.asama === 'Kesinleşti'; }).length;
+    }, filterOnClick: { key: 'asama', value: 'Kesinleşti' } },
+  ],
+
+  searchFn: function(item, q) {
+    return (item.no || '').toLowerCase().includes(q) ||
+      (item.konu || '').toLowerCase().includes(q) ||
+      getMuvAd(item.muvId).toLowerCase().includes(q) ||
+      (item.karsi || '').toLowerCase().includes(q);
+  },
+
+  onRowClick: function(item) { return "openDavaDetay('" + item.id + "')"; },
+  onRowMenu: function(item) { return "CtxMenu.davaMenu(event,'" + item.id + "')"; },
+});
+
+function renderDavaCards() { ListeMotoru.render('davalar'); }
+function filterDavalar() { ListeMotoru.render('davalar'); }
+function renderDavalar() { ListeMotoru.render('davalar'); }
 
 // ================================================================
 // DAVA DETAY

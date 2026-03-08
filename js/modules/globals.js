@@ -184,6 +184,10 @@ const sortState={
   vek:    {key:'sira',dir:1},
   dav:    {key:'sira',dir:1},
   icra:   {key:'sira',dir:1},
+  iht:    {key:'tarih',dir:-1},
+  arab:   {key:'basvuruTarih',dir:-1},
+  dan:    {key:'tarih',dir:-1},
+  todo:   {key:'sonTarih',dir:1},
 };
 function toggleSort(tablo,key){
   const s=sortState[tablo];
@@ -191,8 +195,8 @@ function toggleSort(tablo,key){
   if(tablo==='muv')renderMuvekkillar(document.querySelector('#rehber-panel-muvekkillar .search-bar')?.value||'');
   else if(tablo==='kt')renderKarsiTaraflarListesi(document.getElementById('kt-ara-input')?.value||'');
   else if(tablo==='vek')renderVekillarListesi(document.getElementById('vek-ara-input')?.value||'');
-  else if(tablo==='dav')renderDavalar(document.getElementById('dav-s')?.value||'',document.getElementById('dav-fk')?.value||'',document.getElementById('dav-fa')?.value||'',document.getElementById('dav-fd')?.value||'');
-  else if(tablo==='icra')renderIcra(document.getElementById('icra-s')?.value||'',document.getElementById('icra-ft')?.value||'',document.getElementById('icra-fd')?.value||'');
+  else if(tablo==='dav')ListeMotoru.render('davalar');
+  else if(tablo==='icra')ListeMotoru.render('icra');
 }
 function sortArr(arr,tablo){
   const {key,dir}=sortState[tablo];

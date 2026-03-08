@@ -3,50 +3,69 @@
 // js/modules/danismanlik.js
 // ================================================================
 
+// ── ListeMotoru kaydı ──
+ListeMotoru.register('danismanlik', {
+  stateKey: 'danismanlik',
+  containerId: 'dan-liste-body',
+  kpiBarId: 'dan-cards',
+  filterRowId: 'dan-filter-row',
+  chipContainerId: 'dan-chips',
+  searchInputId: 'dan-s',
+  sortTabloKey: 'dan',
+  defaultSort: { key: 'tarih', dir: -1 },
+  dateField: 'tarih',
+  renderMode: 'table',
+  emptyText: 'Henüz hizmet kaydı yok',
+
+  columns: [
+    { key: 'tarih', label: 'Tarih', sortable: true,
+      render: function(d) { return '<span style="font-size:12px">' + fmtD(d.tarih) + '</span>'; } },
+    { key: 'tur', label: 'Tür', sortable: true,
+      render: function(d) { var r = DAN_TUR_RENK[d.tur] || '#7f8c8d';
+        return '<span style="background:' + r + '22;color:' + r + ';font-size:11px;padding:2px 7px;border-radius:10px;font-weight:600;white-space:nowrap">' + d.tur + '</span>'; } },
+    { key: 'muvId', label: 'Müvekkil', sortable: true,
+      render: function(d) { return '<span style="font-size:12px">' + getMuvAd(d.muvId) + '</span>'; } },
+    { key: 'konu', label: 'Konu', sortable: true,
+      render: function(d) { return '<span style="font-size:12px;max-width:200px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + d.konu + '</span>'; } },
+    { key: 'durum', label: 'Durum', sortable: true,
+      render: function(d) { var r = DAN_DURUM_RENK[d.durum] || '#7f8c8d';
+        return '<span style="background:' + r + '22;color:' + r + ';font-size:11px;padding:2px 7px;border-radius:10px;font-weight:600">' + d.durum + '</span>'; } },
+    { key: 'teslimTarih', label: 'Teslim', sortable: true,
+      render: function(d) { return '<span style="font-size:12px">' + (d.teslimTarih ? fmtD(d.teslimTarih) : '—') + '</span>'; } },
+    { key: 'ucret', label: 'Ücret', sortable: true,
+      render: function(d) { return '<span style="font-size:12px;color:var(--green)">' + (d.ucret ? fmt(d.ucret) : '—') + '</span>'; } },
+    { key: 'tahsilEdildi', label: 'Tahsilat', sortable: true,
+      render: function(d) { var k = (d.ucret || 0) - (d.tahsilEdildi || 0);
+        return '<span style="font-size:12px;color:' + (k > 0 ? '#e74c3c' : 'var(--green)') + '">' + (d.ucret ? fmt(d.tahsilEdildi || 0) : '—') + '</span>'; } },
+  ],
+
+  filters: [
+    { key: 'tur', label: 'Tür', options: ['Danışmanlık / Hukuki Görüş', 'İhtarname / Protesto', 'Sözleşme Hazırlama', 'Sözleşme İnceleme', 'İdari Başvuru', 'Diğer'] },
+    { key: 'durum', label: 'Durum', options: ['Taslak', 'Devam Ediyor', 'Müvekkil Onayında', 'Gönderildi', 'Tamamlandı', 'İptal'] },
+  ],
+
+  kpiCards: [
+    { label: 'Toplam Dosya', valueClass: 'gold', calc: function(all) { return all.length; } },
+    { label: 'Devam Eden', valueColor: 'var(--blue)', calc: function(all) { return all.filter(function(d) { return !['Tamamlandı','İptal'].includes(d.durum); }).length; },
+      filterOnClick: { key: 'durum', value: 'Devam Ediyor' } },
+    { label: 'Tamamlanan', valueColor: 'var(--green)', calc: function(all) { return all.filter(function(d) { return d.durum === 'Tamamlandı'; }).length; },
+      filterOnClick: { key: 'durum', value: 'Tamamlandı' } },
+    { label: 'Tahsil Edilmemiş', valueColor: '#e74c3c', calc: function(all) { return Math.max(0, all.reduce(function(s, d) { return s + ((d.ucret || 0) - (d.tahsilEdildi || 0)); }, 0)); },
+      format: function(v) { return fmt(v); } },
+  ],
+
+  searchFn: function(item, q) {
+    return getMuvAd(item.muvId).toLowerCase().includes(q) ||
+      (item.konu || '').toLowerCase().includes(q) ||
+      (item.tur || '').toLowerCase().includes(q);
+  },
+
+  onRowClick: function(item) { return "openDanDetay('" + item.id + "')"; },
+  onRowMenu: function(item) { return "event.stopPropagation();openDanModal('" + item.id + "')"; },
+});
+
 function renderDanismanlik() {
-  const filTur = document.getElementById('dan-fil-tur') ? document.getElementById('dan-fil-tur').value : '';
-  const filDurum = document.getElementById('dan-fil-durum') ? document.getElementById('dan-fil-durum').value : '';
-  let list = state.danismanlik;
-  if (filTur) list = list.filter(d => d.tur === filTur);
-  if (filDurum) list = list.filter(d => d.durum === filDurum);
-  list = list.slice().sort((a, b) => (b.tarih || '').localeCompare(a.tarih || ''));
-
-  const toplam = state.danismanlik.length;
-  const devam = state.danismanlik.filter(d => !['Tamamlandı','İptal'].includes(d.durum)).length;
-  const tamam = state.danismanlik.filter(d => d.durum === 'Tamamlandı').length;
-  const bekleyen = state.danismanlik.reduce((s, d) => s + ((d.ucret || 0) - (d.tahsilEdildi || 0)), 0);
-
-  const setEl = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  setEl('dan-toplam', toplam);
-  setEl('dan-devam', devam);
-  setEl('dan-tamam', tamam);
-  setEl('dan-bekleyen', fmt(Math.max(0, bekleyen)));
-
-  const tbody = document.getElementById('dan-tbody');
-  const empty = document.getElementById('dan-empty');
-  if (!tbody) return;
-  if (!list.length) {
-    tbody.innerHTML = '';
-    if (empty) empty.style.display = '';
-    return;
-  }
-  if (empty) empty.style.display = 'none';
-  tbody.innerHTML = list.map(d => {
-    const turRenk = DAN_TUR_RENK[d.tur] || '#7f8c8d';
-    const durRenk = DAN_DURUM_RENK[d.durum] || '#7f8c8d';
-    const kalan = (d.ucret || 0) - (d.tahsilEdildi || 0);
-    return `<tr style="cursor:pointer" onclick="openDanDetay('${d.id}')">
-      <td style="font-size:12px">${fmtD(d.tarih)}</td>
-      <td><span style="background:${turRenk}22;color:${turRenk};font-size:11px;padding:2px 7px;border-radius:10px;font-weight:600;white-space:nowrap">${d.tur}</span></td>
-      <td style="font-size:12px">${getMuvAd(d.muvId)}</td>
-      <td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.konu}</td>
-      <td><span style="background:${durRenk}22;color:${durRenk};font-size:11px;padding:2px 7px;border-radius:10px;font-weight:600">${d.durum}</span></td>
-      <td style="font-size:12px">${d.teslimTarih ? fmtD(d.teslimTarih) : '—'}</td>
-      <td style="font-size:12px;color:var(--green)">${d.ucret ? fmt(d.ucret) : '—'}</td>
-      <td style="font-size:12px;color:${kalan > 0 ? '#e74c3c' : 'var(--green)'}">${d.ucret ? fmt(d.tahsilEdildi || 0) : '—'}</td>
-      <td><button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openDanModal('${d.id}')">✏</button></td>
-    </tr>`;
-  }).join('');
+  ListeMotoru.render('danismanlik');
 }
 
 function openDanDetay(id) {

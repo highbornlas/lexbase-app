@@ -164,45 +164,110 @@ function deleteIcraById(id){
 }
 function openIcraModalForMuv(){openModal('icra-modal');setTimeout(()=>{const e=document.getElementById('i-no');if(e&&!e.value)e.value=autoNo('icra');},50);setTimeout(()=>{const e=document.getElementById('i-muv');if(aktivMuvId)e.value=aktivMuvId;},50);}
 
-function renderIcraCards(){
-  const l=state.icra,aktif=l.filter(i=>i.durum!=='Kapandı').length;
-  const tA=l.reduce((s,i)=>s+(i.alacak||0),0),tT=l.reduce((s,i)=>s+(i.tahsil||0),0);
-  document.getElementById('icra-cards').innerHTML=`<div class="card"><div class="card-label">Toplam</div><div class="card-value gold">${l.length}</div></div><div class="card"><div class="card-label">Aktif Takip</div><div class="card-value red">${aktif}</div></div><div class="card"><div class="card-label">Toplam Alacak</div><div class="card-value red">${fmt(tA)}</div></div><div class="card"><div class="card-label">Tahsil Edilen</div><div class="card-value green">${fmt(tT)}</div></div><div class="card"><div class="card-label">Kalan</div><div class="card-value red">${fmt(tA-tT)}</div></div>`;
-}
-function filterIcra(){renderIcra(document.getElementById('icra-s').value,document.getElementById('icra-ft').value,document.getElementById('icra-fd').value);}
-function renderIcra(s='',ft='',fd=''){
-  const tb=document.getElementById('icra-tbody'),em=document.getElementById('icra-empty');
-  let list=state.icra;
-  if(s)list=list.filter(i=>i.no.toLowerCase().includes(s.toLowerCase())||i.borclu.toLowerCase().includes(s.toLowerCase())||getMuvAd(i.muvId).toLowerCase().includes(s.toLowerCase()));
-  if(ft)list=list.filter(i=>i.tur===ft);if(fd)list=list.filter(i=>i.durum===fd);
-  // Update icra th active states
-  ['sira','no','muvId','borclu','tur','alacak','tahsil','durum','tarih'].forEach(k=>{
-    const th=document.getElementById('icra-th-'+k);if(!th)return;
-    const ss=sortState.icra;
-    const labels={sira:'#',no:'Dosya No',muvId:'Müvekkil',borclu:'Borçlu',tur:'Tür',alacak:'Toplam Alacak',tahsil:'Tahsil',durum:'Durum',tarih:'Tarih'};
-    th.className='sort-th'+(ss.key===k?' '+(ss.dir===1?'asc':'desc'):'');
-    th.innerHTML=labels[k]+' '+(ss.key===k?(ss.dir===1?'▲':'▼'):'⇅');
-  });
-  tb.innerHTML='';
-  if(!list.length){em.style.display='block';return;}em.style.display='none';
-  sortArr(list,'icra').forEach(i=>{
-    const kalan=(i.alacak||0)-(i.tahsil||0),oran=i.alacak>0?Math.round((i.tahsil/i.alacak)*100):0;
-    tb.innerHTML+=`<tr onclick="openIcraDetay('${i.id}')" style="cursor:pointer">
-      <td style="text-align:center;font-weight:700;color:var(--text-muted);font-size:11px">${i.sira||'?'}</td>
-      <td><strong style="color:var(--gold)">${i.no}</strong></td>
-      <td><span style="color:var(--gold-light)">${getMuvAd(i.muvId)}</span></td>
-      <td><strong>${i.borclu}</strong>${i.btc?`<div style="font-size:10px;color:var(--text-dim)">${i.btc}</div>`:''}</td>
-      <td style="font-size:11px">${[i.il,i.adliye,i.daire].filter(Boolean).join(' — ')}</td>
-      <td style="font-size:11px;color:var(--text-muted)">${i.tur}</td>
-      <td><strong>${fmt(i.alacak)}</strong></td>
-      <td><span style="color:var(--green)">${fmt(i.tahsil)}</span><div class="progress-bar"><div class="progress-fill" style="width:${oran}%"></div></div><div style="font-size:9px;color:var(--text-dim)">%${oran}</div></td>
-      <td style="color:${IDRENK[i.durum]||'var(--text-muted)'};font-size:11px;font-weight:600">${i.durum}</td>
-      <td>${fmtD(i.tarih)}</td>
-      <td>${i.davno?`<span style="color:var(--blue);font-size:11px">📁 ${i.davno}</span>`:'—'}</td>
-      <td><button class="ctx-btn" onclick="event.stopPropagation();CtxMenu.icraMenu(event,'${i.id}')">⋮</button></td>
-    </tr>`;
-  });
-}
+// ── Durum gösterim haritaları ──
+var ICRA_DURUM_MAP = {
+  'derdest':'Derdest','itiraz_durduruldu':'Durduruldu','infaz':'İnfaz',
+  'infaz_haricen':'İnfaz (Haricen)','haciz':'Haciz Aşaması','satis':'Satış Aşaması','kapandi':'Kapandı',
+  'Aktif':'Aktif','Takipte':'Takipte','Haciz Aşaması':'Haciz Aşaması','Satış Aşaması':'Satış Aşaması','Kapandı':'Kapandı'
+};
+var ICRA_DURUM_RENK = {
+  'derdest':'var(--green)','itiraz_durduruldu':'#e67e22','infaz':'var(--blue)',
+  'infaz_haricen':'var(--blue)','haciz':'#e74c3c','satis':'#c0392b','kapandi':'var(--text-dim)',
+  'Aktif':'var(--green)','Takipte':'var(--gold)','Haciz Aşaması':'#e74c3c','Satış Aşaması':'#c0392b','Kapandı':'var(--text-dim)'
+};
+
+// ── ListeMotoru kaydı ──
+ListeMotoru.register('icra', {
+  stateKey: 'icra',
+  containerId: 'icra-liste-body',
+  kpiBarId: 'icra-cards',
+  filterRowId: 'icra-filter-row',
+  chipContainerId: 'icra-chips',
+  searchInputId: 'icra-s',
+  sortTabloKey: 'icra',
+  defaultSort: { key: 'tarih', dir: -1 },
+  dateField: 'tarih',
+  renderMode: 'table',
+  emptyText: 'Henüz icra dosyası eklenmemiş',
+
+  columns: [
+    { key: 'sira', label: '#', sortable: true,
+      render: function(i) { return '<span style="font-weight:700;color:var(--text-muted);font-size:11px">' + (i.sira || '?') + '</span>'; } },
+    { key: 'no', label: 'Dosya No', sortable: true,
+      render: function(i) { return '<strong style="color:var(--gold)">' + i.no + '</strong>'; } },
+    { key: 'muvId', label: 'Müvekkil', sortable: true,
+      render: function(i) { return '<span style="color:var(--gold-light)">' + getMuvAd(i.muvId) + '</span>'; } },
+    { key: 'borclu', label: 'Borçlu', sortable: true,
+      render: function(i) {
+        var html = '<strong>' + i.borclu + '</strong>';
+        if (i.btc) html += '<div style="font-size:10px;color:var(--text-dim)">' + i.btc + '</div>';
+        return html;
+      } },
+    { key: 'daire', label: 'İcra Dairesi', sortable: false,
+      render: function(i) { return '<span style="font-size:11px">' + [i.il, i.adliye, i.daire].filter(Boolean).join(' — ') + '</span>'; } },
+    { key: 'tur', label: 'Tür', sortable: true,
+      render: function(i) { return '<span style="font-size:11px;color:var(--text-muted)">' + (i.tur || '') + '</span>'; } },
+    { key: 'alacak', label: 'Toplam Alacak', sortable: true,
+      render: function(i) { return '<strong>' + fmt(i.alacak) + '</strong>'; } },
+    { key: 'tahsil', label: 'Tahsil', sortable: true,
+      render: function(i) {
+        var oran = i.alacak > 0 ? Math.round(((i.tahsil||0) / i.alacak) * 100) : 0;
+        return '<span style="color:var(--green)">' + fmt(i.tahsil) + '</span>' +
+          '<div class="progress-bar"><div class="progress-fill" style="width:' + oran + '%"></div></div>' +
+          '<div style="font-size:9px;color:var(--text-dim)">%' + oran + '</div>';
+      } },
+    { key: 'durum', label: 'Durum', sortable: true,
+      render: function(i) {
+        var renk = ICRA_DURUM_RENK[i.durum] || IDRENK[i.durum] || 'var(--text-muted)';
+        var txt = ICRA_DURUM_MAP[i.durum] || i.durum;
+        return '<span style="color:' + renk + ';font-size:11px;font-weight:600">' + txt + '</span>';
+      } },
+    { key: 'tarih', label: 'Tarih', sortable: true,
+      render: function(i) { return fmtD(i.tarih); } },
+    { key: 'davno', label: 'Dava', sortable: false,
+      render: function(i) { return i.davno ? '<span style="color:var(--blue);font-size:11px">' + i.davno + '</span>' : '—'; } },
+  ],
+
+  filters: [
+    { key: 'tur', label: 'Tür', options: function(allData) {
+      var turler = {}; allData.forEach(function(i) { if (i.tur) turler[i.tur] = true; }); return Object.keys(turler);
+    } },
+    { key: 'durum', label: 'Durum', options: function(allData) {
+      var d = {}; allData.forEach(function(i) { if (i.durum) d[i.durum] = true; }); return Object.keys(d);
+    }, displayFn: function(v) { return ICRA_DURUM_MAP[v] || v; } },
+  ],
+
+  kpiCards: [
+    { label: 'Toplam', valueClass: 'gold', calc: function(all) { return all.length; } },
+    { label: 'Aktif Takip', valueColor: '#e74c3c', calc: function(all) {
+      return all.filter(function(i) { return i.durum !== 'kapandi' && i.durum !== 'Kapandı'; }).length;
+    } },
+    { label: 'Toplam Alacak', valueColor: '#e74c3c', calc: function(all) {
+      return all.reduce(function(s, i) { return s + (i.alacak || 0); }, 0);
+    }, format: function(v) { return fmt(v); } },
+    { label: 'Tahsil Edilen', valueColor: 'var(--green)', calc: function(all) {
+      return all.reduce(function(s, i) { return s + (i.tahsil || 0); }, 0);
+    }, format: function(v) { return fmt(v); } },
+    { label: 'Kalan', valueColor: '#e74c3c', calc: function(all) {
+      var a = all.reduce(function(s, i) { return s + (i.alacak || 0); }, 0);
+      var t = all.reduce(function(s, i) { return s + (i.tahsil || 0); }, 0);
+      return a - t;
+    }, format: function(v) { return fmt(v); } },
+  ],
+
+  searchFn: function(item, q) {
+    return (item.no || '').toLowerCase().includes(q) ||
+      (item.borclu || '').toLowerCase().includes(q) ||
+      getMuvAd(item.muvId).toLowerCase().includes(q);
+  },
+
+  onRowClick: function(item) { return "openIcraDetay('" + item.id + "')"; },
+  onRowMenu: function(item) { return "CtxMenu.icraMenu(event,'" + item.id + "')"; },
+});
+
+function renderIcraCards() { ListeMotoru.render('icra'); }
+function filterIcra() { ListeMotoru.render('icra'); }
+function renderIcra() { ListeMotoru.render('icra'); }
 
 // ================================================================
 // İCRA DETAY

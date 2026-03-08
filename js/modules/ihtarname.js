@@ -11,59 +11,78 @@
 
 let aktivIhtarId = null;
 
+// ── ListeMotoru kaydı ──
+ListeMotoru.register('ihtarname', {
+  stateKey: 'ihtarnameler',
+  containerId: 'ihtar-liste-body',
+  kpiBarId: 'ihtar-cards',
+  filterRowId: 'ihtar-filter-row',
+  chipContainerId: 'ihtar-chips',
+  searchInputId: 'ihtar-s',
+  sortTabloKey: 'iht',
+  defaultSort: { key: 'tarih', dir: -1 },
+  dateField: 'tarih',
+  renderMode: 'table',
+  emptyText: 'Henüz ihtarname eklenmemiş',
+
+  columns: [
+    { key: 'no', label: 'No', sortable: true,
+      render: function(i) { return '<strong style="color:var(--gold)">' + (i.no || '—') + '</strong>'; } },
+    { key: 'yon', label: 'Yön', sortable: true,
+      render: function(i) { var r = i.yon === 'Giden' ? 'var(--blue)' : 'var(--purple)';
+        return '<span style="background:' + r + '22;color:' + r + ';padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700">' + i.yon + '</span>'; } },
+    { key: 'tur', label: 'Tür', sortable: true,
+      render: function(i) { return '<span style="font-size:11px">' + (i.tur || '—') + '</span>'; } },
+    { key: 'muvId', label: 'Müvekkil', sortable: true,
+      render: function(i) { return getMuvAd(i.muvId); } },
+    { key: 'karsiTaraf', label: 'Karşı Taraf', sortable: false,
+      render: function(i) { return '<span style="font-size:12px">' + _getKarsiAd(i) + '</span>'; } },
+    { key: 'gonderimUsulu', label: 'Gönderim', sortable: false,
+      render: function(i) { var g = {'Noter':'🏛','KEP':'📧','PTT':'📮','Elden':'🤝'}[i.gonderimUsulu] || '📨';
+        return '<span style="font-size:11px">' + g + ' ' + (i.gonderimUsulu || '—') + '</span>'; } },
+    { key: 'tarih', label: 'Tarih', sortable: true,
+      render: function(i) { return fmtD(i.tarih); } },
+    { key: 'tebligDurum', label: 'Tebliğ', sortable: true,
+      render: function(i) {
+        var r = i.tebligDurum === 'Tebliğ Edildi' ? 'var(--green)' : i.tebligDurum === 'Bila' ? 'var(--red)' : '#e67e22';
+        var sureTag = (i.verilenSure && i.tebligDurum === 'Tebliğ Edildi' && i.tebligTarih)
+          ? '<span style="font-size:9px;color:#e67e22;background:rgba(230,126,34,.1);padding:1px 6px;border-radius:3px;margin-left:4px">' + i.verilenSure + 'g</span>' : '';
+        return '<span style="color:' + r + ';font-size:11px;font-weight:600">● ' + (i.tebligDurum || 'Bekliyor') + '</span>' + sureTag +
+          (i.tebligTarih ? '<div style="font-size:10px;color:var(--text-dim)">' + fmtD(i.tebligTarih) + '</div>' : '');
+      } },
+  ],
+
+  filters: [
+    { key: 'tur', label: 'Tür', options: ['İhtarname', 'Protesto', 'İhbar', 'Fesih Bildirimi', 'Diğer'] },
+    { key: 'tebligDurum', label: 'Tebliğ', options: ['Bekliyor', 'Tebliğ Edildi', 'Bila', 'İade', 'Posta'] },
+    { key: 'yon', label: 'Yön', options: ['Giden', 'Gelen'] },
+  ],
+
+  kpiCards: [
+    { label: 'Toplam', valueClass: 'gold', calc: function(all) { return all.length; } },
+    { label: 'Giden', valueColor: 'var(--blue)', calc: function(all) { return all.filter(function(i) { return i.yon === 'Giden'; }).length; },
+      filterOnClick: { key: 'yon', value: 'Giden' } },
+    { label: 'Gelen', valueColor: 'var(--purple)', calc: function(all) { return all.filter(function(i) { return i.yon === 'Gelen'; }).length; },
+      filterOnClick: { key: 'yon', value: 'Gelen' } },
+    { label: 'Tebliğ Bekliyor', valueColor: '#e67e22', calc: function(all) { return all.filter(function(i) { return i.tebligDurum === 'Bekliyor'; }).length; },
+      filterOnClick: { key: 'tebligDurum', value: 'Bekliyor' } },
+    { label: 'Toplam Masraf', valueColor: '#e74c3c', calc: function(all) { return all.reduce(function(s, i) { return s + (parseFloat(i.masrafTutar) || 0); }, 0); },
+      format: function(v) { return fmt(v); } },
+  ],
+
+  searchFn: function(item, q) {
+    return (item.no || '').toLowerCase().includes(q) ||
+      getMuvAd(item.muvId).toLowerCase().includes(q) ||
+      (item.konu || '').toLowerCase().includes(q) ||
+      _getKarsiAd(item).toLowerCase().includes(q);
+  },
+
+  onRowClick: function(item) { return "openIhtarDetay('" + item.id + "')"; },
+  onRowMenu: function(item) { return "CtxMenu.goster(event,[{icon:'👁️',label:'Görüntüle',fn:function(){openIhtarDetay('" + item.id + "')}},{icon:'✏️',label:'Düzenle',fn:function(){openIhtarModal('" + item.id + "')}},\'---\',{icon:'🗑️',label:'Sil',danger:true,fn:function(){deleteIhtar('" + item.id + "')}}])"; },
+});
+
 function renderIhtarname() {
-  const filS = document.getElementById('ihtar-s')?.value || '';
-  const filTur = document.getElementById('ihtar-ft')?.value || '';
-  const filDur = document.getElementById('ihtar-fd')?.value || '';
-  let liste = state.ihtarnameler || [];
-  if (filS) {
-    const q = filS.toLowerCase();
-    liste = liste.filter(i =>
-      (i.no||'').toLowerCase().includes(q) || getMuvAd(i.muvId).toLowerCase().includes(q) ||
-      (i.konu||'').toLowerCase().includes(q) || _getKarsiAd(i).toLowerCase().includes(q)
-    );
-  }
-  if (filTur) liste = liste.filter(i => i.tur === filTur);
-  if (filDur) liste = liste.filter(i => i.tebligDurum === filDur);
-
-  const all = state.ihtarnameler || [];
-  const cards = document.getElementById('ihtar-cards');
-  if (cards) {
-    const masraf = all.reduce((s,i) => s + (parseFloat(i.masrafTutar)||0), 0);
-    cards.innerHTML = `
-      <div class="card"><div class="card-label">Toplam</div><div class="card-value gold">${all.length}</div></div>
-      <div class="card"><div class="card-label">Giden</div><div class="card-value" style="color:var(--blue)">${all.filter(i=>i.yon==='Giden').length}</div></div>
-      <div class="card"><div class="card-label">Gelen</div><div class="card-value" style="color:var(--purple)">${all.filter(i=>i.yon==='Gelen').length}</div></div>
-      <div class="card"><div class="card-label">Tebliğ Bekliyor</div><div class="card-value" style="color:#e67e22">${all.filter(i=>i.tebligDurum==='Bekliyor').length}</div></div>
-      <div class="card"><div class="card-label">Toplam Masraf</div><div class="card-value" style="color:#e74c3c;font-size:14px">${fmt(masraf)}</div></div>`;
-  }
-
-  const tbody = document.getElementById('ihtar-tbody');
-  const empty = document.getElementById('ihtar-empty');
-  if (!tbody) return;
-  tbody.innerHTML = '';
-  if (!liste.length) { if(empty) empty.style.display='block'; return; }
-  if(empty) empty.style.display='none';
-
-  liste.sort((a,b) => (b.tarih||'').localeCompare(a.tarih||'')).forEach(i => {
-    const durRenk = i.tebligDurum==='Tebliğ Edildi'?'var(--green)':i.tebligDurum==='Bila'?'var(--red)':'#e67e22';
-    const yonRenk = i.yon==='Giden'?'var(--blue)':'var(--purple)';
-    const karsiAd = _getKarsiAd(i);
-    const gIcon = {'Noter':'🏛','KEP':'📧','PTT':'📮','Elden':'🤝'}[i.gonderimUsulu]||'📨';
-    const sureTag = (i.verilenSure && i.tebligDurum==='Tebliğ Edildi' && i.tebligTarih)
-      ? `<span style="font-size:9px;color:#e67e22;background:rgba(230,126,34,.1);padding:1px 6px;border-radius:3px;margin-left:4px">${i.verilenSure}g</span>` : '';
-    tbody.innerHTML += `<tr onclick="openIhtarDetay('${i.id}')" style="cursor:pointer">
-      <td><strong style="color:var(--gold)">${i.no||'—'}</strong></td>
-      <td><span style="background:${yonRenk}22;color:${yonRenk};padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700">${i.yon}</span></td>
-      <td style="font-size:11px">${i.tur||'—'}</td>
-      <td>${getMuvAd(i.muvId)}</td>
-      <td style="font-size:12px">${karsiAd}</td>
-      <td style="font-size:11px">${gIcon} ${i.gonderimUsulu||'—'}</td>
-      <td>${fmtD(i.tarih)}</td>
-      <td><span style="color:${durRenk};font-size:11px;font-weight:600">● ${i.tebligDurum||'Bekliyor'}</span>${sureTag}${i.tebligTarih?`<div style="font-size:10px;color:var(--text-dim)">${fmtD(i.tebligTarih)}</div>`:''}</td>
-      <td><button class="ctx-btn" onclick="event.stopPropagation();CtxMenu.goster(event,[{icon:'👁️',label:'Görüntüle',fn:function(){openIhtarDetay('${i.id}')}},{icon:'✏️',label:'Düzenle',fn:function(){openIhtarModal('${i.id}')}},\'---\',{icon:'🗑️',label:'Sil',danger:true,fn:function(){deleteIhtar('${i.id}')}}])">⋮</button></td>
-    </tr>`;
-  });
+  ListeMotoru.render('ihtarname');
 }
 
 function _getKarsiAd(ih) {

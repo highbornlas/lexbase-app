@@ -1044,27 +1044,22 @@
   <div class="page-title">Dava / Dosya Takibi</div>
   <div class="page-sub">Dosyaya tıklayarak detaya girin</div>
   <div class="cards" id="dav-cards"></div>
-  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-    <!-- Görünüm Toggle -->
-    <div style="display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-right:8px">
-      <button id="dav-view-liste" class="btn btn-sm" onclick="davGorunumDegis('liste')" style="border:none;border-radius:0;background:var(--gold);color:#000;font-size:11px;padding:6px 12px">☰ Liste</button>
-      <button id="dav-view-kanban" class="btn btn-sm" onclick="davGorunumDegis('kanban')" style="border:none;border-radius:0;background:var(--surface2);color:var(--text-muted);font-size:11px;padding:6px 12px">▦ Kanban</button>
+  <div class="lm-toolbar">
+    <div class="lm-toolbar-row">
+      <div style="display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-right:8px">
+        <button id="dav-view-liste" class="btn btn-sm" onclick="davGorunumDegis('liste')" style="border:none;border-radius:0;background:var(--gold);color:#000;font-size:11px;padding:6px 12px">Liste</button>
+        <button id="dav-view-kanban" class="btn btn-sm" onclick="davGorunumDegis('kanban')" style="border:none;border-radius:0;background:var(--surface2);color:var(--text-muted);font-size:11px;padding:6px 12px">Kanban</button>
+      </div>
+      <div class="lm-search-wrap">
+        <input class="lm-search" placeholder="Dava dosyasi ara... (dosya no, konu, müvekkil)" id="dav-s" oninput="ListeMotoru.render('davalar')">
+      </div>
+      <button class="btn btn-gold" onclick="openModal('dav-modal');setTimeout(()=>{const e=document.getElementById('d-no');if(e&&!e.value)e.value=autoNo('dava');Wizard.sifirla('dav-modal');},50)">+ Yeni Dava</button>
     </div>
-    <input class="search-bar" placeholder="🔍 Ara..." oninput="filterDavalar()" id="dav-s" style="width:210px">
-    <select class="search-bar" style="width:175px" onchange="filterDavalar()" id="dav-fk">
-      <option value="">Tüm Mahkeme Türleri</option>
-      <optgroup label="Hukuk"><option>Asliye Hukuk</option><option>Sulh Hukuk</option><option>Aile</option><option>Asliye Ticaret</option><option>Tüketici</option><option>İş</option><option>Kadastro</option><option>Fikri ve Sınai Haklar Hukuk</option></optgroup>
-      <optgroup label="Ceza"><option>Asliye Ceza</option><option>Sulh Ceza</option><option>Ağır Ceza</option><option>Çocuk</option></optgroup>
-      <optgroup label="İdare"><option>İdare</option><option>Vergi</option><option>Bölge İdare</option></optgroup>
-      <optgroup label="Üst"><option>Bölge Adliye (İstinaf)</option><option>Yargıtay</option><option>Anayasa</option><option>Diğer</option></optgroup>
-    </select>
-    <select class="search-bar" style="width:145px" onchange="filterDavalar()" id="dav-fa"><option value="">Tüm Aşamalar</option><option>İlk Derece</option><option>İstinaf</option><option>Temyiz (Yargıtay)</option><option>Temyiz (Danıştay)</option><option>Kesinleşti</option><option>Düşürüldü</option></select>
-    <select class="search-bar" style="width:130px" onchange="filterDavalar()" id="dav-fd"><option value="">Tüm Durumlar</option><option>Aktif</option><option>Beklemede</option><option>Kapalı</option></select>
-    <button class="btn btn-gold" onclick="openModal('dav-modal');setTimeout(()=>{const e=document.getElementById('d-no');if(e&&!e.value)e.value=autoNo('dava');Wizard.sifirla('dav-modal');},50)" style="margin-left:auto">+ Yeni Dava</button>
+    <div class="lm-filter-row" id="dav-filter-row"></div>
+    <div class="chip-list" id="dav-chips"></div>
   </div>
-  <div id="dav-grouped"></div>
+  <div id="dav-grouped"><div id="dav-liste-body"></div></div>
   <div id="kanban-davalar" class="kanban-container" style="display:none"></div>
-  <div class="empty" id="dav-empty" style="display:none"><div class="empty-icon">📁</div><p>Dava yok</p></div>
 </div>
 
 <!-- ===== DAVA DETAY ===== -->
@@ -1098,29 +1093,19 @@
   <div class="page-title">İcra Takip Dosyaları</div>
   <div class="page-sub">Dosyaya tıklayarak detaya girin</div>
   <div class="cards" id="icra-cards"></div>
-  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-    <input class="search-bar" placeholder="🔍 Ara..." oninput="filterIcra()" id="icra-s" style="width:210px">
-    <select class="search-bar" style="width:155px" onchange="filterIcra()" id="icra-ft"><option value="">Tüm Türler</option><option>İlamlı İcra</option><option>İlamsız İcra</option><option>Kambiyo Senedi</option><option>İpoteğin Paraya Çevrilmesi</option><option>Nafaka İcrası</option><option>Diğer</option></select>
-    <select class="search-bar" style="width:155px" onchange="filterIcra()" id="icra-fd"><option value="">Tüm Durumlar</option><option>Aktif</option><option>Takipte</option><option>Haciz Aşaması</option><option>Satış Aşaması</option><option>Kapandı</option></select>
-    <button class="btn btn-gold" onclick="openModal('icra-modal')" style="margin-left:auto">+ Yeni İcra</button>
+  <div class="lm-toolbar">
+    <div class="lm-toolbar-row">
+      <div class="lm-search-wrap">
+        <input class="lm-search" placeholder="İcra dosyası ara... (dosya no, borçlu, müvekkil)" id="icra-s" oninput="ListeMotoru.render('icra')">
+      </div>
+      <button class="btn btn-gold" onclick="openModal('icra-modal')">+ Yeni İcra</button>
+    </div>
+    <div class="lm-filter-row" id="icra-filter-row"></div>
+    <div class="chip-list" id="icra-chips"></div>
   </div>
-  <div class="section"><div class="section-body" style="padding:0;overflow-x:auto">
-    <table style="min-width:920px"><thead id="icra-thead"><tr>
-      <th class="sort-th" id="icra-th-sira" onclick="toggleSort('icra','sira')" style="width:50px"># ⇅</th>
-      <th class="sort-th" id="icra-th-no" onclick="toggleSort('icra','no')">Dosya No ⇅</th>
-      <th class="sort-th" id="icra-th-muvId" onclick="toggleSort('icra','muvId')">Müvekkil ⇅</th>
-      <th class="sort-th" id="icra-th-borclu" onclick="toggleSort('icra','borclu')">Borçlu ⇅</th>
-      <th>İcra Dairesi</th>
-      <th class="sort-th" id="icra-th-tur" onclick="toggleSort('icra','tur')">Tür ⇅</th>
-      <th class="sort-th" id="icra-th-alacak" onclick="toggleSort('icra','alacak')">Toplam Alacak ⇅</th>
-      <th class="sort-th" id="icra-th-tahsil" onclick="toggleSort('icra','tahsil')">Tahsil ⇅</th>
-      <th class="sort-th" id="icra-th-durum" onclick="toggleSort('icra','durum')">Durum ⇅</th>
-      <th class="sort-th" id="icra-th-tarih" onclick="toggleSort('icra','tarih')">Tarih ⇅</th>
-      <th>Dava Bağ.</th><th></th>
-    </tr></thead>
-    <tbody id="icra-tbody"></tbody></table>
-    <div class="empty" id="icra-empty" style="display:none"><div class="empty-icon">⚡</div><p>İcra dosyası yok</p></div>
-  </div></div>
+  <div class="section">
+    <div id="icra-liste-body"></div>
+  </div>
 </div>
 
 <!-- ===== İCRA DETAY ===== -->
@@ -1154,27 +1139,18 @@
   <div class="page-title">İhtarname / Protesto</div>
   <div class="page-sub">Gelen ve gönderilen ihtarnameler, noterlik ve tebliğ takibi</div>
   <div class="cards" id="ihtar-cards"></div>
-  <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
-    <input class="search-bar" placeholder="🔍 Ara..." id="ihtar-s" oninput="renderIhtarname()" style="width:200px">
-    <select class="search-bar" style="width:140px" id="ihtar-ft" onchange="renderIhtarname()">
-      <option value="">Tür — Tümü</option>
-      <option>İhtarname</option><option>Protesto</option><option>İhbar</option><option>Fesih Bildirimi</option><option>Diğer</option>
-    </select>
-    <select class="search-bar" style="width:160px" id="ihtar-fd" onchange="renderIhtarname()">
-      <option value="">Tebliğ — Tümü</option>
-      <option>Bekliyor</option><option>Tebliğ Edildi</option><option>Bila</option><option>İade</option><option>Posta</option>
-    </select>
-    <button class="btn btn-gold" onclick="openIhtarModal()" style="margin-left:auto">+ Yeni İhtarname</button>
+  <div class="lm-toolbar">
+    <div class="lm-toolbar-row">
+      <div class="lm-search-wrap">
+        <input class="lm-search" placeholder="İhtarname ara... (no, müvekkil, konu, karşı taraf)" id="ihtar-s" oninput="ListeMotoru.render('ihtarname')">
+      </div>
+      <button class="btn btn-gold" onclick="openIhtarModal()">+ Yeni İhtarname</button>
+    </div>
+    <div class="lm-filter-row" id="ihtar-filter-row"></div>
+    <div class="chip-list" id="ihtar-chips"></div>
   </div>
   <div class="section">
-    <table>
-      <thead><tr>
-        <th>No</th><th>Yön</th><th>Tür</th><th>Müvekkil</th><th>Karşı Taraf</th>
-        <th>Gönderim</th><th>Tarih</th><th>Tebliğ Durumu</th><th></th>
-      </tr></thead>
-      <tbody id="ihtar-tbody"></tbody>
-    </table>
-    <div class="empty" id="ihtar-empty" style="display:none"><div class="empty-icon">📨</div><p>Henüz ihtarname eklenmemiş</p></div>
+    <div id="ihtar-liste-body"></div>
   </div>
 </div>
 
@@ -1193,57 +1169,41 @@
 <div class="page" id="page-todo">
   <div class="page-title">Görev Yöneticisi</div>
   <div class="page-sub">Tüm görevler, atamalar ve takip</div>
-  <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
-    <!-- Görünüm Toggle -->
-    <div style="display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-right:4px">
-      <button id="todo-view-liste" class="btn btn-sm" onclick="todoGorunumDegis('liste')" style="border:none;border-radius:0;background:var(--gold);color:#000;font-size:11px;padding:6px 12px">☰ Liste</button>
-      <button id="todo-view-kanban" class="btn btn-sm" onclick="todoGorunumDegis('kanban')" style="border:none;border-radius:0;background:var(--surface2);color:var(--text-muted);font-size:11px;padding:6px 12px">▦ Kanban</button>
+  <div class="cards" id="todo-cards"></div>
+  <div class="lm-toolbar">
+    <div class="lm-toolbar-row">
+      <div style="display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-right:4px">
+        <button id="todo-view-liste" class="btn btn-sm" onclick="todoGorunumDegis('liste')" style="border:none;border-radius:0;background:var(--gold);color:#000;font-size:11px;padding:6px 12px">Liste</button>
+        <button id="todo-view-kanban" class="btn btn-sm" onclick="todoGorunumDegis('kanban')" style="border:none;border-radius:0;background:var(--surface2);color:var(--text-muted);font-size:11px;padding:6px 12px">Kanban</button>
+      </div>
+      <div class="lm-search-wrap">
+        <input class="lm-search" placeholder="Gorev ara... (baslik, aciklama, müvekkil)" id="todo-s" oninput="ListeMotoru.render('todo')">
+      </div>
+      <button class="btn btn-gold" onclick="openTodoModal()">+ Yeni Gorev</button>
     </div>
-    <select class="search-bar" style="width:160px" id="todo-fil-durum" onchange="renderTodo()">
-      <option value="">Durum — Tümü</option>
-      <option value="Bekliyor">Bekliyor</option>
-      <option value="Devam Ediyor">Devam Ediyor</option>
-      <option value="Tamamlandı">Tamamlandı</option>
-      <option value="İptal">İptal</option>
-    </select>
-    <select class="search-bar" style="width:160px" id="todo-fil-oncelik" onchange="renderTodo()">
-      <option value="">Öncelik — Tümü</option>
-      <option value="Yüksek">🔴 Yüksek</option>
-      <option value="Orta">🟡 Orta</option>
-      <option value="Düşük">🟢 Düşük</option>
-    </select>
-    <select class="search-bar" style="width:160px" id="todo-fil-atanan" onchange="renderTodo()">
-      <option value="">Atanan — Tümü</option>
-    </select>
-    <button class="btn btn-gold" onclick="openTodoModal()" style="margin-left:auto">+ Yeni Görev</button>
+    <div class="lm-filter-row" id="todo-filter-row"></div>
+    <div class="chip-list" id="todo-chips"></div>
   </div>
-  <div id="todo-liste"></div>
+  <div id="todo-liste"><div id="todo-liste-body"></div></div>
   <div id="kanban-gorevler" class="kanban-container" style="display:none"></div>
-  <div class="empty" id="todo-empty" style="display:none"><div class="empty-icon">✅</div><p>Henüz görev eklenmemiş</p></div>
 </div>
 
 <div class="page" id="page-danismanlik">
   <div class="page-title">Danışmanlık & Diğer Hizmetler</div>
   <div class="page-sub">Hukuki görüş, ihtarname, sözleşme, idari başvuru takibi</div>
-  <div class="cards">
-    <div class="card"><div class="card-label">Toplam Dosya</div><div class="card-value gold" id="dan-toplam">0</div></div>
-    <div class="card"><div class="card-label">Devam Eden</div><div class="card-value" style="color:var(--blue)" id="dan-devam">0</div></div>
-    <div class="card"><div class="card-label">Tamamlanan</div><div class="card-value green" id="dan-tamam">0</div></div>
-    <div class="card"><div class="card-label">Tahsil Edilmemiş</div><div class="card-value red" id="dan-bekleyen">₺0</div></div>
-  </div>
-  <div class="section">
-    <div class="section-header">
-      <div style="display:flex;gap:8px;align-items:center">
-        <select class="search-bar" style="width:160px" id="dan-fil-tur" onchange="renderDanismanlik()"><option value="">Tür — Tümü</option><option>Danışmanlık / Hukuki Görüş</option><option>İhtarname / Protesto</option><option>Sözleşme Hazırlama</option><option>Sözleşme İnceleme</option><option>İdari Başvuru</option><option>Diğer</option></select>
-        <select class="search-bar" style="width:140px" id="dan-fil-durum" onchange="renderDanismanlik()"><option value="">Durum — Tümü</option><option>Taslak</option><option>Devam Ediyor</option><option>Müvekkil Onayında</option><option>Gönderildi</option><option>Tamamlandı</option><option>İptal</option></select>
+  <div class="cards" id="dan-cards"></div>
+  <div class="lm-toolbar">
+    <div class="lm-toolbar-row">
+      <div class="lm-search-wrap">
+        <input class="lm-search" placeholder="Hizmet ara... (müvekkil, konu, tür)" id="dan-s" oninput="ListeMotoru.render('danismanlik')">
       </div>
       <button class="btn btn-gold" onclick="openDanModal()">+ Yeni Hizmet</button>
     </div>
-    <div class="section-body" style="padding:0">
-      <table><thead><tr><th>Tarih</th><th>Tür</th><th>Müvekkil</th><th>Konu</th><th>Durum</th><th>Teslim</th><th>Ücret</th><th>Tahsilat</th><th></th></tr></thead>
-      <tbody id="dan-tbody"></tbody></table>
-      <div class="empty" id="dan-empty" style="display:none"><div class="empty-icon">⚖️</div><p>Henüz hizmet kaydı yok</p></div>
-    </div>
+    <div class="lm-filter-row" id="dan-filter-row"></div>
+    <div class="chip-list" id="dan-chips"></div>
+  </div>
+  <div class="section">
+    <div id="dan-liste-body"></div>
   </div>
 </div>
 
@@ -3193,40 +3153,17 @@
   <div class="page-title">Arabuluculuk</div>
   <div class="page-sub">Zorunlu ve ihtiyari arabuluculuk dosyaları</div>
   <div class="cards" id="arab-cards"></div>
-  <div class="section">
-    <div class="section-header">
-      <div class="section-title">Arabuluculuk Dosyaları</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <select id="arab-ft" class="search-bar" style="width:200px" onchange="renderArabuluculuk()">
-          <option value="">Tüm Dosya Türleri</option>
-          <optgroup label="Zorunlu">
-            <option value="Zorunlu — İş">Zorunlu — İş</option>
-            <option value="Zorunlu — Ticari">Zorunlu — Ticari</option>
-            <option value="Zorunlu — Tüketici">Zorunlu — Tüketici</option>
-            <option value="Zorunlu — Kira">Zorunlu — Kira</option>
-            <option value="Zorunlu — Ortaklık">Zorunlu — Ortaklık</option>
-            <option value="Zorunlu — Diğer">Zorunlu — Diğer</option>
-          </optgroup>
-          <option value="İhtiyari">İhtiyari</option>
-        </select>
-        <select id="arab-fd" class="search-bar" style="width:180px" onchange="renderArabuluculuk()">
-          <option value="">Tüm Durumlar</option>
-          <option value="Başvuru Yapıldı">Başvuru Yapıldı</option>
-          <option value="İlk Toplantı Bekleniyor">İlk Toplantı Bekleniyor</option>
-          <option value="Görüşmeler Devam Ediyor">Görüşmeler Devam Ediyor</option>
-          <option value="Uzlaşma Sağlandı">Uzlaşma Sağlandı</option>
-          <option value="Uzlaşma Sağlanamadı">Uzlaşma Sağlanamadı</option>
-          <option value="Dava Açıldı">Dava Açıldı</option>
-        </select>
-        <input class="search-bar" placeholder="🔍 Ara..." oninput="renderArabuluculuk(this.value)" id="arab-s">
-        <button class="btn btn-gold" onclick="openArabModal()">+ Yeni Dosya</button>
+  <div class="lm-toolbar">
+    <div class="lm-toolbar-row">
+      <div class="lm-search-wrap">
+        <input class="lm-search" placeholder="Arabuluculuk dosyası ara... (konu, karşı taraf, arabulucu)" id="arab-s" oninput="ListeMotoru.render('arabuluculuk')">
       </div>
+      <button class="btn btn-gold" onclick="openArabModal()">+ Yeni Dosya</button>
     </div>
-    <div class="section-body" style="padding:0">
-      <div id="arab-list"></div>
-      <div class="empty" id="arab-empty" style="display:none"><div class="empty-icon">🤝</div><p>Henüz arabuluculuk dosyası yok</p></div>
-    </div>
+    <div class="lm-filter-row" id="arab-filter-row"></div>
+    <div class="chip-list" id="arab-chips"></div>
   </div>
+  <div class="section"><div id="arab-liste-body"></div></div>
 </div>
 
 <!-- ===== ARABULUCULUK DETAY SAYFASI ===== -->
@@ -3573,6 +3510,7 @@
 <script src="js/modules/security.js"></script>
 <script src="js/modules/eventbus.js"></script>
 <script src="js/modules/utils.js"></script>
+<script src="js/modules/listeMotoru.js"></script>
 <script src="js/modules/ui.js"></script>
 <script src="js/modules/rehber.js"></script>
 <script src="js/modules/davalar.js"></script>
