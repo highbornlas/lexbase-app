@@ -667,7 +667,7 @@ function openKTProfil(id){
   const isTuzel=k.tip==='tuzel';
   const avt=document.getElementById('kt-profil-avatar');
   avt.textContent=isTuzel?'🏢':(k.ad||'?')[0].toUpperCase();
-  avt.style.background=isTuzel?'linear-gradient(135deg,#1a3a5c,#2980b9)':'linear-gradient(135deg,#2c3e50,#8e44ad)';
+  avt.style.background=isTuzel?'linear-gradient(135deg,#1a3a5c,#2980b9)':'linear-gradient(135deg,#2c3e50,#C9A84C)';
   document.getElementById('kt-profil-ad').textContent=k.ad;
   // Alt bilgi
   const altArr=[];
@@ -1174,7 +1174,7 @@ function deleteIliski(iliskiId, karsiId){
 function renderMdIliskiler(){
   const muv=getMuv(aktivMuvId);if(!muv)return;
   const iliskiler=(muv.iliskiler||[]);
-  const turRenk={'Eş':'#e91e8c','Anne / Baba':'#9b59b6','Çocuk':'#8e44ad','Kardeş':'#6c3483','Ortak / Hissedar':'var(--gold)','Yönetim Kurulu Üyesi':'var(--blue)','İşveren / İşçi':'#e67e22','Vekil':'var(--green)','Kefil':'#e74c3c','Diğer':'var(--text-muted)'};
+  const turRenk={'Eş':'#e91e8c','Anne / Baba':'#9b59b6','Çocuk':'#C9A84C','Kardeş':'#6c3483','Ortak / Hissedar':'var(--gold)','Yönetim Kurulu Üyesi':'var(--blue)','İşveren / İşçi':'#e67e22','Vekil':'var(--green)','Kefil':'#e74c3c','Diğer':'var(--text-muted)'};
 
   let html=`<div class="section">
     <div class="section-header">

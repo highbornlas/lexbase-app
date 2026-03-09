@@ -1260,7 +1260,7 @@ const NOT_TURLERI=[
   {tur:'Çalışma Notu',      renk:'var(--gold)',    icon:'📋'},
   {tur:'Müvekkil Görüşme Notu',renk:'var(--blue)', icon:'💬'},
   {tur:'Duruşma Notu',      renk:'var(--green)',   icon:'⚖️'},
-  {tur:'Strateji Notu',     renk:'#8e44ad',        icon:'🧠'},
+  {tur:'Strateji Notu',     renk:'#C9A84C',        icon:'🧠'},
   {tur:'Genel Not',         renk:'var(--text-dim)',icon:'📝'},
 ];
 let _acikNotKlasorler={};
@@ -1355,7 +1355,7 @@ const ARAB_DURUM_STIL={
   'Görüşmeler Devam Ediyor':{bg:'var(--gold-dim)',    bdr:'var(--gold)',    txt:'var(--gold)',    icon:'🔄'},
   'Uzlaşma Sağlandı':       {bg:'var(--green-dim)',   bdr:'var(--green)',   txt:'var(--green)',   icon:'✅'},
   'Uzlaşma Sağlanamadı':    {bg:'var(--red-dim)',     bdr:'var(--red)',     txt:'var(--red)',     icon:'❌'},
-  'Dava Açıldı':            {bg:'rgba(142,68,173,.15)',bdr:'#8e44ad',      txt:'#8e44ad',        icon:'⚖️'},
+  'Dava Açıldı':            {bg:'rgba(142,68,173,.15)',bdr:'#C9A84C',      txt:'#C9A84C',        icon:'⚖️'},
 };
 function arabDurumBadge(d){
   const s=ARAB_DURUM_STIL[d]||{bg:'var(--surface2)',bdr:'var(--border)',txt:'var(--text-muted)',icon:'•'};

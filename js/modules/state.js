@@ -310,7 +310,7 @@ const PLANLAR = {
     aciklama: '2-5 kişilik bürolar için',
   },
   kurumsal: {
-    ad: 'Kurumsal', label: 'Kurumsal', ikon: '🏢', renk: '#8e44ad',
+    ad: 'Kurumsal', label: 'Kurumsal', ikon: '🏢', renk: '#C9A84C',
     fiyat: 999, yillik: 9990,
     limitler: { muvekkil: Infinity, dava: Infinity, icra: Infinity, personel: Infinity },
     ozellikler: { whatsapp: true, finans: true, uyap: true, arabuluculuk: true, danismanlik: true },

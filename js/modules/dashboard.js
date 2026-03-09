@@ -40,7 +40,7 @@ function renderDashSureler() {
   state.danismanlik.forEach(d => {
     if (d.durum !== 'Tamamlandı' && d.durum !== 'İptal' && d.teslimTarih && d.teslimTarih >= bugunS && d.teslimTarih <= t30S) {
       const gun = Math.ceil((new Date(d.teslimTarih)-bugun)/86400000);
-      items.push({ tarih: d.teslimTarih, gun, baslik: `Teslim: ${d.konu||''}`, tur: 'Teslim', renk: '#8e44ad', muvAd: d.muvId ? getMuvAd(d.muvId) : '', hedef: 'danismanlik' });
+      items.push({ tarih: d.teslimTarih, gun, baslik: `Teslim: ${d.konu||''}`, tur: 'Teslim', renk: '#C9A84C', muvAd: d.muvId ? getMuvAd(d.muvId) : '', hedef: 'danismanlik' });
     }
   });
 
@@ -303,6 +303,9 @@ function renderDashboard(){
   // ── BUGÜNKÜ AJANDA ──
   renderBugunAjanda();
 
+  // ── HAVA DURUMU ──
+  renderHavaDurumu();
+
   // ── Drag & Drop başlat ──
   initDashDragDrop();
 }
@@ -383,7 +386,7 @@ function renderBugunAjanda() {
     'Görev Son Gün': '#e67e22',
     'Toplantı': '#2980b9',
     'Randevu': '#16a085',
-    'Etkinlik': '#8e44ad'
+    'Etkinlik': '#C9A84C'
   };
 
   el.innerHTML = bugunEtkinlikler.map(function(e) {
@@ -487,7 +490,7 @@ const DAN_TUR_RENK = {
   'Danışmanlık / Hukuki Görüş': '#2980b9',
   'İhtarname / Protesto': '#e67e22',
   'Sözleşme Hazırlama': '#16a085',
-  'Sözleşme İnceleme': '#8e44ad',
+  'Sözleşme İnceleme': '#C9A84C',
   'İdari Başvuru': '#c0392b',
   'Diğer': '#7f8c8d'
 };
@@ -660,4 +663,141 @@ function renderDashMenfaat() {
       </div>
     `).join('')}
     ${cakismalar.length > 3 ? `<div style="font-size:10px;color:var(--text-muted);text-align:center;padding:6px 0;border-top:1px solid var(--border)">+${cakismalar.length - 3} daha...</div>` : ''}`;
+}
+
+// ================================================================
+// HAVA DURUMU WİDGET (Open-Meteo API — ücretsiz, API key gereksiz)
+// ================================================================
+var _havaCache = null;
+var _havaCacheT = 0;
+
+function renderHavaDurumu() {
+  var el = document.getElementById('dash-hava');
+  if (!el) return;
+
+  // 30dk cache
+  if (_havaCache && Date.now() - _havaCacheT < 1800000) {
+    el.innerHTML = _havaCache;
+    return;
+  }
+
+  el.innerHTML = '<div style="padding:14px;text-align:center;font-size:11px;color:var(--text-dim)">Hava durumu yükleniyor...</div>';
+
+  // Konum al
+  if (!navigator.geolocation) {
+    _havaFallback(el, 41.01, 28.98, 'İstanbul');
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    function(pos) { _havaFetch(el, pos.coords.latitude, pos.coords.longitude, ''); },
+    function() { _havaFallback(el, 41.01, 28.98, 'İstanbul'); },
+    { timeout: 5000, maximumAge: 600000 }
+  );
+}
+
+function _havaFallback(el, lat, lon, sehir) {
+  _havaFetch(el, lat, lon, sehir);
+}
+
+function _havaFetch(el, lat, lon, sehir) {
+  var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon +
+    '&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m' +
+    '&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=auto&forecast_days=3';
+
+  fetch(url)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (!data.current) { el.innerHTML = ''; return; }
+      var c = data.current;
+      var d = data.daily || {};
+      var wc = _havaKod(c.weather_code);
+
+      // Şehir adı (reverse geocode) — basit
+      if (!sehir) {
+        _havaReverseGeo(lat, lon, function(ad) {
+          _havaRender(el, c, d, wc, ad);
+        });
+      } else {
+        _havaRender(el, c, d, wc, sehir);
+      }
+    })
+    .catch(function() {
+      el.innerHTML = '';
+    });
+}
+
+function _havaReverseGeo(lat, lon, cb) {
+  fetch('https://geocoding-api.open-meteo.com/v1/search?name=_&count=1&language=tr&latitude=' + lat + '&longitude=' + lon)
+    .then(function() { cb(''); })
+    .catch(function() { cb(''); });
+  // Open-Meteo doesn't have reverse geocoding, use simple approach
+  cb('');
+}
+
+function _havaRender(el, c, d, wc, sehir) {
+  var gunler = '';
+  if (d.time && d.time.length > 1) {
+    for (var i = 1; i < Math.min(d.time.length, 3); i++) {
+      var gWc = _havaKod(d.weather_code[i]);
+      var gun = new Date(d.time[i]).toLocaleDateString('tr-TR', {weekday:'short'});
+      gunler += '<div style="text-align:center;flex:1">' +
+        '<div style="font-size:9px;color:var(--text-muted)">' + gun + '</div>' +
+        '<div style="font-size:16px">' + gWc.ikon + '</div>' +
+        '<div style="font-size:10px;font-weight:600">' + Math.round(d.temperature_2m_max[i]) + '°</div>' +
+        '<div style="font-size:9px;color:var(--text-dim)">' + Math.round(d.temperature_2m_min[i]) + '°</div>' +
+        '</div>';
+    }
+  }
+
+  var html = '<div style="padding:14px 16px">' +
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">' +
+      '<div style="font-size:32px;line-height:1">' + wc.ikon + '</div>' +
+      '<div style="flex:1">' +
+        '<div style="font-size:22px;font-weight:700;color:var(--text)">' + Math.round(c.temperature_2m) + '°C</div>' +
+        '<div style="font-size:11px;color:var(--text-muted)">' + wc.aciklama + (sehir ? ' · ' + sehir : '') + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div style="display:flex;gap:12px;font-size:10px;color:var(--text-dim);margin-bottom:10px">' +
+      '<span>💧 %' + c.relative_humidity_2m + '</span>' +
+      '<span>💨 ' + Math.round(c.wind_speed_10m) + ' km/s</span>' +
+    '</div>' +
+    (gunler ? '<div style="display:flex;gap:4px;border-top:1px solid var(--border);padding-top:8px">' + gunler + '</div>' : '') +
+    '</div>';
+
+  el.innerHTML = html;
+  _havaCache = html;
+  _havaCacheT = Date.now();
+}
+
+function _havaKod(code) {
+  var kodlar = {
+    0:  {ikon:'☀️', aciklama:'Açık'},
+    1:  {ikon:'🌤️', aciklama:'Az bulutlu'},
+    2:  {ikon:'⛅', aciklama:'Parçalı bulutlu'},
+    3:  {ikon:'☁️', aciklama:'Bulutlu'},
+    45: {ikon:'🌫️', aciklama:'Sisli'},
+    48: {ikon:'🌫️', aciklama:'Kırağılı sis'},
+    51: {ikon:'🌦️', aciklama:'Hafif çisenti'},
+    53: {ikon:'🌦️', aciklama:'Çisenti'},
+    55: {ikon:'🌦️', aciklama:'Yoğun çisenti'},
+    61: {ikon:'🌧️', aciklama:'Hafif yağmur'},
+    63: {ikon:'🌧️', aciklama:'Yağmur'},
+    65: {ikon:'🌧️', aciklama:'Şiddetli yağmur'},
+    66: {ikon:'🌧️', aciklama:'Dondurucu yağmur'},
+    67: {ikon:'🌧️', aciklama:'Şiddetli dondurucu yağmur'},
+    71: {ikon:'🌨️', aciklama:'Hafif kar'},
+    73: {ikon:'🌨️', aciklama:'Kar yağışı'},
+    75: {ikon:'🌨️', aciklama:'Yoğun kar'},
+    77: {ikon:'🌨️', aciklama:'Kar taneleri'},
+    80: {ikon:'🌦️', aciklama:'Hafif sağanak'},
+    81: {ikon:'🌧️', aciklama:'Sağanak yağmur'},
+    82: {ikon:'🌧️', aciklama:'Şiddetli sağanak'},
+    85: {ikon:'🌨️', aciklama:'Kar sağanağı'},
+    86: {ikon:'🌨️', aciklama:'Yoğun kar sağanağı'},
+    95: {ikon:'⛈️', aciklama:'Gök gürültülü fırtına'},
+    96: {ikon:'⛈️', aciklama:'Dolu ile fırtına'},
+    99: {ikon:'⛈️', aciklama:'Şiddetli dolu fırtınası'}
+  };
+  return kodlar[code] || {ikon:'🌡️', aciklama:'Bilinmiyor'};
 }

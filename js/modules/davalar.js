@@ -171,7 +171,7 @@ ListeMotoru.register('davalar', {
     { label: 'Aktif', valueColor: 'var(--green)', calc: function(all) {
       return all.filter(function(d) { return d.durum === 'Aktif'; }).length;
     }, filterOnClick: { key: 'durum', value: 'Aktif' } },
-    { label: 'Istinaf', valueColor: '#8e44ad', calc: function(all) {
+    { label: 'Istinaf', valueColor: '#C9A84C', calc: function(all) {
       return all.filter(function(d) { return d.asama === 'İstinaf'; }).length;
     }, filterOnClick: { key: 'asama', value: 'İstinaf' } },
     { label: 'Temyiz', valueColor: '#6c3483', calc: function(all) {

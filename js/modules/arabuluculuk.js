@@ -23,7 +23,7 @@ ListeMotoru.register('arabuluculuk', {
         '<div class="arab-row-title">' + a.konu + (isYeni ? ' <span class="lm-yeni-badge">YENİ</span>' : '') + '</div>' +
         '<div class="arab-row-meta">' +
           '<span style="background:var(--surface2);padding:1px 7px;border-radius:10px;font-size:10px;margin-right:6px">' + a.tur + '</span>' +
-          (a.uyusmazlikTur ? '<span style="background:rgba(0,188,212,.1);color:#00BCD4;padding:1px 7px;border-radius:10px;font-size:10px;margin-right:6px">' + a.uyusmazlikTur + '</span>' : '') +
+          (a.uyusmazlikTur ? '<span style="background:rgba(201,168,76,.1);color:#C9A84C;padding:1px 7px;border-radius:10px;font-size:10px;margin-right:6px">' + a.uyusmazlikTur + '</span>' : '') +
           (a.muvId ? getMuvAd(a.muvId) + '  ·  ' : '') +
           (a.karsi ? 'Karşı: ' + a.karsi : '') +
           (a.basvuruTarih ? ' · ' + fmtD(a.basvuruTarih) : '') +
@@ -51,7 +51,7 @@ ListeMotoru.register('arabuluculuk', {
     { label: 'Uzlaşma', valueColor: 'var(--green)', calc: function(all) {
       return all.filter(function(a) { return a.durum === 'Uzlaşma Sağlandı'; }).length;
     }, filterOnClick: { key: 'durum', value: 'Uzlaşma Sağlandı' } },
-    { label: 'Dava Açıldı', valueColor: '#8e44ad', calc: function(all) {
+    { label: 'Dava Açıldı', valueColor: '#C9A84C', calc: function(all) {
       return all.filter(function(a) { return a.durum === 'Dava Açıldı'; }).length;
     }, filterOnClick: { key: 'durum', value: 'Dava Açıldı' } },
   ],
@@ -84,7 +84,7 @@ function renderArabDetayCards(a){
   const sonToplanti=(a.toplantılar||[]).slice(-1)[0];
   document.getElementById('arab-detay-cards').innerHTML=`
     <div class="card"><div class="card-label">Dosya Türü</div><div class="card-value gold" style="font-size:12px">${a.tur}</div></div>
-    <div class="card"><div class="card-label">Uyuşmazlık</div><div class="card-value" style="font-size:12px;color:#00BCD4">${a.uyusmazlikTur||'—'}</div></div>
+    <div class="card"><div class="card-label">Uyuşmazlık</div><div class="card-value" style="font-size:12px;color:#C9A84C">${a.uyusmazlikTur||'—'}</div></div>
     <div class="card"><div class="card-label">Durum</div><div class="card-value" style="font-size:12px">${arabDurumBadge(a.durum)}</div></div>
     <div class="card"><div class="card-label">Toplantı</div><div class="card-value gold">${toplanti} ${sonToplanti?'<span style="font-size:10px;color:var(--text-muted)">· '+fmtD(sonToplanti.tarih)+'</span>':''}</div></div>`;
 }
@@ -130,8 +130,8 @@ function renderArabBilgi(a){
         </div>
       </div>`:''}
       ${a.notlar?`<div style="background:var(--surface2);border-radius:var(--radius);padding:12px 14px;font-size:12px;color:var(--text-muted);line-height:1.6;white-space:pre-wrap">${a.notlar}</div>`:''}
-      ${bDava?`<div style="margin-top:14px;padding:12px 14px;background:rgba(142,68,173,.12);border:1px solid #8e44ad;border-radius:var(--radius);font-size:12px">
-        <span style="color:#8e44ad;font-weight:700">⚖️ Bağlı Dava:</span> ${bDava.no||''} — ${bDava.konu}
+      ${bDava?`<div style="margin-top:14px;padding:12px 14px;background:rgba(142,68,173,.12);border:1px solid #C9A84C;border-radius:var(--radius);font-size:12px">
+        <span style="color:#C9A84C;font-weight:700">⚖️ Bağlı Dava:</span> ${bDava.no||''} — ${bDava.konu}
         <button class="btn btn-outline btn-sm" style="margin-left:10px" onclick="showPage('davalar',document.getElementById('ni-davalar'));setTimeout(()=>openDavaDetay('${bDava.id}'),300)">Davaya Git →</button>
       </div>`:''}
     </div></div>`;

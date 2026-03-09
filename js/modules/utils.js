@@ -160,7 +160,7 @@ function openLogModal() {
 }
 
 const MRENK = {
-  'Asliye Hukuk': '#2980b9', 'Sulh Hukuk': '#3498db', 'Aile': '#8e44ad',
+  'Asliye Hukuk': '#2980b9', 'Sulh Hukuk': '#3498db', 'Aile': '#C9A84C',
   'Asliye Ticaret': '#16a085', 'Tüketici': '#27ae60', 'İş': '#f39c12',
   'Kadastro': '#7f8c8d', 'Fikri ve Sınai Haklar Hukuk': '#2c3e50',
   'Asliye Ceza': '#c0392b', 'Sulh Ceza': '#e74c3c', 'Ağır Ceza': '#922b21',
@@ -171,7 +171,7 @@ const MRENK = {
 
 const ARENK = {
   'İlk Derece': 'var(--blue)', 'İstinaf': 'var(--gold)',
-  'Temyiz (Yargıtay)': '#8e44ad', 'Temyiz (Danıştay)': '#8e44ad', 'Yargıtay': '#8e44ad', 'Kesinleşti': 'var(--green)', 'Düşürüldü': 'var(--text-dim)'
+  'Temyiz (Yargıtay)': '#C9A84C', 'Temyiz (Danıştay)': '#C9A84C', 'Yargıtay': '#C9A84C', 'Kesinleşti': 'var(--green)', 'Düşürüldü': 'var(--text-dim)'
 };
 
 const IDRENK = {

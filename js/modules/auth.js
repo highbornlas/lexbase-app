@@ -261,7 +261,7 @@ function yedekIstatistikGoster() {
   } else {
     bulutKart.classList.remove('kurumsal-locked');
     if (bulutBadge) {
-      bulutBadge.style.background = '#8e44ad22';
+      bulutBadge.style.background = '#C9A84C22';
       bulutBadge.style.color = '#9b59b6';
     }
     document.getElementById('bulut-yedekler-wrap').style.display = 'block';

@@ -13,7 +13,7 @@ const Kanban = (function() {
     { id: 'hazirlik', baslik: 'Hazırlık', renk: '#3498db', durumlar: ['Devam Ediyor'] },
     { id: 'aktif', baslik: 'Aktif / Duruşma', renk: '#e67e22', durumlar: ['Aktif'] },
     { id: 'beklemede', baslik: 'Beklemede', renk: '#f39c12', durumlar: ['Beklemede'] },
-    { id: 'istinaf', baslik: 'İstinaf', renk: '#8e44ad', asamalar: ['İstinaf'] },
+    { id: 'istinaf', baslik: 'İstinaf', renk: '#C9A84C', asamalar: ['İstinaf'] },
     { id: 'yargitay', baslik: 'Temyiz', renk: '#2c3e50', asamalar: ['Temyiz (Yargıtay)', 'Temyiz (Danıştay)', 'Yargıtay'] },
     { id: 'kapandi', baslik: 'Kesinleşti / Kapandı', renk: '#27ae60', durumlar: ['Kapandı'], asamalar: ['Kesinleşti', 'Düşürüldü'] },
   ];
@@ -76,7 +76,7 @@ const Kanban = (function() {
   }
 
   function davaKart(d) {
-    const asamaRenk = { 'İlk Derece': '#3498db', 'İstinaf': '#8e44ad', 'Temyiz (Yargıtay)': '#2c3e50', 'Temyiz (Danıştay)': '#2c3e50', 'Yargıtay': '#2c3e50', 'Kesinleşti': '#27ae60' };
+    const asamaRenk = { 'İlk Derece': '#3498db', 'İstinaf': '#C9A84C', 'Temyiz (Yargıtay)': '#2c3e50', 'Temyiz (Danıştay)': '#2c3e50', 'Yargıtay': '#2c3e50', 'Kesinleşti': '#27ae60' };
     return `<div class="kanban-card" draggable="true" data-id="${d.id}" data-tip="dava"
       ondragstart="Kanban.dragStart(event)" ondragend="Kanban.dragEnd(event)"
       onclick="openDavaDetay('${d.id}')">

@@ -213,6 +213,6 @@ function rolBadgeHTML(rol) {
 }
 
 function personelAvatarRenk(rol) {
-  const map = { sahip:'#c9a84c', avukat:'#2980b9', stajyer:'#8e44ad', sekreter:'#27ae60', muhasebe:'#e74c3c', diger:'#7f8c8d' };
+  const map = { sahip:'#c9a84c', avukat:'#2980b9', stajyer:'#C9A84C', sekreter:'#27ae60', muhasebe:'#e74c3c', diger:'#7f8c8d' };
   return map[rol] || '#7f8c8d';
 }
