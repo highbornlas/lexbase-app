@@ -993,7 +993,7 @@ select:focus, textarea:focus {
 .gm-box { background:#161B22 !important;border:1px solid rgba(0,188,212,.2) !important; }
 .gm-logo { color:#00BCD4 !important; }
 .gm-submit { background:linear-gradient(135deg,#00BCD4,#26C6DA) !important;color:#0D1117 !important; }
-.gm-tab.active { color:#00BCD4 !important;border-bottom-color:#00BCD4 !important; }
+.gm-tab.active { background:#00BCD4 !important;color:#0D1117 !important; }
 
 /* Hero Split */
 .lp-hero-split {

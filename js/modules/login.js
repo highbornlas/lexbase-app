@@ -25,7 +25,7 @@ function lpInit() {
     } catch(e) { console.error('[LexBase] Başlatma hatası:', e); }
   }
   // Giriş yoksa landing'i göster ve init yap
-  init();
+  try { init(); } catch(e) { console.warn('[LexBase] init() hatası (landing modunda normal):', e.message); }
   // Landing scroll efekti
   const nav = document.getElementById('lp-nav');
   const topbar = document.querySelector('.lp-topbar');
