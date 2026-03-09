@@ -165,13 +165,25 @@ function yasalBelgeAc(tur) {
     'kullanim': 'Kullanım Koşulları',
     'gizlilik': 'Gizlilik Politikası',
     'kvkk': 'KVKK Aydınlatma Metni',
-    'guvenlik': 'Veri Güvenliği Politikası'
+    'guvenlik': 'Veri Güvenliği Politikası',
+    'araclar': 'Avukat Araç Kutusu',
+    'surum': 'Sürüm Notları',
+    'hakkimizda': 'Hakkımızda',
+    'blog': 'Blog',
+    'iletisim': 'İletişim',
+    'yardim': 'Yardım Merkezi'
   };
   var icerikler = {
     'kullanim': yasalKullanimKosullari(),
     'gizlilik': yasalGizlilikPolitikasi(),
     'kvkk': yasalKvkkAydinlatma(),
-    'guvenlik': yasalVeriGuvenligi()
+    'guvenlik': yasalVeriGuvenligi(),
+    'araclar': sayfaAvukatAracKutusu(),
+    'surum': sayfaSurumNotlari(),
+    'hakkimizda': sayfaHakkimizda(),
+    'blog': sayfaBlog(),
+    'iletisim': sayfaIletisim(),
+    'yardim': sayfaYardimMerkezi()
   };
   var modal = document.getElementById('yasal-modal');
   if (!modal) return;
@@ -403,6 +415,348 @@ function yasalVeriGuvenligi() {
     '<h3>9. Güvenlik Güncellemeleri</h3>' +
     '<p>Platform güvenlik yamaları düzenli olarak uygulanır. Kritik güvenlik açıkları tespit edildiğinde acil müdahale prosedürü işletilir.</p>' +
     '<div class="yasal-iletisim"><strong>Güvenlik İletişim:</strong> info@lexbase.app</div>' +
+    '</div>';
+}
+
+// ================================================================
+// FOOTER SAYFA İÇERİKLERİ
+// ================================================================
+
+function sayfaAvukatAracKutusu() {
+  return '<div class="yasal-icerik sayfa-icerik">' +
+    '<p class="sayfa-tanitim">LexBase, avukatların günlük iş yükünü hafifleten kapsamlı bir dijital araç kutusu sunar.</p>' +
+    '<div class="arac-grid">' +
+
+    '<div class="arac-kart">' +
+    '<div class="arac-ikon">📁</div>' +
+    '<h3>Dosya Yönetimi</h3>' +
+    '<p>Hukuk, ceza ve icra dosyalarınızı tek panelden takip edin. Durum güncellemeleri, süre hatırlatmaları ve otomatik numaralandırma ile hiçbir detayı kaçırmayın.</p>' +
+    '</div>' +
+
+    '<div class="arac-kart">' +
+    '<div class="arac-ikon">👥</div>' +
+    '<h3>Müvekkil Takibi</h3>' +
+    '<p>Müvekkil bilgilerini, iletişim geçmişini ve ilişkili dosyaları merkezi bir yapıda yönetin. Müvekkil bazlı finansal özet ve kârlılık analizi yapın.</p>' +
+    '</div>' +
+
+    '<div class="arac-kart">' +
+    '<div class="arac-ikon">⚖️</div>' +
+    '<h3>Duruşma Takvimi</h3>' +
+    '<p>Tüm duruşma ve randevularınızı takvim görünümünde planlayın. Otomatik hatırlatmalarla önemli tarihleri asla kaçırmayın.</p>' +
+    '</div>' +
+
+    '<div class="arac-kart">' +
+    '<div class="arac-ikon">📊</div>' +
+    '<h3>Finans Modülü</h3>' +
+    '<p>Bakiyeler, büro giderleri, kâr/zarar analizi, faturalar ve kârlılık raporları. Beklenen gelir takibi ile nakit akışınızı planlayın.</p>' +
+    '</div>' +
+
+    '<div class="arac-kart">' +
+    '<div class="arac-ikon">📋</div>' +
+    '<h3>İcra Takibi</h3>' +
+    '<p>İcra dosyalarınızı adım adım takip edin. Harç hesaplamaları, tahsilat takibi ve icra süreç yönetimi tek ekranda.</p>' +
+    '</div>' +
+
+    '<div class="arac-kart">' +
+    '<div class="arac-ikon">🔔</div>' +
+    '<h3>Akıllı Hatırlatmalar</h3>' +
+    '<p>Süre bitimi, duruşma tarihi, ödeme vadesi ve daha fazlası için otomatik hatırlatmalar. Kritik tarihleri asla kaçırmayın.</p>' +
+    '</div>' +
+
+    '<div class="arac-kart">' +
+    '<div class="arac-ikon">☁️</div>' +
+    '<h3>Cloud Senkronizasyon</h3>' +
+    '<p>Verileriniz bulutta güvenle saklanır. Ofis, ev veya hareket halindeyken tüm cihazlarınızdan erişin.</p>' +
+    '</div>' +
+
+    '<div class="arac-kart">' +
+    '<div class="arac-ikon">📈</div>' +
+    '<h3>İstatistik & Raporlama</h3>' +
+    '<p>Büronuzun performansını görsel grafiklerle analiz edin. Dosya durumları, gelir-gider trendleri ve verimlilik raporları.</p>' +
+    '</div>' +
+
+    '</div>' +
+    '<div class="yasal-iletisim" style="margin-top:24px"><strong>Detaylı bilgi:</strong> info@lexbase.app</div>' +
+    '</div>';
+}
+
+function sayfaSurumNotlari() {
+  return '<div class="yasal-icerik sayfa-icerik">' +
+    '<p class="sayfa-tanitim">LexBase sürekli gelişiyor. İşte son güncellemeler ve iyileştirmeler:</p>' +
+
+    '<div class="surum-blok surum-guncel">' +
+    '<div class="surum-baslik">' +
+    '<span class="surum-badge">Güncel</span>' +
+    '<h3>v2.1.0 <span class="surum-tarih">Mart 2026</span></h3>' +
+    '</div>' +
+    '<ul>' +
+    '<li><strong>🛡️ IP Loglama & Güvenlik:</strong> Tüm giriş/çıkış işlemlerinde IP adresi, konum ve cihaz bilgisi kaydı</li>' +
+    '<li><strong>📜 KVKK Uyumluluk:</strong> Yasal belgeler (Kullanım Koşulları, Gizlilik Politikası, KVKK Aydınlatma Metni, Veri Güvenliği) eklendi</li>' +
+    '<li><strong>🍪 Consent Banner:</strong> KVKK uyumlu çerez/veri kullanım onay mekanizması</li>' +
+    '<li><strong>📋 Kayıt KVKK Onayı:</strong> Kayıt formuna KVKK aydınlatma metni onay kutusu</li>' +
+    '</ul>' +
+    '</div>' +
+
+    '<div class="surum-blok">' +
+    '<h3>v2.0.0 <span class="surum-tarih">Şubat 2026</span></h3>' +
+    '<ul>' +
+    '<li><strong>💰 Finans Sistemi Yeniden Tasarımı:</strong> 6 sekmeli yeni finans modülü (Bakiyeler, Büro Giderleri, Kâr/Zarar, Faturalar, Kârlılık, Beklenen Gelir)</li>' +
+    '<li><strong>📊 Finans Motoru:</strong> Bağımsız hesaplama motoru — müvekkil özet, büro kâr/zarar, finansal uyarılar</li>' +
+    '<li><strong>🏦 Banka Widget:</strong> Zengin banka seçim widget\'ı (3 form için ortak)</li>' +
+    '<li><strong>🔄 Veri Göçü:</strong> Eski bütçe/finans yapısından yeni sisteme otomatik migrasyon</li>' +
+    '</ul>' +
+    '</div>' +
+
+    '<div class="surum-blok">' +
+    '<h3>v1.8.0 <span class="surum-tarih">Ocak 2026</span></h3>' +
+    '<ul>' +
+    '<li><strong>👑 Admin Panel:</strong> Standalone admin paneli — müşteri yönetimi, lisans kontrolü, oturum logları</li>' +
+    '<li><strong>🔐 Lisans Sistemi:</strong> Plan bazlı özellik kısıtlamaları ve deneme süresi yönetimi</li>' +
+    '<li><strong>📨 E-posta Bildirimleri:</strong> Supabase Edge Functions ile otomatik bildirim altyapısı</li>' +
+    '</ul>' +
+    '</div>' +
+
+    '<div class="surum-blok">' +
+    '<h3>v1.5.0 <span class="surum-tarih">Aralık 2025</span></h3>' +
+    '<ul>' +
+    '<li><strong>⚖️ İcra Modülü:</strong> İcra dosya yönetimi, harç hesaplama ve tahsilat takibi</li>' +
+    '<li><strong>📱 PWA Desteği:</strong> Mobil cihazlarda uygulama olarak kurulabilme</li>' +
+    '<li><strong>🌙 Karanlık Mod:</strong> Göz dostu karanlık tema seçeneği</li>' +
+    '</ul>' +
+    '</div>' +
+
+    '<div class="surum-blok">' +
+    '<h3>v1.0.0 <span class="surum-tarih">Kasım 2025</span></h3>' +
+    '<ul>' +
+    '<li><strong>🚀 İlk Sürüm:</strong> Dosya yönetimi, müvekkil takibi, duruşma takvimi</li>' +
+    '<li><strong>☁️ Cloud Sync:</strong> Supabase tabanlı bulut senkronizasyon</li>' +
+    '<li><strong>🎨 Modern Arayüz:</strong> Gold tema, responsive tasarım, sidebar navigasyon</li>' +
+    '</ul>' +
+    '</div>' +
+
+    '</div>';
+}
+
+function sayfaHakkimizda() {
+  return '<div class="yasal-icerik sayfa-icerik">' +
+    '<div class="hakkimizda-hero">' +
+    '<h3>Hukuku Dijitalleştiriyoruz</h3>' +
+    '<p class="hakkimizda-slogan">LexBase, avukatlar ve hukuk büroları için tasarlanmış Türkiye\'nin yeni nesil büro yönetim platformudur.</p>' +
+    '</div>' +
+
+    '<h3>Hikayemiz</h3>' +
+    '<p>LexBase, hukuk mesleğinin dijital dönüşümüne katkı sağlamak amacıyla <strong>EMD Yazılım</strong> tarafından geliştirilmiştir. Avukatların günlük iş yükünü hafifletmek, büro süreçlerini verimli hale getirmek ve hukuki takip işlerini kolaylaştırmak temel hedefimizdir.</p>' +
+    '<p>Türkiye\'deki hukuk bürolarının çoğunluğunun Excel tabloları, dağınık notlar ve kâğıt dosyalarla çalıştığını gördük. Bu gerçeklikten yola çıkarak; modern, kullanımı kolay ve avukatların gerçek ihtiyaçlarına cevap veren bir platform inşa ettik.</p>' +
+
+    '<h3>Misyonumuz</h3>' +
+    '<p>Hukuk profesyonellerinin zamanını idari işlerden kurtararak asıl işlerine — hukuka — odaklanmalarını sağlamak. Teknolojiyi hukukun hizmetine sunmak.</p>' +
+
+    '<h3>Değerlerimiz</h3>' +
+    '<div class="deger-grid">' +
+    '<div class="deger-item">' +
+    '<strong>🔒 Güvenlik Öncelikli</strong>' +
+    '<p>Avukat-müvekkil gizliliği kutsaldır. Verileriniz uçtan uca şifreleme ve endüstri standardı güvenlik önlemleriyle korunur.</p>' +
+    '</div>' +
+    '<div class="deger-item">' +
+    '<strong>🇹🇷 Türk Hukukuna Uyumlu</strong>' +
+    '<p>Platform, Türkiye\'deki hukuki süreçler ve mevzuat gözetilerek tasarlanmıştır. UYAP entegrasyon hazırlığı devam etmektedir.</p>' +
+    '</div>' +
+    '<div class="deger-item">' +
+    '<strong>⚡ Sürekli Gelişim</strong>' +
+    '<p>Kullanıcı geri bildirimleri doğrultusunda platform sürekli güncellenmektedir. Her ay yeni özellikler ve iyileştirmeler yayınlanır.</p>' +
+    '</div>' +
+    '<div class="deger-item">' +
+    '<strong>🤝 Kullanıcı Odaklı</strong>' +
+    '<p>Her özellik, gerçek avukatların ihtiyaçları dinlenerek geliştirilir. Teknoloji karmaşıklığını ortadan kaldırıyoruz.</p>' +
+    '</div>' +
+    '</div>' +
+
+    '<h3>Rakamlarla LexBase</h3>' +
+    '<div class="rakam-grid">' +
+    '<div class="rakam-item"><div class="rakam-buyuk">15+</div><div>Modül</div></div>' +
+    '<div class="rakam-item"><div class="rakam-buyuk">7</div><div>Büyük Güncelleme</div></div>' +
+    '<div class="rakam-item"><div class="rakam-buyuk">%99.5</div><div>Uptime</div></div>' +
+    '<div class="rakam-item"><div class="rakam-buyuk">7/24</div><div>Cloud Erişim</div></div>' +
+    '</div>' +
+
+    '<div class="yasal-iletisim" style="margin-top:24px"><strong>EMD Yazılım</strong> — Türkiye\'de geliştirilmiştir 🇹🇷<br>info@lexbase.app</div>' +
+    '</div>';
+}
+
+function sayfaBlog() {
+  return '<div class="yasal-icerik sayfa-icerik">' +
+    '<p class="sayfa-tanitim">Hukuk teknolojisi, büro yönetimi ve sektör trendleri hakkında içerikler.</p>' +
+
+    '<div class="blog-liste">' +
+
+    '<article class="blog-kart">' +
+    '<div class="blog-tarih">5 Mart 2026</div>' +
+    '<h3>Avukatlar İçin Dijital Dönüşüm: Nereden Başlamalı?</h3>' +
+    '<p>Dijital dönüşüm artık büyük kurumsal hukuk ofislerinin değil, her ölçekten büronun gündeminde. Peki bir avukat olarak bu dönüşüme nereden başlamalısınız? Dosya yönetiminden müvekkil takibine, faturalama süreçlerinden duruşma takvimine kadar dijitalleşme adımlarını inceliyoruz.</p>' +
+    '<span class="blog-etiket">Dijital Dönüşüm</span>' +
+    '</article>' +
+
+    '<article class="blog-kart">' +
+    '<div class="blog-tarih">20 Şubat 2026</div>' +
+    '<h3>Hukuk Bürosunda Finansal Yönetim: Kârlılık Nasıl Ölçülür?</h3>' +
+    '<p>Bir hukuk bürosunun kârlılığını sadece gelir-gider farkına bakarak ölçmek yeterli değildir. Dosya bazlı kârlılık, müvekkil bazlı kârlılık ve beklenen gelir analizi gibi metriklerin nasıl takip edilebileceğini inceliyoruz.</p>' +
+    '<span class="blog-etiket">Finans</span>' +
+    '</article>' +
+
+    '<article class="blog-kart">' +
+    '<div class="blog-tarih">8 Şubat 2026</div>' +
+    '<h3>KVKK ve Avukatlar: Veri Sorumlusu Olarak Yükümlülükleriniz</h3>' +
+    '<p>Avukatlar, müvekkil verilerini işleyen veri sorumluları olarak KVKK kapsamında önemli yükümlülükler taşımaktadır. Aydınlatma yükümlülüğünden veri güvenliği tedbirlerine, VERBİS kaydından veri ihlali bildirimine kadar bilmeniz gerekenleri özetliyoruz.</p>' +
+    '<span class="blog-etiket">KVKK</span>' +
+    '</article>' +
+
+    '<article class="blog-kart">' +
+    '<div class="blog-tarih">15 Ocak 2026</div>' +
+    '<h3>Bulut Tabanlı Hukuk Yazılımlarında Güvenlik: Nelere Dikkat Etmeli?</h3>' +
+    '<p>Avukat-müvekkil gizliliği, hukuk mesleğinin temel taşıdır. Bulut tabanlı yazılımlar kullanırken verilerinizin güvenliğini nasıl sağlayabilirsiniz? SSL/TLS şifreleme, erişim kontrolü ve yedekleme stratejilerini tartışıyoruz.</p>' +
+    '<span class="blog-etiket">Güvenlik</span>' +
+    '</article>' +
+
+    '<article class="blog-kart">' +
+    '<div class="blog-tarih">28 Aralık 2025</div>' +
+    '<h3>2026\'da Hukuk Teknolojisi Trendleri</h3>' +
+    '<p>Yapay zekâ destekli hukuki araştırma, akıllı sözleşme yönetimi, otomatik belge taslakları ve prediktif analitik — 2026\'da hukuk teknolojisi dünyasında öne çıkan trendleri ve Türkiye\'ye olası yansımalarını değerlendiriyoruz.</p>' +
+    '<span class="blog-etiket">Trendler</span>' +
+    '</article>' +
+
+    '</div>' +
+    '<div class="yasal-iletisim" style="margin-top:24px"><strong>Blog yazılarımız yakında tam metin olarak yayında!</strong><br>Bültenimize kayıt olmak için: info@lexbase.app</div>' +
+    '</div>';
+}
+
+function sayfaIletisim() {
+  return '<div class="yasal-icerik sayfa-icerik">' +
+    '<p class="sayfa-tanitim">Sorularınız, önerileriniz veya destek talepleriniz için bize ulaşın.</p>' +
+
+    '<div class="iletisim-grid">' +
+
+    '<div class="iletisim-kart">' +
+    '<div class="iletisim-ikon">📧</div>' +
+    '<h3>E-posta</h3>' +
+    '<p>Genel sorular ve destek talepleri</p>' +
+    '<a href="mailto:info@lexbase.app" class="iletisim-link">info@lexbase.app</a>' +
+    '</div>' +
+
+    '<div class="iletisim-kart">' +
+    '<div class="iletisim-ikon">🛡️</div>' +
+    '<h3>Teknik Destek</h3>' +
+    '<p>Platform kullanımı ve teknik sorunlar</p>' +
+    '<a href="mailto:destek@lexbase.app" class="iletisim-link">destek@lexbase.app</a>' +
+    '</div>' +
+
+    '<div class="iletisim-kart">' +
+    '<div class="iletisim-ikon">🤝</div>' +
+    '<h3>İş Birlikleri</h3>' +
+    '<p>Baro ortaklıkları ve kurumsal çözümler</p>' +
+    '<a href="mailto:info@lexbase.app" class="iletisim-link">info@lexbase.app</a>' +
+    '</div>' +
+
+    '<div class="iletisim-kart">' +
+    '<div class="iletisim-ikon">🐛</div>' +
+    '<h3>Hata Bildirimi</h3>' +
+    '<p>Hata ve iyileştirme önerileri</p>' +
+    '<a href="mailto:info@lexbase.app" class="iletisim-link">info@lexbase.app</a>' +
+    '</div>' +
+
+    '</div>' +
+
+    '<h3>Yanıt Süreleri</h3>' +
+    '<table class="yasal-tablo">' +
+    '<tr><th>Kanal</th><th>Yanıt Süresi</th></tr>' +
+    '<tr><td>Genel sorular</td><td>1 iş günü içinde</td></tr>' +
+    '<tr><td>Teknik destek</td><td>4 saat içinde</td></tr>' +
+    '<tr><td>Kritik sorunlar (erişim kaybı vb.)</td><td>1 saat içinde</td></tr>' +
+    '<tr><td>İş birlikleri</td><td>2 iş günü içinde</td></tr>' +
+    '</table>' +
+
+    '<h3>Sosyal Medya</h3>' +
+    '<p>Güncellemeler, duyurular ve hukuk teknolojisi içerikleri için bizi sosyal medyada takip edin:</p>' +
+    '<div class="sosyal-linkler">' +
+    '<span class="sosyal-badge">𝕏 Twitter</span>' +
+    '<span class="sosyal-badge">📘 LinkedIn</span>' +
+    '<span class="sosyal-badge">📸 Instagram</span>' +
+    '</div>' +
+
+    '<div class="yasal-iletisim" style="margin-top:24px"><strong>EMD Yazılım</strong> — Türkiye 🇹🇷<br>Mesai saatleri: Pazartesi – Cuma, 09:00 – 18:00</div>' +
+    '</div>';
+}
+
+function sayfaYardimMerkezi() {
+  return '<div class="yasal-icerik sayfa-icerik">' +
+    '<p class="sayfa-tanitim">LexBase\'i en verimli şekilde kullanmanız için kapsamlı rehberler ve sıkça sorulan sorular.</p>' +
+
+    '<h3>🚀 Hızlı Başlangıç</h3>' +
+    '<div class="yardim-adimlar">' +
+    '<div class="yardim-adim">' +
+    '<div class="adim-no">1</div>' +
+    '<div><strong>Hesap Oluşturun</strong><p>Kayıt formunu doldurun, e-posta doğrulamasını tamamlayın ve büro bilgilerinizi girin.</p></div>' +
+    '</div>' +
+    '<div class="yardim-adim">' +
+    '<div class="adim-no">2</div>' +
+    '<div><strong>Müvekkil Ekleyin</strong><p>Sol menüden "Müvekkillerim" sekmesine giderek ilk müvekkilinizi oluşturun.</p></div>' +
+    '</div>' +
+    '<div class="yardim-adim">' +
+    '<div class="adim-no">3</div>' +
+    '<div><strong>Dosya Açın</strong><p>Müvekkile bağlı dava, icra veya danışmanlık dosyası oluşturun. Duruşma tarihlerini ekleyin.</p></div>' +
+    '</div>' +
+    '<div class="yardim-adim">' +
+    '<div class="adim-no">4</div>' +
+    '<div><strong>Finans Takibi Başlatın</strong><p>Ücret sözleşmesini tanımlayın, tahsilatları ve büro giderlerini kaydedin.</p></div>' +
+    '</div>' +
+    '</div>' +
+
+    '<h3>❓ Sıkça Sorulan Sorular</h3>' +
+
+    '<div class="sss-liste">' +
+
+    '<details class="sss-item">' +
+    '<summary>Verilerim güvende mi?</summary>' +
+    '<p>Evet. LexBase, SSL/TLS şifreleme, bcrypt şifre hashleme, Row Level Security ve Cloudflare DDoS koruması gibi endüstri standardı güvenlik önlemleri kullanmaktadır. Verileriniz SOC 2 ve ISO 27001 sertifikalı altyapıda saklanır.</p>' +
+    '</details>' +
+
+    '<details class="sss-item">' +
+    '<summary>Mobil cihazdan kullanabilir miyim?</summary>' +
+    '<p>Evet. LexBase, Progressive Web App (PWA) teknolojisi ile geliştirilmiştir. Telefonunuzun tarayıcısından <strong>lexbase.app</strong> adresine giderek "Ana Ekrana Ekle" seçeneği ile uygulama gibi kullanabilirsiniz.</p>' +
+    '</details>' +
+
+    '<details class="sss-item">' +
+    '<summary>Deneme süresi ne kadar?</summary>' +
+    '<p>LexBase, tüm yeni kullanıcılara tüm özelliklerin açık olduğu ücretsiz deneme süresi sunmaktadır. Süre dolduğunda, ihtiyacınıza uygun bir plan seçerek devam edebilirsiniz.</p>' +
+    '</details>' +
+
+    '<details class="sss-item">' +
+    '<summary>Birden fazla avukat kullanabilir mi?</summary>' +
+    '<p>Profesyonel ve Kurumsal planlarda ekip desteği mevcuttur. Büro sahibi, diğer avukatlar için hesap oluşturabilir ve yetkilendirme yapabilir.</p>' +
+    '</details>' +
+
+    '<details class="sss-item">' +
+    '<summary>Verilerimi dışa aktarabilir miyim?</summary>' +
+    '<p>Evet. Müvekkil, dosya ve finans verilerinizi dilediğiniz zaman dışa aktarabilirsiniz. Hesap kapatma durumunda 90 gün boyunca verilerinize erişim sağlanır.</p>' +
+    '</details>' +
+
+    '<details class="sss-item">' +
+    '<summary>İnternet olmadan çalışır mı?</summary>' +
+    '<p>LexBase, Service Worker teknolojisi ile temel işlevleri çevrimdışı kullanılabilir. Veriler cihazınızda da yerel olarak saklanır. İnternet bağlantısı geldiğinde otomatik senkronizasyon yapılır.</p>' +
+    '</details>' +
+
+    '<details class="sss-item">' +
+    '<summary>UYAP entegrasyonu var mı?</summary>' +
+    '<p>UYAP entegrasyonu şu anda geliştirme aşamasındadır. İlk etapta dosya bilgilerinin UYAP\'tan otomatik çekilmesi planlanmaktadır. Gelişmeler blog ve uygulama içi bildirimler aracılığıyla duyurulacaktır.</p>' +
+    '</details>' +
+
+    '<details class="sss-item">' +
+    '<summary>Plan değişikliği nasıl yapılır?</summary>' +
+    '<p>Ayarlar > Abonelik bölümünden planınızı yükseltebilir veya düşürebilirsiniz. Plan yükseltme anında, düşürme ise dönem sonunda geçerli olur.</p>' +
+    '</details>' +
+
+    '</div>' +
+
+    '<div class="yasal-iletisim" style="margin-top:24px"><strong>Daha fazla yardım mı gerekiyor?</strong><br>destek@lexbase.app adresine yazın — en kısa sürede yanıtlayalım.</div>' +
     '</div>';
 }
 
