@@ -481,7 +481,8 @@ function calcHakedisToplam(obj){
 // Karşı taraf tahsilatından doğan avukatlık payını hesapla (sadece tahsilat/karma anlaşmalar)
 function calcTahsilatPay(obj){
   const an=obj.anlasma||{};
-  if(!an.tur||!an.yuzde)return null; // pay yok
+  if(!an.tur)return null;
+  if(!an.yuzde&&!an.karmaYuzde)return null; // yüzde yoksa pay yok
   if(an.tur==='tahsilat'||an.tur==='basari'){
     const topTahsil=(obj.tahsilatlar||[]).filter(t=>t.tur==='tahsilat').reduce((s,t)=>s+t.tutar,0);
     const pay=(topTahsil*(an.yuzde||0))/100;

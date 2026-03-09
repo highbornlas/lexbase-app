@@ -33,8 +33,8 @@ function renderFinansKPI() {
 
   el.innerHTML =
     '<div class="card"><div class="card-label">Toplam Gelir' + helpTip('Vekalet ücretleri, hakedişler, danışmanlık ve arabuluculuk gelirlerinin toplamı') + '</div><div class="card-value green">' + fmt(kz.gelirler.toplam) + '</div></div>' +
-    '<div class="card"><div class="card-label">Toplam Gider' + helpTip('Dosya masrafları ve büro operasyonel giderlerinin toplamı') + '</div><div class="card-value red">' + fmt(kz.giderler.toplam) + '</div></div>' +
-    '<div class="card"><div class="card-label">Büro Gideri</div><div class="card-value" style="color:var(--text-muted)">' + fmt(kz.giderler.buroGiderleri.toplam) + '</div></div>' +
+    '<div class="card"><div class="card-label">Toplam Gider' + helpTip('Büro operasyonel giderlerinin toplamı') + '</div><div class="card-value red">' + fmt(kz.giderler.toplam) + '</div></div>' +
+    '<div class="card"><div class="card-label">Büro Gideri</div><div class="card-value" style="color:var(--text-muted)">' + fmt(kz.giderler.buroGiderToplam) + '</div></div>' +
     '<div class="card"><div class="card-label">Net Kâr/Zarar' + helpTip('Toplam gelir eksi toplam gider. Büronun genel mali performansı') + '</div><div class="card-value" style="color:' + (kz.net >= 0 ? 'var(--green)' : 'var(--red)') + '">' + fmt(kz.net) + '</div></div>' +
     '<div class="card"><div class="card-label">Bu Ay Net</div><div class="card-value" style="color:' + (kzAy.net >= 0 ? 'var(--green)' : 'var(--red)') + '">' + fmt(kzAy.net) + '</div></div>' +
     '<div class="card"><div class="card-label">Bekleyen Alacak' + helpTip('Müvekkillerden tahsil edilmemiş masraf alacakları ve vekalet ücreti bakiyeleri') + '</div><div class="card-value" style="color:' + (beklAlacak > 0 ? '#f39c12' : 'var(--text-muted)') + '">' + fmt(beklAlacak) + '</div></div>';
@@ -260,12 +260,11 @@ function renderKarZararRaporu() {
   html += '<div class="kz-row toplam"><span class="kz-label">TOPLAM GELİR</span><span class="kz-val pozitif">' + fmt(kz.gelirler.toplam) + '</span></div>';
   html += '</div>';
 
-  // GİDERLER
-  html += '<div class="kz-section"><div class="kz-section-title">GİDERLER</div>';
-  html += '<div class="kz-row"><span class="kz-label">Dosya Masrafları' + helpTip('Müvekkil adına yapılan harç, tebligat, bilirkişi ücreti vb. masraflar. Bunlar müvekkilden tahsil edilir') + '</span><span class="kz-val negatif">' + fmt(kz.giderler.dosyaMasraflari) + '</span></div>';
+  // GİDERLER (Sadece büro operasyonel giderleri — dosya masrafları müvekkil emaneti olduğu için dahil değil)
+  html += '<div class="kz-section"><div class="kz-section-title">GİDERLER' + helpTip('Sadece büro operasyonel giderleri. Dosya masrafları müvekkil adına yapıldığı için burada gösterilmez — müvekkil bakiyeleri sekmesinde takip edilir') + '</div>';
 
   var bg = kz.giderler.buroGiderleri;
-  if (bg.toplam > 0) {
+  if (kz.giderler.buroGiderToplam > 0) {
     var bgKeys = ['kira','stopajVergi','muhasebeci','calisanUcretleri','temizlik','kirtasiye','teknoloji','ulasim','sigorta','meslekiGelisim','diger'];
     var bgLabels = {'kira':'Kira & Aidat','stopajVergi':'Stopaj & Vergi','muhasebeci':'Muhasebeci','calisanUcretleri':'Çalışan Ücretleri','temizlik':'Temizlik & Bakım','kirtasiye':'Kırtasiye & Sarf','teknoloji':'Teknoloji','ulasim':'Ulaşım & Araç','sigorta':'Sigorta','meslekiGelisim':'Mesleki Gelişim','diger':'Diğer'};
     bgKeys.forEach(function(k) {

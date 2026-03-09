@@ -374,21 +374,10 @@ var FinansMotoru = (function() {
     var toplamGelir = akdiVekaletUcreti + karsiVekaletHakedis + danismanlikGeliri + arabuluculukGeliri + digerGelir;
 
     // ── GİDERLER ────────────────────────────────────────────────
-    var dosyaMasraflari = 0;
-    // Dava masrafları
-    (state.davalar || []).forEach(function(d) {
-      (d.harcamalar || []).forEach(function(h) {
-        if (!_tarihUygun(h.tarih, prefix)) return;
-        dosyaMasraflari += parseFloat(h.tutar) || 0;
-      });
-    });
-    // İcra masrafları
-    (state.icra || []).forEach(function(i) {
-      (i.harcamalar || []).forEach(function(h) {
-        if (!_tarihUygun(h.tarih, prefix)) return;
-        dosyaMasraflari += parseFloat(h.tutar) || 0;
-      });
-    });
+    // NOT: Dosya masrafları (müvekkil adına yapılan harç, bilirkişi vb.) büronun
+    // kendi gideri DEĞİLDİR. Bunlar emanet niteliğindedir — müvekkilden masraf
+    // avansı alınır, artan kısım iade edilir, eksik kısım talep edilir.
+    // Bu nedenle dosya masrafları büro kâr/zarar hesabına dahil edilmez.
 
     // Büro giderleri (kategorilere göre)
     var buroKat = {
@@ -418,7 +407,7 @@ var FinansMotoru = (function() {
     // Müvekkile aktarımlar — büro gideri değil (müvekkilin parasını iade ediyoruz)
     // Ancak kâr/zarar raporunda gösterilmez çünkü bu büronun geliri/gideri değil
 
-    var toplamGider = dosyaMasraflari + buroGiderToplam;
+    var toplamGider = buroGiderToplam;
     var net = toplamGelir - toplamGider;
 
     return {
@@ -431,7 +420,6 @@ var FinansMotoru = (function() {
         toplam: toplamGelir
       },
       giderler: {
-        dosyaMasraflari: dosyaMasraflari,
         buroGiderleri: buroKat,
         buroGiderToplam: buroGiderToplam,
         toplam: toplamGider
