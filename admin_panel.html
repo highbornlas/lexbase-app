@@ -764,7 +764,7 @@ tr:hover td { background: rgba(255,255,255,.015); }
       <div class="tbl-wrap">
         <table>
           <thead><tr>
-            <th>Müşteri</th><th>Giriş Tarihi</th><th>Süre</th>
+            <th>Müşteri</th><th>Giriş Tarihi</th><th>IP / Konum</th><th>Süre</th>
             <th>Dava</th><th>Müvekkil</th><th>İcra</th><th>Versiyon</th>
           </tr></thead>
           <tbody id="log-tbody"></tbody>
@@ -1099,6 +1099,7 @@ let loglar = [];
 let duyurular = [];
 let destekler = [];
 let lisanslar = [];
+let ipLoglar = [];
 let musteriSayfa = 1;
 let logSayfa = 1;
 const MUSTERI_PER_PAGE = 25;
@@ -1392,7 +1393,7 @@ document.addEventListener('keydown', function(e) {
 // ── VERİ YÜKLEME ───────────────────────────────────────────
 async function loadAll() {
   try {
-    await Promise.all([loadMusteriler(), loadLoglar(), loadDuyurular(), loadDestek(), loadLisanslar()]);
+    await Promise.all([loadMusteriler(), loadLoglar(), loadDuyurular(), loadDestek(), loadLisanslar(), loadIpLoglari()]);
   } catch (e) {
     console.warn('[Admin] Veri yüklenirken hata:', e.message);
   }
@@ -1443,6 +1444,27 @@ async function loadLisanslar() {
     console.warn('[Admin] Lisanslar yüklenemedi:', e.message);
     lisanslar = [];
   }
+}
+
+async function loadIpLoglari() {
+  try {
+    ipLoglar = await sbFetch('ip_loglari', { select: '*', order: 'created_at.desc', limit: 2000 });
+  } catch (e) {
+    console.warn('[Admin] IP logları yüklenemedi:', e.message);
+    ipLoglar = [];
+  }
+}
+
+function ipLogBul(email, tarih) {
+  if (!email || !tarih || !ipLoglar.length) return null;
+  var girisZaman = new Date(tarih).getTime();
+  for (var i = 0; i < ipLoglar.length; i++) {
+    var ip = ipLoglar[i];
+    if (ip.email !== email) continue;
+    var ipZaman = new Date(ip.created_at).getTime();
+    if (Math.abs(ipZaman - girisZaman) < 5 * 60 * 1000) return ip;
+  }
+  return null;
 }
 
 // Demo veri — Supabase bağlantısı yokken
@@ -1849,9 +1871,16 @@ function renderLoglar() {
     var adHtml = m
       ? '<div class="td-name name-link" onclick="openProfil(\'' + m.id + '\',\'loglar\')">' + esc(m.ad_soyad) + '</div>'
       : '<div class="td-name">' + esc(l.email || '—') + '</div>';
+    var ipInfo = ipLogBul(l.email, l.giris_tarihi);
+    var ipHtml = '—';
+    if (ipInfo) {
+      ipHtml = '<div style="font-size:11px;font-weight:600">' + esc(ipInfo.ip_adresi || '—') + '</div>' +
+        '<div class="td-sub">' + esc([ipInfo.sehir, ipInfo.ulke].filter(Boolean).join(', ') || '') + '</div>';
+    }
     return '<tr>' +
       '<td>' + adHtml + '<div class="td-sub">' + esc(l.email || '') + '</div></td>' +
       '<td style="font-size:12px">' + fmtDT(l.giris_tarihi) + '</td>' +
+      '<td>' + ipHtml + '</td>' +
       '<td style="font-size:12px">' + (l.sure_dakika ? l.sure_dakika + ' dk' : '—') + '</td>' +
       '<td style="text-align:center;font-size:12px">' + (l.dava_sayisi != null ? l.dava_sayisi : '—') + '</td>' +
       '<td style="text-align:center;font-size:12px">' + (l.muvekkil_sayisi != null ? l.muvekkil_sayisi : '—') + '</td>' +
@@ -2603,11 +2632,15 @@ function renderProfilOturumlar() {
   var sayfa = _profilLoglar.slice(start, start + PROFIL_LOG_PER_PAGE);
 
   var html = '<div class="section"><div class="section-body no-pad"><div class="tbl-wrap"><table>' +
-    '<thead><tr><th>Giriş</th><th>Süre</th><th>Dava</th><th>Müvekkil</th><th>İcra</th><th>Versiyon</th></tr></thead><tbody>';
+    '<thead><tr><th>Giriş</th><th>IP</th><th>Konum</th><th>Süre</th><th>Dava</th><th>Müvekkil</th><th>İcra</th><th>Versiyon</th></tr></thead><tbody>';
 
+  var profilEmail = _profilMusteri ? _profilMusteri.email : '';
   sayfa.forEach(function(l) {
+    var ipInfo = ipLogBul(profilEmail || l.email, l.giris_tarihi);
     html += '<tr>' +
       '<td style="font-size:12px">' + fmtDT(l.giris_tarihi) + '</td>' +
+      '<td style="font-size:11px">' + esc(ipInfo ? ipInfo.ip_adresi : '—') + '</td>' +
+      '<td style="font-size:11px;color:var(--text-muted)">' + esc(ipInfo ? [ipInfo.sehir, ipInfo.ulke].filter(Boolean).join(', ') : '—') + '</td>' +
       '<td style="font-size:12px">' + (l.sure_dakika ? l.sure_dakika + ' dk' : '—') + '</td>' +
       '<td style="text-align:center;font-size:12px">' + (l.dava_sayisi != null ? l.dava_sayisi : '—') + '</td>' +
       '<td style="text-align:center;font-size:12px">' + (l.muvekkil_sayisi != null ? l.muvekkil_sayisi : '—') + '</td>' +

@@ -15,6 +15,50 @@ const ADMIN_SB_KEY = 'sb_publishable_ccz6M_f4JCnnQzr0auQD7A_-A2YGb91';
 let _oturumBaslangic = null;
 let _oturumLogId     = null;
 
+// ── IP Log Gönderici (Cloudflare Pages Function) ─────────────
+// Fire-and-forget: await KULLANILMAZ, ana akışı engellemez
+function ipLogGonder(islem) {
+  try {
+    var email = '';
+    var musteriId = '';
+    if (typeof currentUser !== 'undefined' && currentUser) {
+      email = currentUser.email || '';
+      musteriId = currentUser.id || '';
+    }
+    // Tarayıcı tespiti
+    var ua = navigator.userAgent || '';
+    var tarayici = 'Bilinmiyor';
+    if (ua.indexOf('Edg/') > -1) tarayici = 'Edge';
+    else if (ua.indexOf('OPR/') > -1 || ua.indexOf('Opera') > -1) tarayici = 'Opera';
+    else if (ua.indexOf('Chrome/') > -1) tarayici = 'Chrome';
+    else if (ua.indexOf('Firefox/') > -1) tarayici = 'Firefox';
+    else if (ua.indexOf('Safari/') > -1) tarayici = 'Safari';
+
+    // Platform tespiti
+    var platform = 'web';
+    if (ua.indexOf('Electron') > -1) platform = 'desktop';
+    else if (/Mobi|Android|iPhone|iPad/i.test(ua)) platform = 'mobile';
+
+    fetch('/api/log-giris', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        musteri_id: musteriId || null,
+        email: email,
+        platform: platform,
+        ekran: screen.width + 'x' + screen.height,
+        user_agent: ua.substring(0, 500),
+        tarayici: tarayici,
+        islem: islem || 'giris'
+      })
+    }).catch(function(e) {
+      console.warn('[IP Log] Gönderilemedi:', e.message);
+    });
+  } catch(e) {
+    // Sessizce yut — IP log başarısız olursa uygulama etkilenmemeli
+  }
+}
+
 // ── Yardımcılar ───────────────────────────────────────────────
 async function adminSbPost(tablo, data) {
   if (!ADMIN_SB_URL || !ADMIN_SB_KEY) return false;
@@ -117,6 +161,9 @@ async function adminGirisLog(musteri) {
   _oturumBaslangic = Date.now();
   _oturumLogId = (typeof uid === 'function') ? uid() : crypto.randomUUID();
 
+  // IP log gönder (fire-and-forget — await yok)
+  ipLogGonder('giris');
+
   await adminSbPost('kullanim_log', {
     id:                 _oturumLogId,
     musteri_id:         musteri.id,
@@ -145,6 +192,8 @@ async function adminGirisLog(musteri) {
 // cikisYap() içinde çağrılır
 async function adminCikisLog() {
   if (!_oturumLogId || !_oturumBaslangic) return;
+  // IP log gönder (fire-and-forget — await yok)
+  ipLogGonder('cikis');
   const sure = Math.round((Date.now() - _oturumBaslangic) / 60000);
   await adminSbUpdate('kullanim_log', _oturumLogId, {
     cikis_tarihi:       new Date().toISOString(),

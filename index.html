@@ -731,10 +731,10 @@
       <div class="lp-footer-col">
         <div class="lp-footer-col-title">Yasal</div>
         <ul class="lp-footer-links">
-          <li><span class="lp-footer-link">Kullanım Koşulları</span></li>
-          <li><span class="lp-footer-link">Gizlilik Politikası</span></li>
-          <li><span class="lp-footer-link">KVKK Aydınlatma Metni</span></li>
-          <li><span class="lp-footer-link">Veri Güvenliği</span></li>
+          <li><span class="lp-footer-link" onclick="yasalBelgeAc('kullanim')" style="cursor:pointer">Kullanım Koşulları</span></li>
+          <li><span class="lp-footer-link" onclick="yasalBelgeAc('gizlilik')" style="cursor:pointer">Gizlilik Politikası</span></li>
+          <li><span class="lp-footer-link" onclick="yasalBelgeAc('kvkk')" style="cursor:pointer">KVKK Aydınlatma Metni</span></li>
+          <li><span class="lp-footer-link" onclick="yasalBelgeAc('guvenlik')" style="cursor:pointer">Veri Güvenliği</span></li>
         </ul>
       </div>
 
@@ -771,7 +771,25 @@
         <div class="gm-ig"><label>Şifre *</label><input type="password" id="gm-ksifre" placeholder="En az 6 karakter" autocomplete="new-password"></div>
         <div class="gm-ig"><label>Şifre Tekrar *</label><input type="password" id="gm-ksifre2" placeholder="••••••••" autocomplete="new-password"></div>
       </div>
+      <label class="gm-kvkk-label" for="gm-kvkk">
+        <input type="checkbox" id="gm-kvkk">
+        <span><a href="javascript:void(0)" onclick="event.stopPropagation();yasalBelgeAc('kvkk')">KVKK Aydınlatma Metni</a>'ni ve <a href="javascript:void(0)" onclick="event.stopPropagation();yasalBelgeAc('kullanim')">Kullanım Koşulları</a>'nı okudum, kabul ediyorum.</span>
+      </label>
       <button class="gm-submit" onclick="gmKayit()">Kayıt Ol &amp; Başla →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== YASAL BELGE MODALI ===== -->
+<div id="yasal-modal" class="modal-overlay" onclick="if(event.target===this)yasalModalKapat()">
+  <div class="modal" style="max-width:680px;width:95%">
+    <div class="modal-header">
+      <h2 id="yasal-modal-title">Yasal Belge</h2>
+      <button class="modal-close" onclick="yasalModalKapat()">✕</button>
+    </div>
+    <div id="yasal-modal-icerik" style="padding:20px 24px;max-height:70vh;overflow-y:auto"></div>
+    <div class="modal-footer">
+      <button class="btn btn-gold" onclick="yasalModalKapat()">Kapat</button>
     </div>
   </div>
 </div>
@@ -3696,6 +3714,15 @@
 </div>
 
   </main>
+  <footer class="app-footer">
+    <span class="app-footer-copy">© 2026 LexBase</span>
+    <div class="app-footer-links">
+      <span onclick="yasalBelgeAc('kullanim')">Kullanım Koşulları</span>
+      <span onclick="yasalBelgeAc('gizlilik')">Gizlilik Politikası</span>
+      <span onclick="yasalBelgeAc('kvkk')">KVKK</span>
+      <span onclick="yasalBelgeAc('guvenlik')">Veri Güvenliği</span>
+    </div>
+  </footer>
 </div><!-- /.app -->
 </div><!-- /#app-wrapper -->
 
