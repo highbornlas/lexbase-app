@@ -20,12 +20,13 @@ function mevcutPlan() {
   return { ...PLANLAR.deneme, id: 'deneme' };
 }
 
-function planGuncelle(planId) {
+function planGuncelle(planId, ekVeri) {
   try {
     const d = localStorage.getItem(SK);
     const p = d ? JSON.parse(d) : {};
     p.planId = planId;
     p.planGuncellemeTarih = new Date().toISOString();
+    if (ekVeri) Object.assign(p, ekVeri);
     localStorage.setItem(SK, JSON.stringify(p));
     Object.assign(state, p);
   } catch(e) {}
@@ -158,7 +159,10 @@ async function lisansKoduDogrula() {
 
     var lisans = kodlar[0];
 
-    if (lisans.kullanildi) {
+    var maxKullanim = lisans.max_kullanim || 1;
+    var kullanimSayisi = lisans.kullanim_sayisi || 0;
+
+    if (kullanimSayisi >= maxKullanim) {
       _lisansSonuc('❌ Bu lisans kodu daha önce kullanılmış.', 'err');
       btn.disabled = false;
       btn.textContent = '🔑 Doğrula';
@@ -188,21 +192,46 @@ async function lisansKoduDogrula() {
       if (typeof currentBuroId !== 'undefined' && currentBuroId) musteriId = currentBuroId;
     } catch(e) {}
 
+    // Kullananlar kaydı oluştur
+    var email = '';
+    var adSoyad = '';
+    try {
+      if (typeof state !== 'undefined' && state.ayarlar) {
+        email = state.ayarlar.email || '';
+        adSoyad = state.ayarlar.buroAdi || state.ayarlar.ad || '';
+      }
+      if (!email && typeof state !== 'undefined' && state.profil) email = state.profil.email || '';
+    } catch(e) {}
+
+    var yeniKullanan = {
+      musteri_id: musteriId || null,
+      email: email,
+      ad_soyad: adSoyad,
+      tarih: new Date().toISOString(),
+      aktif: true
+    };
+    var mevcutKullananlar = lisans.kullananlar || [];
+    mevcutKullananlar.push(yeniKullanan);
+    var yeniSayisi = kullanimSayisi + 1;
+
     await adminSbUpdate('lisans_kodlari', lisans.id, {
-      kullanildi: true,
+      kullanildi: yeniSayisi >= maxKullanim,
       kullanilan_musteri_id: musteriId || null,
-      kullanim_tarihi: new Date().toISOString()
+      kullanim_tarihi: new Date().toISOString(),
+      kullanim_sayisi: yeniSayisi,
+      kullananlar: mevcutKullananlar
     });
+
+    // Bitiş tarihini hesapla
+    var bugun = new Date().toISOString().slice(0, 10);
+    var bitis = new Date();
+    if (lisans.tur === 'aylik') bitis.setMonth(bitis.getMonth() + 1);
+    else if (lisans.tur === 'yillik') bitis.setFullYear(bitis.getFullYear() + 1);
+    else if (lisans.tur === 'omur') bitis.setFullYear(bitis.getFullYear() + 99);
+    else bitis.setDate(bitis.getDate() + 30);
 
     // Müşteri kaydını güncelle
     if (musteriId) {
-      var bugun = new Date().toISOString().slice(0, 10);
-      var bitis = new Date();
-      if (lisans.tur === 'aylik') bitis.setMonth(bitis.getMonth() + 1);
-      else if (lisans.tur === 'yillik') bitis.setFullYear(bitis.getFullYear() + 1);
-      else if (lisans.tur === 'omur') bitis.setFullYear(bitis.getFullYear() + 99);
-      else bitis.setDate(bitis.getDate() + 30);
-
       await adminSbUpdate('musteriler', musteriId, {
         lisans_tur: lisans.tur,
         durum: 'aktif',
@@ -211,8 +240,11 @@ async function lisansKoduDogrula() {
       });
     }
 
-    // Yerel planı güncelle
-    planGuncelle(planId);
+    // Yerel planı güncelle (lisansBitis ve lisansTur ile)
+    planGuncelle(planId, {
+      lisansBitis: bitis.toISOString().slice(0, 10),
+      lisansTur: lisans.tur
+    });
     planBilgisiGuncelle();
     planMenuGuncelle();
 
@@ -250,13 +282,17 @@ function planBilgisiGuncelle() {
   const el = document.getElementById('plan-badge');
   if (!el) return;
   let kalan = '';
-  if (plan.id === 'deneme') {
-    try {
-      const d = JSON.parse(localStorage.getItem(SK)||'{}');
+  try {
+    const d = JSON.parse(localStorage.getItem(SK)||'{}');
+    if (plan.id === 'deneme') {
       const gun = Math.ceil((Date.now() - new Date(d.olusturmaTarih||Date.now())) / (1000*60*60*24));
       kalan = ` (${Math.max(0, 30-gun)} gün)`;
-    } catch(e) {}
-  }
+    } else if (d.lisansBitis && d.lisansTur !== 'omur') {
+      const bitis = new Date(d.lisansBitis);
+      const kalanGun = Math.ceil((bitis - Date.now()) / (1000*60*60*24));
+      kalan = kalanGun > 0 ? ` (${kalanGun} gün)` : ' (süresi doldu)';
+    }
+  } catch(e) {}
   el.textContent = plan.ikon + ' ' + plan.ad + kalan;
   el.style.background = plan.renk + '22';
   el.style.color = plan.renk;

@@ -305,17 +305,18 @@ function destekFormunuSifirla() {
 async function destekGecmisiYukle() {
   if (!ADMIN_SB_URL || !ADMIN_SB_KEY) return;
 
-  var musteriId = '';
+  var email = '';
   try {
-    if (typeof currentBuroId !== 'undefined' && currentBuroId) musteriId = currentBuroId;
+    if (typeof state !== 'undefined' && state.ayarlar) email = state.ayarlar.email || '';
+    if (!email && typeof state !== 'undefined' && state.profil) email = state.profil.email || '';
   } catch(e) {}
-  if (!musteriId) return;
+  if (!email) return;
 
   var el = document.getElementById('destek-gecmis');
   if (!el) return;
 
   try {
-    var talepler = await adminSbGet('destek_talepleri', 'musteri_id=eq.' + musteriId + '&order=created_at.desc&limit=10');
+    var talepler = await adminSbGet('destek_talepleri', 'email=eq.' + encodeURIComponent(email) + '&order=created_at.desc&limit=10');
     if (!talepler || !talepler.length) {
       el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-dim);font-size:13px">Henüz destek talebiniz yok</div>';
       return;

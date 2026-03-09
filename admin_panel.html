@@ -907,11 +907,37 @@ tr:hover td { background: rgba(255,255,255,.015); }
         </select>
       </div>
     </div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin:0;font-size:13px">
+        <input type="checkbox" id="lis-coklu" style="width:16px;height:16px;accent-color:var(--gold)" onchange="document.getElementById('lis-max-kul-wrap').style.display=this.checked?'flex':'none'">
+        Çoklu kullanım
+      </label>
+      <div id="lis-max-kul-wrap" style="display:none;align-items:center;gap:6px;font-size:13px">
+        <span>Maks:</span>
+        <input type="number" id="lis-max-kullanim" value="5" min="2" max="1000" style="width:70px;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:13px">
+      </div>
+    </div>
     <div id="lis-sonuc" style="display:none;background:var(--surface2);border-radius:var(--radius);padding:14px;margin-bottom:14px;font-family:'Courier New',monospace;font-size:12px;max-height:220px;overflow-y:auto;line-height:1.8"></div>
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('lisans-modal')">Kapat</button>
       <button class="btn" id="lis-kopyala-btn" style="display:none" onclick="lisansKopyala()">📋 Tümünü Kopyala</button>
       <button class="btn btn-gold" onclick="lisansUret()">🔑 Üret</button>
+    </div>
+  </div>
+</div>
+
+<!-- Kullananlar Modal -->
+<div class="modal-overlay" id="kullananlar-modal">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-title">👥 Lisans Kullananlar</div>
+    <div style="margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span style="font-family:'Courier New',monospace;color:var(--gold);font-weight:700;font-size:13px" id="kull-kod">—</span>
+      <span class="badge" id="kull-tur">—</span>
+      <span style="font-size:12px;color:var(--text-muted)" id="kull-sayi">0/1</span>
+    </div>
+    <div id="kull-liste" style="max-height:360px;overflow-y:auto"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('kullananlar-modal')">Kapat</button>
     </div>
   </div>
 </div>
@@ -1918,7 +1944,10 @@ function renderLisanslar() {
   var tb = document.getElementById('lisans-tbody');
   var em = document.getElementById('lisans-empty');
   var toplam = lisanslar.length;
-  var kullanilan = lisanslar.filter(function(l) { return l.kullanildi; }).length;
+  var kullanilan = lisanslar.filter(function(l) {
+    var max = l.max_kullanim || 1;
+    return max > 1 ? (l.kullanim_sayisi || 0) >= max : l.kullanildi;
+  }).length;
 
   document.getElementById('lis-toplam').textContent = toplam;
   document.getElementById('lis-kullanilan').textContent = kullanilan;
@@ -1934,15 +1963,22 @@ function renderLisanslar() {
   tb.innerHTML = lisanslar.map(function(l) {
     var m = l.kullanilan_musteri_id ? musteriler.find(function(x) { return x.id === l.kullanilan_musteri_id; }) : null;
     var turLabel = { deneme: 'Deneme', aylik: 'Aylık', yillik: 'Yıllık', omur: 'Ömür Boyu' };
+    var max = l.max_kullanim || 1;
+    var sayi = l.kullanim_sayisi || 0;
+    var dolu = max > 1 ? sayi >= max : l.kullanildi;
+    var durumBadge = max > 1
+      ? '<span class="badge ' + (dolu ? 'badge-pasif' : sayi > 0 ? 'badge-uyari' : 'badge-aktif') + '">' + sayi + '/' + max + '</span>'
+      : '<span class="badge ' + (l.kullanildi ? 'badge-pasif' : 'badge-aktif') + '">' + (l.kullanildi ? 'Kullanıldı' : 'Bekliyor') + '</span>';
     return '<tr>' +
       '<td style="font-family:\'Courier New\',monospace;font-weight:700;letter-spacing:1px;color:var(--gold);font-size:13px">' + esc(l.kod) + '</td>' +
       '<td><span class="badge badge-' + (l.tur || 'deneme') + '">' + (turLabel[l.tur] || l.tur || 'Deneme') + '</span></td>' +
-      '<td><span class="badge ' + (l.kullanildi ? 'badge-pasif' : 'badge-aktif') + '">' + (l.kullanildi ? 'Kullanıldı' : 'Bekliyor') + '</span></td>' +
-      '<td style="font-size:12px">' + esc(m ? m.ad_soyad : '—') + '</td>' +
+      '<td>' + durumBadge + '</td>' +
+      '<td style="font-size:12px">' + esc(m ? m.ad_soyad : (sayi > 0 ? sayi + ' kullanıcı' : '—')) + '</td>' +
       '<td style="font-size:11px;color:var(--text-muted)">' + (l.kullanim_tarihi ? fmtD(l.kullanim_tarihi) : '—') + '</td>' +
       '<td>' +
         '<button class="btn btn-sm btn-icon" onclick="lisansKopyalaTek(\'' + esc(l.kod) + '\')" title="Kopyala">📋</button> ' +
-        (!l.kullanildi ? '<button class="btn btn-sm btn-icon btn-red" onclick="lisansSilConfirm(\'' + l.id + '\')" title="Sil">✕</button>' : '') +
+        (sayi > 0 || l.kullanildi ? '<button class="btn btn-sm btn-icon" onclick="lisansKullananlarGoster(\'' + l.id + '\')" title="Kullananlar">👥</button> ' : '') +
+        (!dolu ? '<button class="btn btn-sm btn-icon btn-red" onclick="lisansSilConfirm(\'' + l.id + '\')" title="Sil">✕</button>' : '') +
       '</td>' +
     '</tr>';
   }).join('');
@@ -1958,12 +1994,14 @@ var _uretilen = [];
 async function lisansUret() {
   var tur = document.getElementById('lis-tur').value;
   var adet = parseInt(document.getElementById('lis-adet').value);
+  var coklu = document.getElementById('lis-coklu').checked;
+  var maxKullanim = coklu ? (parseInt(document.getElementById('lis-max-kullanim').value) || 5) : 1;
   _uretilen = [];
 
   for (var i = 0; i < adet; i++) {
     var seg = function() { return Math.random().toString(36).slice(2, 6).toUpperCase(); };
     var kod = tur + '-' + seg() + '-' + seg() + '-' + seg();
-    _uretilen.push({ id: uid(), kod: kod, tur: tur.toLowerCase(), kullanildi: false });
+    _uretilen.push({ id: uid(), kod: kod, tur: tur.toLowerCase(), kullanildi: false, max_kullanim: maxKullanim, kullanim_sayisi: 0, kullananlar: [] });
   }
 
   var basarili = [];
@@ -2022,6 +2060,111 @@ async function lisansSil(id) {
   } catch (e) {
     notify('Lisans kodu silinemedi: ' + e.message, 'err');
   }
+}
+
+// ── KULLANANLAR YÖNETİMİ ─────────────────────────────────
+function lisansKullananlarGoster(id) {
+  var lisans = lisanslar.find(function(l) { return l.id === id; });
+  if (!lisans) return notify('Lisans bulunamadı', 'err');
+
+  var turLabel = { deneme: 'Deneme', aylik: 'Aylık', yillik: 'Yıllık', omur: 'Ömür Boyu' };
+  var max = lisans.max_kullanim || 1;
+  var sayi = lisans.kullanim_sayisi || 0;
+  var kullananlar = lisans.kullananlar || [];
+
+  document.getElementById('kull-kod').textContent = lisans.kod;
+  document.getElementById('kull-tur').textContent = turLabel[lisans.tur] || lisans.tur || 'Deneme';
+  document.getElementById('kull-tur').className = 'badge badge-' + (lisans.tur || 'deneme');
+  document.getElementById('kull-sayi').textContent = sayi + '/' + max;
+
+  var listeEl = document.getElementById('kull-liste');
+
+  if (!kullananlar.length) {
+    // Eski tek kullanımlık kodlar — kullananlar dizisi yok ama kullanılmış
+    if (lisans.kullanildi && lisans.kullanilan_musteri_id) {
+      var m = musteriler.find(function(x) { return x.id === lisans.kullanilan_musteri_id; });
+      listeEl.innerHTML =
+        '<div style="background:var(--surface2);border-radius:var(--radius);padding:14px;display:flex;align-items:center;justify-content:space-between;gap:10px">' +
+          '<div>' +
+            '<div style="font-weight:600;font-size:14px">' + esc(m ? m.ad_soyad : 'Bilinmeyen Kullanıcı') + '</div>' +
+            '<div style="font-size:12px;color:var(--text-muted)">' + esc(m ? m.email : lisans.kullanilan_musteri_id) + '</div>' +
+            '<div style="font-size:11px;color:var(--text-muted);margin-top:4px">' + (lisans.kullanim_tarihi ? fmtD(lisans.kullanim_tarihi) : '—') + '</div>' +
+          '</div>' +
+          '<div style="display:flex;gap:6px;align-items:center">' +
+            '<span class="badge badge-aktif">Aktif</span>' +
+            (m ? '<button class="btn btn-sm" onclick="kullananMusteriyeGit(\'' + esc(m.email || m.ad_soyad) + '\')">📋 Git</button>' : '') +
+          '</div>' +
+        '</div>';
+    } else {
+      listeEl.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:24px;font-size:13px">Henüz kullanan yok</div>';
+    }
+  } else {
+    listeEl.innerHTML = kullananlar.map(function(k, idx) {
+      var aktif = k.aktif !== false;
+      return '<div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:10px">' +
+        '<div>' +
+          '<div style="font-weight:600;font-size:14px">' + esc(k.ad_soyad || 'İsimsiz') + '</div>' +
+          '<div style="font-size:12px;color:var(--text-muted)">' + esc(k.email || '—') + '</div>' +
+          '<div style="font-size:11px;color:var(--text-muted);margin-top:4px">' + (k.tarih ? fmtD(k.tarih) : '—') + '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:6px;align-items:center;flex-shrink:0">' +
+          '<span class="badge ' + (aktif ? 'badge-aktif' : 'badge-pasif') + '">' + (aktif ? 'Aktif' : 'Deaktif') + '</span>' +
+          '<button class="btn btn-sm" onclick="kullananMusteriyeGit(\'' + esc(k.email || k.ad_soyad || '') + '\')" title="Müşteriye Git">📋</button>' +
+          (aktif ? '<button class="btn btn-sm btn-red" onclick="lisansDeaktifEt(\'' + id + '\',' + idx + ')" title="Deaktif Et">⛔</button>' : '') +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  openModal('kullananlar-modal');
+}
+
+function kullananMusteriyeGit(aramaMetni) {
+  closeModal('kullananlar-modal');
+  showPage('musteriler');
+  var input = document.getElementById('musteri-ara');
+  if (input) {
+    input.value = aramaMetni;
+    renderMusteriler();
+  }
+}
+
+async function lisansDeaktifEt(lisansId, idx) {
+  showConfirm('Bu kullanıcının lisansını deaktif etmek istediğinize emin misiniz? Kullanıcının planı denemeye döndürülecektir.', '⛔', 'Deaktif Et', async function() {
+    var lisans = lisanslar.find(function(l) { return l.id === lisansId; });
+    if (!lisans) return notify('Lisans bulunamadı', 'err');
+
+    var kullananlar = lisans.kullananlar || [];
+    if (idx < 0 || idx >= kullananlar.length) return notify('Geçersiz kullanıcı index', 'err');
+
+    // Kullananı deaktif yap
+    kullananlar[idx].aktif = false;
+
+    // Sayacı güncelle
+    var yeniSayi = Math.max(0, (lisans.kullanim_sayisi || 1) - 1);
+    var tamDolu = yeniSayi >= (lisans.max_kullanim || 1);
+
+    try {
+      await sbUpdate('lisans_kodlari', lisansId, {
+        kullananlar: kullananlar,
+        kullanim_sayisi: yeniSayi,
+        kullanildi: tamDolu
+      });
+
+      // Yerel veriyi güncelle
+      lisans.kullananlar = kullananlar;
+      lisans.kullanim_sayisi = yeniSayi;
+      lisans.kullanildi = tamDolu;
+
+      notify('✅ Kullanıcı deaktif edildi');
+      renderLisanslar();
+
+      // Modalı yeniden göster (güncel verilerle)
+      lisansKullananlarGoster(lisansId);
+    } catch (e) {
+      notify('Deaktivasyon başarısız: ' + e.message, 'err');
+    }
+  });
 }
 
 // ═══════════════════════════════════════════════════════════
