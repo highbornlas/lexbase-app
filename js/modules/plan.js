@@ -257,6 +257,7 @@ var lisansKoduDogrula = async function() {
       kullananlar: mevcutKullananlar
     });
 
+    console.log('[Plan] adminSbUpdate sonuç:', lisansGuncellendi);
     if (!lisansGuncellendi) {
       console.warn('[Plan] Lisans kodu DB güncellemesi başarısız — RLS yetkisi kontrol edin.');
       _lisansSonuc('⚠️ Lisans kodu veritabanında güncellenemedi. Lütfen yöneticinizle iletişime geçin.', 'err');
@@ -286,11 +287,16 @@ var lisansKoduDogrula = async function() {
     // ── 3. Ana Supabase'de burolar.plan güncelle (kalıcı) ──
     try {
       if (typeof sb !== 'undefined' && currentBuroId) {
-        await sb.from('burolar').update({
-          plan: planId,
-          lisans_bitis: bitis.toISOString().slice(0, 10),
-          lisans_tur: lisans.tur
-        }).eq('id', currentBuroId);
+        // Önce sadece plan sütununu güncelle (kesinlikle mevcut)
+        var buroRes = await sb.from('burolar').update({ plan: planId }).eq('id', currentBuroId).select();
+        console.log('[Plan] burolar.plan güncelleme:', buroRes.error ? 'HATA: ' + buroRes.error.message : 'OK');
+        // Ek sütunları dene (yoksa zararsız hata)
+        try {
+          await sb.from('burolar').update({
+            lisans_bitis: bitis.toISOString().slice(0, 10),
+            lisans_tur: lisans.tur
+          }).eq('id', currentBuroId);
+        } catch(e4) {}
       }
     } catch(e3) {
       console.warn('[Plan] burolar.plan güncelleme hatası:', e3.message);
