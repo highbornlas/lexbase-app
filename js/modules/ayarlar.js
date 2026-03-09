@@ -33,6 +33,12 @@ function ayarlarSayfasiDoldur() {
   document.getElementById('ayar-email').value = currentUser.email || '';
   document.getElementById('ayar-tel').value = currentUser.telefon || '';
   document.getElementById('ayar-buro-ad').value = currentUser.buro_ad || '';
+  document.getElementById('ayar-buro-tel').value = currentUser.buro_tel || '';
+  document.getElementById('ayar-buro-mail').value = currentUser.buro_mail || '';
+  // Büro adres widget
+  if (typeof AdresWidget !== 'undefined') {
+    AdresWidget.doldur('buro-adr-', { adres: currentUser.buro_adres || '' });
+  }
   // Aktif temayı işaretle
   const tema = localStorage.getItem('hukuk_tema') || 'koyu';
   ['koyu','acik','sistem'].forEach(t => {
@@ -96,11 +102,12 @@ async function buroBilgisiGuncelle() {
   const ad = document.getElementById('ayar-buro-ad').value.trim();
   const telefon = document.getElementById('ayar-buro-tel').value.trim();
   const email = document.getElementById('ayar-buro-mail').value.trim();
-  const adres = document.getElementById('ayar-buro-adres').value.trim();
+  var adresData = typeof AdresWidget !== 'undefined' ? AdresWidget.oku('buro-adr-') : { adres: '' };
+  var adres = adresData.adres;
   if (!ad) return notify('⚠️ Büro adı zorunlu.');
   try {
     await sb.from('burolar').update({ ad, telefon, email, adres }).eq('id', currentBuroId);
-    currentUser = { ...currentUser, buro_ad: ad };
+    currentUser = { ...currentUser, buro_ad: ad, buro_tel: telefon, buro_mail: email, buro_adres: adres };
     const _aaEl = document.getElementById('avukat-adi'); if(_aaEl) _aaEl.textContent = ad;
     notify('✅ Büro bilgileri güncellendi');
   } catch (e) { notify('⚠️ Hata: ' + e.message); }

@@ -3336,6 +3336,16 @@ body.is-offline .offline-indicator { display: block; }
 .help-tip:hover{background:var(--gold-dim);color:var(--gold);}
 .help-tip:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:12px;line-height:1.5;color:var(--text);white-space:normal;width:max-content;max-width:280px;box-shadow:0 4px 12px rgba(0,0,0,.15);z-index:100;pointer-events:none;}
 
+/* ===== ADRES WIDGET ===== */
+.adres-widget{margin-bottom:14px;}
+.adres-widget .form-row{margin-bottom:0;}
+.aw-loading{opacity:0.5;pointer-events:none;position:relative;}
+.aw-loading::after{content:'';position:absolute;right:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:aw-spin .6s linear infinite;}
+@keyframes aw-spin{to{transform:translateY(-50%) rotate(360deg);}}
+.adres-widget.aw-foreign .aw-tr-field{display:none!important;}
+.adres-widget.aw-fallback .aw-tr-field{display:none!important;}
+.adres-widget select{font-size:13px;}
+
 /* ===== FİNANS SAYFASI ===== */
 .finans-kpi-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
 .finans-kpi-bar .card{flex:1;min-width:140px;}

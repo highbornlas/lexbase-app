@@ -113,8 +113,9 @@ function renderKtBankalar(){
 
 function muvModalSifirla(){
   const msoyad=document.getElementById('m-soyad');if(msoyad)msoyad.value='';
-  ['m-ad','m-tc','m-pasaport','m-meslek','m-unvan','m-vergino','m-vergidairesi','m-mersis','m-ticaretsicil','m-yetkili-ad','m-yetkili-unvan','m-yetkili-tc','m-yetkili-tel','m-tel','m-mail','m-faks','m-web','m-adres','m-not'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  ['m-ad','m-tc','m-pasaport','m-meslek','m-unvan','m-vergino','m-vergidairesi','m-mersis','m-ticaretsicil','m-yetkili-ad','m-yetkili-unvan','m-yetkili-tc','m-yetkili-tel','m-tel','m-mail','m-faks','m-web','m-not'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
   const dog=document.getElementById('m-dogum');if(dog)dog.value='';
+  if(typeof AdresWidget!=='undefined')AdresWidget.sifirla('m-adr-');
   muvBankalar=[];renderMuvBankalar();
   muvTipSec('gercek');
 }
@@ -148,7 +149,7 @@ function muvModalDataOku(){
     faks: document.getElementById('m-faks').value.trim(),
     web: document.getElementById('m-web').value.trim(),
     uets: document.getElementById('m-uets')?.value.trim()||'',
-    adres: document.getElementById('m-adres').value.trim(),
+    ...(typeof AdresWidget!=='undefined'?AdresWidget.oku('m-adr-'):{adres:''}),
     bankalar: JSON.parse(JSON.stringify(muvBankalar)),
     not: document.getElementById('m-not').value.trim(),
   };
@@ -164,7 +165,8 @@ function muvModalDataDoldur(m){
   const st=document.getElementById('m-sirket-tur');if(st)st.value=m.sirketTur||'A.Ş.';
   set('m-vergino',m.vergiNo);set('m-vergidairesi',m.vergiDairesi);set('m-mersis',m.mersis);set('m-ticaretsicil',m.ticaretSicil);
   set('m-yetkili-ad',m.yetkiliAd);set('m-yetkili-unvan',m.yetkiliUnvan);set('m-yetkili-tc',m.yetkiliTc);set('m-yetkili-tel',m.yetkiliTel);
-  set('m-tel',m.tel);set('m-mail',m.mail);set('m-faks',m.faks);set('m-web',m.web);set('m-uets',m.uets);set('m-adres',m.adres);set('m-not',m.not);
+  set('m-tel',m.tel);set('m-mail',m.mail);set('m-faks',m.faks);set('m-web',m.web);set('m-uets',m.uets);set('m-not',m.not);
+  if(typeof AdresWidget!=='undefined')AdresWidget.doldur('m-adr-',m);
   muvBankalar=JSON.parse(JSON.stringify(m.bankalar||[]));renderMuvBankalar();
 }
 
@@ -546,7 +548,8 @@ function ktModalSifirla(){
   ['kt-ad','kt-soyad','kt-ad-tuzel','kt-tc','kt-dogum','kt-dogum-yeri','kt-meslek','kt-vergino','kt-vergidairesi','kt-mersis',
    'kt-yetkili-ad','kt-yetkili-unvan','kt-yetkili-tc','kt-yetkili-tel',
    'kt-tel','kt-faks','kt-web','kt-mail','kt-uets',
-   'kt-adres','kt-acik'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});
+   'kt-acik'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});
+  if(typeof AdresWidget!=='undefined')AdresWidget.sifirla('kt-adr-');
   ktBankalar=[];renderKtBankalar();
   const ku=document.getElementById('kt-uyruk');if(ku)ku.value='T.C.';
   const ks=document.getElementById('kt-sirkettur');if(ks)ks.value='A.Ş.';
@@ -590,7 +593,7 @@ function ktModalDataOku(){
     web:document.getElementById('kt-web')?.value.trim()||'',
     mail:document.getElementById('kt-mail').value.trim(),
     uets:document.getElementById('kt-uets')?.value.trim()||'',
-    adres:document.getElementById('kt-adres').value.trim(),
+    ...(typeof AdresWidget!=='undefined'?AdresWidget.oku('kt-adr-'):{adres:''}),
     bankalar:JSON.parse(JSON.stringify(ktBankalar.filter(b=>b.banka||b.iban))),
     aciklama:document.getElementById('kt-acik').value.trim(),
   };
@@ -620,7 +623,8 @@ function ktModalDataDoldur(k){
   set('kt-yetkili-tc',k.yetkiliTc);set('kt-yetkili-tel',k.yetkiliTel);
   set('kt-ticaretsicil',k.ticaretSicil);set('kt-pasaport',k.pasaport);set('kt-dogum-yeri',k.dogumYeri);
   set('kt-tel',k.tel);set('kt-faks',k.faks);set('kt-web',k.web);set('kt-mail',k.mail);set('kt-uets',k.uets);
-  set('kt-adres',k.adres);set('kt-acik',k.aciklama);
+  set('kt-acik',k.aciklama);
+  if(typeof AdresWidget!=='undefined')AdresWidget.doldur('kt-adr-',k);
   // Banka widget — eski (tekli banka/iban) ve yeni (bankalar dizisi) formatı destekle
   if(k.bankalar&&k.bankalar.length){
     ktBankalar=JSON.parse(JSON.stringify(k.bankalar));

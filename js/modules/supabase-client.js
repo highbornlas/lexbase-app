@@ -149,7 +149,13 @@ async function sbVeriYukle() {
 
     // Büro bilgisini çek
     const { data: buro } = await sb.from('burolar').select('*').eq('id', currentBuroId).single();
-    if (buro) state.plan = buro.plan || 'deneme';
+    if (buro) {
+      state.plan = buro.plan || 'deneme';
+      currentUser.buro_ad = buro.ad || '';
+      currentUser.buro_tel = buro.telefon || '';
+      currentUser.buro_mail = buro.email || '';
+      currentUser.buro_adres = buro.adres || '';
+    }
 
     // ensure arrays
     ['davalar','icra'].forEach(k => {

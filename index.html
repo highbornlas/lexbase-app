@@ -1787,7 +1787,22 @@
             <div class="form-group"><label>Telefon</label><input id="ayar-buro-tel" placeholder="(xxx) xxx xx xx"></div>
             <div class="form-group"><label>E-posta</label><input id="ayar-buro-mail" placeholder="buro@mail.com"></div>
           </div>
-          <div class="form-group"><label>Adres</label><textarea id="ayar-buro-adres" rows="2" placeholder="Büro adresi"></textarea></div>
+          <div class="form-section-label">Adres Bilgileri</div>
+          <div class="adres-widget" id="buro-adr-widget">
+            <div class="form-row">
+              <div class="form-group"><label>Ülke</label><select id="buro-adr-ulke"><option value="TR" selected>Türkiye</option><option value="other">Diğer</option></select></div>
+              <div class="form-group aw-tr-field"><label>İl</label><select id="buro-adr-il"><option value="">— İl seçin —</option></select></div>
+            </div>
+            <div class="form-row aw-tr-field">
+              <div class="form-group"><label>İlçe</label><select id="buro-adr-ilce"><option value="">— İlçe seçin —</option></select></div>
+              <div class="form-group"><label>Mahalle</label><select id="buro-adr-mahalle"><option value="">— Mahalle seçin —</option></select></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group aw-tr-field"><label>Posta Kodu</label><input id="buro-adr-pk" maxlength="5" placeholder="Posta kodu"></div>
+              <div class="form-group"></div>
+            </div>
+            <div class="form-group"><label>Açık Adres (Sokak, Bina No, Daire)</label><textarea id="buro-adr-detay" rows="2" placeholder="Sokak, bina no, daire..."></textarea></div>
+          </div>
           <button class="btn btn-gold" onclick="buroBilgisiGuncelle()" style="width:100%;justify-content:center;margin-top:4px">💾 Büroyu Güncelle</button>
         </div>
       </div>
@@ -2021,7 +2036,22 @@
     <div class="form-group"><label>UETS / KEP Adresi</label><input id="m-uets" placeholder="KEP adresi"></div>
     <div class="form-group"></div>
   </div>
-  <div class="form-group"><label>Adres</label><textarea id="m-adres" rows="2"></textarea></div>
+  <div class="form-section-label">Adres Bilgileri</div>
+  <div class="adres-widget" id="m-adr-widget">
+    <div class="form-row">
+      <div class="form-group"><label>Ülke</label><select id="m-adr-ulke"><option value="TR" selected>Türkiye</option><option value="other">Diğer</option></select></div>
+      <div class="form-group aw-tr-field"><label>İl</label><select id="m-adr-il"><option value="">— İl seçin —</option></select></div>
+    </div>
+    <div class="form-row aw-tr-field">
+      <div class="form-group"><label>İlçe</label><select id="m-adr-ilce"><option value="">— İlçe seçin —</option></select></div>
+      <div class="form-group"><label>Mahalle</label><select id="m-adr-mahalle"><option value="">— Mahalle seçin —</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group aw-tr-field"><label>Posta Kodu</label><input id="m-adr-pk" maxlength="5" placeholder="Posta kodu"></div>
+      <div class="form-group"></div>
+    </div>
+    <div class="form-group"><label>Açık Adres (Sokak, Bina No, Daire)</label><textarea id="m-adr-detay" rows="2" placeholder="Sokak, bina no, daire..."></textarea></div>
+  </div>
 
   <!-- BANKA BİLGİLERİ -->
   <div class="form-section-label">Banka Bilgileri <span style="font-weight:400;color:var(--text-dim)">(opsiyonel)</span></div>
@@ -2378,7 +2408,22 @@
   <div class="form-row">
     <div class="form-group"><label>UETS / KEP Adresi</label><input id="kt-uets"></div>
   </div>
-  <div class="form-group"><label>Adres</label><textarea id="kt-adres" rows="2"></textarea></div>
+  <div class="form-section-label">Adres Bilgileri</div>
+  <div class="adres-widget" id="kt-adr-widget">
+    <div class="form-row">
+      <div class="form-group"><label>Ülke</label><select id="kt-adr-ulke"><option value="TR" selected>Türkiye</option><option value="other">Diğer</option></select></div>
+      <div class="form-group aw-tr-field"><label>İl</label><select id="kt-adr-il"><option value="">— İl seçin —</option></select></div>
+    </div>
+    <div class="form-row aw-tr-field">
+      <div class="form-group"><label>İlçe</label><select id="kt-adr-ilce"><option value="">— İlçe seçin —</option></select></div>
+      <div class="form-group"><label>Mahalle</label><select id="kt-adr-mahalle"><option value="">— Mahalle seçin —</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group aw-tr-field"><label>Posta Kodu</label><input id="kt-adr-pk" maxlength="5" placeholder="Posta kodu"></div>
+      <div class="form-group"></div>
+    </div>
+    <div class="form-group"><label>Açık Adres (Sokak, Bina No, Daire)</label><textarea id="kt-adr-detay" rows="2" placeholder="Sokak, bina no, daire..."></textarea></div>
+  </div>
 
   <!-- ORTAK: BANKA -->
   <div class="form-section-label" style="display:flex;align-items:center;justify-content:space-between">
@@ -3556,6 +3601,7 @@
 <script src="js/modules/todo.js"></script>
 <script src="js/modules/yedekleme.js"></script>
 <script src="js/modules/bankData.js"></script>
+<script src="js/modules/adresWidget.js"></script>
 <script src="js/modules/bankaWidget.js"></script>
 <script src="js/modules/bildirim.js"></script>
 <script src="js/modules/tani.js"></script>
