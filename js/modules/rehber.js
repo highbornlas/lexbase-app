@@ -919,15 +919,16 @@ function openDetay(muvId){
 function renderMdCards(){
   const muvId=aktivMuvId;
   const davs=state.davalar.filter(d=>d.muvId===muvId);
-  const tHarc=getAllMuvHarcamalar(muvId).reduce((s,h)=>s+h.tutar,0);
-  const avansAlinan=state.avanslar.filter(a=>a.muvId===muvId&&a.tur==='Avans Alındı').reduce((s,a)=>s+a.tutar,0);
-  const beklAlacak=state.avanslar.filter(a=>a.muvId===muvId&&a.durum==='Bekliyor').reduce((s,a)=>s+a.tutar,0);
-  document.getElementById('md-cards').innerHTML=`
-    <div class="card"><div class="card-label">Toplam Dava</div><div class="card-value gold">${davs.length}</div></div>
-    <div class="card"><div class="card-label">Aktif Dava</div><div class="card-value gold">${davs.filter(d=>d.durum==='Aktif').length}</div></div>
-    <div class="card"><div class="card-label">Toplam Harcama</div><div class="card-value red">${fmt(tHarc)}</div></div>
-    <div class="card"><div class="card-label">Alınan Avans</div><div class="card-value green">${fmt(avansAlinan)}</div></div>
-    <div class="card"><div class="card-label">Bekleyen Alacak</div><div class="card-value red">${fmt(beklAlacak)}</div></div>`;
+  const oz=typeof FinansMotoru!=='undefined'?FinansMotoru.muvekkilOzet(muvId):{masraflar:{toplam:0},avanslar:{alinan:0},bakiye:{masrafBakiye:0,genelBakiye:0},vekaletUcreti:{akdi:{kalan:0}}};
+  const el=document.getElementById('md-cards');
+  if(!el)return;
+  el.innerHTML=
+    '<div class="card"><div class="card-label">Toplam Dava</div><div class="card-value gold">'+davs.length+'</div></div>'+
+    '<div class="card"><div class="card-label">Aktif Dava</div><div class="card-value gold">'+davs.filter(function(d){return d.durum==='Aktif';}).length+'</div></div>'+
+    '<div class="card"><div class="card-label">Toplam Masraf</div><div class="card-value red">'+fmt(oz.masraflar.toplam)+'</div></div>'+
+    '<div class="card"><div class="card-label">Alınan Avans</div><div class="card-value green">'+fmt(oz.avanslar.alinan)+'</div></div>'+
+    '<div class="card"><div class="card-label">Masraf Bakiyesi'+helpTip('Avans alınan eksi yapılan masraflar')+'</div><div class="card-value" style="color:'+(oz.bakiye.masrafBakiye>=0?'var(--green)':'var(--red)')+'">'+fmt(oz.bakiye.masrafBakiye)+'</div></div>'+
+    '<div class="card"><div class="card-label">Genel Bakiye'+helpTip('Müvekkil ile olan tüm alacak-borç ilişkisinin özeti')+'</div><div class="card-value" style="color:'+(oz.bakiye.genelBakiye>=0?'var(--green)':'var(--red)')+'">'+fmt(oz.bakiye.genelBakiye)+'</div></div>';
 }
 
 function renderMdKimlik(){
@@ -1338,19 +1339,12 @@ function renderMdRapor(){
   const muv=getMuv(aktivMuvId);if(!muv)return;
   const davalar=state.davalar.filter(d=>d.muvId===aktivMuvId);
   const icralar=state.icra.filter(i=>i.muvId===aktivMuvId);
-  const harcamalar=getAllMuvHarcamalar(aktivMuvId);
-  const topHarc=harcamalar.reduce((s,h)=>s+h.tutar,0);
-  const avanslar=state.avanslar.filter(a=>a.muvId===aktivMuvId);
-  const avansAlinan=avanslar.filter(a=>a.tur==='Avans Alındı').reduce((s,a)=>s+a.tutar,0);
-  const beklAlacak=avanslar.filter(a=>a.durum==='Bekliyor').reduce((s,a)=>s+a.tutar,0);
   const iletisimler=(state.iletisimler||[]).filter(x=>x.muvId===aktivMuvId);
   const skor=calcMuvSkor(aktivMuvId);
   const isTuzel=muv.tip==='tuzel';
   const bugun=new Date().toLocaleDateString('tr-TR',{year:'numeric',month:'long',day:'numeric'});
-  // Tüm tahsilat/hakediş toplamları
-  const tumTahsilat=[...davalar,...icralar].flatMap(x=>x.tahsilatlar||[]);
-  const topTahsilGenel=tumTahsilat.filter(t=>t.tur==='tahsilat').reduce((s,t)=>s+t.tutar,0);
-  const topHakediş=tumTahsilat.filter(t=>t.tur==='hakediş'||t.tur==='akdi_vekalet').reduce((s,t)=>s+t.tutar,0);
+  // FinansMotoru ile merkezi hesaplama
+  const oz=typeof FinansMotoru!=='undefined'?FinansMotoru.muvekkilOzet(aktivMuvId):{masraflar:{toplam:0},avanslar:{alinan:0,kalan:0},tahsilatlar:{toplam:0},vekaletUcreti:{akdi:{anlasilanToplam:0,tahsilEdilen:0,kalan:0},karsiVekalet:{kaydedilen:0},hakedis:{toplam:0}},aktarimlar:{toplam:0},iadeler:{toplam:0},bakiye:{masrafBakiye:0,tahsilatBakiye:0,vekaletBakiye:0,genelBakiye:0}};
 
   let html=`
   <!-- Rapor Başlığı / Yazdır Butonu -->
@@ -1385,19 +1379,37 @@ function renderMdRapor(){
     </div>
   </div>
 
-  <!-- Finansal Özet -->
+  <!-- Finansal Özet — FinansMotoru verileri -->
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
     <div class="card" style="border-color:var(--green)">
-      <div class="card-label">Toplam Tahsilat</div><div class="card-value green">${fmt(topTahsilGenel)}</div>
+      <div class="card-label">Toplam Tahsilat${helpTip('Karşı taraftan tahsil edilen tutarların toplamı')}</div><div class="card-value green">${fmt(oz.tahsilatlar.toplam)}</div>
     </div>
     <div class="card" style="border-color:var(--gold)">
-      <div class="card-label">Avukatlık Geliri</div><div class="card-value gold">${fmt(topHakediş)}</div>
+      <div class="card-label">Avukatlık Hakedişi${helpTip('Akdi vekalet + karşı vekalet hakedişlerinin toplamı')}</div><div class="card-value gold">${fmt(oz.vekaletUcreti.hakedis.toplam)}</div>
     </div>
     <div class="card" style="border-color:#e74c3c">
-      <div class="card-label">Toplam Harcama</div><div class="card-value red">${fmt(topHarc)}</div>
+      <div class="card-label">Toplam Masraf${helpTip('Tüm dosyalardaki masrafların toplamı (harç, tebligat, bilirkişi vb.)')}</div><div class="card-value red">${fmt(oz.masraflar.toplam)}</div>
     </div>
-    <div class="card" style="border-color:${beklAlacak>0?'#e74c3c':'var(--green)'}">
-      <div class="card-label">Bekleyen Alacak</div><div class="card-value" style="color:${beklAlacak>0?'#e74c3c':'var(--green)'}">${fmt(beklAlacak)}</div>
+    <div class="card" style="border-color:${oz.bakiye.genelBakiye>=0?'var(--green)':'#e74c3c'}">
+      <div class="card-label">Genel Bakiye${helpTip('Müvekkil ile olan tüm alacak-borç ilişkisinin özeti')}</div><div class="card-value" style="color:${oz.bakiye.genelBakiye>=0?'var(--green)':'#e74c3c'}">${fmt(oz.bakiye.genelBakiye)}</div>
+    </div>
+  </div>
+  <!-- Detaylı Bakiye Kartları -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+    <div class="card">
+      <div class="card-label">Masraf Bakiyesi${helpTip('Avans alınan eksi yapılan masraflar. Artı ise avans fazlası, eksi ise müvekkilden alacağınız var')}</div>
+      <div class="card-value" style="color:${oz.bakiye.masrafBakiye>=0?'var(--green)':'#e74c3c'}">${fmt(oz.bakiye.masrafBakiye)}</div>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:4px">Avans: ${fmt(oz.avanslar.alinan)} — Masraf: ${fmt(oz.masraflar.toplam)}</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Tahsilat Bakiyesi${helpTip('Karşı taraftan tahsil edilen tutardan hakediş ve aktarımlar düşüldükten sonra müvekkile aktarılması gereken tutar')}</div>
+      <div class="card-value" style="color:${oz.bakiye.tahsilatBakiye>=0?'var(--green)':'#e74c3c'}">${fmt(oz.bakiye.tahsilatBakiye)}</div>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:4px">Tahsilat: ${fmt(oz.tahsilatlar.toplam)} — Hakediş: ${fmt(oz.vekaletUcreti.hakedis.toplam)} — Aktarım: ${fmt(oz.aktarimlar.toplam)}</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Vekalet Bakiyesi${helpTip('Anlaşılan vekalet ücretinden tahsil edilen kısım düşüldükten sonra kalan alacak')}</div>
+      <div class="card-value" style="color:${oz.bakiye.vekaletBakiye>0?'var(--gold)':'var(--green)'}">${fmt(oz.bakiye.vekaletBakiye)}</div>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:4px">Anlaşılan: ${fmt(oz.vekaletUcreti.akdi.anlasilanToplam)} — Tahsil: ${fmt(oz.vekaletUcreti.akdi.tahsilEdilen)}</div>
     </div>
   </div>
 

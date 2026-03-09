@@ -115,42 +115,9 @@ function _icraItirazGorev(icra) {
   });
 }
 
-// ── Harcama → Finans Senkronizasyonu ─────────────────────────
-function _icraHarcamaSync(icra) {
-  if (!state.avanslar) state.avanslar = [];
-  // Bu icra dosyasına ait eski otomatik masrafları sil
-  state.avanslar = state.avanslar.filter(function(a) { return a._icraId !== icra.id || !a._otoHarcama; });
-  
-  (icra.harcamalar || []).forEach(function(h) {
-    if (h.tutar > 0) {
-      state.avanslar.push({
-        id: uid(),
-        _icraId: icra.id,
-        _otoHarcama: true,
-        muvId: icra.muvId,
-        tur: 'Masraf',
-        tutar: h.tutar,
-        acik: icra.no + ' İcra — ' + (h.kat || 'Harcama') + ': ' + (h.acik || ''),
-        tarih: h.tarih || today(),
-        durum: 'Bekliyor',
-        odeme: '',
-      });
-    }
-  });
-}
-
-// ── Tahsilat → Hakediş Hesaplama ─────────────────────────────
-function _icraTahsilatSync(icra) {
-  var thList = icra.tahsilatlar || [];
-  var topTahsil = thList.filter(function(t){return t.tur==='tahsilat';}).reduce(function(s,t){return s+(t.tutar||0);},0);
-  icra.tahsil = topTahsil;
-  
-  // Anlaşma bazlı hakediş
-  var an = icra.anlasma || {};
-  if ((an.tur === 'tahsilat' || an.tur === 'basari') && an.yuzde > 0 && topTahsil > 0) {
-    icra.hesaplananHakedis = topTahsil * an.yuzde / 100;
-  }
-}
+// _icraHarcamaSync ve _icraTahsilatSync devre dışı — FinansMotoru dosya verilerini doğrudan okur
+function _icraHarcamaSync() {}
+function _icraTahsilatSync() {}
 function deleteIcraById(id){
   if(!confirm('Bu icra dosyasını silmek istediğinize emin misiniz?'))return;
   // İlişkili otomatik masrafları temizle
@@ -437,78 +404,19 @@ async function updateIcra(id) {
 // ================================================================
 
 // KDV hesaplama
-document.addEventListener('DOMContentLoaded', function() {
-  const bTutar = document.getElementById('b-tutar');
-  const bKdvOran = document.getElementById('b-kdv-oran');
-  if (bTutar) bTutar.addEventListener('input', butceKdvHesapla);
-  if (bKdvOran) bKdvOran.addEventListener('change', butceKdvHesapla);
-});
-
-function openButceModal() {
-  const sel = document.getElementById('b-muv');
-  sel.innerHTML = '<option value="">—</option>';
-  state.muvekkillar.forEach(m => sel.innerHTML += `<option value="${m.id}">${m.ad}</option>`);
-  document.getElementById('b-tarih').value = today();
-  document.getElementById('b-kdv-oran').value = '0';
-  document.getElementById('b-kdv-tutar').value = '';
-  document.getElementById('b-kdv-toplam-satir').style.display = 'none';
-  openModal('but-modal');
-}
-
-function butceKdvHesapla() {
-  const tutar = parseFloat(document.getElementById('b-tutar').value) || 0;
-  const oran = parseFloat(document.getElementById('b-kdv-oran').value) || 0;
-  const kdv = tutar * oran / 100;
-  document.getElementById('b-kdv-tutar').value = kdv > 0 ? kdv.toFixed(2) : '';
-  const satirEl = document.getElementById('b-kdv-toplam-satir');
-  if (oran > 0 && tutar > 0) {
-    satirEl.style.display = 'block';
-    document.getElementById('b-kdv-toplam').textContent = fmt(tutar + kdv);
-  } else {
-    satirEl.style.display = 'none';
-  }
-}
-
-async function saveButce() {
-  const tutar = parseFloat(document.getElementById('b-tutar').value);
-  const tarih = document.getElementById('b-tarih').value;
-  if (!zorunluKontrol([{id:'b-tarih',deger:tarih,label:'Tarih'},{id:'b-tutar',deger:(!isNaN(tutar)&&tutar>0)?'ok':'',label:'Tutar'}])) { notify('⚠️ Zorunlu alanları doldurun.'); return; }
-  const kdvOran = parseFloat(document.getElementById('b-kdv-oran').value) || 0;
-  const kdvTutar = tutar * kdvOran / 100;
-  const _butKayit = {
-    id: uid(), tur: document.getElementById('b-tur').value, tarih, tutar,
-    kat: document.getElementById('b-kat').value,
-    muvId: document.getElementById('b-muv').value,
-    acik: document.getElementById('b-acik').value.trim(),
-    kdvOran, kdvTutar
-  };
-
-  if (typeof LexSubmit !== 'undefined') {
-    var btn = document.querySelector('#but-modal .btn-gold');
-    var ok = await LexSubmit.formKaydet({ tablo:'butce', kayit:_butKayit, modalId:'but-modal', butonEl:btn, basariMesaj:'✓ Hareket eklendi',
-      renderFn:function(){ refreshFinansViews({muvId:_butKayit.muvId}); addAktiviteLog('Finans Hareketi Eklendi', _butKayit.tur + ' — ' + fmt(tutar), 'Finans'); }
-    });
-    if(!ok) return;
-  } else {
-    state.butce.push(_butKayit);
-    closeModal('but-modal'); saveData(); renderButce(); notify('✓ Hareket eklendi');
-    addAktiviteLog('Finans Hareketi Eklendi', _butKayit.tur + ' — ' + fmt(tutar), 'Finans');
-  }
-  ['b-tutar','b-acik'].forEach(i => document.getElementById(i).value = '');
-  document.getElementById('b-kdv-oran').value = '0';
-  document.getElementById('b-kdv-tutar').value = '';
-  document.getElementById('b-kdv-toplam-satir').style.display = 'none';
-}
-
-function filterButce(ft) { renderButce(); }
-function filterButceKat(ft) { renderButce(); }
-
-function finansTab(tab, el) {
-  ['hareketler','muvekkil','faturalar','rapor'].forEach(t => {
-    document.getElementById('finans-tab-' + t).style.display = t === tab ? '' : 'none';
-    document.getElementById('ft-' + t).classList.toggle('active', t === tab);
+// ── Finans Sekme Yönetimi ─────────────────────────────────────────
+function finansTab(tab) {
+  var sekmeler = ['bakiyeler','buro','karzarar','faturalar','karlilik','beklenen'];
+  sekmeler.forEach(function(t) {
+    var panel = document.getElementById('finans-tab-' + t);
+    var tabEl = document.getElementById('ft-' + t);
+    if (panel) panel.classList.toggle('active', t === tab);
+    if (tabEl) tabEl.classList.toggle('active', t === tab);
   });
-  if (tab === 'muvekkil') renderMuvekkilBakiye();
+  if (tab === 'bakiyeler') renderMuvekkilBakiye();
+  if (tab === 'buro') renderBuroGiderleri();
+  if (tab === 'karzarar') renderKarZararRaporu();
   if (tab === 'faturalar') renderFaturaListe();
-  if (tab === 'rapor') renderFinansRapor();
+  if (tab === 'karlilik') renderDosyaKarlilik();
+  if (tab === 'beklenen') renderBeklenenGelir();
 }

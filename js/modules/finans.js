@@ -3,285 +3,595 @@
 // js/modules/finans.js
 // ================================================================
 
-// ── Merkezi Finansal Hesaplama ────────────────────────────────────
-// Tüm finansal kaynakları birleştirerek gelir/gider hesaplar.
-// filtre: { yil, ay, muvId } — hepsi opsiyonel
-// ay: 0-indexed (Ocak=0) — yalnızca yil ile birlikte kullanılır
-function tumFinansHesapla(filtre) {
-  filtre = filtre || {};
-  var yil = filtre.yil || '';
-  var ay = filtre.ay !== undefined ? filtre.ay : -1; // -1 = tüm aylar
-  var muvId = filtre.muvId || '';
-
-  var gelir = 0, gider = 0, kdv = 0;
-
-  // Tarih prefix oluştur (yil veya yil-ay)
-  var tarihPrefix = '';
-  if (yil && ay >= 0) {
-    tarihPrefix = yil + '-' + String(ay + 1).padStart(2, '0');
-  } else if (yil) {
-    tarihPrefix = yil;
-  }
-
-  function tarihUygun(tarih) {
-    if (!tarih) return !tarihPrefix; // tarih yoksa sadece filtresiz modda say
-    if (!tarihPrefix) return true;
-    return tarih.startsWith(tarihPrefix);
-  }
-
-  // 1. state.butce[] — Ana bütçe kayıtları
-  (state.butce || []).forEach(function(b) {
-    if (muvId && b.muvId !== muvId) return;
-    if (!tarihUygun(b.tarih)) return;
-    var tutar = parseFloat(b.tutar) || 0;
-    if (b.tur === 'Gelir') gelir += tutar;
-    else if (b.tur === 'Gider') gider += tutar;
-    kdv += parseFloat(b.kdvTutar) || 0;
-  });
-
-  // 2. state.finansIslemler[] — Yeni cari hesap sistemi
-  //    Çift sayımı önle: butce'den gelmiş kayıtları atla (_butceId varsa)
-  (state.finansIslemler || []).forEach(function(fi) {
-    if (fi._butceId) return; // butce'ye zaten yansımış
-    if (muvId && fi.muvId !== muvId) return;
-    if (!tarihUygun(fi.tarih)) return;
-    var tutar = parseFloat(fi.tutar) || 0;
-    if (fi.yon === 'alacak' || fi.yön === 'alacak') gelir += tutar;
-    else if (fi.yon === 'borc' || fi.yön === 'borc') gider += tutar;
-  });
-
-  // 3. Dava harcamaları → Gider
-  (state.davalar || []).forEach(function(d) {
-    if (muvId && d.muvId !== muvId) return;
-    (d.harcamalar || []).forEach(function(h) {
-      if (!tarihUygun(h.tarih)) return;
-      gider += parseFloat(h.tutar) || 0;
-    });
-  });
-
-  // 4. İcra harcamaları → Gider, tahsilatları → Gelir
-  (state.icra || []).forEach(function(i) {
-    if (muvId && i.muvId !== muvId) return;
-    (i.harcamalar || []).forEach(function(h) {
-      if (!tarihUygun(h.tarih)) return;
-      gider += parseFloat(h.tutar) || 0;
-    });
-    (i.tahsilatlar || []).forEach(function(t) {
-      if (t.tur !== 'tahsilat') return;
-      if (!tarihUygun(t.tarih)) return;
-      gelir += parseFloat(t.tutar) || 0;
-    });
-  });
-
-  // 5. Danışmanlık tahsil edilen ücretler → Gelir
-  (state.danismanlik || []).forEach(function(d) {
-    if (muvId && d.muvId !== muvId) return;
-    if (!tarihUygun(d.tarih)) return;
-    var tahsil = parseFloat(d.tahsilEdildi) || 0;
-    if (tahsil > 0) gelir += tahsil;
-  });
-
-  return { gelir: gelir, gider: gider, net: gelir - gider, kdv: kdv };
+// ── Eski fonksiyonlar için uyumluluk ─────────────────────────────
+// renderButce artık yok — çağıran kodların kırılmaması için
+function renderButce() { try { renderFinansKPI(); renderBuroGiderleri(); } catch(e) {} }
+function tumFinansHesapla(f) {
+  var kz = FinansMotoru.buroKarZarar(f || {});
+  return { gelir: kz.gelirler.toplam, gider: kz.giderler.toplam, net: kz.net, gelirler: kz.gelirler, giderler: kz.giderler, karZararOrani: kz.karZararOrani };
 }
+function openButceModal() { openBuroGiderModal(); }
+function filterButce() {}
+function filterButceKat() {}
 
-function renderButce() {
-  const tb = document.getElementById('but-tbody'), em = document.getElementById('but-empty');
-  const ft = document.getElementById('butce-filtre-tur')?.value || '';
-  const fk = document.getElementById('butce-filtre-kat')?.value || '';
-  const fay = document.getElementById('butce-filtre-ay')?.value || '';
-
-  // Kategori select'i doldur
-  const katSel = document.getElementById('butce-filtre-kat');
-  if (katSel && katSel.options.length <= 1) {
-    const katlar = [...new Set(state.butce.map(b => b.kat).filter(Boolean))];
-    katlar.forEach(k => { katSel.innerHTML += `<option value="${k}">${k}</option>`; });
-  }
-
-  let list = state.butce;
-  if (ft) list = list.filter(b => b.tur === ft);
-  if (fk) list = list.filter(b => b.kat === fk);
-  if (fay) list = list.filter(b => b.tarih?.startsWith(fay));
-  list = [...list].sort((a, b) => (b.tarih||'').localeCompare(a.tarih||''));
-
-  tb.innerHTML = '';
-  if (!list.length) { em.style.display = 'block'; }
-  else {
-    em.style.display = 'none';
-    list.forEach(b => {
-      const col = b.tur === 'Gelir' ? 'var(--green)' : '#e74c3c';
-      const sign = b.tur === 'Gelir' ? '+' : '-';
-      const kdvBadge = b.kdvOran > 0 ? `<span style="font-size:10px;color:var(--text-muted)">+%${b.kdvOran} KDV</span>` : '';
-      tb.innerHTML += `<tr>
-        <td>${fmtD(b.tarih)}</td>
-        <td><span class="badge badge-${b.tur==='Gelir'?'gelir':'gider'}">${b.tur}</span></td>
-        <td>${b.kat||'—'}</td>
-        <td>${b.acik||'—'}</td>
-        <td>${b.muvId ? getMuvAd(b.muvId) : '—'}</td>
-        <td style="font-size:11px">${kdvBadge}</td>
-        <td style="color:${col};font-weight:600">${sign}${fmt(b.tutar)}</td>
-        <td>
-          <button class="btn" style="padding:3px 8px;font-size:11px;background:var(--surface2)" onclick="openWpMuvekkilModal('${b.muvId||''}')">📱</button>
-          <button class="delete-btn" onclick="delButce('${b.id}')">✕</button>
-        </td>
-      </tr>`;
-    });
-  }
-
-  // Özet kartlar — parseFloat ile güvenli hesaplama
-  const tg = state.butce.filter(b => b.tur === 'Gelir').reduce((s, b) => s + (parseFloat(b.tutar)||0), 0);
-  const td_ = state.butce.filter(b => b.tur === 'Gider').reduce((s, b) => s + (parseFloat(b.tutar)||0), 0);
-  const net = tg - td_;
-  const topKdv = state.butce.reduce((s, b) => s + (parseFloat(b.kdvTutar)||0), 0);
-  const bekleyen = state.butce.filter(b => b.kat && b.kat.includes('Bekliyor')).reduce((s, b) => s + (parseFloat(b.tutar)||0), 0);
-
-  document.getElementById('b-gelir').textContent = fmt(tg);
-  document.getElementById('b-gider').textContent = fmt(td_);
-  const ne = document.getElementById('b-net'); ne.textContent = fmt(net); ne.style.color = net >= 0 ? 'var(--green)' : '#e74c3c';
-  document.getElementById('b-kdv').textContent = fmt(topKdv);
-  document.getElementById('b-bekleyen').textContent = fmt(bekleyen);
-
-  const now = new Date(), ayP = now.getFullYear() + '-' + (now.getMonth()+1).toString().padStart(2,'0');
-  const ayG = state.butce.filter(b => b.tur === 'Gelir' && b.tarih?.startsWith(ayP)).reduce((s, b) => s + (parseFloat(b.tutar)||0), 0);
-  const ayD = state.butce.filter(b => b.tur === 'Gider' && b.tarih?.startsWith(ayP)).reduce((s, b) => s + (parseFloat(b.tutar)||0), 0);
-  const ae = document.getElementById('b-ay'); ae.textContent = fmt(ayG - ayD); ae.style.color = (ayG-ayD) >= 0 ? 'var(--green)' : '#e74c3c';
-}
-
-function delButce(id) {
-  if (!confirm('Bu hareketi silmek istiyor musunuz?')) return;
-  state.butce = state.butce.filter(b => b.id !== id);
-  if (currentBuroId) deleteFromSupabase('finans', id);
-  saveData(); renderButce(); notify('Silindi');
-}
-
-// ── Müvekkil Bakiye ─────────────────────────────────────────────
-function renderMuvekkilBakiye() {
-  const el = document.getElementById('muvekkil-bakiye-liste');
+// ── KPI Kartları Render ──────────────────────────────────────────
+function renderFinansKPI() {
+  var el = document.getElementById('finans-kpi-bar');
   if (!el) return;
-  const muvler = state.muvekkillar;
-  if (!muvler.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">👤</div><p>Müvekkil yok</p></div>'; return; }
+  var yil = new Date().getFullYear().toString();
+  var kz = FinansMotoru.buroKarZarar({ yil: yil });
+  var buAy = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0');
+  var kzAy = FinansMotoru.buroKarZarar({ yil: yil, ay: new Date().getMonth() });
 
-  // ── Birleşik hesaplama: tumFinansHesapla + avanslar ──
-  let html = '';
-  muvler.forEach(m => {
-    // Merkezi hesaplama (bütçe + finansIslemler + dava/icra harcamaları + tahsilatlar + danışmanlık)
-    const muvFinans = typeof tumFinansHesapla === 'function' ? tumFinansHesapla({muvId: m.id}) : {gelir:0, gider:0};
-
-    // Avanslar — ayrı hesaplanır (cari hesap detayı için)
-    const avanslar = (state.avanslar||[]).filter(a => a.muvId === m.id);
-    const avansAlinan = avanslar.filter(a => a.tur === 'Avans Alındı').reduce((s, a) => s + (parseFloat(a.tutar)||0), 0);
-    const beklAlacak = avanslar.filter(a => a.durum === 'Bekliyor').reduce((s, a) => s + (parseFloat(a.tutar)||0), 0);
-
-    // Birleşik
-    const topBorc = muvFinans.gider;
-    const topAlacak = muvFinans.gelir + avansAlinan;
-    const bakiye = topAlacak - topBorc;
-
-    const faturalar = (state.faturalar||[]).filter(f => f.muvId === m.id);
-    const odenmemis = faturalar.filter(f => f.durum === 'bekliyor' || f.durum === 'gecikti').reduce((s, f) => s + (f.genelToplam||0), 0);
-
-    if (topAlacak === 0 && topBorc === 0 && odenmemis === 0 && beklAlacak === 0) return;
-
-    const bakiyeRenk = bakiye >= 0 ? 'var(--green)' : 'var(--red)';
-
-    html += `
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px;cursor:pointer" onclick="openCariEkstre('${m.id}')">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <div>
-            <div style="font-weight:600;font-size:14px">${m.ad}</div>
-            <div style="font-size:11px;color:var(--text-dim)">${avanslar.length + (state.butce||[]).filter(b=>b.muvId===m.id).length + (state.finansIslemler||[]).filter(i=>i.muvId===m.id).length} işlem</div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <div style="text-align:right">
-              <div style="font-size:10px;color:var(--text-dim)">BAKİYE</div>
-              <div style="font-size:18px;font-weight:800;color:${bakiyeRenk}">${fmt(bakiye)}</div>
-            </div>
-            <button class="btn btn-gold btn-sm" onclick="event.stopPropagation();openFinansIslemModal('${m.id}')" style="padding:4px 10px;font-size:11px">+ İşlem</button>
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
-          <div style="text-align:center"><div style="font-size:10px;color:var(--text-muted)">Masraf/Borç</div><div style="font-size:13px;font-weight:700;color:var(--red)">${fmt(topBorc)}</div></div>
-          <div style="text-align:center"><div style="font-size:10px;color:var(--text-muted)">Tahsilat</div><div style="font-size:13px;font-weight:700;color:var(--green)">${fmt(topAlacak)}</div></div>
-          <div style="text-align:center"><div style="font-size:10px;color:var(--text-muted)">Avans Alınan</div><div style="font-size:13px;font-weight:700;color:var(--blue)">${fmt(avansAlinan)}</div></div>
-          <div style="text-align:center"><div style="font-size:10px;color:var(--text-muted)">Bekl. Alacak</div><div style="font-size:13px;font-weight:700;color:${beklAlacak>0?'#f39c12':'var(--text-muted)'}">${fmt(beklAlacak)}</div></div>
-          <div style="text-align:center"><div style="font-size:10px;color:var(--text-muted)">Ödenmemiş Fat.</div><div style="font-size:13px;font-weight:700;color:${odenmemis>0?'#e74c3c':'var(--text-muted)'}">${fmt(odenmemis)}</div></div>
-        </div>
-      </div>`;
+  // Bekleyen alacak hesapla
+  var beklAlacak = 0;
+  (state.muvekkillar || []).forEach(function(m) {
+    var oz = FinansMotoru.muvekkilOzet(m.id);
+    if (oz.bakiye.masrafBakiye < 0) beklAlacak += Math.abs(oz.bakiye.masrafBakiye);
+    beklAlacak += oz.bakiye.vekaletBakiye;
   });
 
-  el.innerHTML = html || '<div class="empty"><div class="empty-icon">💰</div><p>Müvekkil bazlı hareket yok</p></div>';
+  el.innerHTML =
+    '<div class="card"><div class="card-label">Toplam Gelir' + helpTip('Vekalet ücretleri, hakedişler, danışmanlık ve arabuluculuk gelirlerinin toplamı') + '</div><div class="card-value green">' + fmt(kz.gelirler.toplam) + '</div></div>' +
+    '<div class="card"><div class="card-label">Toplam Gider' + helpTip('Dosya masrafları ve büro operasyonel giderlerinin toplamı') + '</div><div class="card-value red">' + fmt(kz.giderler.toplam) + '</div></div>' +
+    '<div class="card"><div class="card-label">Büro Gideri</div><div class="card-value" style="color:var(--text-muted)">' + fmt(kz.giderler.buroGiderleri.toplam) + '</div></div>' +
+    '<div class="card"><div class="card-label">Net Kâr/Zarar' + helpTip('Toplam gelir eksi toplam gider. Büronun genel mali performansı') + '</div><div class="card-value" style="color:' + (kz.net >= 0 ? 'var(--green)' : 'var(--red)') + '">' + fmt(kz.net) + '</div></div>' +
+    '<div class="card"><div class="card-label">Bu Ay Net</div><div class="card-value" style="color:' + (kzAy.net >= 0 ? 'var(--green)' : 'var(--red)') + '">' + fmt(kzAy.net) + '</div></div>' +
+    '<div class="card"><div class="card-label">Bekleyen Alacak' + helpTip('Müvekkillerden tahsil edilmemiş masraf alacakları ve vekalet ücreti bakiyeleri') + '</div><div class="card-value" style="color:' + (beklAlacak > 0 ? '#f39c12' : 'var(--text-muted)') + '">' + fmt(beklAlacak) + '</div></div>';
 }
 
-// ── Aylık Rapor ─────────────────────────────────────────────────
-function renderFinansRapor() {
-  const el = document.getElementById('finans-rapor-icerik');
+// ── Finansal Uyarılar (mini bar) ─────────────────────────────────
+function renderFinansUyariBar() {
+  var el = document.getElementById('finans-uyari-bar');
   if (!el) return;
-  const yilSel = document.getElementById('rapor-yil');
-  if (yilSel && !yilSel.options.length) {
-    const yillar = [...new Set(state.butce.map(b => b.tarih?.slice(0,4)).filter(Boolean))].sort().reverse();
-    if (!yillar.length) yillar.push(new Date().getFullYear().toString());
-    yillar.forEach(y => yilSel.innerHTML += `<option value="${y}">${y}</option>`);
+  var uyarilar = FinansMotoru.hesaplaUyarilar();
+  if (!uyarilar.length) { el.innerHTML = ''; return; }
+  var goster = uyarilar.slice(0, 3);
+  var html = '';
+  goster.forEach(function(u) {
+    var cls = u.oncelik === 'yuksek' ? 'kritik' : (u.oncelik === 'dusuk' ? 'bilgi' : '');
+    html += '<div class="finans-uyari ' + cls + '"><span class="finans-uyari-icon">' + (u.icon || u.ikon || '⚠️') + '</span><div class="finans-uyari-text">' + escHTML(u.mesaj) + '</div></div>';
+  });
+  if (uyarilar.length > 3) {
+    html += '<div style="text-align:center;padding:6px"><button class="btn btn-sm" onclick="finansTab(\'uyarilar\')" style="font-size:11px">Tümünü Gör (' + uyarilar.length + ')</button></div>';
   }
-  const yil = yilSel?.value || new Date().getFullYear().toString();
-  const aylar = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
-
-  let html = `<div style="font-size:16px;font-weight:700;margin-bottom:16px;color:var(--gold)">${yil} Yılı Finansal Özet</div>`;
-  html += `<table><thead><tr><th>Ay</th><th>Gelir</th><th>Gider</th><th>Net</th><th>KDV</th></tr></thead><tbody>`;
-
-  let topG = 0, topD = 0, topKdv = 0;
-  for (let i = 0; i < 12; i++) {
-    const ayFinans = typeof tumFinansHesapla === 'function' ? tumFinansHesapla({yil: yil, ay: i}) : {gelir:0, gider:0, kdv:0};
-    const g = ayFinans.gelir;
-    const d = ayFinans.gider;
-    const kdv = ayFinans.kdv;
-    topG += g; topD += d; topKdv += kdv;
-    const net = g - d;
-    const satir = g === 0 && d === 0 ? `style="opacity:0.4"` : '';
-    html += `<tr ${satir}><td>${aylar[i]}</td><td style="color:var(--green)">${g > 0 ? fmt(g) : '—'}</td><td style="color:var(--red)">${d > 0 ? fmt(d) : '—'}</td><td style="font-weight:600;color:${net>=0?'var(--green)':'var(--red)'}">${fmt(net)}</td><td style="color:var(--text-muted)">${kdv > 0 ? fmt(kdv) : '—'}</td></tr>`;
-  }
-  html += `<tr style="font-weight:700;border-top:2px solid var(--border)"><td>TOPLAM</td><td style="color:var(--green)">${fmt(topG)}</td><td style="color:var(--red)">${fmt(topD)}</td><td style="color:${(topG-topD)>=0?'var(--green)':'var(--red)'}">${fmt(topG-topD)}</td><td>${fmt(topKdv)}</td></tr>`;
-  html += '</tbody></table>';
-
-  // Kategori dağılımı
-  html += `<div style="font-size:13px;font-weight:700;margin:20px 0 10px;color:var(--text-muted)">KATEGORİ DAĞILIMI (${yil})</div>`;
-  const katGelir = {}, katGider = {};
-  state.butce.filter(b => b.tarih?.startsWith(yil)).forEach(b => {
-    if (b.tur === 'Gelir') katGelir[b.kat] = (katGelir[b.kat]||0) + b.tutar;
-    else katGider[b.kat] = (katGider[b.kat]||0) + b.tutar;
-  });
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">';
-  html += '<div><div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:8px">GELİR KATEGORİLERİ</div>';
-  Object.entries(katGelir).sort((a,b)=>b[1]-a[1]).forEach(([k,v]) => {
-    html += `<div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 0;border-bottom:1px solid var(--border)"><span>${k}</span><span style="color:var(--green);font-weight:600">${fmt(v)}</span></div>`;
-  });
-  html += '</div><div><div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:8px">GİDER KATEGORİLERİ</div>';
-  Object.entries(katGider).sort((a,b)=>b[1]-a[1]).forEach(([k,v]) => {
-    html += `<div style="display:flex;justify-content:space-between;font-size:12px;padding:5px 0;border-bottom:1px solid var(--border)"><span>${k}</span><span style="color:var(--red);font-weight:600">${fmt(v)}</span></div>`;
-  });
-  html += '</div></div>';
   el.innerHTML = html;
 }
 
-function finansRaporModal() {
-  const el = document.getElementById('finans-rapor-icerik');
-  if (el) {
-    const yilSel = document.getElementById('rapor-yil');
-    if (yilSel) { yilSel.innerHTML = ''; }
+// ── Müvekkil Bakiye Kartları ─────────────────────────────────────
+function renderMuvekkilBakiye() {
+  var el = document.getElementById('muvekkil-bakiye-liste');
+  if (!el) return;
+  var muvler = state.muvekkillar || [];
+  if (!muvler.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">👤</div><p>Müvekkil yok</p></div>'; return; }
+
+  // Arama filtresi
+  var araEl = document.getElementById('muv-bakiye-ara');
+  var q = araEl ? araEl.value.toLowerCase().trim() : '';
+
+  var html = '';
+  muvler.forEach(function(m) {
+    if (q && m.ad.toLowerCase().indexOf(q) === -1) return;
+
+    var oz = FinansMotoru.muvekkilOzet(m.id);
+
+    // Hiç hareket yoksa gösterme
+    if (oz.masraflar.toplam === 0 && oz.avanslar.alinan === 0 && oz.tahsilatlar.toplam === 0 &&
+        oz.vekaletUcreti.akdi.anlasilanToplam === 0 && oz.aktarimlar.toplam === 0) return;
+
+    var genelBakiye = oz.bakiye.genelBakiye;
+    var bakiyeRenk = genelBakiye >= 0 ? 'var(--green)' : 'var(--red)';
+    var bakiyeCls = genelBakiye >= 0 ? 'pozitif' : 'negatif';
+
+    html += '<div class="muv-bakiye-card" onclick="openCariEkstre(\'' + m.id + '\')">';
+    html += '<div class="muv-bakiye-header">';
+    html += '<div class="muv-bakiye-ad">' + escHTML(m.ad) + '</div>';
+    html += '<div style="text-align:right"><div style="font-size:10px;color:var(--text-dim)">GENEL BAKİYE' + helpTip('Müvekkil ile olan tüm alacak-borç ilişkisinin özeti') + '</div>';
+    html += '<div style="font-size:18px;font-weight:800;color:' + bakiyeRenk + '">' + fmt(genelBakiye) + '</div></div>';
+    html += '</div>';
+
+    html += '<div class="muv-bakiye-grid">';
+    html += '<div class="muv-bakiye-item"><span class="label">Masraf Bakiyesi' + helpTip('Masraf avansı alınan eksi yapılan masraflar. Artı ise avans fazlası, eksi ise müvekkilden alacağınız var') + '</span><span class="value ' + (oz.bakiye.masrafBakiye >= 0 ? 'pozitif' : 'negatif') + '">' + fmt(oz.bakiye.masrafBakiye) + '</span></div>';
+    html += '<div class="muv-bakiye-item"><span class="label">Tahsilat Bakiyesi' + helpTip('Karşı taraftan tahsil edilen tutardan hakediş ve aktarımlar düşüldükten sonra müvekkile aktarılması gereken tutar') + '</span><span class="value ' + (oz.bakiye.tahsilatBakiye >= 0 ? 'pozitif' : 'negatif') + '">' + fmt(oz.bakiye.tahsilatBakiye) + '</span></div>';
+    html += '<div class="muv-bakiye-item"><span class="label">Vekalet Bakiyesi' + helpTip('Anlaşılan vekalet ücretinden tahsil edilen kısım düşüldükten sonra kalan alacak') + '</span><span class="value ' + (oz.bakiye.vekaletBakiye > 0 ? 'pozitif' : '') + '">' + fmt(oz.bakiye.vekaletBakiye) + '</span></div>';
+    html += '<div class="muv-bakiye-item"><span class="label">Masraf Toplam</span><span class="value negatif">' + fmt(oz.masraflar.toplam) + '</span></div>';
+    html += '<div class="muv-bakiye-item"><span class="label">Avans Alınan</span><span class="value" style="color:var(--blue)">' + fmt(oz.avanslar.alinan) + '</span></div>';
+    html += '<div class="muv-bakiye-item"><span class="label">Aktarılan</span><span class="value">' + fmt(oz.aktarimlar.toplam) + '</span></div>';
+    html += '</div>';
+
+    html += '<div class="muv-bakiye-actions">';
+    html += '<button class="btn btn-sm" onclick="event.stopPropagation();openCariEkstre(\'' + m.id + '\')" style="font-size:11px">📊 Cari Ekstre</button>';
+    html += '<button class="btn btn-sm" onclick="event.stopPropagation();olusturMasrafRaporu(\'' + m.id + '\')" style="font-size:11px">📄 Masraf Raporu</button>';
+    html += '</div>';
+    html += '</div>';
+  });
+
+  el.innerHTML = html || '<div class="empty"><div class="empty-icon">💰</div><p>Finansal hareketi olan müvekkil yok</p></div>';
+}
+
+// ── Büro Giderleri ──────────────────────────────────────────────
+function renderBuroGiderleri() {
+  var el = document.getElementById('buro-gider-liste');
+  if (!el) return;
+
+  var list = (state.buroGiderleri || []).slice();
+  var fKat = (document.getElementById('buro-gider-kat') || {}).value || '';
+  var fAy = (document.getElementById('buro-gider-ay') || {}).value || '';
+  var fAra = (document.getElementById('buro-gider-ara') || {}).value.toLowerCase().trim();
+
+  if (fKat) list = list.filter(function(g) { return g.kategori === fKat; });
+  if (fAy) list = list.filter(function(g) { return g.tarih && g.tarih.startsWith(fAy); });
+  if (fAra) list = list.filter(function(g) { return (g.aciklama || '').toLowerCase().indexOf(fAra) !== -1 || (g.kategori || '').toLowerCase().indexOf(fAra) !== -1; });
+  list.sort(function(a, b) { return (b.tarih || '').localeCompare(a.tarih || ''); });
+
+  // Mini KPI
+  var kpiEl = document.getElementById('buro-gider-kpi');
+  if (kpiEl) {
+    var topKat = {};
+    (state.buroGiderleri || []).forEach(function(g) {
+      var k = g.kategori || 'Diğer';
+      topKat[k] = (topKat[k] || 0) + (parseFloat(g.tutar) || 0);
+    });
+    var kpiHtml = '';
+    var katSirali = Object.entries(topKat).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 5);
+    katSirali.forEach(function(kv) {
+      kpiHtml += '<div class="mini-card"><div class="mini-label">' + escHTML(kv[0]) + '</div><div class="mini-val">' + fmt(kv[1]) + '</div></div>';
+    });
+    kpiEl.innerHTML = kpiHtml;
   }
-  openModal('finans-rapor-modal');
-  setTimeout(renderFinansRapor, 100);
+
+  if (!list.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🏢</div><p>Büro gideri yok</p></div>';
+    return;
+  }
+
+  var html = '<div style="overflow-x:auto"><table><thead><tr><th>Tarih</th><th>Kategori</th><th>Açıklama</th><th>KDV</th><th style="text-align:right">Tutar</th><th></th></tr></thead><tbody>';
+  list.forEach(function(g) {
+    var kdvStr = g.kdvOran > 0 ? '%' + g.kdvOran + ' (' + fmt(g.kdvTutar || 0) + ')' : '—';
+    html += '<tr>';
+    html += '<td style="white-space:nowrap;font-size:12px">' + fmtD(g.tarih) + '</td>';
+    html += '<td><span style="font-size:11px;background:var(--surface2);padding:2px 8px;border-radius:4px">' + escHTML(g.kategori || '') + '</span></td>';
+    html += '<td style="font-size:12px">' + escHTML(g.aciklama || '—') + '</td>';
+    html += '<td style="font-size:11px;color:var(--text-muted)">' + kdvStr + '</td>';
+    html += '<td style="text-align:right;font-weight:600;color:var(--red)">' + fmt(g.tutar) + '</td>';
+    html += '<td><button class="delete-btn" onclick="delBuroGideri(\'' + g.id + '\')">✕</button></td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
 }
 
-function finansRaporYazdir() {
-  const icerik = document.getElementById('finans-rapor-icerik')?.innerHTML || '';
-  const yil = document.getElementById('rapor-yil')?.value || '';
-  const w = window.open('', '_blank');
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Finansal Rapor ${yil}</title>
-  <style>body{font-family:Arial,sans-serif;padding:30px;color:#1a1714}table{width:100%;border-collapse:collapse;margin-bottom:20px}th,td{border:1px solid #ddd;padding:8px 12px;text-align:left}th{background:#f5f4f2}h1{color:#a07830}</style>
-  </head><body><h1>Finansal Rapor — ${yil}</h1>${icerik}</body></html>`);
-  w.document.close(); w.print();
+function delBuroGideri(id) {
+  if (!confirm('Bu büro giderini silmek istiyor musunuz?')) return;
+  state.buroGiderleri = (state.buroGiderleri || []).filter(function(g) { return g.id !== id; });
+  if (typeof LexSubmit !== 'undefined') {
+    LexSubmit.sil('buroGiderleri', id);
+  } else {
+    saveData();
+  }
+  renderBuroGiderleri();
+  renderFinansKPI();
+  notify('Silindi');
 }
 
-function raporPdfIndir() { finansRaporYazdir(); }
+// ── Büro Gideri Modal ────────────────────────────────────────────
+function openBuroGiderModal() {
+  document.getElementById('bg-tarih').value = today();
+  document.getElementById('bg-tutar').value = '';
+  document.getElementById('bg-aciklama').value = '';
+  document.getElementById('bg-kdv-oran').value = '20';
+  bgKdvHesapla();
+  openModal('buro-gider-modal');
+}
+
+function bgKdvHesapla() {
+  var tutar = parseFloat(document.getElementById('bg-tutar').value) || 0;
+  var oran = parseFloat(document.getElementById('bg-kdv-oran').value) || 0;
+  var kdv = tutar * oran / 100;
+  document.getElementById('bg-kdv-tutar').textContent = fmt(kdv);
+  document.getElementById('bg-kdv-toplam').textContent = fmt(tutar + kdv);
+}
+
+async function saveBuroGideri() {
+  var tutar = parseFloat(document.getElementById('bg-tutar').value);
+  var tarih = document.getElementById('bg-tarih').value;
+  if (!tarih || isNaN(tutar) || tutar <= 0) { notify('⚠️ Tarih ve tutar zorunludur.'); return; }
+
+  var kdvOran = parseFloat(document.getElementById('bg-kdv-oran').value) || 0;
+  var kdvTutar = tutar * kdvOran / 100;
+
+  var kayit = {
+    id: uid(),
+    tarih: tarih,
+    kategori: document.getElementById('bg-kategori').value,
+    tutar: tutar,
+    aciklama: document.getElementById('bg-aciklama').value.trim(),
+    kdvOran: kdvOran,
+    kdvTutar: kdvTutar
+  };
+
+  if (typeof LexSubmit !== 'undefined') {
+    var btn = document.getElementById('bg-kaydet-btn');
+    var ok = await LexSubmit.formKaydet({
+      tablo: 'buroGiderleri', kayit: kayit, modalId: 'buro-gider-modal', butonEl: btn,
+      basariMesaj: '✓ Büro gideri eklendi — ' + fmt(tutar),
+      renderFn: function() { renderBuroGiderleri(); renderFinansKPI(); }
+    });
+    if (!ok) return;
+  } else {
+    if (!state.buroGiderleri) state.buroGiderleri = [];
+    state.buroGiderleri.push(kayit);
+    saveData();
+    closeModal('buro-gider-modal');
+    renderBuroGiderleri();
+    renderFinansKPI();
+    notify('✓ Büro gideri eklendi');
+  }
+  addAktiviteLog('Büro Gideri Eklendi', kayit.kategori + ' — ' + fmt(tutar), 'Finans');
+}
+
+// ── Kâr/Zarar Raporu ─────────────────────────────────────────────
+function renderKarZararRaporu() {
+  var el = document.getElementById('kz-rapor-icerik');
+  if (!el) return;
+  var yilSel = document.getElementById('kz-yil');
+  if (yilSel && !yilSel.options.length) {
+    var suanYil = new Date().getFullYear();
+    for (var y = suanYil; y >= suanYil - 3; y--) {
+      yilSel.innerHTML += '<option value="' + y + '">' + y + '</option>';
+    }
+  }
+  var yil = yilSel ? yilSel.value : new Date().getFullYear().toString();
+  var kz = FinansMotoru.buroKarZarar({ yil: yil });
+  var aylik = FinansMotoru.buroAylikDetay(yil);
+  var aylar = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+
+  var html = '<div style="font-size:16px;font-weight:700;margin-bottom:20px;color:var(--gold)">' + yil + ' Yılı Kâr/Zarar Raporu</div>';
+
+  // GELİRLER
+  html += '<div class="kz-section"><div class="kz-section-title">GELİRLER</div>';
+  html += '<div class="kz-row"><span class="kz-label">Akdi Vekalet Ücreti Tahsilatları' + helpTip('Müvekkiller ile sözleşme ile kararlaştırılan ve müvekkil tarafından ödenen avukatlık ücreti') + '</span><span class="kz-val pozitif">' + fmt(kz.gelirler.akdiVekaletUcreti) + '</span></div>';
+  html += '<div class="kz-row"><span class="kz-label">Karşı Vekalet Hakedişleri' + helpTip('Kazanılan dava sonucu karşı taraftan tahsil edilen vekalet ücreti (AAÜT\'ye göre)') + '</span><span class="kz-val pozitif">' + fmt(kz.gelirler.karsiVekaletHakedis) + '</span></div>';
+  html += '<div class="kz-row"><span class="kz-label">Danışmanlık Gelirleri</span><span class="kz-val pozitif">' + fmt(kz.gelirler.danismanlikGeliri) + '</span></div>';
+  html += '<div class="kz-row"><span class="kz-label">Arabuluculuk Gelirleri</span><span class="kz-val pozitif">' + fmt(kz.gelirler.arabuluculukGeliri) + '</span></div>';
+  if (kz.gelirler.digerGelir > 0) {
+    html += '<div class="kz-row"><span class="kz-label">Diğer Gelirler</span><span class="kz-val pozitif">' + fmt(kz.gelirler.digerGelir) + '</span></div>';
+  }
+  html += '<div class="kz-row toplam"><span class="kz-label">TOPLAM GELİR</span><span class="kz-val pozitif">' + fmt(kz.gelirler.toplam) + '</span></div>';
+  html += '</div>';
+
+  // GİDERLER
+  html += '<div class="kz-section"><div class="kz-section-title">GİDERLER</div>';
+  html += '<div class="kz-row"><span class="kz-label">Dosya Masrafları' + helpTip('Müvekkil adına yapılan harç, tebligat, bilirkişi ücreti vb. masraflar. Bunlar müvekkilden tahsil edilir') + '</span><span class="kz-val negatif">' + fmt(kz.giderler.dosyaMasraflari) + '</span></div>';
+
+  var bg = kz.giderler.buroGiderleri;
+  if (bg.toplam > 0) {
+    var bgKeys = ['kira','stopajVergi','muhasebeci','calisanUcretleri','temizlik','kirtasiye','teknoloji','ulasim','sigorta','meslekiGelisim','diger'];
+    var bgLabels = {'kira':'Kira & Aidat','stopajVergi':'Stopaj & Vergi','muhasebeci':'Muhasebeci','calisanUcretleri':'Çalışan Ücretleri','temizlik':'Temizlik & Bakım','kirtasiye':'Kırtasiye & Sarf','teknoloji':'Teknoloji','ulasim':'Ulaşım & Araç','sigorta':'Sigorta','meslekiGelisim':'Mesleki Gelişim','diger':'Diğer'};
+    bgKeys.forEach(function(k) {
+      if (bg[k] > 0) {
+        html += '<div class="kz-row"><span class="kz-label" style="padding-left:16px">' + bgLabels[k] + '</span><span class="kz-val negatif">' + fmt(bg[k]) + '</span></div>';
+      }
+    });
+  }
+  html += '<div class="kz-row toplam"><span class="kz-label">TOPLAM GİDER</span><span class="kz-val negatif">' + fmt(kz.giderler.toplam) + '</span></div>';
+  html += '</div>';
+
+  // NET
+  html += '<div class="kz-section">';
+  html += '<div class="kz-row net"><span class="kz-label">NET KÂR/ZARAR</span><span class="kz-val ' + (kz.net >= 0 ? 'pozitif' : 'negatif') + '">' + fmt(kz.net) + '</span></div>';
+  if (kz.gelirler.toplam > 0) {
+    var oran = (kz.net / kz.gelirler.toplam * 100).toFixed(1);
+    html += '<div style="text-align:right;font-size:11px;color:var(--text-muted);margin-top:4px">Kârlılık Oranı: %' + oran + '</div>';
+  }
+  html += '</div>';
+
+  // AYLIK DETAY
+  html += '<div class="kz-section"><div class="kz-section-title">AYLIK DETAY' + helpTip('Yıl başından ilgili aya kadar biriken toplam net kâr/zarar') + '</div>';
+  html += '<div style="overflow-x:auto"><table><thead><tr><th>Ay</th><th>Gelir</th><th>Gider</th><th>Net</th><th>Kümülatif</th></tr></thead><tbody>';
+  var kumulatif = 0;
+  aylik.forEach(function(a, i) {
+    kumulatif += a.net;
+    var satir = a.gelir === 0 && a.gider === 0 ? ' style="opacity:0.4"' : '';
+    html += '<tr' + satir + '><td>' + aylar[i] + '</td>';
+    html += '<td style="color:var(--green)">' + (a.gelir > 0 ? fmt(a.gelir) : '—') + '</td>';
+    html += '<td style="color:var(--red)">' + (a.gider > 0 ? fmt(a.gider) : '—') + '</td>';
+    html += '<td style="font-weight:600;color:' + (a.net >= 0 ? 'var(--green)' : 'var(--red)') + '">' + fmt(a.net) + '</td>';
+    html += '<td style="font-weight:600;color:' + (kumulatif >= 0 ? 'var(--green)' : 'var(--red)') + '">' + fmt(kumulatif) + '</td></tr>';
+  });
+  html += '</tbody></table></div></div>';
+
+  el.innerHTML = html;
+}
+
+function kzRaporYazdir() {
+  var icerik = (document.getElementById('kz-rapor-icerik') || {}).innerHTML || '';
+  var yil = (document.getElementById('kz-yil') || {}).value || '';
+  var w = window.open('', '_blank');
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Kâr/Zarar Raporu ' + yil + '</title>' +
+    '<style>body{font-family:Arial,sans-serif;padding:30px;color:#1a1714}table{width:100%;border-collapse:collapse;margin-bottom:20px}th,td{border:1px solid #ddd;padding:8px 12px;text-align:left}th{background:#f5f4f2}.kz-section{margin-bottom:20px}.kz-section-title{font-weight:700;border-bottom:2px solid #333;padding-bottom:4px;margin-bottom:8px}.kz-row{display:flex;justify-content:space-between;padding:4px 0}.kz-row.toplam{font-weight:700;border-top:2px solid #333;padding-top:6px}.kz-row.net{font-size:18px;font-weight:800;border-top:3px double #333;padding-top:10px}.pozitif{color:#27ae60}.negatif{color:#c0392b}.help-tip{display:none}</style>' +
+    '</head><body><h1 style="color:#a07830">Kâr/Zarar Raporu — ' + yil + '</h1>' + icerik + '</body></html>');
+  w.document.close();
+  w.print();
+}
+
+// ── Cari Ekstre (FinansMotoru kullanarak) ─────────────────────────
+function openCariEkstre(muvId) {
+  var m = getMuv(muvId);
+  if (!m) return;
+
+  var cari = FinansMotoru.muvekkilCari(muvId);
+  var oz = FinansMotoru.muvekkilOzet(muvId);
+  var bakiye = oz.bakiye.genelBakiye;
+  var bakiyeRenk = bakiye >= 0 ? 'var(--green)' : 'var(--red)';
+
+  document.getElementById('cari-ekstre-title').textContent = '📊 ' + m.ad + ' — Cari Ekstre';
+
+  var html = '';
+  // Özet kartlar
+  html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">';
+  html += '<div style="background:var(--surface2);border-radius:var(--radius);padding:12px;text-align:center"><div style="font-size:10px;color:var(--text-muted)">MASRAF BAKİYE</div><div style="font-size:16px;font-weight:700;color:' + (oz.bakiye.masrafBakiye >= 0 ? 'var(--green)' : 'var(--red)') + '">' + fmt(oz.bakiye.masrafBakiye) + '</div></div>';
+  html += '<div style="background:var(--surface2);border-radius:var(--radius);padding:12px;text-align:center"><div style="font-size:10px;color:var(--text-muted)">TAHSİLAT BAKİYE</div><div style="font-size:16px;font-weight:700;color:' + (oz.bakiye.tahsilatBakiye >= 0 ? 'var(--green)' : 'var(--red)') + '">' + fmt(oz.bakiye.tahsilatBakiye) + '</div></div>';
+  html += '<div style="background:' + bakiyeRenk + '11;border:1px solid ' + bakiyeRenk + ';border-radius:var(--radius);padding:12px;text-align:center"><div style="font-size:10px;color:var(--text-muted)">GENEL BAKİYE</div><div style="font-size:16px;font-weight:700;color:' + bakiyeRenk + '">' + fmt(bakiye) + '</div></div>';
+  html += '</div>';
+
+  // İşlem tablosu
+  if (cari.length) {
+    html += '<table><thead><tr><th>Tarih</th><th>İşlem</th><th>Açıklama</th><th>Dosya</th><th style="text-align:right">Borç</th><th style="text-align:right">Alacak</th><th style="text-align:right">Bakiye</th></tr></thead><tbody>';
+    cari.forEach(function(c) {
+      var turRenk = c.yon === 'alacak' ? 'var(--green)' : 'var(--red)';
+      var bRenk = c.bakiye >= 0 ? 'var(--green)' : 'var(--red)';
+      html += '<tr>';
+      html += '<td style="font-size:11px;white-space:nowrap">' + fmtD(c.tarih) + '</td>';
+      html += '<td><span style="font-size:11px;color:' + turRenk + ';font-weight:600">' + escHTML(c.tur) + '</span></td>';
+      html += '<td style="font-size:12px">' + escHTML(c.aciklama || '—') + '</td>';
+      html += '<td style="font-size:11px;color:var(--text-muted)">' + escHTML(c.dosyaNo || '—') + '</td>';
+      html += '<td style="text-align:right;font-weight:600;color:var(--red)">' + (c.yon === 'borc' ? fmt(c.tutar) : '') + '</td>';
+      html += '<td style="text-align:right;font-weight:600;color:var(--green)">' + (c.yon === 'alacak' ? fmt(c.tutar) : '') + '</td>';
+      html += '<td style="text-align:right;font-weight:700;color:' + bRenk + '">' + fmt(c.bakiye) + '</td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+  } else {
+    html += '<div class="empty"><div class="empty-icon">📊</div><p>Henüz işlem yok</p></div>';
+  }
+
+  document.getElementById('cari-ekstre-icerik').innerHTML = html;
+  openModal('cari-ekstre-modal');
+}
+
+function cariEkstreYazdir() {
+  var title = (document.getElementById('cari-ekstre-title') || {}).textContent || '';
+  var icerik = (document.getElementById('cari-ekstre-icerik') || {}).innerHTML || '';
+  var w = window.open('', '_blank');
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + title + '</title>' +
+    '<style>body{font-family:Arial,sans-serif;padding:30px;color:#1a1714}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:6px 10px;text-align:left;font-size:12px}th{background:#f5f4f2}.help-tip{display:none}</style></head>' +
+    '<body><h2>' + title + '</h2>' + icerik + '</body></html>');
+  w.document.close();
+  w.print();
+}
+
+// ── Masraf Raporu Oluşturucu ──────────────────────────────────────
+// Müvekkile gönderilebilir profesyonel masraf raporu
+function olusturMasrafRaporu(muvId) {
+  if (!muvId) { notify('Müvekkil seçilmedi'); return; }
+  var muv = getMuv(muvId);
+  if (!muv) { notify('Müvekkil bulunamadı'); return; }
+  var harcamalar = typeof getAllMuvHarcamalar === 'function' ? getAllMuvHarcamalar(muvId) : [];
+  if (!harcamalar.length) { notify('Bu müvekkilin harcaması yok'); return; }
+  var oz = typeof FinansMotoru !== 'undefined' ? FinansMotoru.muvekkilOzet(muvId) : null;
+
+  // Büro bilgileri
+  var buroAd = (currentUser && currentUser.buro_ad) || 'Hukuk Bürosu';
+  var avukatAd = (currentUser && (currentUser.ad_soyad || currentUser.ad)) || '';
+  var baroSicil = (currentUser && currentUser.baroSicil) || '';
+  var bugun = new Date().toLocaleDateString('tr-TR', {year:'numeric',month:'long',day:'numeric'});
+
+  // Dosya bazlı gruplama
+  var dosyaGrup = {};
+  harcamalar.forEach(function(h) {
+    var key = h.kaynak + '_' + h.kaynakNo;
+    if (!dosyaGrup[key]) dosyaGrup[key] = { kaynak: h.kaynak, no: h.kaynakNo, mahkeme: h.mahkeme, items: [], toplam: 0 };
+    dosyaGrup[key].items.push(h);
+    dosyaGrup[key].toplam += (h.tutar || 0);
+  });
+  var gruplar = Object.values(dosyaGrup);
+  var genelToplam = harcamalar.reduce(function(s, h) { return s + (h.tutar || 0); }, 0);
+  var avansAlinan = oz ? oz.avanslar.alinan : 0;
+  var masrafBakiye = oz ? oz.bakiye.masrafBakiye : (avansAlinan - genelToplam);
+
+  // HTML oluştur
+  var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Masraf Raporu — ' + muv.ad + '</title>';
+  html += '<style>';
+  html += 'body{font-family:"Segoe UI",sans-serif;font-size:12px;color:#1a1a2e;padding:40px;max-width:800px;margin:0 auto;line-height:1.5}';
+  html += '.baslik{text-align:center;border-bottom:2px solid #1a1a2e;padding-bottom:16px;margin-bottom:20px}';
+  html += '.baslik h1{font-size:18px;margin:0 0 4px}';
+  html += '.baslik .buro{font-size:14px;color:#555;margin:0}';
+  html += '.baslik .tarih{font-size:11px;color:#888;margin-top:6px}';
+  html += '.bilgi{display:flex;justify-content:space-between;margin-bottom:20px;padding:12px;background:#f8f9fa;border-radius:6px}';
+  html += '.bilgi div{font-size:11px;line-height:1.6}';
+  html += '.bilgi strong{font-weight:700}';
+  html += 'table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:11px}';
+  html += 'th{background:#1a1a2e;color:#fff;padding:6px 10px;text-align:left;font-size:10px;font-weight:600}';
+  html += 'td{padding:5px 10px;border-bottom:1px solid #eee}';
+  html += 'tr:nth-child(even){background:#fafafa}';
+  html += '.dosya-baslik{background:#f0f0f5;font-weight:700;padding:8px 10px;margin-top:16px;border-radius:4px;font-size:12px}';
+  html += '.alt-toplam{text-align:right;font-weight:700;padding:6px 10px;border-top:2px solid #ddd}';
+  html += '.ozet{margin-top:24px;padding:16px;border:2px solid #1a1a2e;border-radius:6px}';
+  html += '.ozet table{margin:0}';
+  html += '.ozet td{border:none;padding:4px 10px;font-size:12px}';
+  html += '.ozet .bakiye{font-size:14px;font-weight:800}';
+  html += '.negatif{color:#e74c3c} .pozitif{color:#27ae60}';
+  html += '.footer{margin-top:40px;border-top:1px solid #ccc;padding-top:12px;font-size:10px;color:#888;text-align:center}';
+  html += '@media print{body{padding:20px} .no-print{display:none}}';
+  html += '</style></head><body>';
+
+  // Başlık
+  html += '<div class="baslik">';
+  html += '<h1>MASRAF RAPORU</h1>';
+  html += '<p class="buro">' + buroAd + '</p>';
+  html += '<p class="tarih">Rapor Tarihi: ' + bugun + '</p>';
+  html += '</div>';
+
+  // Bilgi kutusu
+  html += '<div class="bilgi">';
+  html += '<div><strong>Müvekkil:</strong> ' + muv.ad + '<br>';
+  if (muv.tip === 'tuzel') {
+    html += (muv.vergiNo ? 'VKN: ' + muv.vergiNo + '<br>' : '');
+  } else {
+    html += (muv.tc ? 'TC: ' + muv.tc + '<br>' : '');
+  }
+  html += (muv.tel ? 'Tel: ' + muv.tel + '<br>' : '');
+  html += (muv.adres ? 'Adres: ' + muv.adres : '');
+  html += '</div>';
+  html += '<div style="text-align:right"><strong>Avukat:</strong> ' + avukatAd + '<br>';
+  html += (baroSicil ? 'Baro Sicil: ' + baroSicil + '<br>' : '');
+  html += 'Dosya Sayısı: ' + gruplar.length + '<br>';
+  html += 'Toplam İşlem: ' + harcamalar.length;
+  html += '</div></div>';
+
+  // Dosya bazlı tablolar
+  gruplar.forEach(function(g) {
+    html += '<div class="dosya-baslik">' + g.kaynak + ' Dosyası: ' + g.no + (g.mahkeme ? ' — ' + g.mahkeme : '') + '</div>';
+    html += '<table><thead><tr><th>Tarih</th><th>Kategori</th><th>Açıklama</th><th style="text-align:right">Tutar</th></tr></thead><tbody>';
+    g.items.forEach(function(h) {
+      html += '<tr><td>' + (h.tarih ? new Date(h.tarih).toLocaleDateString('tr-TR') : '—') + '</td>';
+      html += '<td>' + (h.kat || '—') + '</td>';
+      html += '<td>' + (h.acik || h.aciklama || '—') + '</td>';
+      html += '<td style="text-align:right;font-weight:600">' + fmt(h.tutar) + '</td></tr>';
+    });
+    html += '</tbody></table>';
+    html += '<div class="alt-toplam">Alt Toplam: ' + fmt(g.toplam) + '</div>';
+  });
+
+  // Finansal özet
+  html += '<div class="ozet"><table>';
+  html += '<tr><td><strong>GENEL MASRAF TOPLAMI</strong></td><td style="text-align:right;font-weight:800;font-size:14px">' + fmt(genelToplam) + '</td></tr>';
+  html += '<tr><td>Alınan Masraf Avansı</td><td style="text-align:right;color:#27ae60;font-weight:600">' + fmt(avansAlinan) + '</td></tr>';
+  html += '<tr style="border-top:2px solid #1a1a2e"><td><strong>MASRAF BAKİYESİ</strong></td>';
+  html += '<td class="bakiye ' + (masrafBakiye >= 0 ? 'pozitif' : 'negatif') + '" style="text-align:right">' + fmt(masrafBakiye) + '</td></tr>';
+  if (masrafBakiye < 0) {
+    html += '<tr><td colspan="2" style="font-size:11px;color:#e74c3c;padding-top:8px">* Müvekkilden ' + fmt(Math.abs(masrafBakiye)) + ' masraf alacağı bulunmaktadır.</td></tr>';
+  }
+  html += '</table></div>';
+
+  // Footer
+  html += '<div class="footer">' + buroAd + ' — ' + avukatAd + (baroSicil ? ' (Baro Sicil: ' + baroSicil + ')' : '') + '<br>Bu rapor ' + bugun + ' tarihinde otomatik olarak oluşturulmuştur.</div>';
+
+  // Yazdır butonu
+  html += '<div class="no-print" style="text-align:center;margin-top:24px"><button onclick="window.print()" style="padding:10px 24px;background:#1a1a2e;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px">Yazdır / PDF</button></div>';
+
+  html += '</body></html>';
+
+  // Yeni pencerede aç
+  var w = window.open('', '_blank', 'width=900,height=700');
+  if (!w) { notify('Popup engelleyici aktif — lütfen izin verin'); return; }
+  w.document.write(html);
+  w.document.close();
+}
+
+// ── Dosya Kârlılık Analizi ───────────────────────────────────────
+function renderDosyaKarlilik() {
+  var el = document.getElementById('karlilik-icerik');
+  if (!el) return;
+  var filtre = (document.getElementById('karlilik-filtre') || {}).value || '';
+  var karlilik = FinansMotoru.dosyaKarlilik({ dosyaTur: filtre || undefined });
+
+  if (!karlilik.dosyalar.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📈</div><p>Dosya kârlılık verisi yok</p></div>';
+    return;
+  }
+
+  var oz = karlilik.ozet || {};
+  var html = '';
+  // Özet
+  html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">';
+  html += '<div style="background:var(--surface2);border-radius:var(--radius);padding:12px;text-align:center"><div style="font-size:10px;color:var(--text-muted)">DOSYA SAYISI</div><div style="font-size:18px;font-weight:800">' + (oz.dosyaSayisi || karlilik.dosyalar.length) + '</div></div>';
+  html += '<div style="background:var(--surface2);border-radius:var(--radius);padding:12px;text-align:center"><div style="font-size:10px;color:var(--text-muted)">ORT. KÂRLILIK</div><div style="font-size:18px;font-weight:800;color:' + ((oz.ortKarlilik || 0) >= 0 ? 'var(--green)' : 'var(--red)') + '">%' + (oz.ortKarlilik || 0) + '</div></div>';
+  html += '<div style="background:var(--surface2);border-radius:var(--radius);padding:12px;text-align:center"><div style="font-size:10px;color:var(--text-muted)">TOPLAM NET</div><div style="font-size:18px;font-weight:800;color:' + ((oz.topNet || 0) >= 0 ? 'var(--green)' : 'var(--red)') + '">' + fmt(oz.topNet || 0) + '</div></div>';
+  html += '</div>';
+
+  // Tablo
+  html += '<div style="overflow-x:auto"><table><thead><tr><th>Dosya</th><th>Müvekkil</th><th style="text-align:right">Masraf</th><th style="text-align:right">Gelir</th><th style="text-align:right">Net</th><th>Kârlılık</th></tr></thead><tbody>';
+  karlilik.dosyalar.forEach(function(d) {
+    var icon = d.dosyaTur === 'dava' ? '📁' : '⚡';
+    var netRenk = d.net >= 0 ? 'var(--green)' : 'var(--red)';
+    var barPct = d.gelir > 0 ? Math.min(100, Math.round(d.net / d.gelir * 100)) : 0;
+    var barCls = d.net < 0 ? 'zarar' : '';
+    html += '<tr>';
+    html += '<td style="font-size:12px">' + icon + ' ' + escHTML(d.dosyaNo) + '</td>';
+    html += '<td style="font-size:12px">' + escHTML(d.muvAd) + '</td>';
+    html += '<td style="text-align:right;font-size:12px;color:var(--red)">' + fmt(d.masraf) + '</td>';
+    html += '<td style="text-align:right;font-size:12px;color:var(--green)">' + fmt(d.gelir) + '</td>';
+    html += '<td style="text-align:right;font-weight:700;color:' + netRenk + '">' + fmt(d.net) + '</td>';
+    html += '<td><div class="karlilik-bar"><div class="karlilik-bar-fill ' + barCls + '" style="width:' + Math.abs(barPct) + '%"></div></div></td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+
+  // Dosya türü (konu) bazlı kârlılık
+  var konuK = karlilik.konuKarlilik || [];
+  if (konuK.length) {
+    html += '<div style="margin-top:20px"><div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:8px">EN KÂRLI DOSYA TÜRLERİ</div>';
+    konuK.slice(0, 5).forEach(function(k) {
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">';
+      html += '<div><span style="font-size:12px;font-weight:600">' + escHTML(k.konu) + '</span><span style="font-size:10px;color:var(--text-muted);margin-left:8px">' + k.dosyaSayisi + ' dosya — %' + k.karlilikOrani + ' kârlılık</span></div>';
+      html += '<span style="font-weight:700;color:' + (k.net >= 0 ? 'var(--green)' : 'var(--red)') + '">' + fmt(k.net) + '</span></div>';
+    });
+    html += '</div>';
+  }
+
+  // Müvekkil bazlı kârlılık
+  var muvK = karlilik.muvekkilKarlilik || [];
+  if (muvK.length) {
+    html += '<div style="margin-top:20px"><div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:8px">EN KÂRLI MÜVEKKİLLER</div>';
+    muvK.slice(0, 5).forEach(function(m) {
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">';
+      html += '<div><span style="font-size:12px;font-weight:600">' + escHTML(m.muvAd) + '</span><span style="font-size:10px;color:var(--text-muted);margin-left:8px">' + m.dosyaSayisi + ' dosya</span></div>';
+      html += '<span style="font-weight:700;color:' + (m.net >= 0 ? 'var(--green)' : 'var(--red)') + '">' + fmt(m.net) + '</span></div>';
+    });
+    html += '</div>';
+  }
+
+  el.innerHTML = html;
+}
+
+// ── Beklenen Gelir Takvimi ───────────────────────────────────────
+function renderBeklenenGelir() {
+  var el = document.getElementById('beklenen-gelir-icerik');
+  if (!el) return;
+  var sonuc = FinansMotoru.beklenenGelir();
+  var kalemler = sonuc.beklenenler || [];
+
+  if (!kalemler.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📅</div><p>Beklenen gelir kalemi yok</p></div>';
+    return;
+  }
+
+  var ozet = sonuc.ozet || {};
+  var html = '<div style="background:var(--surface2);border-radius:var(--radius);padding:12px;margin-bottom:16px;text-align:center"><div style="font-size:10px;color:var(--text-muted)">TOPLAM BEKLENEN GELİR</div><div style="font-size:20px;font-weight:800;color:var(--gold)">' + fmt(ozet.topTutar || 0) + '</div>';
+  if (ozet.gecikmisAdet > 0) html += '<div style="font-size:10px;color:#e74c3c;margin-top:4px">⚠ ' + ozet.gecikmisAdet + ' gecikmiş kalem (' + fmt(ozet.gecikmisTutar) + ')</div>';
+  html += '</div>';
+
+  var aylar = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+  var sonAy = '';
+  kalemler.forEach(function(k) {
+    var ayKey = k.tarih ? k.tarih.substring(0, 7) : 'belirsiz';
+    if (ayKey !== sonAy) {
+      sonAy = ayKey;
+      var parts = ayKey.split('-');
+      var ayAd = parts.length === 2 ? aylar[parseInt(parts[1]) - 1] + ' ' + parts[0] : 'Tarih Belirsiz';
+      html += '<div class="beklenen-ay-baslik">' + ayAd + '</div>';
+    }
+    html += '<div class="beklenen-row">';
+    html += '<span class="beklenen-tarih">' + (k.tarih ? fmtD(k.tarih) : '?.??') + '</span>';
+    html += '<span class="beklenen-aciklama">' + escHTML(k.acik || k.aciklama || '') + '</span>';
+    html += '<span class="beklenen-tutar" style="color:var(--gold)">' + fmt(k.tutar) + '</span>';
+    html += '</div>';
+  });
+
+  el.innerHTML = html;
+}
 
 // ── FATURA ──────────────────────────────────────────────────────
 function openFaturaModal(editId) {
@@ -775,105 +1085,6 @@ function sureGunHesapla() {
 }
 
 // ================================================================
-// CARİ EKSTRE — Müvekkil Detay Sayfası
-// ================================================================
-function openCariEkstre(muvId) {
-  var m = getMuv(muvId);
-  if (!m) return;
-
-  // Tüm işlemleri topla (yeni + eski sistem)
-  var islemler = [];
-
-  // finans_islemler
-  (state.finansIslemler||[]).filter(function(i){return i.muvId===muvId;}).forEach(function(i) {
-    islemler.push({ id:i.id, tarih:i.tarih, tur:i.tur, yon:i.yön, tutar:i.tutar||0, acik:i.aciklama||i.acik||'', kategori:i.kategori||'', dosyaNo:i.dosyaNo||'', kaynak:'finans_islemler' });
-  });
-
-  // Eski butce
-  state.butce.filter(function(b){return b.muvId===muvId;}).forEach(function(b) {
-    islemler.push({ id:b.id, tarih:b.tarih, tur:b.tur==='Gelir'?'Tahsilat':'Masraf', yon:b.tur==='Gelir'?'alacak':'borc', tutar:b.tutar||0, acik:b.acik||'', kategori:b.kat||'', dosyaNo:'', kaynak:'butce' });
-  });
-
-  // Eski avanslar
-  (state.avanslar||[]).filter(function(a){return a.muvId===muvId;}).forEach(function(a) {
-    islemler.push({ id:a.id, tarih:a.tarih, tur:a.tur||'Avans', yon:a.tur==='Avans Alındı'?'alacak':'borc', tutar:a.tutar||0, acik:a.acik||a.aciklama||'', kategori:'', dosyaNo:a.dosyaNo||'', kaynak:'avanslar' });
-  });
-
-  // Tarihe göre sırala (en yeni üstte)
-  islemler.sort(function(a,b){return (b.tarih||'').localeCompare(a.tarih||'');});
-
-  // Bakiye hesapla
-  var topBorc = islemler.filter(function(i){return i.yon==='borc';}).reduce(function(s,i){return s+i.tutar;},0);
-  var topAlacak = islemler.filter(function(i){return i.yon==='alacak';}).reduce(function(s,i){return s+i.tutar;},0);
-  var bakiye = topAlacak - topBorc;
-  var bakiyeRenk = bakiye >= 0 ? 'var(--green)' : 'var(--red)';
-
-  // Çalışan bakiye (running balance) hesapla — alttan üste
-  var calisan = 0;
-  var reversed = islemler.slice().reverse();
-  reversed.forEach(function(i) {
-    if (i.yon === 'alacak') calisan += i.tutar;
-    else calisan -= i.tutar;
-    i._bakiye = calisan;
-  });
-
-  // Modal HTML
-  var html = '<div style="padding:20px">';
-  // Başlık
-  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">';
-  html += '<div><div style="font-size:18px;font-weight:700;color:var(--text)">📊 ' + m.ad + ' — Cari Ekstre</div>';
-  html += '<div style="font-size:12px;color:var(--text-muted)">' + islemler.length + ' işlem</div></div>';
-  html += '<div style="text-align:right"><div style="font-size:10px;color:var(--text-dim);text-transform:uppercase">BAKİYE</div>';
-  html += '<div style="font-size:24px;font-weight:800;color:' + bakiyeRenk + '">' + fmt(bakiye) + '</div></div></div>';
-
-  // Özet kartlar
-  html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">';
-  html += '<div style="background:var(--surface2);border-radius:var(--radius);padding:12px;text-align:center"><div style="font-size:10px;color:var(--text-muted)">TOPLAM BORÇ</div><div style="font-size:16px;font-weight:700;color:var(--red)">' + fmt(topBorc) + '</div></div>';
-  html += '<div style="background:var(--surface2);border-radius:var(--radius);padding:12px;text-align:center"><div style="font-size:10px;color:var(--text-muted)">TOPLAM ALACAK</div><div style="font-size:16px;font-weight:700;color:var(--green)">' + fmt(topAlacak) + '</div></div>';
-  html += '<div style="background:' + bakiyeRenk + '11;border:1px solid ' + bakiyeRenk + ';border-radius:var(--radius);padding:12px;text-align:center"><div style="font-size:10px;color:var(--text-muted)">NET BAKİYE</div><div style="font-size:16px;font-weight:700;color:' + bakiyeRenk + '">' + fmt(bakiye) + '</div></div>';
-  html += '</div>';
-
-  // + İşlem Ekle butonu
-  html += '<div style="display:flex;justify-content:flex-end;margin-bottom:12px">';
-  html += '<button class="btn btn-gold btn-sm" onclick="closeModal(\'cari-ekstre-modal\');openFinansIslemModal(\'' + muvId + '\')">+ Yeni İşlem Ekle</button>';
-  html += '</div>';
-
-  // İşlem tablosu (banka ekstresi tarzı)
-  if (islemler.length) {
-    html += '<table><thead><tr><th>Tarih</th><th>Tür</th><th>Açıklama</th><th>Dosya</th><th style="text-align:right">Borç</th><th style="text-align:right">Alacak</th><th style="text-align:right">Bakiye</th></tr></thead><tbody>';
-    islemler.forEach(function(i) {
-      var turRenk = i.yon === 'alacak' ? 'var(--green)' : 'var(--red)';
-      var turIcon = {'Masraf':'💸','Tahsilat':'💰','Avans':'🏦','Hakediş':'⭐','Vekalet Ücreti':'⚖️','Fatura':'📄','İade':'↩️','Avans Alındı':'🏦'}[i.tur] || '📋';
-      var bakiyeRenk2 = i._bakiye >= 0 ? 'var(--green)' : 'var(--red)';
-      html += '<tr>';
-      html += '<td style="font-size:11px;white-space:nowrap">' + fmtD(i.tarih) + '</td>';
-      html += '<td><span style="font-size:11px;color:' + turRenk + ';font-weight:600">' + turIcon + ' ' + i.tur + '</span></td>';
-      html += '<td style="font-size:12px">' + (i.acik||'—') + (i.kategori ? ' <span style="font-size:9px;background:var(--surface2);padding:1px 6px;border-radius:3px">' + i.kategori + '</span>' : '') + '</td>';
-      html += '<td style="font-size:11px;color:var(--text-muted)">' + (i.dosyaNo||'—') + '</td>';
-      html += '<td style="text-align:right;font-weight:600;color:var(--red)">' + (i.yon === 'borc' ? fmt(i.tutar) : '') + '</td>';
-      html += '<td style="text-align:right;font-weight:600;color:var(--green)">' + (i.yon === 'alacak' ? fmt(i.tutar) : '') + '</td>';
-      html += '<td style="text-align:right;font-weight:700;color:' + bakiyeRenk2 + '">' + fmt(i._bakiye) + '</td>';
-      html += '</tr>';
-    });
-    html += '</tbody></table>';
-  } else {
-    html += '<div class="empty"><div class="empty-icon">📊</div><p>Henüz işlem yok</p></div>';
-  }
-  html += '</div>';
-
-  // Modal göster
-  var modal = document.getElementById('cari-ekstre-modal');
-  if (!modal) {
-    modal = document.createElement('div');
-    modal.className = 'modal-overlay';
-    modal.id = 'cari-ekstre-modal';
-    modal.innerHTML = '<div class="modal modal-lg" style="max-width:900px"><div class="modal-header"><div class="modal-title">Cari Ekstre</div></div><div id="cari-ekstre-icerik"></div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModal(\'cari-ekstre-modal\')">Kapat</button></div></div>';
-    document.body.appendChild(modal);
-  }
-  document.getElementById('cari-ekstre-icerik').innerHTML = html;
-  modal.classList.add('open');
-}
-
 // ================================================================
 // FİNANS İŞLEM EKLEME MODALI (LexSubmit Pessimistic)
 // ================================================================
@@ -1039,17 +1250,17 @@ async function saveFinansIslem() {
 function refreshFinansViews(opts) {
   opts = opts || {};
 
-  // 1. Müvekkil cari bakiye (Finans → Müvekkil sekmesi)
-  if (typeof renderMuvekkilBakiye === 'function') {
-    try { renderMuvekkilBakiye(); } catch(e) {}
-  }
+  // 1. KPI kartları + uyarılar
+  try { renderFinansKPI(); } catch(e) {}
+  try { renderFinansUyariBar(); } catch(e) {}
 
-  // 2. Bütçe / finans hareketleri
-  if (typeof renderButce === 'function') {
-    try { renderButce(); } catch(e) {}
-  }
+  // 2. Müvekkil cari bakiye (Finans → Müvekkil sekmesi)
+  try { renderMuvekkilBakiye(); } catch(e) {}
 
-  // 3. Dosya detay kartları (açık dosya varsa)
+  // 3. Büro giderleri
+  try { renderBuroGiderleri(); } catch(e) {}
+
+  // 4. Dosya detay kartları (açık dosya varsa)
   if (opts.dosyaTur === 'dava' || aktivDavaId) {
     var dava = typeof getDava === 'function' ? getDava(opts.dosyaId || aktivDavaId) : null;
     if (dava) {
@@ -1065,20 +1276,20 @@ function refreshFinansViews(opts) {
     }
   }
 
-  // 4. Müvekkil detay sayfası (avans, harcama, kartlar)
+  // 5. Müvekkil detay sayfası (avans, harcama, kartlar)
   if (opts.muvId || aktivMuvId) {
     try { if (typeof renderMdAvans === 'function') renderMdAvans(); } catch(e) {}
     try { if (typeof renderMdHarcamalar === 'function') renderMdHarcamalar(); } catch(e) {}
     try { if (typeof renderMdCards === 'function') renderMdCards(); } catch(e) {}
   }
 
-  // 5. İcra ve Dava liste kartları
+  // 6. İcra ve Dava liste kartları
   try { if (typeof renderIcraCards === 'function') renderIcraCards(); } catch(e) {}
   try { if (typeof renderDavaCards === 'function') renderDavaCards(); } catch(e) {}
 
-  // 6. Dashboard
+  // 7. Dashboard
   try { if (typeof renderDashboard === 'function') renderDashboard(); } catch(e) {}
 
-  // 7. Badge'ler
+  // 8. Badge'ler
   try { if (typeof updateBadges === 'function') updateBadges(); } catch(e) {}
 }

@@ -8,6 +8,10 @@
 // - ensureArrays() null güvenliği eklendi
 // ================================================================
 
+function helpTip(text) {
+  return '<span class="help-tip" data-tip="' + text.replace(/"/g, '&quot;') + '">?</span>';
+}
+
 function fmt(n) {
   return '₺' + Number(n || 0).toLocaleString('tr-TR', { minimumFractionDigits: 2 });
 }

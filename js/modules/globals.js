@@ -38,6 +38,7 @@ let state = {
   todolar:[], // {id,baslik,aciklama,oncelik,durum,atananId,olusturanId,dosyaTur,dosyaId,muvId,sonTarih,tamamlanmaTarih}
   finansIslemler:[], // Birleşik işlem defteri — finans_islemler tablosu
   ucretAnlasmalari:[], // Dosya bazlı ücret sözleşmeleri — ucret_anlasmalari tablosu
+  buroGiderleri:[], // Büro operasyonel giderleri: {id,tarih,kategori,tutar,aciklama,tekrar,kdvOran,kdvTutar}
 };
 
 let aktivMuvId=null, aktivDavaId=null, aktivIcraId=null;

@@ -844,7 +844,7 @@
     <div class="nav-item" onclick="showPage('ihtarname',this)" id="ni-ihtarname"><span class="nav-icon">📨</span>İhtarname<span class="nav-badge" id="nb-ihtar">0</span></div>
     <div class="nav-item" onclick="showPage('todo',this)" id="ni-todo"><span class="nav-icon">✅</span>Görevler<span class="nav-badge" id="nb-todo">0</span></div>
     <div class="nav-sep"></div>
-    <div class="nav-item" onclick="if(ozellikKontrol('finans'))showPage('butce',this)" id="ni-butce"><span class="nav-icon">💰</span>Bütçe</div>
+    <div class="nav-item" onclick="if(ozellikKontrol('finans'))showPage('butce',this)" id="ni-butce"><span class="nav-icon">💰</span>Finans<span class="nav-badge" id="nb-fin" style="background:#e74c3c">0</span></div>
     <div class="nav-item" onclick="showPage('takvim',this)" id="ni-takvim"><span class="nav-icon">📅</span>Takvim<span class="nav-badge" id="nb-tak">0</span></div>
     <div class="nav-sep"></div>
     <div class="nav-item" onclick="showPage('personel',this)" id="ni-personel"><span class="nav-icon">👥</span>Personel</div>
@@ -902,7 +902,8 @@
     </div>
     <div class="section dash-panel dp-red" id="dp-vadesi-gecen">
       <div class="section-header">
-        <div class="section-title">🔴 Vadesi Geçen Alacaklar</div>
+        <div class="section-title">🔴 Finansal Uyarılar</div>
+        <a onclick="showPage('butce',document.getElementById('ni-butce'))" style="font-size:11px;color:var(--gold);cursor:pointer">Finans ›</a>
       </div>
       <div class="section-body dash-panel-body"><div id="dash-vadesi-gecen"></div></div>
     </div>
@@ -1013,7 +1014,7 @@
     <div class="section-body"><div id="belge-list"></div><div class="empty" id="belge-empty" style="display:none"><div class="empty-icon">📄</div><p>Belge yok</p></div></div></div>
   </div>
   <div class="tab-panel" id="mt-harcamalar">
-    <div class="section"><div class="section-header"><div class="section-title">Tüm Harcamalar (Tüm Dosyalar)</div><button class="btn btn-gold btn-sm" onclick="openHarcModalForMuv()">+ Harcama</button></div>
+    <div class="section"><div class="section-header"><div class="section-title">Tüm Harcamalar (Tüm Dosyalar)</div><div style="display:flex;gap:6px"><button class="btn btn-outline btn-sm" onclick="olusturMasrafRaporu(aktivMuvId)">Masraf Raporu</button><button class="btn btn-gold btn-sm" onclick="openHarcModalForMuv()">+ Harcama</button></div></div>
     <div class="section-body" style="padding:0"><table><thead><tr><th>Tarih</th><th>Kaynak</th><th>Mahkeme / Dosya</th><th>Kategori</th><th>Açıklama</th><th>Tutar</th><th></th></tr></thead><tbody id="md-harc-tbody"></tbody></table>
     <div class="empty" id="md-harc-empty" style="display:none"><div class="empty-icon">💸</div><p>Harcama yok</p></div></div>
     <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:20px">
@@ -1211,68 +1212,83 @@
 <!-- ===== GELİŞMİŞ FİNANS & FATURA ===== -->
 <div class="page" id="page-butce">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
-    <div><div class="page-title">Finans & Fatura</div><div class="page-sub">Gelir/gider, müvekkil bakiyeleri ve faturalar</div></div>
+    <div><div class="page-title">Finans</div><div class="page-sub">Müvekkil bakiyeleri, büro giderleri, kâr/zarar ve faturalar</div></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-gold" onclick="openButceModal()">+ Hareket</button>
+      <button class="btn btn-gold" onclick="openBuroGiderModal()">+ Büro Gideri</button>
       <button class="btn" onclick="openFaturaModal()">🧾 Fatura Oluştur</button>
-      <button class="btn" onclick="finansRaporModal()">📊 Rapor</button>
     </div>
   </div>
 
-  <!-- Özet Kartlar -->
-  <div class="cards" style="margin-bottom:20px">
-    <div class="card"><div class="card-label">Toplam Gelir</div><div class="card-value green" id="b-gelir">₺0</div></div>
-    <div class="card"><div class="card-label">Toplam Gider</div><div class="card-value red" id="b-gider">₺0</div></div>
-    <div class="card"><div class="card-label">Net Bakiye</div><div class="card-value" id="b-net">₺0</div></div>
-    <div class="card"><div class="card-label">Bu Ay Net</div><div class="card-value" id="b-ay">₺0</div></div>
-    <div class="card"><div class="card-label">KDV Toplam</div><div class="card-value" id="b-kdv">₺0</div></div>
-    <div class="card"><div class="card-label">Bekleyen Tahsilat</div><div class="card-value" id="b-bekleyen">₺0</div></div>
-  </div>
+  <!-- KPI Kartlar -->
+  <div class="finans-kpi-bar" id="finans-kpi-bar"></div>
+
+  <!-- Finansal Uyarılar (mini) -->
+  <div id="finans-uyari-bar" style="margin-bottom:16px"></div>
 
   <!-- Sekmeler -->
-  <div class="tabs" style="margin-bottom:16px">
-    <div class="tab active" id="ft-hareketler" onclick="finansTab('hareketler',this)">💳 Hareketler</div>
-    <div class="tab" id="ft-muvekkil" onclick="finansTab('muvekkil',this)">👤 Müvekkil Bakiyeleri</div>
-    <div class="tab" id="ft-faturalar" onclick="finansTab('faturalar',this)">🧾 Faturalar</div>
-    <div class="tab" id="ft-rapor" onclick="finansTab('rapor',this)">📊 Aylık Rapor</div>
+  <div class="finans-tabs">
+    <div class="finans-tab active" id="ft-bakiyeler" onclick="finansTab('bakiyeler')">👤 Müvekkil Bakiyeleri</div>
+    <div class="finans-tab" id="ft-buro" onclick="finansTab('buro')">🏢 Büro Giderleri</div>
+    <div class="finans-tab" id="ft-karzarar" onclick="finansTab('karzarar')">📊 Kâr/Zarar Raporu</div>
+    <div class="finans-tab" id="ft-faturalar" onclick="finansTab('faturalar')">🧾 Faturalar</div>
+    <div class="finans-tab" id="ft-karlilik" onclick="finansTab('karlilik')">📈 Dosya Kârlılık</div>
+    <div class="finans-tab" id="ft-beklenen" onclick="finansTab('beklenen')">📅 Beklenen Gelir</div>
   </div>
 
-  <!-- HAREKETLER -->
-  <div id="finans-tab-hareketler">
+  <!-- SEKME 1: MÜVEKKİL BAKİYELERİ -->
+  <div class="finans-panel active" id="finans-tab-bakiyeler">
     <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-      <select class="search-bar" style="width:120px" onchange="filterButce(this.value)" id="butce-filtre-tur">
-        <option value="">Tümü</option><option>Gelir</option><option>Gider</option>
-      </select>
-      <select class="search-bar" style="width:140px" onchange="filterButceKat(this.value)" id="butce-filtre-kat">
-        <option value="">Tüm Kategoriler</option>
-      </select>
-      <input type="month" id="butce-filtre-ay" class="search-bar" style="width:150px" onchange="renderButce()" placeholder="Ay filtrele">
+      <input type="text" id="muv-bakiye-ara" class="search-bar" placeholder="Müvekkil ara..." oninput="renderMuvekkilBakiye()" style="flex:1;min-width:200px">
     </div>
-    <div class="section"><div class="section-body" style="padding:0">
-      <table><thead><tr><th>Tarih</th><th>Tür</th><th>Kategori</th><th>Açıklama</th><th>Müvekkil</th><th>KDV</th><th>Tutar</th><th></th></tr></thead>
-      <tbody id="but-tbody"></tbody></table>
-      <div class="empty" id="but-empty" style="display:none"><div class="empty-icon">💰</div><p>Hareket yok</p></div>
-    </div></div>
-  </div>
-
-  <!-- MÜVEKKİL BAKİYELERİ -->
-  <div id="finans-tab-muvekkil" style="display:none">
     <div id="muvekkil-bakiye-liste"></div>
   </div>
 
-  <!-- FATURALAR -->
-  <div id="finans-tab-faturalar" style="display:none">
+  <!-- SEKME 2: BÜRO GİDERLERİ -->
+  <div class="finans-panel" id="finans-tab-buro">
+    <div class="buro-gider-kpi" id="buro-gider-kpi"></div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+      <select id="buro-gider-kat" class="search-bar" style="width:160px" onchange="renderBuroGiderleri()">
+        <option value="">Tüm Kategoriler</option>
+        <option>Kira & Aidat</option><option>Stopaj & Vergi</option><option>Muhasebeci / Mali Müşavir</option>
+        <option>Çalışan Ücretleri</option><option>Temizlik & Bakım</option><option>Kırtasiye & Sarf</option>
+        <option>Teknoloji</option><option>Ulaşım & Araç</option><option>Sigorta</option>
+        <option>Mesleki Gelişim</option><option>Diğer</option>
+      </select>
+      <input type="month" id="buro-gider-ay" class="search-bar" style="width:150px" onchange="renderBuroGiderleri()">
+      <input type="text" id="buro-gider-ara" class="search-bar" placeholder="Ara..." oninput="renderBuroGiderleri()" style="flex:1;min-width:140px">
+      <button class="btn btn-gold btn-sm" onclick="openBuroGiderModal()">+ Gider Ekle</button>
+    </div>
+    <div id="buro-gider-liste"></div>
+  </div>
+
+  <!-- SEKME 3: KÂR/ZARAR RAPORU -->
+  <div class="finans-panel" id="finans-tab-karzarar">
+    <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+      <select id="kz-yil" onchange="renderKarZararRaporu()" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:7px 12px;font-size:13px"></select>
+      <button class="btn" onclick="kzRaporYazdir()">🖨 Yazdır</button>
+    </div>
+    <div id="kz-rapor-icerik"></div>
+  </div>
+
+  <!-- SEKME 4: FATURALAR -->
+  <div class="finans-panel" id="finans-tab-faturalar">
     <div id="fatura-liste"></div>
     <div class="empty" id="fatura-empty" style="display:none"><div class="empty-icon">🧾</div><p>Henüz fatura oluşturulmamış</p></div>
   </div>
 
-  <!-- AYLIK RAPOR -->
-  <div id="finans-tab-rapor" style="display:none">
-    <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
-      <select id="rapor-yil" onchange="renderFinansRapor()" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:7px 12px;font-size:13px"></select>
-      <button class="btn btn-gold" onclick="raporPdfIndir()">⬇ PDF İndir</button>
+  <!-- SEKME 5: DOSYA KÂRLILIK -->
+  <div class="finans-panel" id="finans-tab-karlilik">
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+      <select id="karlilik-filtre" class="search-bar" style="width:140px" onchange="renderDosyaKarlilik()">
+        <option value="">Tümü</option><option value="dava">Davalar</option><option value="icra">İcra</option>
+      </select>
     </div>
-    <div id="finans-rapor-icerik"></div>
+    <div id="karlilik-icerik"></div>
+  </div>
+
+  <!-- SEKME 6: BEKLENEN GELİR -->
+  <div class="finans-panel" id="finans-tab-beklenen">
+    <div id="beklenen-gelir-icerik"></div>
   </div>
 </div>
 
@@ -2788,39 +2804,46 @@
 </div></div>
 
 <!-- Bütçe Modal -->
-<div class="modal-overlay" id="but-modal"><div class="modal" style="max-width:520px">
-  <div class="modal-title">Hareket Ekle</div>
+<!-- BÜRO GİDER MODAL -->
+<div class="modal-overlay" id="buro-gider-modal"><div class="modal" style="max-width:520px">
+  <div class="modal-title">🏢 Büro Gideri Ekle</div>
   <div class="form-row">
-    <div class="form-group"><label>Tür</label><select id="b-tur"><option>Gelir</option><option>Gider</option></select></div>
-    <div class="form-group"><label>Tarih</label><input type="date" id="b-tarih"></div>
-  </div>
-  <div class="form-row">
-    <div class="form-group"><label>Kategori</label><select id="b-kat"><option>Akdî Vekâlet Ücreti</option><option>Avukatlık Hakedişi</option><option>Tahsilat (Karşı Taraf)</option><option>Masraf Alacağı (Bekliyor)</option><option>Akdî Vekâlet Ücreti (Bekliyor)</option><option>Müvekkile Aktarım</option><option>Müvekkile Aktarım (Bekliyor)</option><option>Ofis Gideri</option><option>Personel</option><option>İade / Düzeltme</option><option>Danışmanlık</option><option>Ulaşım</option><option>Harç / Masraf</option><option>Diğer</option></select></div>
-    <div class="form-group"><label>Tutar (₺) *</label><input type="number" id="b-tutar" placeholder="0.00"></div>
-  </div>
-  <div class="form-row">
-    <div class="form-group"><label>KDV Oranı</label>
-      <select id="b-kdv-oran">
-        <option value="0">KDV Yok</option>
-        <option value="1">%1</option>
-        <option value="8">%8</option>
-        <option value="10">%10</option>
-        <option value="18">%18</option>
-        <option value="20">%20</option>
+    <div class="form-group"><label>Kategori *</label>
+      <select id="bg-kategori">
+        <option>Kira & Aidat</option><option>Stopaj & Vergi</option><option>Muhasebeci / Mali Müşavir</option>
+        <option>Çalışan Ücretleri</option><option>Temizlik & Bakım</option><option>Kırtasiye & Sarf</option>
+        <option>Teknoloji</option><option>Ulaşım & Araç</option><option>Sigorta</option>
+        <option>Mesleki Gelişim</option><option>Diğer</option>
       </select>
     </div>
-    <div class="form-group"><label>KDV Tutarı</label><input type="number" id="b-kdv-tutar" placeholder="Otomatik" readonly style="background:var(--surface2)"></div>
+    <div class="form-group"><label>Tarih *</label><input type="date" id="bg-tarih"></div>
   </div>
   <div class="form-row">
-    <div class="form-group"><label>Müvekkil</label><select id="b-muv"><option value="">—</option></select></div>
-    <div class="form-group"><label>Açıklama</label><input id="b-acik" placeholder="İsteğe bağlı"></div>
+    <div class="form-group"><label>Tutar (₺) *</label><input type="number" id="bg-tutar" step="0.01" placeholder="0.00" oninput="bgKdvHesapla()"></div>
+    <div class="form-group"><label>KDV Oranı</label>
+      <select id="bg-kdv-oran" onchange="bgKdvHesapla()">
+        <option value="0">KDV Yok</option><option value="1">%1</option><option value="8">%8</option>
+        <option value="10">%10</option><option value="18">%18</option><option value="20" selected>%20</option>
+      </select>
+    </div>
   </div>
-  <div id="b-kdv-toplam-satir" style="display:none;background:var(--surface2);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;font-size:13px">
-    KDV Dahil Toplam: <strong id="b-kdv-toplam">₺0</strong>
+  <div id="bg-kdv-satir" style="background:var(--surface2);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;font-size:13px">
+    KDV: <strong id="bg-kdv-tutar">₺0</strong> · Toplam: <strong id="bg-kdv-toplam">₺0</strong>
   </div>
+  <div class="form-group"><label>Açıklama</label><input id="bg-aciklama" placeholder="Mart ayı kirası, muhasebe ücreti vb."></div>
   <div class="modal-footer">
-    <button class="btn" onclick="closeModal('but-modal')">İptal</button>
-    <button class="btn btn-gold" onclick="saveButce()">Kaydet</button>
+    <button class="btn" onclick="closeModal('buro-gider-modal')">İptal</button>
+    <button class="btn btn-gold" id="bg-kaydet-btn" onclick="saveBuroGideri()">💾 Kaydet</button>
+  </div>
+</div></div>
+
+<!-- CARİ EKSTRE MODAL -->
+<div class="modal-overlay" id="cari-ekstre-modal"><div class="modal modal-lg" style="max-width:800px;max-height:90vh;overflow-y:auto">
+  <div class="modal-title" id="cari-ekstre-title">📊 Cari Ekstre</div>
+  <div id="cari-ekstre-icerik"></div>
+  <div class="modal-footer">
+    <button class="btn" onclick="closeModal('cari-ekstre-modal')">Kapat</button>
+    <button class="btn" onclick="cariEkstreYazdir()">🖨 Yazdır</button>
   </div>
 </div></div>
 
@@ -3511,6 +3534,7 @@
 <script src="js/modules/eventbus.js"></script>
 <script src="js/modules/utils.js"></script>
 <script src="js/modules/listeMotoru.js"></script>
+<script src="js/modules/finansMotoru.js"></script>
 <script src="js/modules/ui.js"></script>
 <script src="js/modules/rehber.js"></script>
 <script src="js/modules/davalar.js"></script>

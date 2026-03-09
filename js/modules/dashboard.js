@@ -228,33 +228,25 @@ function renderDashboard(){
     perfEl.innerHTML = grafik;
   }
 
-  // ── VADESİ GEÇEN ALACAKLAR ──
+  // ── FİNANSAL UYARILAR (FinansMotoru + vadesi geçen alacaklar) ──
   var vgEl = document.getElementById('dash-vadesi-gecen');
   if (vgEl) {
-    var gecenler = [];
-    // Avanslardan bekleyenler
-    (state.avanslar||[]).filter(function(a){return a.durum==='Bekliyor' && a.tutar > 0;}).forEach(function(a) {
-      gecenler.push({muv:getMuvAd(a.muvId), tutar:a.tutar, tur:a.tur||'Alacak', tarih:a.tarih, dosya:a.dosyaNo||''});
-    });
-    // Ödenmemiş faturalar
-    (state.faturalar||[]).filter(function(f){return (f.durum==='bekliyor'||f.durum==='gecikti') && f.vade && f.vade < t;}).forEach(function(f) {
-      gecenler.push({muv:getMuvAd(f.muvId), tutar:f.genelToplam||0, tur:'Fatura #'+f.no, tarih:f.vade, dosya:''});
-    });
-    gecenler.sort(function(a,b){return b.tutar - a.tutar;});
-    var topVG = gecenler.reduce(function(s,g){return s+g.tutar;},0);
-
-    if (!gecenler.length) {
-      vgEl.innerHTML = '<div style="padding:24px;text-align:center;font-size:12px;color:var(--text-dim)">Vadesi geçen alacak yok</div>';
+    var uyarilar = typeof FinansMotoru !== 'undefined' ? FinansMotoru.hesaplaUyarilar() : [];
+    if (!uyarilar.length) {
+      vgEl.innerHTML = '<div style="padding:24px;text-align:center;font-size:12px;color:var(--text-dim)">Finansal uyarı yok</div>';
     } else {
-      vgEl.innerHTML = '<div style="text-align:center;padding:8px 0;margin-bottom:8px;background:rgba(231,76,60,.06);border-radius:6px"><div style="font-size:10px;color:#e74c3c">TOPLAM</div><div style="font-size:20px;font-weight:800;color:#e74c3c">' + fmt(topVG) + '</div></div>' +
-        gecenler.slice(0,6).map(function(g) {
-          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)">' +
-            '<div><div style="font-size:12px;font-weight:600">' + g.muv + '</div>' +
-            '<div style="font-size:10px;color:var(--text-muted)">' + g.tur + (g.dosya ? ' · ' + g.dosya : '') + '</div></div>' +
-            '<div style="text-align:right"><div style="font-size:13px;font-weight:700;color:#e74c3c">' + fmt(g.tutar) + '</div>' +
-            '<div style="font-size:9px;color:var(--text-dim)">' + fmtD(g.tarih) + '</div></div></div>';
+      var kritikSayi = uyarilar.filter(function(u) { return u.oncelik === 'yuksek'; }).length;
+      vgEl.innerHTML = (kritikSayi > 0 ? '<div style="text-align:center;padding:6px 0;margin-bottom:8px;background:rgba(231,76,60,.06);border-radius:6px"><div style="font-size:18px;font-weight:800;color:#e74c3c">' + kritikSayi + ' Kritik</div><div style="font-size:10px;color:var(--text-muted)">' + uyarilar.length + ' toplam uyarı</div></div>' : '') +
+        uyarilar.slice(0, 5).map(function(u) {
+          var ikon = u.icon || '⚠️';
+          var renk = u.oncelik === 'yuksek' ? '#e74c3c' : '#e67e22';
+          return '<div style="padding:6px 0;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:flex-start">' +
+            '<span style="font-size:14px;flex-shrink:0">' + ikon + '</span>' +
+            '<div style="flex:1;min-width:0"><div style="font-size:11px;font-weight:600;color:' + renk + '">' + u.mesaj + '</div>' +
+            (u.tutar ? '<div style="font-size:10px;color:var(--text-muted)">' + fmt(u.tutar) + '</div>' : '') +
+            '</div></div>';
         }).join('') +
-        (gecenler.length > 6 ? '<div style="font-size:10px;color:var(--text-muted);text-align:center;padding:6px">+' + (gecenler.length-6) + ' daha</div>' : '');
+        (uyarilar.length > 5 ? '<div style="font-size:10px;color:var(--gold);text-align:center;padding:6px;cursor:pointer" onclick="showPage(\'butce\',document.getElementById(\'ni-butce\'))">Tümünü Gör (' + uyarilar.length + ') ›</div>' : '');
     }
   }
 

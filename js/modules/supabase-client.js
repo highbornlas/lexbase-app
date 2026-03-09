@@ -264,6 +264,7 @@ async function _executeDiffSync() {
       'ihtarnameler':'ihtarnameler', 'todolar':'todolar', 'personel':'personel',
       'karsiTaraflar':'karsi_taraflar', 'vekillar':'vekillar',
       'finansIslemler':'finans_islemler', 'ucretAnlasmalari':'ucret_anlasmalari',
+      'buroGiderleri':'buro_giderleri',
     };
 
     for (const [stateKey, tablo] of Object.entries(TABLO_MAP)) {
@@ -347,6 +348,7 @@ window.addEventListener('beforeunload', function() {
       'ihtarnameler':'ihtarnameler', 'todolar':'todolar', 'personel':'personel',
       'karsiTaraflar':'karsi_taraflar', 'vekillar':'vekillar',
       'finansIslemler':'finans_islemler', 'ucretAnlasmalari':'ucret_anlasmalari',
+      'buroGiderleri':'buro_giderleri',
     };
 
     for (var stateKey in TABLO_MAP) {

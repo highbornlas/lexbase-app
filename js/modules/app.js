@@ -37,6 +37,13 @@ function updateBadges(){
   document.getElementById('nb-dan').textContent=state.danismanlik.filter(d=>d.durum!=='Tamamlandı'&&d.durum!=='İptal').length;
   const arabAktif=(state.arabuluculuk||[]).filter(a=>a.durum!=='Uzlaşma Sağlandı'&&a.durum!=='Dava Açıldı').length;
   const nbArab=document.getElementById('nb-arab');if(nbArab)nbArab.textContent=arabAktif;
+  // Finans uyarı badge
+  const nbFin=document.getElementById('nb-fin');
+  if(nbFin){
+    const finUyari=typeof FinansMotoru!=='undefined'?FinansMotoru.hesaplaUyarilar().filter(u=>u.oncelik==='yuksek').length:0;
+    nbFin.textContent=finUyari;
+    nbFin.style.display=finUyari>0?'':'none';
+  }
   updateUyapBadge();
 }
 

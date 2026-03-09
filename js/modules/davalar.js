@@ -442,9 +442,6 @@ async function saveHarcama(){
   if(!hedefObj.harcamalar)hedefObj.harcamalar=[];
   hedefObj.harcamalar.push(h);
 
-  // İcra harcama → avans senkronizasyonu
-  if(hedefCtx==='icra' && typeof _icraHarcamaSync==='function') _icraHarcamaSync(hedefObj);
-
   if (typeof LexSubmit !== 'undefined') {
     var btn=document.querySelector('#harc-modal .btn-gold');
     var ok=await LexSubmit.formKaydet({ tablo:hedefTablo, kayit:hedefObj, modalId:'harc-modal', butonEl:btn, basariMesaj:'✓ Harcama eklendi',
@@ -682,7 +679,6 @@ async function saveTahsilatHareket(){
     obj.tahsilatlar.push(entry);
   }
   thBelgeReset();
-  syncTahsilatBudget(obj, tahsilatCtx.type);
   const hedefTablo = tahsilatCtx.type==='dava'?'davalar':'icra';
 
   if (typeof LexSubmit !== 'undefined') {
@@ -701,8 +697,7 @@ async function saveTahsilatHareket(){
     if(tahsilatCtx.type==='dava'){renderDavaTabContent('tahsilat');renderDdCards(getDava(aktivDavaId));}
     else{
       renderIcraTabContent('tahsilat');renderIdCards(getIcra(aktivIcraId));
-      // İcra tahsilat senkronizasyonu
-      if(typeof _icraTahsilatSync==='function') _icraTahsilatSync(obj);
+      // İcra tahsilat — artık senkronizasyon yok (FinansMotoru dosya verilerini doğrudan okur)
     }
     if(typeof refreshFinansViews==='function') refreshFinansViews({dosyaTur:tahsilatCtx.type, dosyaId:tahsilatCtx.type==='dava'?aktivDavaId:aktivIcraId, muvId:obj.muvId});
     notify(tahsilatCtx.editId?'✓ Hareket güncellendi':'✓ Hareket eklendi');
@@ -713,36 +708,14 @@ function deleteTahsilatHareket(id, ctx){
   const obj=ctx==='dava'?getDava(aktivDavaId):getIcra(aktivIcraId);
   if(!obj)return;
   obj.tahsilatlar=(obj.tahsilatlar||[]).filter(t=>t.id!==id);
-  syncTahsilatBudget(obj, ctx);
   saveData();
   if(ctx==='dava'){renderDavaTabContent('tahsilat');renderDdCards(getDava(aktivDavaId));}
   else{renderIcraTabContent('tahsilat');renderIdCards(getIcra(aktivIcraId));}
   notify('Hareket silindi');
 }
 
-function syncTahsilatBudget(obj, ctx){
-  // Her hareket türüne göre bütçeye ayrı kayıt — dosya id bazlı, mükerrer önleme
-  const dosyaId=ctx==='dava'?aktivDavaId:aktivIcraId;
-  const prefix='th_'+dosyaId+'_';
-  // Eski bu dosyaya ait bütçe kayıtlarını temizle
-  state.butce=state.butce.filter(b=>!b.id.startsWith(prefix));
-  const thList=obj.tahsilatlar||[];
-  thList.forEach(h=>{
-    const butId=prefix+h.id;
-    if(h.tur==='tahsilat'){
-      state.butce.push({id:butId,tur:'Gelir',tarih:h.tarih,tutar:h.tutar,kat:'Tahsilat (Karşı Taraf)',muvId:obj.muvId,acik:`${obj.no} — ${h.acik||'Tahsilat'}`});
-    } else if(h.tur==='akdi_vekalet'){
-      state.butce.push({id:butId,tur:'Gelir',tarih:h.tarih,tutar:h.tutar,kat:'Akdî Vekâlet Ücreti',muvId:obj.muvId,acik:`${obj.no} — ${h.acik||'Akdî vekâlet ücreti tahsilatı'}`});
-    } else if(h.tur==='hakediş'){
-      state.butce.push({id:butId,tur:'Gelir',tarih:h.tarih,tutar:h.tutar,kat:'Avukatlık Hakedişi',muvId:obj.muvId,acik:`${obj.no} — ${h.acik||'Hakediş'}`});
-    } else if(h.tur==='aktarim'){
-      state.butce.push({id:butId,tur:'Gider',tarih:h.tarih,tutar:h.tutar,kat:'Müvekkile Aktarım',muvId:obj.muvId,acik:`${obj.no} — ${h.acik||'Müvekkile aktarım'}`});
-    } else if(h.tur==='iade'){
-      state.butce.push({id:butId,tur:'Gider',tarih:h.tarih,tutar:h.tutar,kat:'İade / Düzeltme',muvId:obj.muvId,acik:`${obj.no} — ${h.acik||'İade'}`});
-    }
-  });
-  renderButce();
-}
+// syncTahsilatBudget — devre dışı (FinansMotoru dosya verilerini doğrudan okur)
+function syncTahsilatBudget() {}
 
 function renderTahsilatTab(ctx, obj){
   const an=obj.anlasma||{};
@@ -884,7 +857,6 @@ function autoHakedisBtnClick(ctx, toplamPay){
   const eksik=Math.round((toplamPay-topKayitli)*100)/100;
   if(eksik<=0){notify('Hakediş zaten kaydedilmiş.');return;}
   obj.tahsilatlar.push({id:uid(),tur:'hakediş',tarih:today(),tutar:eksik,acik:'Tahsilat payından otomatik hesaplanan hakediş'});
-  syncTahsilatBudget(obj,ctx);
   saveData();
   if(ctx==='dava'){renderDavaTabContent('tahsilat');renderDdCards(getDava(aktivDavaId));}
   else{renderIcraTabContent('tahsilat');renderIdCards(getIcra(aktivIcraId));}

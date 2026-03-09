@@ -54,8 +54,110 @@ function loadData() {
     });
   });
 
+  // Finans veri migrasyonu — FAZ 7: eski state.butce → state.buroGiderleri
+  _migrateFinansData();
+
   // Terminoloji göçü — eski terimler yeni değerlere eşlenir
   _terminolojiGoc();
+}
+
+/**
+ * FAZ 7 — Finans veri migrasyonu
+ * 1. syncTahsilatBudget kopyalarını (th_ prefix) state.butce'den sil
+ * 2. _icraHarcamaSync otomatik avanslarını (_otoHarcama) state.avanslar'dan sil
+ * 3. Kalan state.butce (manuel büro giderleri) → state.buroGiderleri'ne taşı
+ * 4. state.finansIslemler → dosya bağlantılı olanları kaldır
+ * Bir kez çalışır (state._finansMigrated flag).
+ */
+function _migrateFinansData() {
+  if (state._finansMigrated) return;
+
+  var degisti = false;
+
+  // 1. syncTahsilatBudget kopyalarını sil (th_ prefix ID'li butce kayıtları)
+  if (state.butce && state.butce.length) {
+    var eskiLen = state.butce.length;
+    state.butce = state.butce.filter(function(b) { return !b.id || !b.id.toString().startsWith('th_'); });
+    if (state.butce.length < eskiLen) {
+      console.info('[Migrasyon] ' + (eskiLen - state.butce.length) + ' syncTahsilatBudget kopyası silindi.');
+      degisti = true;
+    }
+  }
+
+  // 2. _icraHarcamaSync otomatik avanslarını sil
+  if (state.avanslar && state.avanslar.length) {
+    var eskiAvans = state.avanslar.length;
+    state.avanslar = state.avanslar.filter(function(a) { return !a._otoHarcama; });
+    if (state.avanslar.length < eskiAvans) {
+      console.info('[Migrasyon] ' + (eskiAvans - state.avanslar.length) + ' otomatik icra harcama avansı silindi.');
+      degisti = true;
+    }
+  }
+
+  // 3. Kalan state.butce kayıtlarını state.buroGiderleri'ne taşı
+  if (state.butce && state.butce.length) {
+    if (!state.buroGiderleri) state.buroGiderleri = [];
+    var katEsle = {
+      'Kira': 'Kira & Aidat', 'Aidat': 'Kira & Aidat',
+      'Stopaj': 'Stopaj & Vergi', 'Vergi': 'Stopaj & Vergi', 'KDV': 'Stopaj & Vergi',
+      'Muhasebe': 'Muhasebeci / Mali Müşavir', 'Muhasebeci': 'Muhasebeci / Mali Müşavir',
+      'Maaş': 'Çalışan Ücretleri', 'Personel': 'Çalışan Ücretleri', 'SGK': 'Çalışan Ücretleri',
+      'Temizlik': 'Temizlik & Bakım',
+      'Kırtasiye': 'Kırtasiye & Sarf Malzeme',
+      'İnternet': 'Teknoloji', 'Yazılım': 'Teknoloji', 'Bilgisayar': 'Teknoloji',
+      'Ulaşım': 'Ulaşım & Araç', 'Araç': 'Ulaşım & Araç', 'Yakıt': 'Ulaşım & Araç',
+      'Sigorta': 'Sigorta',
+      'Baro': 'Mesleki Gelişim', 'Seminer': 'Mesleki Gelişim',
+    };
+    var tasindi = 0;
+    state.butce.forEach(function(b) {
+      // Müvekkil bağlantılı gelirleri atla (zaten dosya bazında mevcut)
+      if (b.tur === 'Gelir' && b.muvId) return;
+      // Giderleri buroGiderleri'ne aktar
+      var yeniKat = 'Diğer Genel Gider';
+      if (b.kat) {
+        // Mevcut kategoriyi eşlemeye çalış
+        Object.keys(katEsle).forEach(function(anahtar) {
+          if (b.kat.toLowerCase().indexOf(anahtar.toLowerCase()) !== -1) {
+            yeniKat = katEsle[anahtar];
+          }
+        });
+      }
+      state.buroGiderleri.push({
+        id: b.id || uid(),
+        tarih: b.tarih || '',
+        kategori: yeniKat,
+        tutar: Math.abs(b.tutar || 0),
+        aciklama: b.aciklama || b.kat || '',
+        tekrar: '',
+        kdvOran: b.kdvOran || 0,
+        kdvTutar: b.kdvTutar || 0,
+        _migratedFrom: 'butce'
+      });
+      tasindi++;
+    });
+    if (tasindi) {
+      console.info('[Migrasyon] ' + tasindi + ' bütçe kaydı buroGiderleri\'ne taşındı.');
+      degisti = true;
+    }
+  }
+
+  // 4. state.finansIslemler temizle
+  if (state.finansIslemler && state.finansIslemler.length) {
+    console.info('[Migrasyon] ' + state.finansIslemler.length + ' finansIslemler kaydı temizlendi.');
+    degisti = true;
+  }
+
+  // 5. Eski dizileri temizle ve flag koy
+  state.butce = [];
+  state.finansIslemler = [];
+  state._finansMigrated = true;
+
+  if (degisti) {
+    console.info('[Migrasyon] Finans veri migrasyonu tamamlandı.');
+    try { localStorage.setItem(SK, JSON.stringify(state)); }
+    catch (e) { console.warn('[Migrasyon] localStorage kayıt hatası:', e.message); }
+  }
 }
 
 /**
