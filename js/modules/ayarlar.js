@@ -70,20 +70,28 @@ async function profilGuncelle() {
 }
 
 async function sifreDegistir() {
-  const yeni = document.getElementById('ayar-sifre-yeni').value;
-  const tekrar = document.getElementById('ayar-sifre-tekrar').value;
-  if (!yeni || !tekrar) return notify('⚠️ Şifre alanlarını doldurun.');
+  var eski = document.getElementById('ayar-sifre-eski').value;
+  var yeni = document.getElementById('ayar-sifre-yeni').value;
+  var tekrar = document.getElementById('ayar-sifre-tekrar').value;
+  if (!eski) return notify('⚠️ Mevcut şifrenizi girin.');
+  if (!yeni || !tekrar) return notify('⚠️ Yeni şifre alanlarını doldurun.');
   if (yeni.length < 6) return notify('⚠️ Şifre en az 6 karakter olmalı.');
   if (yeni !== tekrar) return notify('⚠️ Şifreler eşleşmiyor.');
   try {
-    const { error } = await sb.auth.updateUser({ password: yeni });
+    // Mevcut şifreyi doğrula
+    var { error: verifyErr } = await sb.auth.signInWithPassword({
+      email: currentUser.email, password: eski
+    });
+    if (verifyErr) return notify('⚠️ Mevcut şifre hatalı.');
+    // Yeni şifreyi kaydet
+    var { error } = await sb.auth.updateUser({ password: yeni });
     if (error) return notify('⚠️ ' + error.message);
     document.getElementById('ayar-sifre-eski').value = '';
     document.getElementById('ayar-sifre-yeni').value = '';
     document.getElementById('ayar-sifre-tekrar').value = '';
     document.getElementById('sifre-guc-bar').style.display = 'none';
     notify('✅ Şifre başarıyla değiştirildi');
-  } catch (e) { notify('⚠️ Hata: ' + e.message); }
+  } catch(e) { notify('⚠️ Hata: ' + e.message); }
 }
 
 function sifreGucGoster(val) {

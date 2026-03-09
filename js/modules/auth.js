@@ -65,7 +65,7 @@ async function kayitOl() {
 }
 
 function sifreSifirla() {
-  loginHata('Şifrenizi unuttuysanız yöneticinizle iletişime geçin.');
+  gmSifreSifirlama();
 }
 
 async function cikisYap() {

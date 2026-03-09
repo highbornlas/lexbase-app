@@ -79,6 +79,19 @@ function gmAc(tab) {
 
 function gmKapat() {
   document.getElementById('gm-overlay').classList.remove('open');
+  // Dinamik görünümleri temizle (reset, magic link, yeni şifre)
+  ['gm-f-reset', 'gm-f-magiclink', 'gm-f-yenisifre'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  var tabs = document.querySelector('.gm-tabs');
+  if (tabs) tabs.style.display = '';
+  var girisForm = document.getElementById('gm-f-giris');
+  if (girisForm) girisForm.style.display = '';
+  document.getElementById('gm-err').style.display = '';
+  // Hata mesajı stillerini sıfırla
+  var errEl = document.getElementById('gm-err');
+  if (errEl) { errEl.style.background = ''; errEl.style.borderColor = ''; errEl.style.color = ''; errEl.style.display = 'none'; }
 }
 
 function gmTab(t) {
@@ -140,8 +153,8 @@ async function gmKayit() {
     await sbKayitOl(email, sifre, ad);
     btn.textContent = 'Kayıt Ol & Başla →'; btn.disabled = false;
     gmTab('giris');
-    gmBasari('✅ Kayıt başarılı! E-posta ve şifrenizle giriş yapın.');
-    const emailEl = document.getElementById('gm-email');
+    gmBasari('✅ Kayıt başarılı! E-posta adresinize doğrulama bağlantısı gönderildi. Lütfen e-postanızı kontrol edin ve bağlantıya tıklayarak hesabınızı aktifleştirin.');
+    var emailEl = document.getElementById('gm-email');
     if (emailEl) emailEl.value = email;
   } catch(e) {
     btn.textContent = 'Kayıt Ol & Başla →'; btn.disabled = false;
@@ -151,6 +164,173 @@ async function gmKayit() {
   }
 }
 
+
+// ================================================================
+// ŞİFRE SIFIRLAMA (ŞİFREMİ UNUTTUM) GÖRÜNÜMÜ
+// ================================================================
+
+function gmSifreSifirlama() {
+  // Tabs ve giriş formunu gizle, reset formunu göster
+  document.querySelector('.gm-tabs').style.display = 'none';
+  document.getElementById('gm-f-giris').style.display = 'none';
+  document.getElementById('gm-f-kayit').style.display = 'none';
+  document.getElementById('gm-err').style.display = 'none';
+  var resetDiv = document.getElementById('gm-f-reset');
+  if (!resetDiv) {
+    resetDiv = document.createElement('div');
+    resetDiv.id = 'gm-f-reset';
+    document.querySelector('.gm-box').appendChild(resetDiv);
+  }
+  resetDiv.innerHTML =
+    '<a class="gm-back" onclick="gmResetGeri()">← Giriş ekranına dön</a>' +
+    '<div class="gm-reset-title">🔑 Şifre Sıfırlama</div>' +
+    '<div class="gm-reset-desc">E-posta adresinizi girin, şifre sıfırlama bağlantısı gönderelim.</div>' +
+    '<div class="gm-ig"><label>E-posta</label><input type="email" id="gm-reset-email" placeholder="ornek@mail.com" onkeydown="if(event.key===\'Enter\')gmSifreSifirlaGonder()"></div>' +
+    '<button class="gm-submit" onclick="gmSifreSifirlaGonder()">Sıfırlama Bağlantısı Gönder</button>';
+  resetDiv.style.display = 'block';
+  // Giriş formundaki e-postayı otomatik doldur
+  var girisEmail = document.getElementById('gm-email');
+  var resetEmail = document.getElementById('gm-reset-email');
+  if (girisEmail && girisEmail.value && resetEmail) resetEmail.value = girisEmail.value;
+  setTimeout(function() { if (resetEmail) resetEmail.focus(); }, 100);
+}
+
+async function gmSifreSifirlaGonder() {
+  var email = document.getElementById('gm-reset-email').value.trim();
+  if (!email) return gmHata('E-posta adresinizi girin.');
+  var btn = document.querySelector('#gm-f-reset .gm-submit');
+  btn.textContent = 'Gönderiliyor...'; btn.disabled = true;
+  try {
+    await sbSifreSifirlaEmail(email);
+    var resetDiv = document.getElementById('gm-f-reset');
+    resetDiv.innerHTML =
+      '<div class="gm-reset-basari">' +
+      '<div class="gm-reset-basari-ikon">📧</div>' +
+      '<div class="gm-reset-title">Bağlantı Gönderildi!</div>' +
+      '<p>Şifre sıfırlama bağlantısı <strong>' + email + '</strong> adresine gönderildi. E-postanızı kontrol edin ve bağlantıya tıklayarak yeni şifrenizi belirleyin.</p>' +
+      '<p style="margin-top:12px;font-size:11px;color:rgba(255,255,255,.3)">E-posta gelmedi mi? Spam klasörünüzü kontrol edin veya birkaç dakika bekleyip tekrar deneyin.</p>' +
+      '</div>' +
+      '<a class="gm-back" onclick="gmResetGeri()" style="display:block;text-align:center;margin-top:8px">← Giriş ekranına dön</a>';
+  } catch(e) {
+    btn.textContent = 'Sıfırlama Bağlantısı Gönder'; btn.disabled = false;
+    gmHata(e.message || 'Bir hata oluştu. Tekrar deneyin.');
+  }
+}
+
+function gmYeniSifreGorunum() {
+  // Recovery link sonrası yeni şifre formu
+  document.querySelector('.gm-tabs').style.display = 'none';
+  document.getElementById('gm-f-giris').style.display = 'none';
+  document.getElementById('gm-f-kayit').style.display = 'none';
+  document.getElementById('gm-err').style.display = 'none';
+  var yeniDiv = document.getElementById('gm-f-yenisifre');
+  if (!yeniDiv) {
+    yeniDiv = document.createElement('div');
+    yeniDiv.id = 'gm-f-yenisifre';
+    document.querySelector('.gm-box').appendChild(yeniDiv);
+  }
+  yeniDiv.innerHTML =
+    '<div class="gm-reset-title">🔒 Yeni Şifre Belirleyin</div>' +
+    '<div class="gm-reset-desc">Hesabınız için yeni bir şifre belirleyin.</div>' +
+    '<div class="gm-ig"><label>Yeni Şifre</label><input type="password" id="gm-yenisifre1" placeholder="En az 6 karakter" autocomplete="new-password"></div>' +
+    '<div class="gm-ig"><label>Şifre Tekrar</label><input type="password" id="gm-yenisifre2" placeholder="••••••••" autocomplete="new-password" onkeydown="if(event.key===\'Enter\')gmYeniSifreKaydet()"></div>' +
+    '<button class="gm-submit" onclick="gmYeniSifreKaydet()">Şifreyi Güncelle</button>';
+  yeniDiv.style.display = 'block';
+  setTimeout(function() { var el = document.getElementById('gm-yenisifre1'); if(el) el.focus(); }, 100);
+}
+
+async function gmYeniSifreKaydet() {
+  var sifre1 = document.getElementById('gm-yenisifre1').value;
+  var sifre2 = document.getElementById('gm-yenisifre2').value;
+  if (!sifre1 || !sifre2) return gmHata('Şifre alanlarını doldurun.');
+  if (sifre1.length < 6) return gmHata('Şifre en az 6 karakter olmalı.');
+  if (sifre1 !== sifre2) return gmHata('Şifreler eşleşmiyor.');
+  var btn = document.querySelector('#gm-f-yenisifre .gm-submit');
+  btn.textContent = 'Güncelleniyor...'; btn.disabled = true;
+  try {
+    var { error } = await sb.auth.updateUser({ password: sifre1 });
+    if (error) throw error;
+    var yeniDiv = document.getElementById('gm-f-yenisifre');
+    yeniDiv.innerHTML =
+      '<div class="gm-reset-basari">' +
+      '<div class="gm-reset-basari-ikon">✅</div>' +
+      '<div class="gm-reset-title">Şifre Güncellendi!</div>' +
+      '<p>Şifreniz başarıyla değiştirildi. Yeni şifrenizle giriş yapabilirsiniz.</p>' +
+      '</div>' +
+      '<button class="gm-submit" onclick="gmKapat();location.reload()">Devam Et →</button>';
+  } catch(e) {
+    btn.textContent = 'Şifreyi Güncelle'; btn.disabled = false;
+    gmHata(e.message || 'Şifre güncellenirken bir hata oluştu.');
+  }
+}
+
+function gmResetGeri() {
+  // Sıfırlama görünümünden giriş formuna dön
+  var resetDiv = document.getElementById('gm-f-reset');
+  if (resetDiv) resetDiv.style.display = 'none';
+  document.querySelector('.gm-tabs').style.display = '';
+  document.getElementById('gm-f-giris').style.display = 'block';
+  document.getElementById('gm-err').style.display = 'none';
+}
+
+// ================================================================
+// MAGIC LINK (ŞİFRESİZ GİRİŞ) GÖRÜNÜMÜ
+// ================================================================
+
+function gmMagicLink() {
+  document.querySelector('.gm-tabs').style.display = 'none';
+  document.getElementById('gm-f-giris').style.display = 'none';
+  document.getElementById('gm-f-kayit').style.display = 'none';
+  document.getElementById('gm-err').style.display = 'none';
+  var mlDiv = document.getElementById('gm-f-magiclink');
+  if (!mlDiv) {
+    mlDiv = document.createElement('div');
+    mlDiv.id = 'gm-f-magiclink';
+    document.querySelector('.gm-box').appendChild(mlDiv);
+  }
+  mlDiv.innerHTML =
+    '<a class="gm-back" onclick="gmMagicLinkGeri()">← Giriş ekranına dön</a>' +
+    '<div class="gm-reset-title">🔗 Bağlantı ile Giriş</div>' +
+    '<div class="gm-reset-desc">E-posta adresinize tek kullanımlık giriş bağlantısı göndereceğiz. Şifre girmenize gerek yok.</div>' +
+    '<div class="gm-ig"><label>E-posta</label><input type="email" id="gm-ml-email" placeholder="ornek@mail.com" onkeydown="if(event.key===\'Enter\')gmMagicLinkGonder()"></div>' +
+    '<button class="gm-submit" onclick="gmMagicLinkGonder()">Giriş Bağlantısı Gönder</button>';
+  mlDiv.style.display = 'block';
+  // Giriş formundaki e-postayı doldur
+  var girisEmail = document.getElementById('gm-email');
+  var mlEmail = document.getElementById('gm-ml-email');
+  if (girisEmail && girisEmail.value && mlEmail) mlEmail.value = girisEmail.value;
+  setTimeout(function() { if (mlEmail) mlEmail.focus(); }, 100);
+}
+
+async function gmMagicLinkGonder() {
+  var email = document.getElementById('gm-ml-email').value.trim();
+  if (!email) return gmHata('E-posta adresinizi girin.');
+  var btn = document.querySelector('#gm-f-magiclink .gm-submit');
+  btn.textContent = 'Gönderiliyor...'; btn.disabled = true;
+  try {
+    await sbMagicLink(email);
+    var mlDiv = document.getElementById('gm-f-magiclink');
+    mlDiv.innerHTML =
+      '<div class="gm-reset-basari">' +
+      '<div class="gm-reset-basari-ikon">📧</div>' +
+      '<div class="gm-reset-title">Bağlantı Gönderildi!</div>' +
+      '<p>Giriş bağlantısı <strong>' + email + '</strong> adresine gönderildi. E-postanızı kontrol edin ve bağlantıya tıklayarak giriş yapın.</p>' +
+      '<p style="margin-top:12px;font-size:11px;color:rgba(255,255,255,.3)">Bağlantı 1 saat geçerlidir. E-posta gelmedi mi? Spam klasörünüzü kontrol edin.</p>' +
+      '</div>' +
+      '<a class="gm-back" onclick="gmMagicLinkGeri()" style="display:block;text-align:center;margin-top:8px">← Giriş ekranına dön</a>';
+  } catch(e) {
+    btn.textContent = 'Giriş Bağlantısı Gönder'; btn.disabled = false;
+    gmHata(e.message || 'Bir hata oluştu. Tekrar deneyin.');
+  }
+}
+
+function gmMagicLinkGeri() {
+  var mlDiv = document.getElementById('gm-f-magiclink');
+  if (mlDiv) mlDiv.style.display = 'none';
+  document.querySelector('.gm-tabs').style.display = '';
+  document.getElementById('gm-f-giris').style.display = 'block';
+  document.getElementById('gm-err').style.display = 'none';
+}
 
 // Klavye: ESC ile modal kapat
 document.addEventListener('keydown', function(e) {

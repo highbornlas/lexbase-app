@@ -67,6 +67,35 @@ async function sbCikisYap() {
   await sb.auth.signOut();
 }
 
+// Şifre sıfırlama e-postası gönder
+async function sbSifreSifirlaEmail(email) {
+  var { data, error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin
+  });
+  if (error) throw error;
+  return data;
+}
+
+// Magic Link (şifresiz giriş)
+async function sbMagicLink(email) {
+  var { data, error } = await sb.auth.signInWithOtp({
+    email: email,
+    options: { emailRedirectTo: window.location.origin }
+  });
+  if (error) throw error;
+  return data;
+}
+
+// Google / Apple OAuth giriş
+async function sbOAuthGiris(provider) {
+  var { data, error } = await sb.auth.signInWithOAuth({
+    provider: provider,
+    options: { redirectTo: window.location.origin }
+  });
+  if (error) throw error;
+  return data;
+}
+
 async function sbMevcutKullanici() {
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return null;
@@ -79,9 +108,26 @@ async function sbMevcutKullanici() {
 function sbAuthDinle() {
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session && !currentBuroId && !_sbYukleniyor) {
+      // E-posta doğrulanmamışsa girişe izin verme (spam/bot koruması)
+      var user = session.user;
+      if (user && !user.email_confirmed_at && !user.confirmed_at) {
+        // OAuth kullanıcıları otomatik doğrulanır, sadece email/password kayıtları kontrol
+        var isOAuth = user.app_metadata && user.app_metadata.provider !== 'email';
+        if (!isOAuth) {
+          console.warn('[Auth] E-posta doğrulanmamış, giriş engellendi');
+          await sb.auth.signOut();
+          return;
+        }
+      }
       // Sadece henüz yüklenmemişse çalış (sayfa yenilemede load event halleder)
       // TOKEN_REFRESHED bazen SIGNED_IN tetikler — currentBuroId kontrolü bunu önler
       await sbVeriYukle();
+    } else if (event === 'PASSWORD_RECOVERY') {
+      // Şifre sıfırlama linki ile gelen kullanıcı
+      if (typeof gmAc === 'function') gmAc('giris');
+      setTimeout(function() {
+        if (typeof gmYeniSifreGorunum === 'function') gmYeniSifreGorunum();
+      }, 200);
     } else if (event === 'SIGNED_OUT') {
       // ── Kullanıcı veri izolasyonu: çıkış/timeout'ta veriyi koru ──
       // cikisYap() zaten yedeklemiş olabilir, ama session timeout durumunda
@@ -142,8 +188,28 @@ async function sbVeriYukle() {
   try {
     showYukleniyor(true);
 
-    const kul = await sbMevcutKullanici();
-    if (!kul) { showYukleniyor(false); showLanding(); return; }
+    var kul = await sbMevcutKullanici();
+
+    // OAuth ile ilk kez gelen kullanıcı — otomatik büro + kullanıcı kaydı oluştur
+    if (!kul) {
+      var authUser = (await sb.auth.getUser()).data.user;
+      if (authUser) {
+        var ad = authUser.user_metadata.full_name || authUser.user_metadata.name || authUser.email.split('@')[0];
+        var buroId = crypto.randomUUID();
+        try {
+          await sb.from('burolar').insert({ id: buroId, ad: ad + ' Hukuk', plan: 'deneme', created_at: new Date().toISOString() });
+          await sb.from('kullanicilar').insert({ id: crypto.randomUUID(), auth_id: authUser.id, buro_id: buroId, ad: ad, email: authUser.email, rol: 'sahip' });
+          kul = await sbMevcutKullanici();
+          // Admin DB'ye kaydet
+          if (typeof adminMusteriKayit === 'function') {
+            adminMusteriKayit({ id: authUser.id, ad_soyad: ad, email: authUser.email, buro_ad: ad + ' Hukuk' });
+          }
+        } catch(oauthErr) {
+          console.warn('[Auth] OAuth auto-create hatası:', oauthErr.message);
+        }
+      }
+      if (!kul) { showYukleniyor(false); showLanding(); return; }
+    }
 
     currentUser = { id: kul.id, ad: kul.ad, ad_soyad: kul.ad, email: kul.email, rol: kul.rol, buro_ad: '' };
     currentBuroId = kul.buro_id;
