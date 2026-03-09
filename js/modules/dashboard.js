@@ -48,7 +48,7 @@ function renderDashSureler() {
 
   const el = document.getElementById('dash-sureler');
   if (!el) return;
-  if (!items.length) { el.innerHTML = '<div style="padding:24px;text-align:center;font-size:12px;color:var(--text-dim)">30 gün içinde kritik işlem yok</div>'; return; }
+  if (!items.length) { el.innerHTML = '<div class="dash-empty-state"><div class="dash-empty-icon">📅</div><div class="dash-empty-title">30 gün içinde kritik işlem yok</div><div class="dash-empty-sub">Yaklaşan süreler ve son günler burada görünecek</div></div>'; return; }
 
   el.innerHTML = items.map(i => {
     const acil = i.gun <= 3 ? 'background:rgba(231,76,60,.08);border-left:3px solid #e74c3c;' : i.gun <= 7 ? 'border-left:3px solid #e67e22;' : 'border-left:3px solid var(--border);';
@@ -145,6 +145,30 @@ function renderDashboard(){
     (beklAlacak > 0 ? '<div class="card" style="border:1px solid rgba(231,76,60,.3)"><div class="card-label">Bekleyen Alacak</div><div class="card-value" style="color:#e74c3c">' + fmt(beklAlacak) + '</div></div>' : '') +
     (bekGorev > 0 ? '<div class="card"><div class="card-label">Açık Görev</div><div class="card-value" style="color:#e67e22">' + bekGorev + '</div></div>' : '');
 
+  // ── HOŞGELDİN BANNER (ilk kullanım) ──
+  if (muvSayi === 0 && aktifDava === 0) {
+    var bannerEl = document.getElementById('dash-welcome-banner');
+    if (!bannerEl) {
+      bannerEl = document.createElement('div');
+      bannerEl.id = 'dash-welcome-banner';
+      var cardsEl = document.getElementById('dash-cards');
+      if (cardsEl && cardsEl.parentElement) {
+        cardsEl.parentElement.insertBefore(bannerEl, cardsEl.nextSibling);
+      }
+    }
+    bannerEl.className = 'dash-welcome-banner';
+    bannerEl.innerHTML =
+      '<span class="dash-welcome-icon">🏛</span>' +
+      '<div class="dash-welcome-content">' +
+        '<div class="dash-welcome-title">LexBase\'e hoş geldiniz!</div>' +
+        '<div class="dash-welcome-sub">İlk müvekkilinizi ekleyerek büronuzu dijitale taşımaya başlayın.</div>' +
+      '</div>' +
+      '<button class="dash-empty-cta" onclick="showPage(\'muvekkillar\',document.getElementById(\'ni-muvekkillar\'));setTimeout(function(){if(typeof openModal===\'function\')openModal(\'m-modal\');},300)">+ İlk Müvekkil</button>';
+  } else {
+    var existingBanner = document.getElementById('dash-welcome-banner');
+    if (existingBanner) existingBanner.remove();
+  }
+
   // ── YAKLAŞAN DURUŞMALAR ──
   var durusmalar = [];
   state.etkinlikler.filter(function(e){return e.tarih >= t && (e.tur==='Duruşma'||e.baslik.toLowerCase().includes('duruşma'));}).forEach(function(e) {
@@ -159,7 +183,7 @@ function renderDashboard(){
   var durEl = document.getElementById('dash-durusmalar');
   if (durEl) {
     if (!durusmalar.length) {
-      durEl.innerHTML = '<div style="padding:24px;text-align:center;font-size:12px;color:var(--text-dim)">Yaklaşan duruşma yok</div>';
+      durEl.innerHTML = '<div class="dash-empty-state"><div class="dash-empty-icon">⚖️</div><div class="dash-empty-title">Yaklaşan duruşma yok</div><div class="dash-empty-sub">Aktif davalarınıza duruşma tarihi eklediğinizde burada görünecek</div><button class="dash-empty-cta" onclick="showPage(\'davalar\',document.getElementById(\'ni-davalar\'))">📁 Davalara Git</button></div>';
     } else {
       durEl.innerHTML = durusmalar.slice(0,8).map(function(d) {
         var gun = Math.ceil((new Date(d.tarih) - now) / 86400000);
@@ -181,7 +205,7 @@ function renderDashboard(){
   var grvEl = document.getElementById('dash-gorevler');
   if (grvEl) {
     if (!gorevler.length) {
-      grvEl.innerHTML = '<div style="padding:24px;text-align:center;font-size:12px;color:var(--text-dim)">Açık görev yok</div>';
+      grvEl.innerHTML = '<div class="dash-empty-state"><div class="dash-empty-icon">🎉</div><div class="dash-empty-title">Tüm görevler tamamlandı!</div><div class="dash-empty-sub">Yeni görev ekleyerek işlerinizi takip edin</div><button class="dash-empty-cta" onclick="showPage(\'todo\',document.getElementById(\'ni-todo\'))">✅ Yeni Görev Ekle</button></div>';
     } else {
       grvEl.innerHTML = gorevler.slice(0,6).map(function(td) {
         var gecikme = td.sonTarih && td.sonTarih < t;
@@ -233,7 +257,7 @@ function renderDashboard(){
   if (vgEl) {
     var uyarilar = typeof FinansMotoru !== 'undefined' ? FinansMotoru.hesaplaUyarilar() : [];
     if (!uyarilar.length) {
-      vgEl.innerHTML = '<div style="padding:24px;text-align:center;font-size:12px;color:var(--text-dim)">Finansal uyarı yok</div>';
+      vgEl.innerHTML = '<div class="dash-empty-state"><div class="dash-empty-icon">✅</div><div class="dash-empty-title">Finansal uyarı yok</div><div class="dash-empty-sub">Vadesi geçen alacaklar veya uyarılar olduğunda burada bilgilendirilirsiniz</div></div>';
     } else {
       var kritikSayi = uyarilar.filter(function(u) { return u.oncelik === 'yuksek'; }).length;
       vgEl.innerHTML = (kritikSayi > 0 ? '<div style="text-align:center;padding:6px 0;margin-bottom:8px;background:rgba(231,76,60,.06);border-radius:6px"><div style="font-size:18px;font-weight:800;color:#e74c3c">' + kritikSayi + ' Kritik</div><div style="font-size:10px;color:var(--text-muted)">' + uyarilar.length + ' toplam uyarı</div></div>' : '') +
@@ -255,7 +279,7 @@ function renderDashboard(){
   if (aktEl) {
     var log = (state.aktiviteLog||[]).slice(-10).reverse();
     if (!log.length) {
-      aktEl.innerHTML = '<div style="padding:24px;text-align:center;font-size:12px;color:var(--text-dim)">Henüz aktivite yok</div>';
+      aktEl.innerHTML = '<div class="dash-empty-state"><div class="dash-empty-icon">📋</div><div class="dash-empty-title">Henüz aktivite yok</div><div class="dash-empty-sub">Müvekkil, dava ve işlemleriniz eklendikçe aktiviteler burada görünecek</div><button class="dash-empty-cta" onclick="showPage(\'muvekkillar\',document.getElementById(\'ni-muvekkillar\'))">👤 İlk Müvekkilinizi Ekleyin</button></div>';
     } else {
       aktEl.innerHTML = log.map(function(l) {
         var ikon = {'Giriş':'🔑','Dava':'📁','İcra':'⚡','Finans':'💰','İhtarname':'📩','Avans':'🏦','Müvekkil':'👤','Personel':'👥','Genel':'📋'}[l.module||''] || '📋';
@@ -276,8 +300,108 @@ function renderDashboard(){
   var dd = document.getElementById('dash-danismanlik');
   if (dd) dd.innerHTML = typeof renderDashDanismanlik === 'function' ? renderDashDanismanlik() : '';
 
+  // ── HIZLI İŞLEMLER ──
+  renderHizliIslemler();
+  // ── BUGÜNKÜ AJANDA ──
+  renderBugunAjanda();
+
   // ── Drag & Drop başlat ──
   initDashDragDrop();
+}
+
+// ================================================================
+// HIZLI İŞLEMLER WİDGET
+// ================================================================
+function renderHizliIslemler() {
+  var el = document.getElementById('dash-hizli-islem');
+  if (!el) return;
+  el.innerHTML =
+    '<div class="hi-btn" onclick="showPage(\'muvekkillar\',document.getElementById(\'ni-muvekkillar\'));setTimeout(function(){if(typeof openModal===\'function\')openModal(\'m-modal\');},300)"><span class="hi-ikon">👤</span><span>Müvekkil</span></div>' +
+    '<div class="hi-btn" onclick="showPage(\'davalar\',document.getElementById(\'ni-davalar\'));setTimeout(function(){if(typeof openModal===\'function\')openModal(\'dav-modal\');},300)"><span class="hi-ikon">📁</span><span>Dava</span></div>' +
+    '<div class="hi-btn" onclick="showPage(\'icra\',document.getElementById(\'ni-icra\'));setTimeout(function(){if(typeof openModal===\'function\')openModal(\'icra-modal\');},300)"><span class="hi-ikon">⚖️</span><span>İcra</span></div>' +
+    '<div class="hi-btn" onclick="showPage(\'takvim\',document.getElementById(\'ni-takvim\'))"><span class="hi-ikon">📅</span><span>Etkinlik</span></div>' +
+    '<div class="hi-btn" onclick="showPage(\'todo\',document.getElementById(\'ni-todo\'))"><span class="hi-ikon">✅</span><span>Görev</span></div>' +
+    '<div class="hi-btn" onclick="showPage(\'ihtarname\',document.getElementById(\'ni-ihtarname\'))"><span class="hi-ikon">📨</span><span>İhtarname</span></div>';
+}
+
+// ================================================================
+// BUGÜNKÜ AJANDA WİDGET
+// ================================================================
+function renderBugunAjanda() {
+  var el = document.getElementById('dash-bugun');
+  if (!el) return;
+  var t = today();
+  var bugunEtkinlikler = [];
+
+  // Etkinliklerden bugünkü olanlar
+  state.etkinlikler.forEach(function(e) {
+    if (e.tarih === t) {
+      bugunEtkinlikler.push({
+        saat: e.saat || '',
+        baslik: e.baslik || '',
+        tur: e.tur || 'Etkinlik',
+        muv: e.muvId ? getMuvAd(e.muvId) : ''
+      });
+    }
+  });
+
+  // Dava duruşmaları (bugünkü)
+  state.davalar.forEach(function(d) {
+    if (d.durusma === t || d.sonDurusma === t) {
+      bugunEtkinlikler.push({
+        saat: d.durusmaSaat || '',
+        baslik: (d.no || '') + ' — ' + (d.konu || ''),
+        tur: 'Duruşma',
+        muv: d.muvId ? getMuvAd(d.muvId) : ''
+      });
+    }
+  });
+
+  // Görevler (bugün son tarih)
+  (state.todolar || []).forEach(function(td) {
+    if (td.sonTarih === t && td.durum !== 'Tamamlandı') {
+      bugunEtkinlikler.push({
+        saat: '',
+        baslik: td.baslik || '',
+        tur: 'Görev Son Gün',
+        muv: td.muvId ? getMuvAd(td.muvId) : ''
+      });
+    }
+  });
+
+  // Saate göre sırala
+  bugunEtkinlikler.sort(function(a, b) {
+    return (a.saat || '99:99').localeCompare(b.saat || '99:99');
+  });
+
+  if (!bugunEtkinlikler.length) {
+    el.innerHTML = '<div class="dash-empty-state"><div class="dash-empty-icon">☀️</div><div class="dash-empty-title">Bugün için planlanmış etkinlik yok</div><div class="dash-empty-sub">Etkinlik ve duruşmalar eklendikçe bugünkü ajandanız burada görünecek</div></div>';
+    return;
+  }
+
+  var turRenk = {
+    'Duruşma': '#e74c3c',
+    'Son Gün': '#e67e22',
+    'Görev Son Gün': '#e67e22',
+    'Toplantı': '#2980b9',
+    'Randevu': '#16a085',
+    'Etkinlik': '#8e44ad'
+  };
+
+  el.innerHTML = bugunEtkinlikler.map(function(e) {
+    var renk = turRenk[e.tur] || '#7f8c8d';
+    return '<div class="ajanda-satir">' +
+      '<div class="ajanda-saat">' + (e.saat || '—') + '</div>' +
+      '<div class="ajanda-tur-dot" style="background:' + renk + '"></div>' +
+      '<div class="ajanda-icerik">' +
+        '<div class="ajanda-baslik">' + e.baslik + '</div>' +
+        '<div class="ajanda-meta">' +
+          '<span class="ajanda-tur-badge" style="background:' + renk + '22;color:' + renk + '">' + e.tur + '</span>' +
+          (e.muv ? '<span class="ajanda-muv">' + e.muv + '</span>' : '') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
 }
 
 // ================================================================

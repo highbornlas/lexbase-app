@@ -22,6 +22,15 @@
 <!-- PWA Offline Göstergesi -->
 <div class="offline-indicator" id="offline-bar">📡 Çevrimdışı — veriler yerel olarak saklanıyor</div>
 
+<!-- SW Güncelleme Bildirimi -->
+<div id="sw-update-banner" class="sw-update-banner" style="display:none">
+  <div class="sw-update-inner">
+    <span>🔄 Yeni güncelleme mevcut!</span>
+    <button class="btn btn-gold btn-sm" onclick="window.location.reload()">Yenile</button>
+    <button class="sw-update-close" onclick="document.getElementById('sw-update-banner').style.display='none'">✕</button>
+  </div>
+</div>
+
 <!-- ===== LANDING PAGE ===== -->
 
 <div id="landing-screen">
@@ -952,6 +961,21 @@
       </div>
       <div class="section-body dash-panel-body"><div id="dash-danismanlik"></div></div>
     </div>
+    <div class="section dash-panel dp-gold" id="dp-hizli-islem">
+      <div class="section-header">
+        <div class="section-title">⚡ Hızlı İşlemler</div>
+      </div>
+      <div class="section-body dash-panel-body">
+        <div id="dash-hizli-islem" class="hizli-islem-grid"></div>
+      </div>
+    </div>
+    <div class="section dash-panel dp-blue" id="dp-bugun-ajanda">
+      <div class="section-header">
+        <div class="section-title">📋 Bugünkü Ajanda</div>
+        <a onclick="showPage('takvim',document.getElementById('ni-takvim'))" style="font-size:11px;color:var(--gold);cursor:pointer">Takvim ›</a>
+      </div>
+      <div class="section-body dash-panel-body"><div id="dash-bugun"></div></div>
+    </div>
   </div>
 </div>
 
@@ -1868,6 +1892,18 @@
         <div style="padding:20px">
           <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Butonlar çalışmıyorsa veya hatalar oluşuyorsa bu aracı çalıştırın.</div>
           <button class="btn btn-gold" onclick="tanilama()" style="width:100%;justify-content:center">🔧 Tanılama Çalıştır</button>
+        </div>
+      </div>
+
+      <!-- Hoşgeldin Turu -->
+      <div class="ayar-section" style="border-color:var(--gold-dim)">
+        <div class="ayar-section-header" style="border-bottom-color:var(--gold-dim)">
+          <span class="ayar-section-icon">🎓</span>
+          <div><div class="ayar-section-title" style="color:var(--gold)">Uygulama Turu</div><div class="ayar-section-sub">LexBase'i tanıma rehberi</div></div>
+        </div>
+        <div style="padding:20px">
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Uygulamayı adım adım tanıtan hoşgeldin turunu tekrar başlatın.</div>
+          <button class="btn btn-gold" onclick="if(typeof Onboarding!=='undefined'){Onboarding.tekrarBaslat();showPage('dashboard',document.getElementById('ni-dashboard'));}" style="width:100%;justify-content:center">🎓 Hoşgeldin Turunu Tekrar Başlat</button>
         </div>
       </div>
     </div>
@@ -3774,6 +3810,7 @@
 <script src="js/modules/seed.js"></script>
 <script src="js/modules/evrakUretici.js"></script>
 <script src="js/modules/aracKutusu.js"></script>
+<script src="js/modules/onboarding.js"></script>
 
 <!-- SPOTLIGHT ARAMA -->
 <div id="spotlight-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:99999;align-items:flex-start;justify-content:center;padding-top:15vh">
@@ -4062,11 +4099,18 @@ if ('serviceWorker' in navigator) {
         var newWorker = reg.installing;
         newWorker.addEventListener('statechange', function() {
           if (newWorker.state === 'activated') {
+            // Güncelleme banner'ını göster
+            var banner = document.getElementById('sw-update-banner');
+            if (banner) banner.style.display = 'block';
             if (typeof notify === 'function') notify('🔄 Yeni sürüm yüklendi — sayfayı yenileyin');
           }
         });
       });
     }).catch(function(err) { console.warn('[PWA] SW kayıt hatası:', err); });
+  });
+  // Controller değişince otomatik yenile (skipWaiting sonrası)
+  navigator.serviceWorker.addEventListener('controllerchange', function() {
+    console.log('[PWA] Yeni Service Worker aktif — sayfa yenilenecek');
   });
 }
 

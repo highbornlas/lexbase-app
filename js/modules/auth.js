@@ -121,6 +121,10 @@ function uygulamayiBaslatLocal() {
     const plan = mevcutPlan();
     if (plan.sureDoldu) setTimeout(() => upgradeGoster('sureDoldu'), 1500);
   }
+  // Onboarding hoşgeldin turu (ilk giriş)
+  if (typeof Onboarding !== 'undefined' && !Onboarding.tamamlandiMi()) {
+    setTimeout(function() { Onboarding.baslat(); }, 1000);
+  }
 }
 
 // Plan seçim sayfası — header badge tıklanınca
