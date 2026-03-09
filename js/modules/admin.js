@@ -208,7 +208,15 @@ async function destekTalebiGonder() {
     created_at: new Date().toISOString()
   };
 
-  var basarili = await adminSbPost('destek_talepleri', data);
+  console.log('[Destek] Gönderiliyor...', JSON.stringify(data).slice(0,200));
+  var basarili;
+  try {
+    basarili = await adminSbPost('destek_talepleri', data);
+    console.log('[Destek] adminSbPost sonucu:', basarili);
+  } catch(err) {
+    console.error('[Destek] adminSbPost HATA:', err);
+    basarili = false;
+  }
 
   if (basarili) {
     // Formu temizle
