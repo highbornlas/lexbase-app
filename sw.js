@@ -8,8 +8,8 @@
 // - Diğer → Network-First with Cache Fallback
 // ================================================================
 
-const CACHE_NAME = 'lexbase-v8';
-const CACHE_VERSION = 8;
+const CACHE_NAME = 'lexbase-v9';
+const CACHE_VERSION = 9;
 
 // Önceden cache'lenecek dosyalar
 const PRECACHE = [

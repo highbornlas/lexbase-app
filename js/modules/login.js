@@ -171,7 +171,8 @@ function yasalBelgeAc(tur) {
     'hakkimizda': 'Hakkımızda',
     'blog': 'Blog',
     'iletisim': 'İletişim',
-    'yardim': 'Yardım Merkezi'
+    'yardim': 'Yardım Merkezi',
+    'cerez': 'Çerez Ayarları'
   };
   var icerikler = {
     'kullanim': yasalKullanimKosullari(),
@@ -183,7 +184,8 @@ function yasalBelgeAc(tur) {
     'hakkimizda': sayfaHakkimizda(),
     'blog': sayfaBlog(),
     'iletisim': sayfaIletisim(),
-    'yardim': sayfaYardimMerkezi()
+    'yardim': sayfaYardimMerkezi(),
+    'cerez': sayfaCerezAyarlari()
   };
   var modal = document.getElementById('yasal-modal');
   if (!modal) return;
@@ -758,6 +760,113 @@ function sayfaYardimMerkezi() {
 
     '<div class="yasal-iletisim" style="margin-top:24px"><strong>Daha fazla yardım mı gerekiyor?</strong><br>destek@lexbase.app adresine yazın — en kısa sürede yanıtlayalım.</div>' +
     '</div>';
+}
+
+function sayfaCerezAyarlari() {
+  var mevcutTercih = localStorage.getItem('lb_consent');
+  var tercihMetni = !mevcutTercih ? 'Henüz tercih yapılmadı' : (mevcutTercih === 'kabul' ? 'Tümü kabul edildi' : 'Yalnızca zorunlu çerezler');
+  var tercihRenk = !mevcutTercih ? 'var(--text-muted)' : (mevcutTercih === 'kabul' ? '#4ade80' : 'var(--gold-light)');
+
+  return '<div class="yasal-icerik sayfa-icerik">' +
+    '<p class="sayfa-tanitim">LexBase\'in kullandığı çerezler ve yerel depolama teknolojileri hakkında bilgi edinin ve tercihlerinizi yönetin.</p>' +
+
+    '<div class="cerez-tercih-kutu">' +
+    '<div class="cerez-tercih-baslik">Mevcut Tercihiniz</div>' +
+    '<div class="cerez-tercih-durum" style="color:' + tercihRenk + '">' + tercihMetni + '</div>' +
+    '<div class="cerez-tercih-butonlar">' +
+    '<button class="consent-btn consent-btn-kabul" onclick="cerezTercihGuncelle(\'kabul\')" style="font-size:12px;padding:8px 16px;">Tümünü Kabul Et</button>' +
+    '<button class="consent-btn consent-btn-zorunlu" onclick="cerezTercihGuncelle(\'zorunlu\')" style="font-size:12px;padding:8px 16px;">Yalnızca Zorunlu</button>' +
+    '</div>' +
+    '</div>' +
+
+    '<h3>Kullanılan Çerez ve Depolama Teknolojileri</h3>' +
+    '<table class="yasal-tablo">' +
+    '<tr><th>Teknoloji</th><th>Adı / Anahtarı</th><th>Amacı</th><th>Türü</th><th>Süresi</th></tr>' +
+    '<tr>' +
+    '<td><strong>localStorage</strong></td>' +
+    '<td><code>hukuk_buro_v3</code></td>' +
+    '<td>Kullanıcı oturum bilgileri, uygulama verileri ve ayarlar. Uygulamanın çalışması için zorunludur.</td>' +
+    '<td>🔴 Zorunlu</td>' +
+    '<td>Hesap aktif olduğu sürece</td>' +
+    '</tr>' +
+    '<tr>' +
+    '<td><strong>localStorage</strong></td>' +
+    '<td><code>lb_consent</code></td>' +
+    '<td>Çerez/veri kullanım tercihinin saklanması.</td>' +
+    '<td>🔴 Zorunlu</td>' +
+    '<td>Süresiz</td>' +
+    '</tr>' +
+    '<tr>' +
+    '<td><strong>localStorage</strong></td>' +
+    '<td><code>sb-*-auth-token</code></td>' +
+    '<td>Supabase kimlik doğrulama oturum token\'ı. Cloud senkronizasyon için gereklidir.</td>' +
+    '<td>🔴 Zorunlu</td>' +
+    '<td>Oturum boyunca</td>' +
+    '</tr>' +
+    '<tr>' +
+    '<td><strong>Çerez (Cookie)</strong></td>' +
+    '<td><code>__cf_bm</code></td>' +
+    '<td>Cloudflare bot yönetimi — DDoS ve kötü amaçlı trafik koruması.</td>' +
+    '<td>🔴 Zorunlu</td>' +
+    '<td>30 dakika</td>' +
+    '</tr>' +
+    '<tr>' +
+    '<td><strong>Çerez (Cookie)</strong></td>' +
+    '<td><code>__cfruid</code></td>' +
+    '<td>Cloudflare yük dengeleme ve istek yönlendirme.</td>' +
+    '<td>🔴 Zorunlu</td>' +
+    '<td>Oturum boyunca</td>' +
+    '</tr>' +
+    '<tr>' +
+    '<td><strong>Service Worker</strong></td>' +
+    '<td><code>lexbase-v8</code></td>' +
+    '<td>Çevrimdışı erişim için statik dosyaların (CSS, JS, HTML) önbelleğe alınması.</td>' +
+    '<td>🔴 Zorunlu</td>' +
+    '<td>Güncellemeye kadar</td>' +
+    '</tr>' +
+    '</table>' +
+
+    '<h3>Çerez Türleri Açıklaması</h3>' +
+    '<div class="cerez-tur-liste">' +
+    '<div class="cerez-tur-item cerez-tur-zorunlu">' +
+    '<strong>🔴 Zorunlu Çerezler</strong>' +
+    '<p>Platformun temel işlevlerinin çalışması için gerekli olan çerezlerdir. Oturum yönetimi, güvenlik koruması ve kullanıcı tercihleri bu kapsamdadır. Bu çerezler devre dışı bırakılamaz.</p>' +
+    '</div>' +
+    '<div class="cerez-tur-item cerez-tur-analitik">' +
+    '<strong>📊 Analitik Çerezler</strong>' +
+    '<p>LexBase şu anda herhangi bir analitik veya izleme çerezi <strong>kullanmamaktadır</strong>. Google Analytics, Facebook Pixel veya benzeri üçüncü taraf izleme araçları bulunmamaktadır.</p>' +
+    '</div>' +
+    '<div class="cerez-tur-item cerez-tur-reklam">' +
+    '<strong>📢 Reklam Çerezleri</strong>' +
+    '<p>LexBase herhangi bir reklam çerezi <strong>kullanmamaktadır</strong>. Kullanıcı verileri reklam amacıyla üçüncü taraflarla paylaşılmaz.</p>' +
+    '</div>' +
+    '</div>' +
+
+    '<h3>Üçüncü Taraf Hizmetleri</h3>' +
+    '<table class="yasal-tablo">' +
+    '<tr><th>Hizmet</th><th>Çerez Kullanımı</th><th>Amaç</th></tr>' +
+    '<tr><td>Cloudflare</td><td>__cf_bm, __cfruid</td><td>CDN, DDoS koruması, güvenlik</td></tr>' +
+    '<tr><td>Supabase</td><td>Auth token (localStorage)</td><td>Veritabanı, kimlik doğrulama</td></tr>' +
+    '</table>' +
+    '<p style="font-size:11px;color:var(--text-muted);margin-top:8px;">Yukarıdaki hizmetler yalnızca platformun çalışması için zorunlu teknik amaçlarla kullanılmaktadır. Hiçbiri pazarlama veya reklam amacı taşımamaktadır.</p>' +
+
+    '<h3>Haklarınız</h3>' +
+    '<ul>' +
+    '<li>Tarayıcı ayarlarından tüm çerezleri engelleyebilir veya silebilirsiniz. Ancak zorunlu çerezlerin engellenmesi platformun çalışmamasına neden olabilir.</li>' +
+    '<li>localStorage verilerini tarayıcınızın Geliştirici Araçları > Uygulama > Yerel Depolama bölümünden inceleyebilir ve silebilirsiniz.</li>' +
+    '<li>Tercihlerinizi dilediğiniz zaman bu sayfa üzerinden değiştirebilirsiniz.</li>' +
+    '<li>6698 sayılı KVKK kapsamındaki tüm haklarınız saklıdır. Detaylar için <a href="javascript:void(0)" onclick="yasalBelgeAc(\'kvkk\')" style="color:var(--gold)">KVKK Aydınlatma Metni</a>\'ni inceleyebilirsiniz.</li>' +
+    '</ul>' +
+
+    '<div class="yasal-iletisim" style="margin-top:24px"><strong>Çerez politikamız hakkında sorularınız için:</strong><br>info@lexbase.app</div>' +
+    '</div>';
+}
+
+function cerezTercihGuncelle(tur) {
+  localStorage.setItem('lb_consent', tur);
+  // Modalı yeniden render et (güncel tercihi göstermek için)
+  var icerikEl = document.getElementById('yasal-modal-icerik');
+  if (icerikEl) icerikEl.innerHTML = sayfaCerezAyarlari();
 }
 
 // ================================================================
