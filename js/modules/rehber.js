@@ -1012,11 +1012,12 @@ function renderMdKimlik(){
       +'</div></div>';
   }
 
-  // Vekaletname uyarıları
+  // Vekaletname uyarıları (state.belgeler'den oku)
   var bugun=today();
-  var bitmisVek=(m.vekaletnameler||[]).filter(function(v){return v.bitis&&v.bitis<bugun;});
-  var yaklaVek=(m.vekaletnameler||[]).filter(function(v){
-    return v.bitis&&v.bitis>=bugun&&v.bitis<new Date(Date.now()+30*24*3600000).toISOString().slice(0,10);
+  var vekBelgeler=getBelgeVekaletnameler(m.id);
+  var bitmisVek=vekBelgeler.filter(function(b){return b.meta&&b.meta.bitis&&b.meta.bitis<bugun;});
+  var yaklaVek=vekBelgeler.filter(function(b){
+    return b.meta&&b.meta.bitis&&b.meta.bitis>=bugun&&b.meta.bitis<new Date(Date.now()+30*24*3600000).toISOString().slice(0,10);
   });
   if(bitmisVek.length||yaklaVek.length){
     var uyariRenk=bitmisVek.length?'#e74c3c':'#e67e22';
@@ -1024,7 +1025,7 @@ function renderMdKimlik(){
     if(bitmisVek.length)html+='<div style="color:#e74c3c;font-size:12px;font-weight:600">⛔ '+bitmisVek.length+' vekâletname süresi doldu!</div>';
     if(yaklaVek.length)html+='<div style="color:#e67e22;font-size:12px;font-weight:600">⚠ '+yaklaVek.length+' vekâletname 30 gün içinde sona eriyor</div>';
     html+='<button class="btn btn-sm" style="margin-top:8px;background:'+uyariRenk+';color:#fff;border:none;padding:4px 10px;border-radius:5px;cursor:pointer" '
-      +'onclick="muvTab(\'iliskiler\',document.querySelectorAll(\'#page-muv-detay .tab\')[6])">Vekâletnamelere Git →</button></div>';
+      +'onclick="muvTab(\'belgeler\',document.querySelectorAll(\'#page-muv-detay .tab\')[2])">Belgelere Git →</button></div>';
   }
 
   document.getElementById('mt-kimlik-content').innerHTML=html;
@@ -1206,99 +1207,11 @@ function renderMdIliskiler(){
   }
   html+=`</div>`;
 
-  // Vekaletname Bölümü
-  const vekaletnameler=(muv.vekaletnameler||[]);
-  const bugun=today();
-  html+=`<div class="section" style="margin-top:0">
-    <div class="section-header">
-      <div class="section-title">📜 Vekâletname Takibi</div>
-      <button class="btn btn-gold btn-sm" onclick="openVekaletnameModal()">+ Vekâletname Ekle</button>
-    </div>`;
-  if(!vekaletnameler.length){
-    html+=`<div class="empty" style="padding:32px"><div class="empty-icon">📜</div><p>Vekâletname kaydı yok</p></div>`;
-  } else {
-    html+=`<div style="padding:0"><table><thead><tr><th>Tarih</th><th>Noter</th><th>Yevmiye</th><th>Vekil</th><th>Geçerlilik</th><th>Özel Yetki</th><th>İlgili Dosya</th><th></th></tr></thead><tbody>`;
-    vekaletnameler.forEach(v=>{
-      const bitmis=v.bitis&&v.bitis<bugun;
-      const yaklasan=v.bitis&&!bitmis&&v.bitis<new Date(Date.now()+30*24*3600000).toISOString().slice(0,10);
-      const durum=bitmis?`<span style="color:#e74c3c;font-weight:700">⛔ Süresi Doldu</span>`:yaklasan?`<span style="color:#e67e22;font-weight:700">⚠ ${fmtD(v.bitis)}</span>`:v.bitis?`<span style="color:var(--green)">${fmtD(v.bitis)}</span>`:'<span style="color:var(--text-dim)">Belirtilmemiş</span>';
-      html+=`<tr>
-        <td>${fmtD(v.tarih)}</td>
-        <td style="font-size:11px">${v.noter||'—'}</td>
-        <td style="font-size:11px">${v.yevmiye||'—'}</td>
-        <td style="font-size:11px">${v.vekil||'—'}</td>
-        <td>${durum}</td>
-        <td style="text-align:center">${v.ozel?'<span style="color:var(--gold)">✓</span>':'—'}</td>
-        <td style="font-size:11px;color:var(--text-muted)">${v.dosyalar||'—'}</td>
-        <td><button class="btn btn-outline btn-sm" onclick="openVekaletnameModal('${v.id}')">✏</button></td>
-      </tr>`;
-    });
-    html+=`</tbody></table></div>`;
-  }
-  html+=`</div>`;
+  // Vekâletname bölümü Belgeler sekmesine taşındı — burada yalnızca ilişkiler gösterilir
   document.getElementById('mt-iliskiler-content').innerHTML=html;
 }
 
-// ================================================================
-// VEKALETNAME TAKİP
-// ================================================================
-let vekaletnameEditId=null;
-function openVekaletnameModal(editId){
-  vekaletnameEditId=editId||null;
-  const muv=getMuv(aktivMuvId);if(!muv)return;
-  const btn=document.getElementById('vk-sil-btn');
-  if(editId){
-    const v=(muv.vekaletnameler||[]).find(x=>x.id===editId);if(!v)return;
-    document.getElementById('vk-tarih').value=v.tarih||'';
-    document.getElementById('vk-bitis').value=v.bitis||'';
-    document.getElementById('vk-noter').value=v.noter||'';
-    document.getElementById('vk-yevmiye').value=v.yevmiye||'';
-    document.getElementById('vk-vekil').value=v.vekil||'';
-    document.getElementById('vk-dosyalar').value=v.dosyalar||'';
-    document.getElementById('vk-not').value=v.not||'';
-    document.getElementById('vk-ozel').checked=!!v.ozel;
-    document.getElementById('vk-ozel-alan').style.display=v.ozel?'block':'none';
-    document.getElementById('vk-ozel-acik').value=v.ozelAcik||'';
-    document.getElementById('vk-modal-title').textContent='📜 Vekâletname Düzenle';
-    btn.style.display='inline-flex';
-  } else {
-    ['vk-tarih','vk-bitis','vk-noter','vk-yevmiye','vk-vekil','vk-dosyalar','vk-not','vk-ozel-acik'].forEach(i=>document.getElementById(i).value='');
-    document.getElementById('vk-ozel').checked=false;
-    document.getElementById('vk-ozel-alan').style.display='none';
-    document.getElementById('vk-modal-title').textContent='📜 Vekâletname Ekle';
-    btn.style.display='none';
-  }
-  document.getElementById('vekaletname-modal').classList.add('open');
-}
-function saveVekaletname(){
-  const muv=getMuv(aktivMuvId);if(!muv)return;
-  if(!muv.vekaletnameler)muv.vekaletnameler=[];
-  const veri={
-    tarih:document.getElementById('vk-tarih').value,
-    bitis:document.getElementById('vk-bitis').value,
-    noter:document.getElementById('vk-noter').value.trim(),
-    yevmiye:document.getElementById('vk-yevmiye').value.trim(),
-    vekil:document.getElementById('vk-vekil').value.trim(),
-    dosyalar:document.getElementById('vk-dosyalar').value.trim(),
-    not:document.getElementById('vk-not').value.trim(),
-    ozel:document.getElementById('vk-ozel').checked,
-    ozelAcik:document.getElementById('vk-ozel-acik').value.trim(),
-  };
-  if(vekaletnameEditId){
-    const v=muv.vekaletnameler.find(x=>x.id===vekaletnameEditId);
-    if(v)Object.assign(v,veri);
-  } else {
-    muv.vekaletnameler.push({id:uid(),...veri});
-  }
-  closeModal('vekaletname-modal');saveData();renderMdIliskiler();notify('✓ Vekâletname kaydedildi');
-}
-function deleteVekaletname(){
-  if(!vekaletnameEditId)return;
-  if(!confirm('Vekâletname kaydını silmek istiyor musunuz?'))return;
-  const muv=getMuv(aktivMuvId);if(!muv)return;
-  muv.vekaletnameler=(muv.vekaletnameler||[]).filter(x=>x.id!==vekaletnameEditId);
-  closeModal('vekaletname-modal');saveData();renderMdIliskiler();notify('Silindi');
-}
+// Vekaletname fonksiyonları Belgeler sistemine taşındı (openBelgeModal, saveBelge, delBelge)
 
 // ================================================================
 // MÜVEKKİL SKORU
@@ -1317,9 +1230,9 @@ function calcMuvSkor(muvId){
   const aktifDav=davalar.filter(d=>d.durum==='Aktif').length;
   if(aktifDav>=3)puan+=10;
   else if(aktifDav>=1)puan+=5;
-  // Vekaletname süresi dolmuş mu?
+  // Vekaletname süresi dolmuş mu? (state.belgeler'den oku)
   const bugun=today();
-  const bitmiş=(muv.vekaletnameler||[]).some(v=>v.bitis&&v.bitis<bugun);
+  const bitmiş=getBelgeVekaletnameler(muvId).some(function(b){return b.meta&&b.meta.bitis&&b.meta.bitis<bugun;});
   if(bitmiş)puan-=20;
   // Son iletişim ne zaman?
   const ilets=(state.iletisimler||[]).filter(x=>x.muvId===muvId);
@@ -1465,23 +1378,23 @@ function renderMdRapor(){
     </div>
   </div>`:''}
 
-  <!-- Vekaletname Durumu -->
-  ${(muv.vekaletnameler||[]).length?`<div class="section">
-    <div class="section-header"><div class="section-title">📜 Vekâletname Durumu</div></div>
-    <div class="section-body" style="padding:0">
-      ${(muv.vekaletnameler||[]).map(v=>{
-        const bitmis=v.bitis&&v.bitis<today();
-        const yaklasan=v.bitis&&!bitmis&&v.bitis<new Date(Date.now()+30*24*3600000).toISOString().slice(0,10);
-        return`<div style="padding:10px 18px;border-top:1px solid var(--border);display:flex;gap:16px;align-items:center">
-          <div style="flex:1;font-size:12px">${v.noter||'Belirtilmemiş'} ${v.yevmiye?'/ Yev: '+v.yevmiye:''}</div>
-          ${bitmis?`<span style="color:#e74c3c;font-weight:700;font-size:12px">⛔ Süresi Doldu (${fmtD(v.bitis)})</span>`:
-            yaklasan?`<span style="color:#e67e22;font-weight:700;font-size:12px">⚠ ${fmtD(v.bitis)}'de Sona Eriyor</span>`:
-            v.bitis?`<span style="color:var(--green);font-size:12px">✓ Geçerli — ${fmtD(v.bitis)}</span>`:'<span style="color:var(--text-dim);font-size:12px">Bitiş belirtilmemiş</span>'}
-          ${v.ozel?`<span style="background:var(--gold-dim);color:var(--gold);border-radius:4px;font-size:9px;font-weight:700;padding:2px 6px">ÖZEL YETKİ</span>`:''}
-        </div>`;
-      }).join('')}
-    </div>
-  </div>`:''}`;
+  <!-- Vekaletname Durumu (state.belgeler'den) -->
+  ${(function(){
+    var vekler=getBelgeVekaletnameler(aktivMuvId);
+    if(!vekler.length)return'';
+    return'<div class="section"><div class="section-header"><div class="section-title">📜 Vekâletname Durumu</div></div><div class="section-body" style="padding:0">'+
+      vekler.map(function(b){
+        var dur=getVekDurum(b);
+        var noter=(b.meta&&b.meta.noter)||'Belirtilmemiş';
+        var yevmiye=(b.meta&&b.meta.yevmiye)?'/ Yev: '+b.meta.yevmiye:'';
+        var ozel=(b.meta&&b.meta.ozel)?'<span style="background:var(--gold-dim);color:var(--gold);border-radius:4px;font-size:9px;font-weight:700;padding:2px 6px">ÖZEL YETKİ</span>':'';
+        var bitisStr=b.meta&&b.meta.bitis?fmtD(b.meta.bitis):'';
+        return'<div style="padding:10px 18px;border-top:1px solid var(--border);display:flex;gap:16px;align-items:center">'+
+          '<div style="flex:1;font-size:12px">'+noter+' '+yevmiye+'</div>'+
+          '<span style="color:'+dur.renk+';font-weight:700;font-size:12px">'+dur.ikon+' '+dur.label+(bitisStr?' ('+bitisStr+')':'')+'</span>'+
+          ozel+'</div>';
+      }).join('')+'</div></div>';
+  })()}`;
 
   document.getElementById('mt-rapor-content').innerHTML=html;
 }
@@ -1677,65 +1590,352 @@ async function deleteAvans(id){
 }
 
 // ================================================================
-// BELGELER (müvekkil seviyesi)
+// BELGELER — MÜVEKKİL ÖZLÜK DOSYASI
 // ================================================================
-function openBelgeModal(tur){
-  belgeModalTur=tur;bgFileData=null;
-  document.getElementById('bg-file-lbl').textContent='Tıklayın veya sürükleyin';
-  ['bg-ad','bg-acik'].forEach(i=>document.getElementById(i).value='');
-  document.getElementById('bg-file').value='';
-  const t={sozlesme:'Sözleşme Yükle',vekaletname:'Vekâletname Yükle',diger:'Belge Yükle'};
-  document.getElementById('bg-title').textContent=t[tur]||'Belge Yükle';
+var BELGE_KAT = {
+  vekaletname: { label:'Vekâletnameler', ikon:'📜', renk:'#9b59b6' },
+  sozlesme:    { label:'Sözleşmeler',    ikon:'📋', renk:'var(--gold)' },
+  kimlik:      { label:'Kimlik Belgeleri',ikon:'🪪', renk:'var(--blue)' },
+  sirkuler:    { label:'Sicil / Sirkü',  ikon:'🏢', renk:'#2ecc71' },
+  makbuz:      { label:'Makbuz / Dekont', ikon:'🧾', renk:'#1abc9c' },
+  diger:       { label:'Diğer',          ikon:'📄', renk:'var(--text-muted)' }
+};
+var belgeEditId = null;
+var belgeFiltreKat = '';
+var belgeAraMetin = '';
+
+// ── Yardımcılar ──────────────────────────────────────────────
+function getBelgeVekaletnameler(muvId) {
+  return (state.belgeler || []).filter(function(b) { return b.muvId === muvId && b.tur === 'vekaletname'; });
+}
+function getVekDurum(belge) {
+  var bugun = today();
+  var bitis = belge.meta && belge.meta.bitis;
+  if (!bitis) return { kod:'belirsiz', renk:'var(--text-dim)', ikon:'—', label:'Belirtilmemiş' };
+  if (bitis < bugun) return { kod:'bitmis', renk:'#e74c3c', ikon:'⛔', label:'Süresi Doldu' };
+  var otuzGun = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+  if (bitis < otuzGun) return { kod:'yaklasan', renk:'#e67e22', ikon:'⚠', label:'Yaklaşıyor' };
+  return { kod:'gecerli', renk:'var(--green)', ikon:'✓', label:'Geçerli' };
+}
+
+// ── RENDER ───────────────────────────────────────────────────
+function renderBelgeler() {
+  var el = document.getElementById('belge-container');
+  if (!el) return;
+  var tum = (state.belgeler || []).filter(function(b) { return b.muvId === aktivMuvId; });
+  var bugun = today();
+
+  // Filtrele
+  var liste = tum;
+  if (belgeFiltreKat) liste = liste.filter(function(b) { return b.tur === belgeFiltreKat; });
+  if (belgeAraMetin) {
+    var q = belgeAraMetin.toLowerCase();
+    liste = liste.filter(function(b) {
+      return (b.ad || '').toLowerCase().indexOf(q) !== -1 ||
+             (b.acik || '').toLowerCase().indexOf(q) !== -1 ||
+             (b.meta && b.meta.noter || '').toLowerCase().indexOf(q) !== -1 ||
+             (b.meta && b.meta.yevmiye || '').toLowerCase().indexOf(q) !== -1;
+    });
+  }
+
+  // Vekâletname uyarıları
+  var bitmisVek = tum.filter(function(b) { return b.tur === 'vekaletname' && b.meta && b.meta.bitis && b.meta.bitis < bugun; });
+  var yaklaVek = tum.filter(function(b) {
+    if (b.tur !== 'vekaletname' || !b.meta || !b.meta.bitis) return false;
+    return b.meta.bitis >= bugun && b.meta.bitis < new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+  });
+
+  var html = '';
+
+  // Başlık
+  html += '<div class="section"><div class="section-header">';
+  html += '<div class="section-title">📁 Müvekkil Özlük Dosyası</div>';
+  html += '<button class="btn btn-gold btn-sm" onclick="openBelgeModal()">+ Belge Ekle</button>';
+  html += '</div>';
+
+  // Arama + filtre
+  html += '<div style="display:flex;gap:10px;padding:0 18px 12px;flex-wrap:wrap">';
+  html += '<input id="belge-ara-input" type="text" placeholder="🔍 Belge ara..." value="' + (belgeAraMetin || '') + '" oninput="belgeAraMetin=this.value;renderBelgeler()" style="flex:1;min-width:160px;padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-size:12px">';
+  html += '<select onchange="belgeFiltreKat=this.value;renderBelgeler()" style="padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-size:12px">';
+  html += '<option value="">Tüm Kategoriler</option>';
+  Object.keys(BELGE_KAT).forEach(function(k) {
+    html += '<option value="' + k + '"' + (belgeFiltreKat === k ? ' selected' : '') + '>' + BELGE_KAT[k].ikon + ' ' + BELGE_KAT[k].label + '</option>';
+  });
+  html += '</select></div>';
+
+  // Uyarı banner
+  if (bitmisVek.length || yaklaVek.length) {
+    var uyariRenk = bitmisVek.length ? '#e74c3c' : '#e67e22';
+    html += '<div style="background:rgba(231,76,60,.08);border:1px solid ' + uyariRenk + '44;border-radius:var(--radius);padding:10px 16px;margin:0 18px 12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">';
+    if (bitmisVek.length) html += '<span style="color:#e74c3c;font-size:12px;font-weight:600">⛔ ' + bitmisVek.length + ' vekâletname süresi doldu</span>';
+    if (yaklaVek.length) html += '<span style="color:#e67e22;font-size:12px;font-weight:600">⚠ ' + yaklaVek.length + ' vekâletname 30 gün içinde sona eriyor</span>';
+    html += '</div>';
+  }
+
+  // Belgeler grupla
+  var katSira = ['vekaletname', 'sozlesme', 'kimlik', 'sirkuler', 'makbuz', 'diger'];
+  var toplamBoyut = 0;
+  var toplamSayi = liste.length;
+
+  katSira.forEach(function(kat) {
+    var items = liste.filter(function(b) { return b.tur === kat; });
+    var katInfo = BELGE_KAT[kat] || BELGE_KAT.diger;
+
+    html += '<div style="margin:0 18px 14px">';
+    html += '<div style="font-size:10px;font-weight:700;color:' + katInfo.renk + ';text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:6px">';
+    html += katInfo.ikon + ' ' + katInfo.label + ' <span style="color:var(--text-dim);font-weight:400">(' + items.length + ')</span></div>';
+
+    if (!items.length) {
+      html += '<div style="font-size:11px;color:var(--text-dim);padding:8px 0">Belge yok</div>';
+    } else {
+      items.forEach(function(b) {
+        if (b.data) toplamBoyut += (b.data.length * 3 / 4);
+        var isVek = b.tur === 'vekaletname';
+        var hasDosya = !!b.data;
+
+        // Aksiyon butonları
+        var aksiyonlar = '';
+        if (hasDosya) {
+          aksiyonlar += '<button class="btn btn-outline btn-sm" onclick="openBelgeViewer(\'' + b.id + '\')" title="Görüntüle">👁</button>';
+          aksiyonlar += '<button class="btn btn-outline btn-sm" onclick="dlBelge(\'' + b.id + '\')" title="İndir">⬇</button>';
+        } else {
+          aksiyonlar += '<button class="btn btn-outline btn-sm" onclick="openBelgeModal(\'' + b.id + '\')" title="Dosya Ekle" style="color:var(--gold)">📎</button>';
+        }
+        aksiyonlar += '<button class="btn btn-outline btn-sm" onclick="openBelgeModal(\'' + b.id + '\')" title="Düzenle">✏</button>';
+
+        html += '<div class="file-item">';
+        html += '<div class="file-icon">' + (hasDosya ? fileIcon(b.dosyaAd) : katInfo.ikon) + '</div>';
+        html += '<div class="file-info">';
+        html += '<div class="file-name">' + (b.ad || 'İsimsiz Belge') + '</div>';
+
+        // Meta satırı
+        var metaParts = [];
+        if (b.tarih) metaParts.push(fmtD(b.tarih));
+        else if (b.yukleme) metaParts.push(fmtD(b.yukleme));
+        if (hasDosya) metaParts.push(fileSize(b.data));
+        if (!hasDosya) metaParts.push('<span style="color:var(--gold)">dosya yok</span>');
+        if (b.acik) metaParts.push(b.acik);
+
+        // Vekâletname özel meta
+        if (isVek && b.meta) {
+          if (b.meta.noter) metaParts.push(b.meta.noter);
+          if (b.meta.yevmiye) metaParts.push('Y:' + b.meta.yevmiye);
+          if (b.meta.vekil) metaParts.push(b.meta.vekil);
+        }
+        html += '<div class="file-meta">' + metaParts.join(' · ') + '</div>';
+        html += '</div>';
+
+        // Vekâletname durum badge
+        if (isVek && b.meta) {
+          var dur = getVekDurum(b);
+          html += '<div style="font-size:11px;font-weight:600;color:' + dur.renk + ';white-space:nowrap;margin-right:6px">' + dur.ikon + ' ' + dur.label + '</div>';
+        }
+
+        html += '<div class="file-actions">' + aksiyonlar + '</div>';
+        html += '</div>';
+      });
+    }
+    html += '</div>';
+  });
+
+  // Alt bilgi
+  var boyutMB = (toplamBoyut / (1024 * 1024)).toFixed(1);
+  html += '<div style="text-align:right;padding:8px 18px;font-size:10px;color:var(--text-dim);border-top:1px solid var(--border)">';
+  html += 'Toplam: ' + toplamSayi + ' belge' + (toplamBoyut > 0 ? ' · ' + boyutMB + ' MB' : '');
+  html += '</div>';
+
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+// ── MODAL ────────────────────────────────────────────────────
+function bgTurDegisti() {
+  var tur = document.getElementById('bg-tur').value;
+  document.getElementById('bg-vek-alanlar').style.display = (tur === 'vekaletname') ? 'block' : 'none';
+}
+
+function openBelgeModal(editId) {
+  belgeEditId = editId || null;
+  bgFileData = null;
+  document.getElementById('bg-file').value = '';
+  document.getElementById('bg-file-lbl').textContent = 'Tıklayın veya sürükleyin';
+
+  var silBtn = document.getElementById('bg-sil-btn');
+
+  if (editId) {
+    // Düzenleme modu
+    var b = (state.belgeler || []).find(function(x) { return x.id === editId; });
+    if (!b) return;
+    document.getElementById('bg-title').textContent = '📁 Belge Düzenle';
+    document.getElementById('bg-tur').value = b.tur || 'diger';
+    document.getElementById('bg-ad').value = b.ad || '';
+    document.getElementById('bg-tarih').value = b.tarih || '';
+    document.getElementById('bg-acik').value = b.acik || '';
+
+    if (b.data) {
+      bgFileData = { ad: b.dosyaAd, tip: b.tip, data: b.data };
+      document.getElementById('bg-file-lbl').textContent = '📎 ' + (b.dosyaAd || 'Mevcut dosya');
+    }
+
+    // Vekâletname alanları
+    if (b.tur === 'vekaletname' && b.meta) {
+      document.getElementById('bg-vk-tarih').value = b.meta.bitis ? (b.tarih || '') : '';
+      document.getElementById('bg-vk-bitis').value = b.meta.bitis || '';
+      document.getElementById('bg-vk-noter').value = b.meta.noter || '';
+      document.getElementById('bg-vk-yevmiye').value = b.meta.yevmiye || '';
+      document.getElementById('bg-vk-vekil').value = b.meta.vekil || '';
+      document.getElementById('bg-vk-ozel').checked = !!b.meta.ozel;
+      document.getElementById('bg-vk-ozel-alan').style.display = b.meta.ozel ? 'block' : 'none';
+      document.getElementById('bg-vk-ozel-acik').value = b.meta.ozelAcik || '';
+    }
+
+    silBtn.style.display = 'inline-flex';
+    bgTurDegisti();
+  } else {
+    // Yeni belge
+    document.getElementById('bg-title').textContent = '📁 Belge Ekle';
+    document.getElementById('bg-tur').value = 'diger';
+    document.getElementById('bg-ad').value = '';
+    document.getElementById('bg-tarih').value = today();
+    document.getElementById('bg-acik').value = '';
+    // Vek alanlarını sıfırla
+    ['bg-vk-tarih', 'bg-vk-bitis', 'bg-vk-noter', 'bg-vk-yevmiye', 'bg-vk-vekil', 'bg-vk-ozel-acik'].forEach(function(i) {
+      document.getElementById(i).value = '';
+    });
+    document.getElementById('bg-vk-ozel').checked = false;
+    document.getElementById('bg-vk-ozel-alan').style.display = 'none';
+    document.getElementById('bg-vek-alanlar').style.display = 'none';
+    silBtn.style.display = 'none';
+  }
+
   document.getElementById('belge-modal').classList.add('open');
 }
-function bgFileSelected(ev){
-  const f=ev.target.files[0];if(!f)return;
-  document.getElementById('bg-file-lbl').textContent=`📎 ${f.name}`;
-  if(!document.getElementById('bg-ad').value)document.getElementById('bg-ad').value=f.name;
-  const r=new FileReader();r.onload=e=>{bgFileData={ad:f.name,tip:f.type,data:e.target.result};};r.readAsDataURL(f);
+
+function bgFileSelected(ev) {
+  var f = ev.target.files[0]; if (!f) return;
+  // 5 MB kontrol
+  if (f.size > 5 * 1024 * 1024) {
+    notify('⚠ Dosya 5 MB sınırını aşıyor!');
+    ev.target.value = '';
+    return;
+  }
+  document.getElementById('bg-file-lbl').textContent = '📎 ' + f.name;
+  if (!document.getElementById('bg-ad').value) document.getElementById('bg-ad').value = f.name;
+  var r = new FileReader();
+  r.onload = function(e) { bgFileData = { ad: f.name, tip: f.type, data: e.target.result }; };
+  r.readAsDataURL(f);
 }
-function saveBelge(){
-  if(!bgFileData){notify('Dosya seçin!');return;}
-  const ad=document.getElementById('bg-ad').value.trim()||bgFileData.ad;
-  const tur=belgeModalTur;
-  state.belgeler.push({id:uid(),muvId:aktivMuvId,ad,tur,acik:document.getElementById('bg-acik').value.trim(),dosyaAd:bgFileData.ad,tip:bgFileData.tip,data:bgFileData.data,yukleme:today()});
-  addLog(aktivMuvId,'Belge Yüklendi',`${ad} | ${tur}`);
-  bgFileData=null;closeModal('belge-modal');saveData();renderBelgeler();notify('✓ Belge yüklendi');
-}
-function renderBelgeler(){
-  const el=document.getElementById('belge-list'),em=document.getElementById('belge-empty');
-  const list=state.belgeler.filter(b=>b.muvId===aktivMuvId);
-  if(!list.length){el.innerHTML='';em.style.display='block';return;}em.style.display='none';
-  const groups={sozlesme:'📋 Sözleşmeler',vekaletname:'🤝 Vekâletnameler',diger:'📄 Diğer'};
-  let html='';
-  ['sozlesme','vekaletname','diger'].forEach(tur=>{
-    const items=list.filter(b=>b.tur===tur);if(!items.length)return;
-    html+=`<div style="margin-bottom:14px"><div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">${groups[tur]}</div>`;
-    items.forEach(b=>{
-      const gorunt=b.data?`<button class="btn btn-outline btn-sm" onclick="openBelgeViewer('${b.id}')" title="Görüntüle">👁</button>`:'';
-      html+=`<div class="file-item"><div class="file-icon">${fileIcon(b.dosyaAd)}</div><div class="file-info"><div class="file-name">${b.ad}</div><div class="file-meta">${fmtD(b.yukleme)} · ${fileSize(b.data)}${b.acik?' · '+b.acik:''}</div></div><div class="file-actions">${gorunt}<button class="btn btn-outline btn-sm" onclick="dlBelge('${b.id}')">⬇</button><button class="delete-btn" onclick="delBelge('${b.id}')">✕</button></div></div>`;
-    });
-    html+='</div>';
-  });
-  el.innerHTML=html;
-}
-function dlBelge(id){const b=state.belgeler.find(x=>x.id===id);if(!b)return;const a=document.createElement('a');a.href=b.data;a.download=b.dosyaAd;a.click();}
-function openBelgeViewer(id){
-  const b=state.belgeler.find(x=>x.id===id);if(!b||!b.data)return;
-  bvCurrentData={data:b.data,tip:b.tip,ad:b.dosyaAd||b.ad};
-  document.getElementById('bv-title').textContent=b.ad||b.dosyaAd||'Belge';
-  const c=document.getElementById('bv-content');
-  const tip=(b.tip||'').toLowerCase();
-  if(tip.includes('image')||tip.includes('jpg')||tip.includes('jpeg')||tip.includes('png')){
-    c.innerHTML='<img src="'+b.data+'" style="max-width:100%;max-height:65vh;border-radius:var(--radius)">';
-  } else if(tip.includes('pdf')){
-    c.innerHTML='<iframe src="'+b.data+'" style="width:100%;height:65vh;border:none;border-radius:var(--radius)"></iframe>';
+
+function saveBelge() {
+  var tur = document.getElementById('bg-tur').value;
+  var ad = document.getElementById('bg-ad').value.trim();
+  if (!ad && bgFileData) ad = bgFileData.ad;
+  if (!ad) { notify('Belge adı girin!'); return; }
+
+  var veri = {
+    muvId: aktivMuvId,
+    ad: ad,
+    tur: tur,
+    acik: document.getElementById('bg-acik').value.trim(),
+    tarih: document.getElementById('bg-tarih').value || today(),
+    etiketler: [],
+    meta: {}
+  };
+
+  // Dosya verisi
+  if (bgFileData) {
+    veri.dosyaAd = bgFileData.ad;
+    veri.tip = bgFileData.tip;
+    veri.data = bgFileData.data;
+  }
+
+  // Vekâletname meta
+  if (tur === 'vekaletname') {
+    veri.meta = {
+      bitis: document.getElementById('bg-vk-bitis').value || '',
+      noter: document.getElementById('bg-vk-noter').value.trim(),
+      yevmiye: document.getElementById('bg-vk-yevmiye').value.trim(),
+      vekil: document.getElementById('bg-vk-vekil').value.trim(),
+      ozel: document.getElementById('bg-vk-ozel').checked,
+      ozelAcik: document.getElementById('bg-vk-ozel-acik').value.trim()
+    };
+  }
+
+  if (belgeEditId) {
+    // Güncelleme
+    var mevcut = state.belgeler.find(function(x) { return x.id === belgeEditId; });
+    if (mevcut) {
+      Object.assign(mevcut, veri);
+      // Dosya değişmediyse eski dosyayı koru
+      if (!bgFileData && mevcut.data) {
+        // data zaten mevcut, dokunma
+      } else if (!bgFileData) {
+        mevcut.dosyaAd = mevcut.dosyaAd || null;
+        mevcut.tip = mevcut.tip || null;
+        mevcut.data = mevcut.data || null;
+      }
+    }
+    addLog(aktivMuvId, 'Belge Güncellendi', ad + ' | ' + tur);
   } else {
-    c.innerHTML='<div style="padding:40px;text-align:center"><div style="font-size:48px;margin-bottom:16px">'+fileIcon(b.dosyaAd)+'</div><div style="font-size:14px;margin-bottom:16px">'+b.dosyaAd+'</div><button class="btn btn-gold" onclick="bvIndir()">⬇ İndir</button></div>';
+    // Yeni
+    veri.id = uid();
+    veri.yukleme = today();
+    if (!bgFileData) {
+      veri.dosyaAd = null;
+      veri.tip = null;
+      veri.data = null;
+    }
+    state.belgeler.push(veri);
+    addLog(aktivMuvId, 'Belge Eklendi', ad + ' | ' + tur);
+  }
+
+  bgFileData = null;
+  belgeEditId = null;
+  closeModal('belge-modal');
+  saveData();
+  renderBelgeler();
+  renderMdCards();
+  notify('✓ Belge kaydedildi');
+}
+
+function dlBelge(id) {
+  var b = state.belgeler.find(function(x) { return x.id === id; });
+  if (!b || !b.data) return;
+  var a = document.createElement('a');
+  a.href = b.data;
+  a.download = b.dosyaAd || 'belge';
+  a.click();
+}
+
+function openBelgeViewer(id) {
+  var b = state.belgeler.find(function(x) { return x.id === id; });
+  if (!b || !b.data) return;
+  bvCurrentData = { data: b.data, tip: b.tip, ad: b.dosyaAd || b.ad };
+  document.getElementById('bv-title').textContent = b.ad || b.dosyaAd || 'Belge';
+  var c = document.getElementById('bv-content');
+  var tip = (b.tip || '').toLowerCase();
+  if (tip.includes('image') || tip.includes('jpg') || tip.includes('jpeg') || tip.includes('png')) {
+    c.innerHTML = '<img src="' + b.data + '" style="max-width:100%;max-height:65vh;border-radius:var(--radius)">';
+  } else if (tip.includes('pdf')) {
+    c.innerHTML = '<iframe src="' + b.data + '" style="width:100%;height:65vh;border:none;border-radius:var(--radius)"></iframe>';
+  } else {
+    c.innerHTML = '<div style="padding:40px;text-align:center"><div style="font-size:48px;margin-bottom:16px">' + fileIcon(b.dosyaAd) + '</div><div style="font-size:14px;margin-bottom:16px">' + (b.dosyaAd || '') + '</div><button class="btn btn-gold" onclick="bvIndir()">⬇ İndir</button></div>';
   }
   document.getElementById('belge-viewer-modal').classList.add('open');
 }
-function delBelge(id){const b=state.belgeler.find(x=>x.id===id);if(b)addLog(aktivMuvId,'Belge Silindi',`${b.ad} | ${b.tur}`);state.belgeler=state.belgeler.filter(b=>b.id!==id);saveData();renderBelgeler();notify('Silindi');}
+
+function delBelge(id) {
+  if (!confirm('Bu belgeyi silmek istiyor musunuz?')) return;
+  var b = state.belgeler.find(function(x) { return x.id === id; });
+  if (b) addLog(aktivMuvId, 'Belge Silindi', b.ad + ' | ' + b.tur);
+  state.belgeler = state.belgeler.filter(function(x) { return x.id !== id; });
+  belgeEditId = null;
+  closeModal('belge-modal');
+  saveData();
+  renderBelgeler();
+  renderMdCards();
+  notify('Silindi');
+}
 
 // ================================================================
 // DAVALAR LİSTESİ

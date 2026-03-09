@@ -1009,9 +1009,7 @@
   </div>
   <div class="tab-panel" id="mt-kimlik"><div id="mt-kimlik-content"></div></div>
   <div class="tab-panel" id="mt-belgeler">
-    <div class="section"><div class="section-header"><div class="section-title">Müvekkil Belgeleri</div>
-    <div style="display:flex;gap:6px"><button class="btn btn-outline btn-sm" onclick="openBelgeModal('sozlesme')">+ Sözleşme</button><button class="btn btn-outline btn-sm" onclick="openBelgeModal('vekaletname')">+ Vekâletname</button><button class="btn btn-outline btn-sm" onclick="openBelgeModal('diger')">+ Diğer</button></div></div>
-    <div class="section-body"><div id="belge-list"></div><div class="empty" id="belge-empty" style="display:none"><div class="empty-icon">📄</div><p>Belge yok</p></div></div></div>
+    <div id="belge-container"></div>
   </div>
   <div class="tab-panel" id="mt-harcamalar">
     <div class="section"><div class="section-header"><div class="section-title">Tüm Harcamalar (Tüm Dosyalar)</div><div style="display:flex;gap:6px"><button class="btn btn-outline btn-sm" onclick="olusturMasrafRaporu(aktivMuvId)">Masraf Raporu</button><button class="btn btn-gold btn-sm" onclick="openHarcModalForMuv()">+ Harcama</button></div></div>
@@ -2115,37 +2113,7 @@
   </div>
 </div></div>
 
-<!-- Vekaletname Takip Modal -->
-<div class="modal-overlay" id="vekaletname-modal"><div class="modal modal-lg">
-  <div class="modal-title" id="vk-modal-title">📜 Vekâletname Bilgisi</div>
-  <div class="form-row">
-    <div class="form-group"><label>Düzenlenme Tarihi</label><input type="date" id="vk-tarih"></div>
-    <div class="form-group"><label>Geçerlilik Bitiş Tarihi</label><input type="date" id="vk-bitis"></div>
-  </div>
-  <div class="form-row">
-    <div class="form-group"><label>Noter Adı / Yeri</label><input id="vk-noter" placeholder="İstanbul 12. Noteri..."></div>
-    <div class="form-group"><label>Yevmiye No</label><input id="vk-yevmiye"></div>
-  </div>
-  <div class="form-row">
-    <div class="form-group"><label>Vekil Adı</label><input id="vk-vekil"></div>
-    <div class="form-group"><label>İlgili Dosyalar</label><input id="vk-dosyalar" placeholder="Virgülle ayırın..."></div>
-  </div>
-  <div style="margin-bottom:10px">
-    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
-      <input type="checkbox" id="vk-ozel" onchange="document.getElementById('vk-ozel-alan').style.display=this.checked?'block':'none'" style="width:16px;height:16px">
-      Özel Yetki İçeriyor
-    </label>
-    <div id="vk-ozel-alan" style="display:none;margin-top:8px">
-      <div class="form-group"><label>Özel Yetki Kapsamı</label><textarea id="vk-ozel-acik" rows="2" placeholder="Taşınmaz satışı, sulh yetkisi, bedel kabulü vb."></textarea></div>
-    </div>
-  </div>
-  <div class="form-group"><label>Notlar</label><textarea id="vk-not" rows="2"></textarea></div>
-  <div class="modal-footer">
-    <button class="btn btn-danger btn-sm" id="vk-sil-btn" style="margin-right:auto;display:none" onclick="deleteVekaletname()">Sil</button>
-    <button class="btn btn-outline" onclick="closeModal('vekaletname-modal')">İptal</button>
-    <button class="btn btn-gold" onclick="saveVekaletname()">Kaydet</button>
-  </div>
-</div></div>
+<!-- Vekaletname modal kaldırıldı — belgeler modalına taşındı -->
 
 <!-- Dava Modal -->
 <div class="modal-overlay" id="dav-modal"><div class="modal modal-lg" style="max-width:720px">
@@ -2694,20 +2662,61 @@
   <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('avans-modal')">İptal</button><button class="btn btn-gold" onclick="saveAvans()">Kaydet</button></div>
 </div></div>
 
-<!-- Belge Modal -->
-<div class="modal-overlay" id="belge-modal"><div class="modal">
-  <div class="modal-title" id="bg-title">Belge Yükle</div>
-  <div class="form-group"><label>Belge Adı</label><input id="bg-ad"></div>
-  <div class="form-group"><label>Açıklama</label><input id="bg-acik"></div>
-  <div class="form-group"><label>Dosya</label>
-    <div class="upload-zone" onclick="document.getElementById('bg-file').click()">
-      <input type="file" id="bg-file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onchange="bgFileSelected(event)">
-      <div style="font-size:28px;margin-bottom:6px">📎</div>
-      <div id="bg-file-lbl" style="font-size:12px">Tıklayın veya sürükleyin</div>
-      <div style="font-size:10px;color:var(--text-dim);margin-top:4px">PDF, Word, Resim</div>
+<!-- Belge Modal (birleşik — tüm kategoriler + vekâletname meta) -->
+<div class="modal-overlay" id="belge-modal"><div class="modal modal-lg" style="max-width:600px">
+  <div class="modal-title" id="bg-title">📁 Belge Ekle</div>
+  <div class="form-row">
+    <div class="form-group"><label>Kategori</label>
+      <select id="bg-tur" onchange="bgTurDegisti()">
+        <option value="vekaletname">📜 Vekâletname</option>
+        <option value="sozlesme">📋 Sözleşme</option>
+        <option value="kimlik">🪪 Kimlik Belgesi</option>
+        <option value="sirkuler">🏢 Sicil / Sirkü</option>
+        <option value="makbuz">🧾 Makbuz / Dekont</option>
+        <option value="diger" selected>📄 Diğer</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Belge Tarihi</label><input type="date" id="bg-tarih"></div>
+  </div>
+  <div class="form-group"><label>Belge Adı</label><input id="bg-ad" placeholder="Belge adını girin"></div>
+  <div class="form-group"><label>Açıklama</label><input id="bg-acik" placeholder="Kısa açıklama (opsiyonel)"></div>
+
+  <!-- Vekâletname özel alanları -->
+  <div id="bg-vek-alanlar" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px">
+    <div style="font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">📜 Vekâletname Bilgileri</div>
+    <div class="form-row">
+      <div class="form-group"><label>Düzenlenme Tarihi</label><input type="date" id="bg-vk-tarih"></div>
+      <div class="form-group"><label>Geçerlilik Bitiş</label><input type="date" id="bg-vk-bitis"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Noter Adı / Yeri</label><input id="bg-vk-noter" placeholder="İstanbul 12. Noteri..."></div>
+      <div class="form-group"><label>Yevmiye No</label><input id="bg-vk-yevmiye"></div>
+    </div>
+    <div class="form-group"><label>Vekil Adı</label><input id="bg-vk-vekil"></div>
+    <div style="margin-top:6px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+        <input type="checkbox" id="bg-vk-ozel" onchange="document.getElementById('bg-vk-ozel-alan').style.display=this.checked?'block':'none'" style="width:16px;height:16px">
+        Özel Yetki İçeriyor
+      </label>
+      <div id="bg-vk-ozel-alan" style="display:none;margin-top:8px">
+        <div class="form-group"><label>Özel Yetki Kapsamı</label><textarea id="bg-vk-ozel-acik" rows="2" placeholder="Taşınmaz satışı, sulh yetkisi, bedel kabulü vb."></textarea></div>
+      </div>
     </div>
   </div>
-  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('belge-modal')">İptal</button><button class="btn btn-gold" onclick="saveBelge()">Yükle</button></div>
+
+  <div class="form-group"><label>Dosya <span style="font-size:10px;color:var(--text-dim)">(opsiyonel)</span></label>
+    <div class="upload-zone" onclick="document.getElementById('bg-file').click()">
+      <input type="file" id="bg-file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onchange="bgFileSelected(event)" style="display:none">
+      <div style="font-size:28px;margin-bottom:6px">📎</div>
+      <div id="bg-file-lbl" style="font-size:12px">Tıklayın veya sürükleyin</div>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:4px">PDF, Word, Resim (maks 5 MB)</div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-danger btn-sm" id="bg-sil-btn" style="margin-right:auto;display:none" onclick="delBelge(belgeEditId)">Sil</button>
+    <button class="btn btn-outline" onclick="closeModal('belge-modal')">İptal</button>
+    <button class="btn btn-gold" onclick="saveBelge()">Kaydet</button>
+  </div>
 </div></div>
 
 <!-- Evrak Upload (Dava/İcra içi) -->

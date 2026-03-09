@@ -57,6 +57,9 @@ function loadData() {
   // Finans veri migrasyonu — FAZ 7: eski state.butce → state.buroGiderleri
   _migrateFinansData();
 
+  // Belgeler migrasyonu — muv.vekaletnameler → state.belgeler
+  _migrateBelgelerData();
+
   // Terminoloji göçü — eski terimler yeni değerlere eşlenir
   _terminolojiGoc();
 }
@@ -155,6 +158,69 @@ function _migrateFinansData() {
 
   if (degisti) {
     console.info('[Migrasyon] Finans veri migrasyonu tamamlandı.');
+    try { localStorage.setItem(SK, JSON.stringify(state)); }
+    catch (e) { console.warn('[Migrasyon] localStorage kayıt hatası:', e.message); }
+  }
+}
+
+/**
+ * Belgeler migrasyonu — muvekkil.vekaletnameler[] → state.belgeler[]
+ * Vekaletname takibi İlişkiler sekmesinden Belgeler sekmesine taşınıyor.
+ * Bir kez çalışır (state._belgelerMigrated flag).
+ */
+function _migrateBelgelerData() {
+  if (state._belgelerMigrated) return;
+  var degisti = false;
+  if (!state.belgeler) state.belgeler = [];
+
+  // 1. muvekkil.vekaletnameler[] → state.belgeler[]
+  (state.muvekkillar || []).forEach(function(muv) {
+    if (!muv.vekaletnameler || !muv.vekaletnameler.length) return;
+    muv.vekaletnameler.forEach(function(v) {
+      // Daha önce taşınmış mı kontrol et
+      var zatenVar = state.belgeler.some(function(b) {
+        return b._migratedFrom === 'vekaletname' && b._sourceId === v.id;
+      });
+      if (zatenVar) return;
+
+      state.belgeler.push({
+        id: uid(),
+        muvId: muv.id,
+        ad: 'Vekâletname' + (v.noter ? ' — ' + v.noter : ''),
+        tur: 'vekaletname',
+        acik: v.not || '',
+        dosyaAd: null,
+        tip: null,
+        data: null,
+        yukleme: v.tarih || today(),
+        tarih: v.tarih || '',
+        etiketler: [],
+        meta: {
+          bitis: v.bitis || '',
+          noter: v.noter || '',
+          yevmiye: v.yevmiye || '',
+          vekil: v.vekil || '',
+          ozel: !!v.ozel,
+          ozelAcik: v.ozelAcik || '',
+          dosyalar: v.dosyalar || ''
+        },
+        _migratedFrom: 'vekaletname',
+        _sourceId: v.id
+      });
+      degisti = true;
+    });
+  });
+
+  // 2. Mevcut belgeler'e yeni alanları ekle (geriye uyumluluk)
+  state.belgeler.forEach(function(b) {
+    if (!b.meta) b.meta = {};
+    if (!b.tarih) b.tarih = b.yukleme || '';
+    if (!b.etiketler) b.etiketler = [];
+  });
+
+  state._belgelerMigrated = true;
+  if (degisti) {
+    console.info('[Migrasyon] Vekaletname verileri belgeler sistemine taşındı.');
     try { localStorage.setItem(SK, JSON.stringify(state)); }
     catch (e) { console.warn('[Migrasyon] localStorage kayıt hatası:', e.message); }
   }
