@@ -208,14 +208,11 @@ async function destekTalebiGonder() {
     created_at: new Date().toISOString()
   };
 
-  console.log('[Destek] Gönderiliyor...', JSON.stringify(data).slice(0,200));
-  var basarili;
-  try {
+  // Önce musteri_id ile dene, foreign key hatası alırsa musteri_id'siz tekrar dene
+  var basarili = await adminSbPost('destek_talepleri', data);
+  if (!basarili && data.musteri_id) {
+    data.musteri_id = null;
     basarili = await adminSbPost('destek_talepleri', data);
-    console.log('[Destek] adminSbPost sonucu:', basarili);
-  } catch(err) {
-    console.error('[Destek] adminSbPost HATA:', err);
-    basarili = false;
   }
 
   if (basarili) {
