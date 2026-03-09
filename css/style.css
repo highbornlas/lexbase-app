@@ -420,18 +420,25 @@ th.sort-th.desc::after{content:' ▼';font-size:8px;color:var(--gold);}
 .card-value.green{color:var(--green);}
 .card-value.gold{color:var(--gold);}
 
-/* ── Dashboard KPI Grid (4 kolon sabit) ── */
-.dash-kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+/* ── Dashboard İçerik Max Genişlik (ultra-wide ekranlar) ── */
+.dash-container{max-width:1600px;}
 
-/* ── Dashboard Ana Grid (3x2, eşit yükseklik) ── */
-.dash-grid-main{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:1fr 1fr;gap:18px;margin-bottom:18px;}
+/* ── Dashboard KPI Grid (4 kolon, max-width sınırlı) ── */
+.dash-kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;max-width:1200px;}
+.dash-kpi .card{position:relative;overflow:hidden;}
+.dash-kpi .card .card-deco{position:absolute;right:-6px;bottom:-4px;font-size:38px;opacity:.06;pointer-events:none;line-height:1;}
+
+/* ── Dashboard Ana Grid (3 kolon, col-span destekli) ── */
+.dash-grid-main{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:18px;}
 .dash-grid-main .dash-panel{margin-bottom:0;display:flex;flex-direction:column;}
 .dash-grid-main .dash-panel-body{padding:12px;overflow-y:auto;flex:1;max-height:300px;}
+.dash-grid-main .dash-panel.col-span-2{grid-column:span 2;}
 
-/* ── Dashboard Alt Grid (2 kolon, eşit yükseklik) ── */
-.dash-grid-bottom{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;}
+/* ── Dashboard Alt Grid (3 kolon, esnek) ── */
+.dash-grid-bottom{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
 .dash-grid-bottom .dash-panel{margin-bottom:0;display:flex;flex-direction:column;}
 .dash-grid-bottom .dash-panel-body{padding:12px;overflow-y:auto;flex:1;max-height:280px;}
+.dash-grid-bottom .dash-panel.col-span-2{grid-column:span 2;}
 
 /* ── Dashboard Panel Renkli Sol Kenar ── */
 .dash-panel.dp-blue{border-left:3px solid var(--blue);}
@@ -444,6 +451,24 @@ th.sort-th.desc::after{content:' ▼';font-size:8px;color:var(--gold);}
 .dash-panel[draggable="true"]{cursor:grab;}
 .dash-panel[draggable="true"]:active{cursor:grabbing;}
 .dash-panel.dragging{opacity:0.35;transform:scale(0.98);transition:opacity .2s,transform .2s;}
+
+/* ── Logo tıklanabilir ── */
+.logo-link{cursor:pointer;text-decoration:none;display:flex;align-items:center;}
+.logo-link:hover .logo{opacity:.85;}
+
+/* ── Header Yeni Oluştur Dropdown ── */
+.header-yeni-btn{display:flex;align-items:center;gap:5px;background:linear-gradient(135deg,#00BCD4,#26C6DA);color:#0D1117;border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;white-space:nowrap;}
+.header-yeni-btn:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,188,212,.3);}
+.header-yeni-wrap{position:relative;}
+.header-yeni-menu{display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:6px 0;min-width:200px;box-shadow:0 12px 36px rgba(0,0,0,.4);z-index:999;}
+.header-yeni-menu.open{display:block;animation:fadeUp .15s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.header-yeni-menu-item{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:13px;color:var(--text);cursor:pointer;transition:background .1s;}
+.header-yeni-menu-item:hover{background:var(--surface2);}
+.header-yeni-menu-item span:first-child{font-size:16px;width:20px;text-align:center;}
+
+/* ── Nav badge gizle (0 ise) ── */
+#app-wrapper .nav-badge.badge-hidden{display:none!important;}
 
 /* ================================================================
    LİSTE MOTORU — Birleşik Liste Bileşen Sistemi
@@ -2272,7 +2297,12 @@ select:focus, textarea:focus {
 
   /* Dashboard 3-kolon → 2-kolon */
   .dash-grid-main { grid-template-columns: repeat(2, 1fr); grid-template-rows: auto; }
+  .dash-grid-main .dash-panel.col-span-2 { grid-column: span 2; }
+  .dash-grid-bottom { grid-template-columns: repeat(2, 1fr); }
+  .dash-grid-bottom .dash-panel.col-span-2 { grid-column: span 2; }
   .dash-kpi { grid-template-columns: repeat(4, 1fr); }
+  .header-yeni-btn span.yeni-btn-text { display: none; }
+  .header-yeni-btn { padding: 7px 10px; }
 
   /* Cards grid minimum küçült */
   .cards {
@@ -2359,7 +2389,9 @@ select:focus, textarea:focus {
     grid-template-columns: 1fr !important;
   }
   .dash-grid-main { grid-template-columns: 1fr !important; grid-template-rows: auto !important; }
+  .dash-grid-main .dash-panel.col-span-2 { grid-column: span 1 !important; }
   .dash-grid-bottom { grid-template-columns: 1fr !important; }
+  .dash-grid-bottom .dash-panel.col-span-2 { grid-column: span 1 !important; }
   .dash-kpi { grid-template-columns: repeat(2, 1fr) !important; }
 
   /* Form row'ları stack */

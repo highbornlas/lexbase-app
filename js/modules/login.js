@@ -143,7 +143,7 @@ async function gmKayit() {
   const sifre  = document.getElementById('gm-ksifre').value;
   const sifre2 = document.getElementById('gm-ksifre2').value;
   if (!ad || !email || !sifre) return gmHata('Tüm alanları doldurun.');
-  if (sifre.length < 6) return gmHata('Şifre en az 6 karakter olmalı.');
+  if (sifre.length < 8) return gmHata('Şifre en az 8 karakter olmalı.');
   if (sifre !== sifre2) return gmHata('Şifreler eşleşmiyor.');
   var kvkkCheck = document.getElementById('gm-kvkk');
   if (kvkkCheck && !kvkkCheck.checked) return gmHata('Devam etmek için KVKK Aydınlatma Metni\'ni ve Kullanım Koşulları\'nı kabul etmeniz gerekmektedir.');
@@ -243,7 +243,7 @@ async function gmYeniSifreKaydet() {
   var sifre1 = document.getElementById('gm-yenisifre1').value;
   var sifre2 = document.getElementById('gm-yenisifre2').value;
   if (!sifre1 || !sifre2) return gmHata('Şifre alanlarını doldurun.');
-  if (sifre1.length < 6) return gmHata('Şifre en az 6 karakter olmalı.');
+  if (sifre1.length < 8) return gmHata('Şifre en az 8 karakter olmalı.');
   if (sifre1 !== sifre2) return gmHata('Şifreler eşleşmiyor.');
   var btn = document.querySelector('#gm-f-yenisifre .gm-submit');
   btn.textContent = 'Güncelleniyor...'; btn.disabled = true;
@@ -428,15 +428,15 @@ function yasalKullanimKosullari() {
 
 function yasalGizlilikPolitikasi() {
   return '<div class="yasal-icerik">' +
-    '<p class="yasal-guncelleme">Son güncelleme: 9 Mart 2026</p>' +
+    '<p class="yasal-guncelleme">Son güncelleme: 10 Mart 2026</p>' +
     '<h3>1. Giriş</h3>' +
     '<p>LexBase olarak kullanıcılarımızın gizliliğini en üst düzeyde korumayı taahhüt ediyoruz. Bu politika, hangi verilerin toplandığını, nasıl kullanıldığını, kimlerle paylaşıldığını ve haklarınızı açıklamaktadır.</p>' +
     '<h3>2. Toplanan Veriler</h3>' +
     '<table class="yasal-tablo">' +
     '<tr><th>Veri Kategorisi</th><th>Veri Türleri</th><th>Toplama Yöntemi</th></tr>' +
-    '<tr><td>Kimlik Bilgileri</td><td>Ad, soyad, e-posta adresi</td><td>Kayıt formu</td></tr>' +
+    '<tr><td>Kimlik Bilgileri</td><td>Ad, soyad, e-posta adresi, profil fotoğrafı (Google ile giriş yapılması halinde)</td><td>Kayıt formu / Google OAuth</td></tr>' +
     '<tr><td>Hesap Bilgileri</td><td>Büro adı, şifre (hashlenmiş), plan türü</td><td>Kayıt ve kullanım</td></tr>' +
-    '<tr><td>İletişim Bilgileri</td><td>E-posta adresi</td><td>Kayıt formu</td></tr>' +
+    '<tr><td>İletişim Bilgileri</td><td>E-posta adresi</td><td>Kayıt formu / Google OAuth</td></tr>' +
     '<tr><td>Kullanım Verileri</td><td>Giriş/çıkış zamanları, kullanılan özellikler, oturum süreleri</td><td>Otomatik loglama</td></tr>' +
     '<tr><td>Teknik Veriler</td><td>IP adresi, tarayıcı türü, işletim sistemi, ekran çözünürlüğü</td><td>Otomatik (sunucu)</td></tr>' +
     '<tr><td>Konum Verileri</td><td>Ülke, şehir, bölge, saat dilimi, ISP (IP tabanlı)</td><td>Otomatik (Cloudflare geo)</td></tr>' +
@@ -456,11 +456,12 @@ function yasalGizlilikPolitikasi() {
     '<tr><th>Hizmet Sağlayıcı</th><th>Amaç</th><th>Konum</th></tr>' +
     '<tr><td>Supabase (AWS)</td><td>Veritabanı, kimlik doğrulama</td><td>ABD / AB</td></tr>' +
     '<tr><td>Cloudflare</td><td>CDN, DDoS koruması, DNS, IP geo verileri</td><td>Global (en yakın PoP)</td></tr>' +
+    '<tr><td>Google (OAuth 2.0)</td><td>Sosyal giriş kimlik doğrulama (Google ile giriş seçilirse)</td><td>ABD</td></tr>' +
     '<tr><td>GitHub / Cloudflare Pages</td><td>Kaynak kod ve statik dosya dağıtımı</td><td>ABD</td></tr>' +
     '</table>' +
     '<p>Verileriniz reklam veya pazarlama amacıyla üçüncü taraflarla <strong>asla</strong> paylaşılmaz. Yasal zorunluluk halinde (mahkeme kararı, savcılık talebi) yetkili kamu kurumlarına bilgi verilebilir.</p>' +
     '<h3>5. Yurt Dışına Veri Aktarımı</h3>' +
-    '<p>Altyapı hizmetleri (Supabase, Cloudflare) sebebiyle veriler ABD ve AB\'deki sunucularda işlenebilmektedir. Bu aktarım, KVKK md.9 kapsamında açık rıza ve/veya yeterli koruma koşullarına dayanmaktadır. Aktarım yapılan tüm kuruluşlar endüstri standardı güvenlik sertifikalarına (SOC 2, ISO 27001) sahiptir.</p>' +
+    '<p>Altyapı hizmetleri (Supabase, Cloudflare) ve sosyal giriş hizmetleri (Google OAuth) sebebiyle veriler ABD ve AB\'deki sunucularda işlenebilmektedir. Bu aktarım, KVKK md.9 kapsamında açık rıza ve/veya yeterli koruma koşullarına dayanmaktadır. Aktarım yapılan tüm kuruluşlar endüstri standardı güvenlik sertifikalarına (SOC 2, ISO 27001) sahiptir.</p>' +
     '<h3>6. Saklama Süreleri</h3>' +
     '<table class="yasal-tablo">' +
     '<tr><th>Veri Türü</th><th>Saklama Süresi</th></tr>' +
@@ -470,7 +471,7 @@ function yasalGizlilikPolitikasi() {
     '<tr><td>Fatura ve ödeme kayıtları</td><td>10 yıl (Vergi Usul Kanunu gereği)</td></tr>' +
     '</table>' +
     '<h3>7. Çerezler ve Yerel Depolama</h3>' +
-    '<p>LexBase, oturum yönetimi için tarayıcı yerel depolama (localStorage) kullanmaktadır. Üçüncü taraf izleme çerezleri kullanılmamaktadır. Cloudflare güvenlik çerezleri otomatik olarak yerleştirilir ve yalnızca güvenlik amaçlıdır.</p>' +
+    '<p>LexBase, oturum yönetimi için tarayıcı yerel depolama (localStorage) kullanmaktadır. Üçüncü taraf izleme çerezleri kullanılmamaktadır. Cloudflare güvenlik çerezleri otomatik olarak yerleştirilir ve yalnızca güvenlik amaçlıdır. Google ile giriş tercih edildiğinde, Google\'ın kendi gizlilik politikası kapsamında çerez kullanımı uygulanır.</p>' +
     '<h3>8. Haklarınız</h3>' +
     '<p>6698 sayılı KVKK kapsamındaki haklarınız için KVKK Aydınlatma Metni\'ni inceleyiniz. Talepleriniz için: <strong>guvenlik@lexbase.app</strong></p>' +
     '<div class="yasal-iletisim"><strong>Veri Sorumlusu:</strong> EMD Yazılım — guvenlik@lexbase.app</div>' +
@@ -479,14 +480,14 @@ function yasalGizlilikPolitikasi() {
 
 function yasalKvkkAydinlatma() {
   return '<div class="yasal-icerik">' +
-    '<p class="yasal-guncelleme">Son güncelleme: 9 Mart 2026</p>' +
+    '<p class="yasal-guncelleme">Son güncelleme: 10 Mart 2026</p>' +
     '<p style="background:var(--gold-dim);border:1px solid var(--gold);border-radius:6px;padding:12px;font-size:12px;margin-bottom:16px;color:var(--gold-light)">Bu metin, 6698 sayılı Kişisel Verilerin Korunması Kanunu\'nun ("KVKK") 10. maddesi gereğince aydınlatma yükümlülüğü kapsamında hazırlanmıştır.</p>' +
     '<h3>1. Veri Sorumlusu</h3>' +
     '<p><strong>EMD Yazılım</strong> ("Şirket") olarak, kişisel verilerinizi KVKK ve ilgili mevzuata uygun şekilde işlemekteyiz.</p>' +
     '<h3>2. İşlenen Kişisel Veri Kategorileri</h3>' +
     '<table class="yasal-tablo">' +
     '<tr><th>Kategori</th><th>Veri Türleri</th></tr>' +
-    '<tr><td>Kimlik</td><td>Ad, soyad</td></tr>' +
+    '<tr><td>Kimlik</td><td>Ad, soyad, profil fotoğrafı (Google ile giriş halinde)</td></tr>' +
     '<tr><td>İletişim</td><td>E-posta adresi</td></tr>' +
     '<tr><td>Müşteri İşlem</td><td>Büro adı, plan bilgisi, ödeme geçmişi</td></tr>' +
     '<tr><td>İşlem Güvenliği</td><td>IP adresi, oturum logları, giriş/çıkış zamanları, cihaz bilgisi, tarayıcı türü</td></tr>' +
@@ -510,7 +511,7 @@ function yasalKvkkAydinlatma() {
     '<li><strong>Sözleşmenin ifası (md.5/2-c):</strong> Platformun çalışması, hesap yönetimi</li>' +
     '<li><strong>Hukuki yükümlülük (md.5/2-ç):</strong> 5651 s. Kanun (trafik verisi saklama), VUK (fatura saklama)</li>' +
     '<li><strong>Meşru menfaat (md.5/2-f):</strong> Güvenlik logları, hizmet iyileştirme, hata tespiti</li>' +
-    '<li><strong>Açık rıza (md.5/1):</strong> Yurt dışına veri aktarımı (Supabase/Cloudflare altyapısı)</li>' +
+    '<li><strong>Açık rıza (md.5/1):</strong> Yurt dışına veri aktarımı (Supabase/Cloudflare altyapısı, Google OAuth)</li>' +
     '</ul>' +
     '<h3>5. Kişisel Verilerin Aktarımı</h3>' +
     '<p><strong>Yurt içi aktarım:</strong> Yasal zorunluluk halinde yetkili kamu kurum ve kuruluşlarına (mahkeme, savcılık, BTK vb.)</p>' +
@@ -518,6 +519,7 @@ function yasalKvkkAydinlatma() {
     '<ul>' +
     '<li>Supabase Inc. (ABD/AB) — veritabanı altyapısı ve kimlik doğrulama</li>' +
     '<li>Cloudflare Inc. (ABD/Global) — içerik dağıtım ağı, güvenlik, IP tabanlı konum verileri</li>' +
+    '<li>Google LLC (ABD) — OAuth 2.0 sosyal giriş kimlik doğrulama (kullanıcı tercih ettiğinde)</li>' +
     '</ul>' +
     '<p>Yurt dışı aktarım, açık rızanıza ve/veya aktarım yapılan ülkede yeterli korumanın bulunmasına dayanmaktadır. Bu kuruluşlar SOC 2 Type II ve/veya ISO 27001 sertifikalarına sahiptir.</p>' +
     '<h3>6. Veri Saklama Süreleri</h3>' +
@@ -1006,10 +1008,17 @@ function sayfaCerezAyarlari() {
     '</tr>' +
     '<tr>' +
     '<td><strong>Service Worker</strong></td>' +
-    '<td><code>lexbase-v8</code></td>' +
+    '<td><code>lexbase-v13</code></td>' +
     '<td>Çevrimdışı erişim için statik dosyaların (CSS, JS, HTML) önbelleğe alınması.</td>' +
     '<td>🔴 Zorunlu</td>' +
     '<td>Güncellemeye kadar</td>' +
+    '</tr>' +
+    '<tr>' +
+    '<td><strong>Çerez (Cookie)</strong></td>' +
+    '<td><code>Google OAuth</code></td>' +
+    '<td>Google ile giriş tercih edildiğinde, kimlik doğrulama sürecinde Google tarafından yerleştirilen oturum çerezleri. Yalnızca OAuth akışı sırasında kullanılır.</td>' +
+    '<td>🔴 Zorunlu</td>' +
+    '<td>Oturum boyunca</td>' +
     '</tr>' +
     '</table>' +
 
@@ -1034,6 +1043,7 @@ function sayfaCerezAyarlari() {
     '<tr><th>Hizmet</th><th>Çerez Kullanımı</th><th>Amaç</th></tr>' +
     '<tr><td>Cloudflare</td><td>__cf_bm, __cfruid</td><td>CDN, DDoS koruması, güvenlik</td></tr>' +
     '<tr><td>Supabase</td><td>Auth token (localStorage)</td><td>Veritabanı, kimlik doğrulama</td></tr>' +
+    '<tr><td>Google</td><td>OAuth oturum çerezleri</td><td>Sosyal giriş kimlik doğrulama (Google ile giriş seçilirse)</td></tr>' +
     '</table>' +
     '<p style="font-size:11px;color:var(--text-muted);margin-top:8px;">Yukarıdaki hizmetler yalnızca platformun çalışması için zorunlu teknik amaçlarla kullanılmaktadır. Hiçbiri pazarlama veya reklam amacı taşımamaktadır.</p>' +
 

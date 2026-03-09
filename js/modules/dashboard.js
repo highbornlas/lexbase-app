@@ -48,7 +48,7 @@ function renderDashSureler() {
 
   const el = document.getElementById('dash-sureler');
   if (!el) return;
-  if (!items.length) { el.innerHTML = '<div class="dash-empty-state"><div class="dash-empty-icon">📅</div><div class="dash-empty-title">30 gün içinde kritik işlem yok</div><div class="dash-empty-sub">Yaklaşan süreler ve son günler burada görünecek</div></div>'; return; }
+  if (!items.length) { el.innerHTML = '<div class="dash-empty-state"><div class="dash-empty-icon">📅</div><div class="dash-empty-title">30 gün içinde kritik işlem yok</div><div class="dash-empty-sub">Yaklaşan süreler ve son günler burada görünecek</div><button class="dash-empty-cta" onclick="showPage(\'takvim\',document.getElementById(\'ni-takvim\'))">📅 Takvime Git</button></div>'; return; }
 
   el.innerHTML = items.map(i => {
     const acil = i.gun <= 3 ? 'background:rgba(231,76,60,.08);border-left:3px solid #e74c3c;' : i.gun <= 7 ? 'border-left:3px solid #e67e22;' : 'border-left:3px solid var(--border);';
@@ -132,20 +132,20 @@ function renderDashboard(){
   var yakDurusma = state.etkinlikler.filter(function(e){return e.tarih >= t && e.tarih <= haftaS && (e.tur==='Duruşma'||e.baslik.includes('Duruşma'));}).length;
   yakDurusma += state.davalar.filter(function(d){return d.durusma && d.durusma >= t && d.durusma <= haftaS;}).length;
 
-  // ── KPI KARTLARI ──
+  // ── KPI KARTLARI (dekoratif ikonlarla) ──
   document.getElementById('dash-cards').innerHTML =
-    '<div class="card"><div class="card-label">Müvekkil</div><div class="card-value gold">' + muvSayi + '</div></div>' +
-    '<div class="card"><div class="card-label">Aktif Dava</div><div class="card-value gold">' + aktifDava + '</div></div>' +
-    '<div class="card"><div class="card-label">Aktif İcra</div><div class="card-value" style="color:#e74c3c">' + aktifIcra + '</div></div>' +
-    '<div class="card" style="border:1px solid rgba(41,128,185,.3)"><div class="card-label">Bu Hafta Duruşma</div><div class="card-value" style="color:#2980b9">' + yakDurusma + '</div></div>' +
-    '<div class="card"><div class="card-label">' + yil + ' Gelir</div><div class="card-value green">' + fmt(yilG) + '</div>' + _trendHtml(buAyFinans.gelir, gecenFinans.gelir) + '</div>' +
-    '<div class="card"><div class="card-label">' + yil + ' Gider</div><div class="card-value red">' + fmt(yilD) + '</div>' + _trendHtml(buAyFinans.gider, gecenFinans.gider) + '</div>' +
-    '<div class="card"><div class="card-label">' + yil + ' Net</div><div class="card-value" style="color:' + (yilNet>=0?'var(--green)':'#e74c3c') + '">' + fmt(yilNet) + '</div></div>' +
-    '<div class="card"><div class="card-label">İcra Tahsilat</div><div class="card-value green">' + fmt(topTahsil) + '<div class="progress-bar" style="margin-top:4px"><div class="progress-fill" style="width:' + tahsilOran + '%"></div></div><div style="font-size:9px;color:var(--text-dim)">%' + tahsilOran + ' — Kalan: ' + fmt(topKalan) + '</div></div></div>' +
-    (beklAlacak > 0 ? '<div class="card" style="border:1px solid rgba(231,76,60,.3)"><div class="card-label">Bekleyen Alacak</div><div class="card-value" style="color:#e74c3c">' + fmt(beklAlacak) + '</div></div>' : '') +
-    (bekGorev > 0 ? '<div class="card"><div class="card-label">Açık Görev</div><div class="card-value" style="color:#e67e22">' + bekGorev + '</div></div>' : '');
+    '<div class="card"><div class="card-label">Müvekkil</div><div class="card-value gold">' + muvSayi + '</div><div class="card-deco">👥</div></div>' +
+    '<div class="card"><div class="card-label">Aktif Dava</div><div class="card-value gold">' + aktifDava + '</div><div class="card-deco">📁</div></div>' +
+    '<div class="card"><div class="card-label">Aktif İcra</div><div class="card-value" style="color:#e74c3c">' + aktifIcra + '</div><div class="card-deco">⚡</div></div>' +
+    '<div class="card" style="border:1px solid rgba(41,128,185,.3)"><div class="card-label">Bu Hafta Duruşma</div><div class="card-value" style="color:#2980b9">' + yakDurusma + '</div><div class="card-deco">⚖️</div></div>' +
+    '<div class="card"><div class="card-label">' + yil + ' Gelir</div><div class="card-value green">' + fmt(yilG) + '</div>' + _trendHtml(buAyFinans.gelir, gecenFinans.gelir) + '<div class="card-deco">📈</div></div>' +
+    '<div class="card"><div class="card-label">' + yil + ' Gider</div><div class="card-value red">' + fmt(yilD) + '</div>' + _trendHtml(buAyFinans.gider, gecenFinans.gider) + '<div class="card-deco">📉</div></div>' +
+    '<div class="card"><div class="card-label">' + yil + ' Net</div><div class="card-value" style="color:' + (yilNet>=0?'var(--green)':'#e74c3c') + '">' + fmt(yilNet) + '</div><div class="card-deco">💎</div></div>' +
+    '<div class="card"><div class="card-label">İcra Tahsilat</div><div class="card-value green">' + fmt(topTahsil) + '<div class="progress-bar" style="margin-top:4px"><div class="progress-fill" style="width:' + tahsilOran + '%"></div></div><div style="font-size:9px;color:var(--text-dim)">%' + tahsilOran + ' — Kalan: ' + fmt(topKalan) + '</div></div><div class="card-deco">🏦</div></div>' +
+    (beklAlacak > 0 ? '<div class="card" style="border:1px solid rgba(231,76,60,.3)"><div class="card-label">Bekleyen Alacak</div><div class="card-value" style="color:#e74c3c">' + fmt(beklAlacak) + '</div><div class="card-deco">⏳</div></div>' : '') +
+    (bekGorev > 0 ? '<div class="card"><div class="card-label">Açık Görev</div><div class="card-value" style="color:#e67e22">' + bekGorev + '</div><div class="card-deco">✅</div></div>' : '');
 
-  // ── HOŞGELDİN BANNER (ilk kullanım) ──
+  // ── HOŞGELDİN BANNER (ilk kullanım — KPI kartlarının üstünde) ──
   if (muvSayi === 0 && aktifDava === 0) {
     var bannerEl = document.getElementById('dash-welcome-banner');
     if (!bannerEl) {
@@ -153,7 +153,7 @@ function renderDashboard(){
       bannerEl.id = 'dash-welcome-banner';
       var cardsEl = document.getElementById('dash-cards');
       if (cardsEl && cardsEl.parentElement) {
-        cardsEl.parentElement.insertBefore(bannerEl, cardsEl.nextSibling);
+        cardsEl.parentElement.insertBefore(bannerEl, cardsEl);
       }
     }
     bannerEl.className = 'dash-welcome-banner';
@@ -257,7 +257,7 @@ function renderDashboard(){
   if (vgEl) {
     var uyarilar = typeof FinansMotoru !== 'undefined' ? FinansMotoru.hesaplaUyarilar() : [];
     if (!uyarilar.length) {
-      vgEl.innerHTML = '<div class="dash-empty-state"><div class="dash-empty-icon">✅</div><div class="dash-empty-title">Finansal uyarı yok</div><div class="dash-empty-sub">Vadesi geçen alacaklar veya uyarılar olduğunda burada bilgilendirilirsiniz</div></div>';
+      vgEl.innerHTML = '<div class="dash-empty-state"><div class="dash-empty-icon">✅</div><div class="dash-empty-title">Finansal uyarı yok</div><div class="dash-empty-sub">Vadesi geçen alacaklar veya uyarılar olduğunda burada bilgilendirilirsiniz</div><button class="dash-empty-cta" onclick="showPage(\'butce\',document.getElementById(\'ni-butce\'))">💰 Finans</button></div>';
     } else {
       var kritikSayi = uyarilar.filter(function(u) { return u.oncelik === 'yuksek'; }).length;
       vgEl.innerHTML = (kritikSayi > 0 ? '<div style="text-align:center;padding:6px 0;margin-bottom:8px;background:rgba(231,76,60,.06);border-radius:6px"><div style="font-size:18px;font-weight:800;color:#e74c3c">' + kritikSayi + ' Kritik</div><div style="font-size:10px;color:var(--text-muted)">' + uyarilar.length + ' toplam uyarı</div></div>' : '') +
@@ -300,8 +300,6 @@ function renderDashboard(){
   var dd = document.getElementById('dash-danismanlik');
   if (dd) dd.innerHTML = typeof renderDashDanismanlik === 'function' ? renderDashDanismanlik() : '';
 
-  // ── HIZLI İŞLEMLER ──
-  renderHizliIslemler();
   // ── BUGÜNKÜ AJANDA ──
   renderBugunAjanda();
 
@@ -375,7 +373,7 @@ function renderBugunAjanda() {
   });
 
   if (!bugunEtkinlikler.length) {
-    el.innerHTML = '<div class="dash-empty-state"><div class="dash-empty-icon">☀️</div><div class="dash-empty-title">Bugün için planlanmış etkinlik yok</div><div class="dash-empty-sub">Etkinlik ve duruşmalar eklendikçe bugünkü ajandanız burada görünecek</div></div>';
+    el.innerHTML = '<div class="dash-empty-state"><div class="dash-empty-icon">☀️</div><div class="dash-empty-title">Bugün için planlanmış etkinlik yok</div><div class="dash-empty-sub">Etkinlik ve duruşmalar eklendikçe bugünkü ajandanız burada görünecek</div><button class="dash-empty-cta" onclick="showPage(\'takvim\',document.getElementById(\'ni-takvim\'))">📅 Etkinlik Ekle</button></div>';
     return;
   }
 

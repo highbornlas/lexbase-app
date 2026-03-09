@@ -3,6 +3,21 @@
 // js/modules/app.js
 // ================================================================
 
+// ── Header "Yeni Oluştur" Dropdown ──
+function toggleYeniMenu() {
+  var menu = document.getElementById('header-yeni-menu');
+  if (menu) menu.classList.toggle('open');
+}
+function closeYeniMenu() {
+  var menu = document.getElementById('header-yeni-menu');
+  if (menu) menu.classList.remove('open');
+}
+// Dışarı tıklayınca kapat
+document.addEventListener('click', function(e) {
+  var wrap = document.getElementById('header-yeni-wrap');
+  if (wrap && !wrap.contains(e.target)) closeYeniMenu();
+});
+
 function exportMuvExcel(){
   const m=getMuv(aktivMuvId);if(!m)return;
   const wb=XLSX.utils.book_new();
@@ -29,20 +44,32 @@ function exportMuvExcel(){
 // ================================================================
 function updateBadges(){
   const toplamRehber=state.muvekkillar.length+(state.karsiTaraflar||[]).length+(state.vekillar||[]).length;
-  document.getElementById('nb-muv').textContent=toplamRehber;
-  document.getElementById('nb-dav').textContent=state.davalar.filter(d=>d.durum==='Aktif').length;
-  document.getElementById('nb-icr').textContent=state.icra.filter(i=>i.durum!=='Kapandı').length;
+  const aktifDav=state.davalar.filter(d=>d.durum==='Aktif').length;
+  const aktifIcr=state.icra.filter(i=>i.durum!=='Kapandı').length;
   const t=today(),f=new Date();f.setDate(f.getDate()+7);const fS=f.toISOString().split('T')[0];
-  document.getElementById('nb-tak').textContent=state.etkinlikler.filter(e=>e.tarih>=t&&e.tarih<=fS).length;
-  document.getElementById('nb-dan').textContent=state.danismanlik.filter(d=>d.durum!=='Tamamlandı'&&d.durum!=='İptal').length;
+  const takSayi=state.etkinlikler.filter(e=>e.tarih>=t&&e.tarih<=fS).length;
+  const danSayi=state.danismanlik.filter(d=>d.durum!=='Tamamlandı'&&d.durum!=='İptal').length;
   const arabAktif=(state.arabuluculuk||[]).filter(a=>a.durum!=='Uzlaşma Sağlandı'&&a.durum!=='Dava Açıldı').length;
-  const nbArab=document.getElementById('nb-arab');if(nbArab)nbArab.textContent=arabAktif;
+  // Badge helper: değeri yaz, 0 ise gizle
+  function _setBadge(id,val){var el=document.getElementById(id);if(!el)return;el.textContent=val;el.classList.toggle('badge-hidden',val===0||val==='0');}
+  _setBadge('nb-muv',toplamRehber);
+  _setBadge('nb-dav',aktifDav);
+  _setBadge('nb-icr',aktifIcr);
+  _setBadge('nb-tak',takSayi);
+  _setBadge('nb-dan',danSayi);
+  _setBadge('nb-arab',arabAktif);
+  // İhtarname badge
+  var ihtarSayi=(state.ihtarnameler||[]).filter(function(i){return i.durum!=='Gönderildi'&&i.durum!=='Tamamlandı';}).length;
+  _setBadge('nb-ihtar',ihtarSayi);
+  // Todo badge
+  var todoSayi=(state.todolar||[]).filter(function(td){return td.durum!=='Tamamlandı';}).length;
+  _setBadge('nb-todo',todoSayi);
   // Finans uyarı badge
   const nbFin=document.getElementById('nb-fin');
   if(nbFin){
     const finUyari=typeof FinansMotoru!=='undefined'?FinansMotoru.hesaplaUyarilar().filter(u=>u.oncelik==='yuksek').length:0;
     nbFin.textContent=finUyari;
-    nbFin.style.display=finUyari>0?'':'none';
+    nbFin.classList.toggle('badge-hidden',finUyari===0);
   }
   updateUyapBadge();
 }

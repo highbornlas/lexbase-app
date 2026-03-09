@@ -75,7 +75,7 @@ async function sifreDegistir() {
   var tekrar = document.getElementById('ayar-sifre-tekrar').value;
   if (!eski) return notify('⚠️ Mevcut şifrenizi girin.');
   if (!yeni || !tekrar) return notify('⚠️ Yeni şifre alanlarını doldurun.');
-  if (yeni.length < 6) return notify('⚠️ Şifre en az 6 karakter olmalı.');
+  if (yeni.length < 8) return notify('⚠️ Şifre en az 8 karakter olmalı.');
   if (yeni !== tekrar) return notify('⚠️ Şifreler eşleşmiyor.');
   try {
     // Mevcut şifreyi doğrula
@@ -100,8 +100,8 @@ function sifreGucGoster(val) {
   const lbl = document.getElementById('sifre-guc-lbl');
   if (!val) { bar.style.display = 'none'; return; }
   bar.style.display = 'block';
-  const guc = val.length >= 10 && /[A-Z]/.test(val) && /[0-9]/.test(val) ? 'guclu'
-    : val.length >= 6 ? 'orta' : 'zayif';
+  const guc = val.length >= 12 && /[A-Z]/.test(val) && /[a-z]/.test(val) && /[0-9]/.test(val) ? 'guclu'
+    : val.length >= 8 && (/[A-Z]/.test(val) || /[0-9]/.test(val)) ? 'orta' : 'zayif';
   fill.className = 'sifre-guc sifre-guc-' + guc;
   lbl.textContent = guc === 'guclu' ? '💪 Güçlü şifre' : guc === 'orta' ? '👍 Orta güçlü' : '⚠️ Zayıf şifre';
 }

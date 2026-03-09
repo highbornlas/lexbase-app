@@ -793,7 +793,7 @@
       <div class="gm-ig"><label>Ad Soyad *</label><input id="gm-kad" placeholder="Ad Soyad"></div>
       <div class="gm-ig"><label>E-posta *</label><input type="email" id="gm-kemail" placeholder="ornek@mail.com" autocomplete="email"></div>
       <div class="gm-row">
-        <div class="gm-ig"><label>Şifre *</label><input type="password" id="gm-ksifre" placeholder="En az 6 karakter" autocomplete="new-password"></div>
+        <div class="gm-ig"><label>Şifre *</label><input type="password" id="gm-ksifre" placeholder="En az 8 karakter" autocomplete="new-password"></div>
         <div class="gm-ig"><label>Şifre Tekrar *</label><input type="password" id="gm-ksifre2" placeholder="••••••••" autocomplete="new-password"></div>
       </div>
       <label class="gm-kvkk-label" for="gm-kvkk">
@@ -837,7 +837,9 @@
 <div id="app-wrapper">
 <header>
   <button class="hamburger-btn" id="hamburger-btn" onclick="toggleSidebar()" aria-label="Menü">☰</button>
-  <div class="logo" style="font-family:'DM Sans',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.5px"><span style="color:#00BCD4">L</span>ex<span style="color:#00BCD4">B</span>ase</div>
+  <a class="logo-link" onclick="showPage('anasayfa',document.getElementById('ni-anasayfa'))">
+    <div class="logo" style="font-family:'DM Sans',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.5px"><span style="color:#00BCD4">L</span>ex<span style="color:#00BCD4">B</span>ase</div>
+  </a>
   <span id="avukat-adi" style="font-size:12px;color:var(--text-dim);margin-left:4px;display:none"></span>
   <!-- Arama — Ortada, geniş -->
   <div onclick="spotlightAc()" class="header-search" title="Ctrl+K">
@@ -846,6 +848,18 @@
     <kbd>⌘K</kbd>
   </div>
   <div style="display:flex;align-items:center;gap:12px;margin-left:auto;flex-shrink:0">
+    <!-- Yeni Oluştur Dropdown -->
+    <div class="header-yeni-wrap" id="header-yeni-wrap">
+      <button class="header-yeni-btn" onclick="toggleYeniMenu()">+ <span class="yeni-btn-text">Yeni Oluştur</span></button>
+      <div class="header-yeni-menu" id="header-yeni-menu">
+        <div class="header-yeni-menu-item" onclick="closeYeniMenu();showPage('muvekkillar',document.getElementById('ni-muvekkillar'));setTimeout(function(){if(typeof openModal==='function')openModal('m-modal');},300)"><span>👤</span>Yeni Müvekkil</div>
+        <div class="header-yeni-menu-item" onclick="closeYeniMenu();showPage('davalar',document.getElementById('ni-davalar'));setTimeout(function(){if(typeof openModal==='function')openModal('dav-modal');},300)"><span>📁</span>Yeni Dava</div>
+        <div class="header-yeni-menu-item" onclick="closeYeniMenu();showPage('icra',document.getElementById('ni-icra'));setTimeout(function(){if(typeof openModal==='function')openModal('icra-modal');},300)"><span>⚡</span>Yeni İcra</div>
+        <div class="header-yeni-menu-item" onclick="closeYeniMenu();showPage('takvim',document.getElementById('ni-takvim'))"><span>📅</span>Yeni Etkinlik</div>
+        <div class="header-yeni-menu-item" onclick="closeYeniMenu();showPage('todo',document.getElementById('ni-todo'))"><span>✅</span>Yeni Görev</div>
+        <div class="header-yeni-menu-item" onclick="closeYeniMenu();showPage('ihtarname',document.getElementById('ni-ihtarname'))"><span>📨</span>Yeni İhtarname</div>
+      </div>
+    </div>
     <!-- Bildirim Çanı -->
     <div style="position:relative">
       <button id="bildirim-btn" onclick="Bildirim.panelToggle()" class="bildirim-btn" title="Bildirimler">
@@ -923,7 +937,7 @@
       </div>
       <div class="section-body dash-panel-body"><div id="dash-durusmalar"></div></div>
     </div>
-    <div class="section dash-panel dp-green" id="dp-performans">
+    <div class="section dash-panel dp-green col-span-2" id="dp-performans">
       <div class="section-header">
         <div class="section-title">💰 Aylık Performans</div>
         <a onclick="showPage('butce',document.getElementById('ni-butce'))" style="font-size:11px;color:var(--gold);cursor:pointer">Finans ›</a>
@@ -963,26 +977,11 @@
 
   <!-- ALT GRID: 2 kolon, eşit yükseklik -->
   <div class="dash-grid-bottom" id="dash-grid-bottom">
-    <div class="section dash-panel dp-blue" id="dp-aktivite">
+    <div class="section dash-panel dp-blue col-span-2" id="dp-aktivite">
       <div class="section-header">
         <div class="section-title">📊 Son Aktiviteler</div>
       </div>
       <div class="section-body dash-panel-body"><div id="dash-aktivite"></div></div>
-    </div>
-    <div class="section dash-panel dp-gold" id="dp-danismanlik">
-      <div class="section-header">
-        <div class="section-title">⚖️ Devam Eden Hizmetler</div>
-        <a onclick="showPage('danismanlik',document.getElementById('ni-danismanlik'))" style="font-size:11px;color:var(--gold);cursor:pointer">Tümü ›</a>
-      </div>
-      <div class="section-body dash-panel-body"><div id="dash-danismanlik"></div></div>
-    </div>
-    <div class="section dash-panel dp-gold" id="dp-hizli-islem">
-      <div class="section-header">
-        <div class="section-title">⚡ Hızlı İşlemler</div>
-      </div>
-      <div class="section-body dash-panel-body">
-        <div id="dash-hizli-islem" class="hizli-islem-grid"></div>
-      </div>
     </div>
     <div class="section dash-panel dp-blue" id="dp-bugun-ajanda">
       <div class="section-header">
@@ -990,6 +989,13 @@
         <a onclick="showPage('takvim',document.getElementById('ni-takvim'))" style="font-size:11px;color:var(--gold);cursor:pointer">Takvim ›</a>
       </div>
       <div class="section-body dash-panel-body"><div id="dash-bugun"></div></div>
+    </div>
+    <div class="section dash-panel dp-gold" id="dp-danismanlik">
+      <div class="section-header">
+        <div class="section-title">⚖️ Devam Eden Hizmetler</div>
+        <a onclick="showPage('danismanlik',document.getElementById('ni-danismanlik'))" style="font-size:11px;color:var(--gold);cursor:pointer">Tümü ›</a>
+      </div>
+      <div class="section-body dash-panel-body"><div id="dash-danismanlik"></div></div>
     </div>
   </div>
 </div>
@@ -1735,7 +1741,7 @@
           <div class="form-group"><label>Mevcut Şifre</label><input type="password" id="ayar-sifre-eski" placeholder="••••••••"></div>
           <div class="form-group">
             <label>Yeni Şifre</label>
-            <input type="password" id="ayar-sifre-yeni" placeholder="En az 6 karakter" oninput="sifreGucGoster(this.value)">
+            <input type="password" id="ayar-sifre-yeni" placeholder="En az 8 karakter" oninput="sifreGucGoster(this.value)">
             <div id="sifre-guc-bar" style="display:none;margin-top:6px">
               <div class="sifre-guc" id="sifre-guc-fill"></div>
               <div style="font-size:10px;color:var(--text-muted);margin-top:3px" id="sifre-guc-lbl"></div>

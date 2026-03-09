@@ -38,7 +38,7 @@ async function kayitOl() {
   const sifre = document.getElementById('k-sifre').value;
   const buroAd = document.getElementById('k-buro').value.trim();
   if (!ad || !email || !sifre) return loginHata('Ad, e-posta ve şifre gerekli.');
-  if (sifre.length < 6) return loginHata('Şifre en az 6 karakter olmalı.');
+  if (sifre.length < 8) return loginHata('Şifre en az 8 karakter olmalı.');
   const btn = document.getElementById('kayit-btn');
   btn.textContent = 'Kayıt yapılıyor...'; btn.disabled = true;
   try {
