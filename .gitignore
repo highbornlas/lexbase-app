@@ -1,1 +1,6 @@
 .claude/
+
+# Next.js
+lexbase-app/node_modules/
+lexbase-app/.next/
+lexbase-app/.env.local

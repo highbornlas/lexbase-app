@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+/* ── LexBase Renk Paleti (mevcut Vanilla JS ile birebir) ────── */
+:root {
+  /* Dark theme (varsayılan) */
+  --bg: #0D1117;
+  --surface: #161B22;
+  --surface2: #1C2333;
+  --border: #2A3142;
+  --gold: #C9A84C;
+  --gold-light: #E0C068;
+  --gold-dim: rgba(201,168,76,0.15);
+  --text: #f0ebe3;
+  --text-muted: #8a8278;
+  --text-dim: #5a5650;
+  --red: #c0392b;
+  --red-dim: rgba(192,57,43,0.15);
+  --green: #27ae60;
+  --green-dim: rgba(39,174,96,0.15);
+  --radius: 8px;
+}
+
+/* Light theme */
+[data-theme="light"] {
+  --bg: #f5f4f2;
+  --surface: #ffffff;
+  --surface2: #f0ede8;
+  --border: #e0dbd4;
+  --gold: #a07830;
+  --gold-light: #8a6520;
+  --gold-dim: rgba(160,120,48,0.12);
+  --text: #1a1714;
+  --text-muted: #6b6460;
+  --text-dim: #a09890;
+  --red: #c0392b;
+  --red-dim: rgba(192,57,43,0.1);
+  --green: #1e8449;
+  --green-dim: rgba(30,132,73,0.1);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface2: var(--surface2);
+  --color-border: var(--border);
+  --color-gold: var(--gold);
+  --color-gold-light: var(--gold-light);
+  --color-gold-dim: var(--gold-dim);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-dim: var(--text-dim);
+  --color-red: var(--red);
+  --color-red-dim: var(--red-dim);
+  --color-green: var(--green);
+  --color-green-dim: var(--green-dim);
+  --font-sans: var(--font-dm-sans);
+  --font-display: var(--font-playfair);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-dm-sans), 'DM Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Scrollbar (dark tema uyumlu) ──────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }

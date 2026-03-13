@@ -1,0 +1,8 @@
+name = "lexbase-app"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = ".vercel/output/static"
+
+# Next.js on Cloudflare Pages
+# Build command: npx @cloudflare/next-on-pages
+# Deploy: wrangler pages deploy .vercel/output/static
