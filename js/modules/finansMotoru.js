@@ -756,9 +756,79 @@ var FinansMotoru = (function() {
   }
 
   // ================================================================
+  // RPC WRAPPER'LAR (async — server-first, local fallback)
+  // Next.js geçişinde tüm çağrılar bunlara dönüşecek
+  // ================================================================
+  async function muvekkilOzetRpc(muvId) {
+    if (typeof sb !== 'undefined' && sb && typeof currentBuroId !== 'undefined' && currentBuroId) {
+      try {
+        var res = await sb.rpc('finans_muvekkil_ozet', { p_buro_id: currentBuroId, p_muv_id: muvId });
+        if (!res.error && res.data) return res.data;
+      } catch(e) { /* fallback */ }
+    }
+    return muvekkilOzet(muvId);
+  }
+
+  async function dosyaOzetRpc(dosyaTur, dosyaId) {
+    if (typeof sb !== 'undefined' && sb && typeof currentBuroId !== 'undefined' && currentBuroId) {
+      try {
+        var res = await sb.rpc('finans_dosya_ozet', { p_buro_id: currentBuroId, p_dosya_tur: dosyaTur, p_dosya_id: dosyaId });
+        if (!res.error && res.data) return res.data;
+      } catch(e) { /* fallback */ }
+    }
+    return dosyaOzet(dosyaTur, dosyaId);
+  }
+
+  async function buroKarZararRpc(filtre) {
+    filtre = filtre || {};
+    if (typeof sb !== 'undefined' && sb && typeof currentBuroId !== 'undefined' && currentBuroId) {
+      try {
+        var res = await sb.rpc('finans_buro_kar_zarar', {
+          p_buro_id: currentBuroId,
+          p_yil: filtre.yil ? parseInt(filtre.yil) : null,
+          p_ay: filtre.ay !== undefined ? filtre.ay : null
+        });
+        if (!res.error && res.data) return res.data;
+      } catch(e) { /* fallback */ }
+    }
+    return buroKarZarar(filtre);
+  }
+
+  async function dosyaKarlilikRpc(filtre) {
+    if (typeof sb !== 'undefined' && sb && typeof currentBuroId !== 'undefined' && currentBuroId) {
+      try {
+        var res = await sb.rpc('finans_dosya_karlilik', { p_buro_id: currentBuroId, p_filtre: filtre || {} });
+        if (!res.error && res.data) return res.data;
+      } catch(e) { /* fallback */ }
+    }
+    return dosyaKarlilik(filtre);
+  }
+
+  async function beklenenGelirRpc() {
+    if (typeof sb !== 'undefined' && sb && typeof currentBuroId !== 'undefined' && currentBuroId) {
+      try {
+        var res = await sb.rpc('finans_beklenen_gelir', { p_buro_id: currentBuroId });
+        if (!res.error && res.data) return res.data;
+      } catch(e) { /* fallback */ }
+    }
+    return beklenenGelir();
+  }
+
+  async function hesaplaUyarilarRpc() {
+    if (typeof sb !== 'undefined' && sb && typeof currentBuroId !== 'undefined' && currentBuroId) {
+      try {
+        var res = await sb.rpc('finans_uyarilar', { p_buro_id: currentBuroId });
+        if (!res.error && res.data) return res.data;
+      } catch(e) { /* fallback */ }
+    }
+    return hesaplaUyarilar();
+  }
+
+  // ================================================================
   // PUBLIC API
   // ================================================================
   return {
+    // Senkron (local hesaplama — mevcut çağrıcılar)
     muvekkilOzet: muvekkilOzet,
     muvekkilCari: muvekkilCari,
     dosyaOzet: dosyaOzet,
@@ -766,6 +836,13 @@ var FinansMotoru = (function() {
     buroAylikDetay: buroAylikDetay,
     hesaplaUyarilar: hesaplaUyarilar,
     dosyaKarlilik: dosyaKarlilik,
-    beklenenGelir: beklenenGelir
+    beklenenGelir: beklenenGelir,
+    // Async RPC (server-first — Next.js ve gelecek kullanım)
+    muvekkilOzetRpc: muvekkilOzetRpc,
+    dosyaOzetRpc: dosyaOzetRpc,
+    buroKarZararRpc: buroKarZararRpc,
+    dosyaKarlilikRpc: dosyaKarlilikRpc,
+    beklenenGelirRpc: beklenenGelirRpc,
+    hesaplaUyarilarRpc: hesaplaUyarilarRpc
   };
 })();
