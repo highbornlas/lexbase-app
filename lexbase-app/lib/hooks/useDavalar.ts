@@ -4,12 +4,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import { useBuroId } from './useBuro';
 
-// ── Dava Tip Tanımı ──────────────────────────────────────────
+// ── Dava Tip Tanımı (UYAP Uyumlu) ──────────────────────────
 export interface Dava {
   id: string;
   sira?: number;
+  kayitNo?: number;
   no?: string;
   konu?: string;
+  davaTuru?: string;
   muvId?: string;
   // Mahkeme bilgileri
   il?: string;
@@ -32,16 +34,23 @@ export interface Dava {
   // Tarihler
   tarih?: string;
   durusma?: string;
-  ktarih?: string;
+  durusmaSaati?: string;
+  ktarih?: string; // karar tarihi
   kesin?: string;
+  // Kapanış
+  kapanisSebebi?: string;
+  kapanisTarih?: string;
   // İlişkiler
   karsiId?: string;
   karsi?: string;
   karsavId?: string;
   karsav?: string;
   icrano?: string;
+  iliskiliIcraId?: string;
   // Finansal
   deger?: number;
+  // Süreler
+  sureler?: Array<{ id: string; tip: string; baslangic: string; gun: number }>;
   // Alt veriler
   evraklar?: Record<string, unknown>[];
   notlar?: Record<string, unknown>[];
@@ -49,10 +58,12 @@ export interface Dava {
   tahsilatlar?: Array<{ id: string; tur: string; tutar: number; tarih?: string; acik?: string }>;
   anlasma?: Record<string, unknown>;
   not?: string;
+  // Soft delete
+  _silindi?: string;
   [key: string]: unknown;
 }
 
-// ── Tüm Davalar ──────────────────────────────────────────────
+// ── Tüm Davalar (soft delete filtreli) ──────────────────────
 export function useDavalar() {
   const buroId = useBuroId();
 
@@ -67,7 +78,9 @@ export function useDavalar() {
         .eq('buro_id', buroId);
 
       if (error) throw error;
-      return (data || []).map((r) => ({ id: r.id, ...(r.data as object) })) as Dava[];
+      return (data || [])
+        .map((r) => ({ id: r.id, ...(r.data as object) }) as Dava)
+        .filter((d) => !d._silindi);
     },
     enabled: !!buroId,
   });
@@ -97,7 +110,7 @@ export function useDava(id: string | null) {
   });
 }
 
-// ── Kaydet (upsert) ──────────────────────────────────────────
+// ── Kaydet (upsert) — optimistic update ─────────────────────
 export function useDavaKaydet() {
   const buroId = useBuroId();
   const queryClient = useQueryClient();
@@ -114,6 +127,28 @@ export function useDavaKaydet() {
       });
       if (error) throw error;
     },
+    onMutate: async (yeniDava) => {
+      await queryClient.cancelQueries({ queryKey: ['davalar', buroId] });
+      const onceki = queryClient.getQueryData<Dava[]>(['davalar', buroId]);
+
+      queryClient.setQueryData<Dava[]>(['davalar', buroId], (eski) => {
+        if (!eski) return [yeniDava];
+        const idx = eski.findIndex((d) => d.id === yeniDava.id);
+        if (idx >= 0) {
+          const klon = [...eski];
+          klon[idx] = yeniDava;
+          return klon;
+        }
+        return [...eski, yeniDava];
+      });
+
+      return { onceki };
+    },
+    onError: (_err, _yeni, ctx) => {
+      if (ctx?.onceki) {
+        queryClient.setQueryData(['davalar', buroId], ctx.onceki);
+      }
+    },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['davalar'] });
       queryClient.invalidateQueries({ queryKey: ['dava'] });
@@ -121,8 +156,41 @@ export function useDavaKaydet() {
   });
 }
 
-// ── Sil ──────────────────────────────────────────────────────
+// ── Soft Delete ─────────────────────────────────────────────
 export function useDavaSil() {
+  const buroId = useBuroId();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      if (!buroId) throw new Error('Büro bulunamadı');
+      const supabase = createClient();
+
+      // Mevcut veriyi al
+      const { data: mevcut } = await supabase
+        .from('davalar')
+        .select('data')
+        .eq('id', id)
+        .eq('buro_id', buroId)
+        .single();
+
+      if (!mevcut) throw new Error('Dava bulunamadı');
+
+      // _silindi flag ekle
+      const { error } = await supabase.from('davalar').update({
+        data: { ...(mevcut.data as object), _silindi: new Date().toISOString() },
+      }).eq('id', id).eq('buro_id', buroId);
+
+      if (error) throw error;
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['davalar'] });
+    },
+  });
+}
+
+// ── Kalıcı Sil ──────────────────────────────────────────────
+export function useDavaKaliciSil() {
   const buroId = useBuroId();
   const queryClient = useQueryClient();
 
@@ -135,6 +203,39 @@ export function useDavaSil() {
         .delete()
         .eq('id', id)
         .eq('buro_id', buroId);
+      if (error) throw error;
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['davalar'] });
+    },
+  });
+}
+
+// ── Geri Yükle ──────────────────────────────────────────────
+export function useDavaGeriYukle() {
+  const buroId = useBuroId();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      if (!buroId) throw new Error('Büro bulunamadı');
+      const supabase = createClient();
+
+      const { data: mevcut } = await supabase
+        .from('davalar')
+        .select('data')
+        .eq('id', id)
+        .eq('buro_id', buroId)
+        .single();
+
+      if (!mevcut) throw new Error('Dava bulunamadı');
+
+      const data = { ...(mevcut.data as Record<string, unknown>) };
+      delete data._silindi;
+
+      const { error } = await supabase.from('davalar').update({ data })
+        .eq('id', id).eq('buro_id', buroId);
+
       if (error) throw error;
     },
     onSettled: () => {

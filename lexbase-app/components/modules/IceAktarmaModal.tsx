@@ -9,7 +9,7 @@ import { telefonDogrula, telefonFormatla, epostaDogrula } from '@/lib/validation
    3 adım: Dosya Yükle → Sütun Eşleştir → Önizle & Aktar
    ══════════════════════════════════════════════════════════════ */
 
-type HedefTip = 'muvekkil' | 'karsiTaraf' | 'vekil';
+type HedefTip = 'muvekkil' | 'karsiTaraf' | 'vekil' | 'dava' | 'icra';
 type Adim = 'yukle' | 'eslestir' | 'onizle';
 
 // ── Hedef alan tanımları ──
@@ -55,11 +55,51 @@ const VEKIL_ALANLARI: { key: string; label: string; zorunlu?: boolean }[] = [
   { key: 'uets', label: 'UETS No' },
 ];
 
+const DAVA_ALANLARI: { key: string; label: string; zorunlu?: boolean }[] = [
+  { key: 'konu', label: 'Dava Konusu', zorunlu: true },
+  { key: 'davaTuru', label: 'Dava Türü' },
+  { key: 'esasYil', label: 'Esas Yılı' },
+  { key: 'esasNo', label: 'Esas No' },
+  { key: 'il', label: 'İl' },
+  { key: 'adliye', label: 'Adliye' },
+  { key: 'mtur', label: 'Mahkeme Türü' },
+  { key: 'mno', label: 'Mahkeme No' },
+  { key: 'asama', label: 'Aşama' },
+  { key: 'durum', label: 'Durum' },
+  { key: 'taraf', label: 'Taraf (davaci/davali)' },
+  { key: 'tarih', label: 'Dava Tarihi' },
+  { key: 'durusma', label: 'Duruşma Tarihi' },
+  { key: 'deger', label: 'Dava Değeri' },
+  { key: 'karsi', label: 'Karşı Taraf' },
+  { key: 'not', label: 'Notlar' },
+];
+
+const ICRA_ALANLARI: { key: string; label: string; zorunlu?: boolean }[] = [
+  { key: 'borclu', label: 'Borçlu', zorunlu: true },
+  { key: 'btc', label: 'Borçlu TC/VKN' },
+  { key: 'tur', label: 'Takip Türü' },
+  { key: 'atur', label: 'Alacak Türü' },
+  { key: 'esasYil', label: 'Esas Yılı' },
+  { key: 'esasNo', label: 'Esas No' },
+  { key: 'il', label: 'İl' },
+  { key: 'adliye', label: 'Adliye' },
+  { key: 'daire', label: 'İcra Dairesi' },
+  { key: 'durum', label: 'Durum' },
+  { key: 'alacak', label: 'Alacak Tutarı' },
+  { key: 'tarih', label: 'Takip Tarihi' },
+  { key: 'otarih', label: 'Ödeme Emri Tarihi' },
+  { key: 'dayanak', label: 'Dayanak' },
+  { key: 'karsi', label: 'Karşı Taraf' },
+  { key: 'not', label: 'Notlar' },
+];
+
 function alanlarByTip(tip: HedefTip) {
   switch (tip) {
     case 'muvekkil': return MUVEKKIL_ALANLARI;
     case 'karsiTaraf': return KARSI_TARAF_ALANLARI;
     case 'vekil': return VEKIL_ALANLARI;
+    case 'dava': return DAVA_ALANLARI;
+    case 'icra': return ICRA_ALANLARI;
   }
 }
 
@@ -127,6 +167,31 @@ function otomatikEslestir(basliklar: string[], hedefAlanlar: { key: string; labe
     tip: ['tip', 'tür', 'tur', 'kişi tipi'],
     unvan: ['ünvan', 'unvan', 'şirket adı'],
     faks: ['faks', 'fax'],
+    // UYAP Dava alanları
+    konu: ['konu', 'dava konusu', 'konu/açıklama'],
+    davaTuru: ['dava türü', 'dava turu', 'dosya türü'],
+    esasYil: ['esas yılı', 'esas yili', 'yıl'],
+    esasNo: ['esas no', 'esas sıra', 'esas sira', 'sıra no'],
+    il: ['il', 'şehir', 'sehir'],
+    adliye: ['adliye', 'adliye adı'],
+    mtur: ['mahkeme türü', 'mahkeme turu', 'mahkeme tipi'],
+    mno: ['mahkeme no', 'mahkeme numarası'],
+    asama: ['aşama', 'asama', 'derece'],
+    durum: ['durum', 'dosya durumu', 'status'],
+    taraf: ['taraf', 'müvekkil tarafı', 'davacı/davalı'],
+    tarih: ['tarih', 'dava tarihi', 'takip tarihi', 'açılış tarihi'],
+    durusma: ['duruşma', 'durusma', 'duruşma tarihi', 'sonraki duruşma'],
+    deger: ['dava değeri', 'deger', 'değer', 'tutar'],
+    karsi: ['karşı taraf', 'karsi taraf', 'davalı', 'davacı'],
+    // UYAP İcra alanları
+    borclu: ['borçlu', 'borclu', 'borçlu adı'],
+    btc: ['borçlu tc', 'borclu tc', 'borçlu vkn'],
+    tur: ['takip türü', 'takip turu', 'icra türü'],
+    atur: ['alacak türü', 'alacak turu'],
+    daire: ['daire', 'icra dairesi', 'icra müdürlüğü'],
+    alacak: ['alacak', 'alacak tutarı', 'toplam alacak'],
+    otarih: ['ödeme emri', 'ödeme emri tarihi'],
+    dayanak: ['dayanak', 'dayanak belge'],
   };
 
   for (let i = 0; i < basliklar.length; i++) {
@@ -260,6 +325,14 @@ export function IceAktarmaModal({ open, onClose, hedefTip, mevcutKayitlar, onAkt
       if (!mukerrer && hedefTip === 'vekil' && data.baro && data.baroSicil) {
         mukerrer = mevcutKayitlar.some((k) => k.baro === data.baro && k.baroSicil === data.baroSicil);
       }
+      // Dava mükerrer: aynı esas yılı + no
+      if (!mukerrer && hedefTip === 'dava' && data.esasYil && data.esasNo) {
+        mukerrer = mevcutKayitlar.some((k) => k.esasYil === data.esasYil && k.esasNo === data.esasNo);
+      }
+      // İcra mükerrer: aynı esas yılı + no
+      if (!mukerrer && hedefTip === 'icra' && data.esasYil && data.esasNo) {
+        mukerrer = mevcutKayitlar.some((k) => k.esasYil === data.esasYil && k.esasNo === data.esasNo);
+      }
 
       return { data, hatalar, mukerrer };
     });
@@ -305,7 +378,7 @@ export function IceAktarmaModal({ open, onClose, hedefTip, mevcutKayitlar, onAkt
     onClose();
   }, [sifirla, onClose]);
 
-  const tipLabel = hedefTip === 'muvekkil' ? 'Müvekkil' : hedefTip === 'karsiTaraf' ? 'Karşı Taraf' : 'Avukat';
+  const tipLabel = hedefTip === 'muvekkil' ? 'Müvekkil' : hedefTip === 'karsiTaraf' ? 'Karşı Taraf' : hedefTip === 'vekil' ? 'Avukat' : hedefTip === 'dava' ? 'Dava' : 'İcra';
 
   // Zorunlu alanlar eşleşmiş mi?
   const zorunluEksik = hedefAlanlar

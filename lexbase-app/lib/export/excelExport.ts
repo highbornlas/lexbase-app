@@ -126,3 +126,87 @@ export async function exportDosyaListeXLS(
 
   XLSX.writeFile(wb, `dosya-listesi-${new Date().toISOString().slice(0, 10)}.xlsx`);
 }
+
+// ── Dava Listesi Excel (UYAP Uyumlu) ────────────────────────
+export async function exportDavaListeUYAPXLS(
+  davalar: Array<Record<string, unknown>>,
+  muvAdMap: Record<string, string>,
+) {
+  const XLSX = await import('xlsx');
+
+  const data = davalar.map((d, i) => {
+    const esasYil = (d.esasYil as string) || '';
+    const esasNo = (d.esasNo as string) || '';
+    const esas = [esasYil, esasNo].filter(Boolean).join('/');
+    const il = (d.il as string) || '';
+    const mno = (d.mno as string) || '';
+    const mtur = (d.mtur as string) || '';
+    const mahkeme = [il, mno ? `${mno}.` : '', mtur, 'Mahkemesi'].filter(Boolean).join(' ');
+    const muvAd = muvAdMap[(d.muvId as string) || ''] || '';
+    const karsi = (d.karsi as string) || '';
+    const taraf = (d.taraf as string) || '';
+    const davaci = taraf === 'davaci' || taraf === 'mudahil' ? muvAd : karsi;
+    const davali = taraf === 'davaci' || taraf === 'mudahil' ? karsi : muvAd;
+
+    return {
+      '#': i + 1,
+      'Esas No': esas,
+      'Dava Türü': (d.davaTuru as string) || '',
+      'Konu': (d.konu as string) || '',
+      'Davacı': davaci,
+      'Davalı': davali,
+      'Mahkeme': mahkeme,
+      'Aşama': (d.asama as string) || '',
+      'Durum': (d.durum as string) || '',
+      'Dava Tarihi': (d.tarih as string) || '',
+      'Duruşma Tarihi': (d.durusma as string) || '',
+      'Dava Değeri': (d.deger as number) || '',
+    };
+  });
+
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Davalar');
+  XLSX.writeFile(wb, `dava-listesi-${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
+// ── İcra Listesi Excel (UYAP Uyumlu) ────────────────────────
+export async function exportIcraListeUYAPXLS(
+  icralar: Array<Record<string, unknown>>,
+  muvAdMap: Record<string, string>,
+) {
+  const XLSX = await import('xlsx');
+
+  const data = icralar.map((ic, i) => {
+    const esasYil = (ic.esasYil as string) || '';
+    const esasNo = (ic.esasNo as string) || '';
+    const esas = [esasYil, esasNo].filter(Boolean).join('/') || (ic.esas as string) || '';
+    const il = (ic.il as string) || '';
+    const daire = (ic.daire as string) || '';
+    const icraDairesi = [il, daire].filter(Boolean).join(' ');
+    const muvAd = muvAdMap[(ic.muvId as string) || ''] || '';
+    const muvRol = (ic.muvRol as string) || 'alacakli';
+    const borcluAd = (ic.borclu as string) || '';
+    const alacakli = muvRol === 'borclu' ? borcluAd : muvAd;
+    const borclu = muvRol === 'borclu' ? muvAd : borcluAd;
+
+    return {
+      '#': i + 1,
+      'Esas No': esas,
+      'Takip Türü': (ic.tur as string) || '',
+      'Alacaklı': alacakli,
+      'Borçlu': borclu,
+      'İcra Müdürlüğü': icraDairesi,
+      'Durum': (ic.durum as string) || '',
+      'Alacak Tutarı': (ic.alacak as number) || 0,
+      'Tahsil Edilen': (ic.tahsil as number) || 0,
+      'Kalan': ((ic.alacak as number) || 0) - ((ic.tahsil as number) || 0),
+      'Takip Tarihi': (ic.tarih as string) || '',
+    };
+  });
+
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'İcra Dosyaları');
+  XLSX.writeFile(wb, `icra-listesi-${new Date().toISOString().slice(0, 10)}.xlsx`);
+}

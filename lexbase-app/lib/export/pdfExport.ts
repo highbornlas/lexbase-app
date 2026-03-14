@@ -213,3 +213,99 @@ export async function exportFinansRaporuPDF(muvekkilAd: string, ozet: FinansOzet
   footerEkle(doc);
   doc.save(`finans-raporu-${muvekkilAd.replace(/\s+/g, '-')}-${new Date().toISOString().slice(0, 10)}.pdf`);
 }
+
+// ── Dava Listesi PDF (UYAP Uyumlu) ──────────────────────────
+export async function exportDavaListePDF(
+  davalar: Array<Record<string, unknown>>,
+  muvAdMap: Record<string, string>,
+) {
+  const { default: jsPDF } = await import('jspdf');
+  const { default: autoTable } = await import('jspdf-autotable');
+
+  const doc = new jsPDF({ orientation: 'landscape' });
+  const startY = headerEkle(doc, 'Dava Listesi', `Toplam: ${davalar.length} dava`);
+
+  autoTable(doc, {
+    startY,
+    head: [['#', 'Esas No', 'Dava Turu', 'Davaci', 'Davali', 'Mahkeme', 'Asama', 'Durum']],
+    body: davalar.map((d, i) => {
+      const esas = [(d.esasYil as string), (d.esasNo as string)].filter(Boolean).join('/');
+      const il = (d.il as string) || '';
+      const mno = (d.mno as string) || '';
+      const mtur = (d.mtur as string) || '';
+      const mahkeme = [il, mno ? `${mno}.` : '', mtur].filter(Boolean).join(' ');
+      const muvAd = muvAdMap[(d.muvId as string) || ''] || '';
+      const karsi = (d.karsi as string) || '';
+      const taraf = (d.taraf as string) || '';
+      const davaci = taraf === 'davaci' || taraf === 'mudahil' ? muvAd : karsi;
+      const davali = taraf === 'davaci' || taraf === 'mudahil' ? karsi : muvAd;
+
+      return [
+        i + 1,
+        esas || '-',
+        (d.davaTuru as string) || (d.konu as string) || '-',
+        davaci || '-',
+        davali || '-',
+        mahkeme || '-',
+        (d.asama as string) || '-',
+        (d.durum as string) || '-',
+      ];
+    }),
+    styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [184, 155, 72], textColor: [255, 255, 255] },
+    alternateRowStyles: { fillColor: [245, 245, 245] },
+  });
+
+  footerEkle(doc);
+  doc.save(`dava-listesi-${new Date().toISOString().slice(0, 10)}.pdf`);
+}
+
+// ── İcra Listesi PDF (UYAP Uyumlu) ──────────────────────────
+export async function exportIcraListePDF(
+  icralar: Array<Record<string, unknown>>,
+  muvAdMap: Record<string, string>,
+) {
+  const { default: jsPDF } = await import('jspdf');
+  const { default: autoTable } = await import('jspdf-autotable');
+
+  const doc = new jsPDF({ orientation: 'landscape' });
+  const startY = headerEkle(doc, 'Icra Dosya Listesi', `Toplam: ${icralar.length} dosya`);
+
+  const fmtTutar = (n: number) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(n);
+
+  autoTable(doc, {
+    startY,
+    head: [['#', 'Esas No', 'Takip Turu', 'Alacakli', 'Borclu', 'Icra Mudurlugu', 'Durum', 'Alacak', 'Tahsil']],
+    body: icralar.map((ic, i) => {
+      const esasYil = (ic.esasYil as string) || '';
+      const esasNo = (ic.esasNo as string) || '';
+      const esas = [esasYil, esasNo].filter(Boolean).join('/') || (ic.esas as string) || '';
+      const il = (ic.il as string) || '';
+      const daire = (ic.daire as string) || '';
+      const icraDairesi = [il, daire].filter(Boolean).join(' ');
+      const muvAd = muvAdMap[(ic.muvId as string) || ''] || '';
+      const muvRol = (ic.muvRol as string) || 'alacakli';
+      const borcluAd = (ic.borclu as string) || '';
+      const alacakli = muvRol === 'borclu' ? borcluAd : muvAd;
+      const borclu = muvRol === 'borclu' ? muvAd : borcluAd;
+
+      return [
+        i + 1,
+        esas || '-',
+        (ic.tur as string) || '-',
+        alacakli || '-',
+        borclu || '-',
+        icraDairesi || '-',
+        (ic.durum as string) || '-',
+        fmtTutar((ic.alacak as number) || 0),
+        fmtTutar((ic.tahsil as number) || 0),
+      ];
+    }),
+    styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [184, 155, 72], textColor: [255, 255, 255] },
+    alternateRowStyles: { fillColor: [245, 245, 245] },
+  });
+
+  footerEkle(doc);
+  doc.save(`icra-listesi-${new Date().toISOString().slice(0, 10)}.pdf`);
+}
