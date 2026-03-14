@@ -7,7 +7,7 @@ import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
 import { DavaModal } from '@/components/modules/DavaModal';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { DurusmaBadge } from '@/components/ui/SureBadge';
-import { tamMahkemeAdi, esasNoGoster, dosyaNoOlustur, davaciBelirle, durusmayaKalanGun } from '@/lib/utils/uyapHelpers';
+import { tamMahkemeAdi, esasNoGoster, dosyaNoOlustur, davaciBelirle, durusmayaKalanGun, davaDosyaBaslik } from '@/lib/utils/uyapHelpers';
 import { fmtTarih } from '@/lib/utils';
 import { DAVA_DURUMLARI, YARGI_TURLERI, YARGI_BIRIMLERI } from '@/lib/constants/uyap';
 import { exportDavaListeUYAPXLS } from '@/lib/export/excelExport';
@@ -645,9 +645,12 @@ export default function DavalarPage() {
                   switch (colKey) {
                     case 'sira': return <span key={colKey} className="text-[11px] text-text-dim">{globalIdx + 1}</span>;
                     case 'esasNo': return (
-                      <Link key={colKey} href={`/davalar/${d.id}`} className="min-w-0 flex items-center gap-1.5 hover:underline">
-                        <span className="font-[var(--font-playfair)] text-sm font-bold text-gold truncate">{esasStr || '—'}</span>
-                        {d.davaTuru && <span className="text-[9px] px-1 py-0.5 rounded bg-surface2 text-text-dim border border-border/50 whitespace-nowrap flex-shrink-0">{d.davaTuru}</span>}
+                      <Link key={colKey} href={`/davalar/${d.id}`} className="min-w-0 hover:underline">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-[var(--font-playfair)] text-sm font-bold text-gold truncate">{davaDosyaBaslik(d)}</span>
+                          {d.davaTuru && <span className="text-[9px] px-1 py-0.5 rounded bg-surface2 text-text-dim border border-border/50 whitespace-nowrap flex-shrink-0">{d.davaTuru}</span>}
+                        </div>
+                        {d.konu && <div className="text-[10px] text-text-dim truncate mt-0.5">{d.konu}</div>}
                       </Link>
                     );
                     case 'mahkeme': return <Link key={colKey} href={`/davalar/${d.id}`} className="text-xs text-text truncate hover:underline" title={mahkeme || d.konu || ''}>{mahkeme || d.konu || <span className="text-text-dim/40">—</span>}</Link>;

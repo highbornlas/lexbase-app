@@ -162,3 +162,65 @@ export function durusmayaKalanGun(tarih?: string): number | null {
   hedef.setHours(0, 0, 0, 0);
   return Math.ceil((hedef.getTime() - bugun.getTime()) / (1000 * 60 * 60 * 24));
 }
+
+/**
+ * Dava dosya başlığı oluştur
+ * Ör: "İstanbul 14.Sulh Hukuk 2023/3654 E."
+ */
+export function davaDosyaBaslik(dava: {
+  il?: string; mno?: string; mtur?: string;
+  esasYil?: string; esasNo?: string;
+  konu?: string; no?: string;
+}): string {
+  const parcalar: string[] = [];
+  if (dava.il) parcalar.push(dava.il);
+  if (dava.mno) parcalar.push(`${dava.mno}.`);
+  if (dava.mtur) parcalar.push(dava.mtur);
+  const esas = esasNoGoster(dava.esasYil, dava.esasNo);
+  if (esas) parcalar.push(`${esas} E.`);
+  if (parcalar.length > 0) return parcalar.join(' ');
+  return dava.konu || dava.no || '—';
+}
+
+/**
+ * İcra dosya başlığı oluştur
+ * Ör: "Ankara 2.İcra Dairesi 2025/452 E."
+ */
+export function icraDosyaBaslik(icra: {
+  il?: string; daire?: string;
+  esasYil?: string; esasNo?: string;
+  esas?: string; borclu?: string; no?: string;
+}): string {
+  const parcalar: string[] = [];
+  if (icra.il) parcalar.push(icra.il);
+  if (icra.daire) parcalar.push(icra.daire);
+  const esas = esasNoGoster(icra.esasYil, icra.esasNo) || icra.esas || '';
+  if (esas) parcalar.push(`${esas} E.`);
+  if (parcalar.length > 0) return parcalar.join(' ');
+  return icra.borclu || icra.no || '—';
+}
+
+/**
+ * İhtarname dosya başlığı oluştur
+ * Ör: "Bakırköy 42.Noterliği 14.03.2025 tarih 4569 Yevmiye No"
+ */
+export function ihtarnameDosyaBaslik(ihtarname: {
+  noterAd?: string; noterNo?: string;
+  tarih?: string; no?: string; konu?: string;
+}): string {
+  const parcalar: string[] = [];
+  if (ihtarname.noterAd) {
+    parcalar.push(ihtarname.noterAd);
+    if (ihtarname.noterNo) parcalar.push(ihtarname.noterNo);
+  }
+  if (ihtarname.tarih) {
+    const d = new Date(ihtarname.tarih);
+    parcalar.push(d.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' }));
+    parcalar.push('tarih');
+  }
+  if (ihtarname.no) {
+    parcalar.push(`${ihtarname.no} Yevmiye No`);
+  }
+  if (parcalar.length > 0) return parcalar.join(' ');
+  return ihtarname.konu || ihtarname.no || '—';
+}

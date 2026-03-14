@@ -8,7 +8,7 @@ import { fmt, fmtTarih } from '@/lib/utils';
 import { IcraModal } from '@/components/modules/IcraModal';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { SureBadge } from '@/components/ui/SureBadge';
-import { tamIcraDairesiAdi, esasNoGoster, dosyaNoOlustur, alacakliBelirle, sureHesapla } from '@/lib/utils/uyapHelpers';
+import { tamIcraDairesiAdi, esasNoGoster, dosyaNoOlustur, alacakliBelirle, sureHesapla, icraDosyaBaslik } from '@/lib/utils/uyapHelpers';
 import { ICRA_TURLERI, ICRA_DURUMLARI, ICRA_YARGI_BIRIMLERI } from '@/lib/constants/uyap';
 import { exportIcraListeUYAPXLS } from '@/lib/export/excelExport';
 import { exportIcraListePDF } from '@/lib/export/pdfExport';
@@ -566,9 +566,12 @@ export default function IcraPage() {
                   switch (colKey) {
                     case 'sira': return <span key={colKey} className="text-[11px] text-text-dim">{globalIdx + 1}</span>;
                     case 'esasNo': return (
-                      <Link key={colKey} href={`/icra/${ic.id}`} className="min-w-0 flex items-center gap-1.5 hover:underline">
-                        <span className="font-[var(--font-playfair)] text-sm font-bold text-gold truncate">{esasStr || '—'}</span>
-                        {ic.tur && <span className="text-[9px] px-1 py-0.5 rounded bg-surface2 text-text-dim border border-border/50 whitespace-nowrap flex-shrink-0">{ic.tur}</span>}
+                      <Link key={colKey} href={`/icra/${ic.id}`} className="min-w-0 hover:underline">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-[var(--font-playfair)] text-sm font-bold text-gold truncate">{icraDosyaBaslik(ic)}</span>
+                          {ic.tur && <span className="text-[9px] px-1 py-0.5 rounded bg-surface2 text-text-dim border border-border/50 whitespace-nowrap flex-shrink-0">{ic.tur}</span>}
+                        </div>
+                        {borcluAd && <div className="text-[10px] text-text-dim truncate mt-0.5">{borcluAd}</div>}
                       </Link>
                     );
                     case 'daire': return <Link key={colKey} href={`/icra/${ic.id}`} className="text-xs text-text truncate hover:underline" title={daireFull}>{daireFull || '—'}</Link>;

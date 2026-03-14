@@ -12,6 +12,7 @@ import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
 import { useDavalar } from '@/lib/hooks/useDavalar';
 import { useIcralar } from '@/lib/hooks/useIcra';
 import { fmt, fmtTarih } from '@/lib/utils';
+import { ArabuluculukModal } from '@/components/modules/ArabuluculukModal';
 
 const DURUM_RENK: Record<string, string> = {
   'Başvuru': 'bg-blue-400/10 text-blue-400 border-blue-400/20',
@@ -39,6 +40,7 @@ export default function ArabuluculukDetayPage() {
   const [yeniOturum, setYeniOturum] = useState({ tarih: new Date().toISOString().split('T')[0], saat: '', sure: '', ozet: '', sonuc: 'Devam' });
   // Not ekleme
   const [yeniNot, setYeniNot] = useState('');
+  const [duzenleModu, setDuzenleModu] = useState(false);
 
   const muvAd = useMemo(() => {
     if (!arb?.muvId || !muvekkillar) return '—';
@@ -130,9 +132,15 @@ export default function ArabuluculukDetayPage() {
             )}
           </div>
         </div>
-        <button onClick={() => router.push('/arabuluculuk')} className="px-3 py-1.5 bg-surface border border-border rounded-lg text-xs text-text-muted hover:text-text transition-colors">
-          ← Listeye Dön
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setDuzenleModu(true)}
+            className="text-xs px-3 py-1.5 rounded bg-gold/10 text-gold border border-gold/20 hover:bg-gold/20 transition-colors">
+            Düzenle
+          </button>
+          <button onClick={() => router.push('/arabuluculuk')} className="px-3 py-1.5 bg-surface border border-border rounded-lg text-xs text-text-muted hover:text-text transition-colors">
+            ← Listeye Dön
+          </button>
+        </div>
       </div>
 
       {/* Yasal Süre Uyarısı */}
@@ -358,6 +366,15 @@ export default function ArabuluculukDetayPage() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Düzenleme Modal */}
+      {duzenleModu && (
+        <ArabuluculukModal
+          open={duzenleModu}
+          onClose={() => setDuzenleModu(false)}
+          arabuluculuk={arb}
+        />
       )}
     </div>
   );

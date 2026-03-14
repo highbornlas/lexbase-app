@@ -208,7 +208,7 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
             arabuluculuklar={arabArr}
             ihtarnameler={ihtArr}
             finansOzet={finansOzet}
-            onMasrafEkle={() => {/* MasrafModal — sonraki iterasyonda */}}
+            onMasrafEkle={() => { alert('Masraf eklemek için ilgili dosyanın (Dava/İcra) detay sayfasındaki Harcamalar sekmesini kullanabilirsiniz.'); }}
           />
         )}
         {aktifTab === 'alacak' && (

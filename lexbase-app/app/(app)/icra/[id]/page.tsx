@@ -298,7 +298,20 @@ export default function IcraDetayPage({ params }: { params: Promise<{ id: string
         {aktifTab === 'ozet' && <OzetTab icra={icra} muvAd={muvAd} daireAdi={daireAdi} taraflar={taraflar} esasNo={esasNo} hesap={hesap} itirazBilgi={itirazBilgi} />}
         {aktifTab === 'evrak' && <DosyaEvrakTab dosyaId={id} dosyaTipi="icra" muvId={icra.muvId} />}
         {aktifTab === 'tebligatlar' && <TebligatlarTab icra={icra} onUpdate={(guncel) => icraKaydet.mutate(guncel)} />}
-        {aktifTab === 'harcama' && <HarcamaTab harcamalar={icra.harcamalar || []} />}
+        {aktifTab === 'harcama' && (
+          <HarcamaTab
+            harcamalar={icra.harcamalar || []}
+            onEkle={(h) => {
+              icraKaydet.mutate({ ...icra, harcamalar: [...(icra.harcamalar || []), h] });
+            }}
+            onGuncelle={(h) => {
+              icraKaydet.mutate({ ...icra, harcamalar: (icra.harcamalar || []).map((x) => x.id === h.id ? h : x) });
+            }}
+            onSil={(hId) => {
+              icraKaydet.mutate({ ...icra, harcamalar: (icra.harcamalar || []).filter((x) => x.id !== hId) });
+            }}
+          />
+        )}
         {aktifTab === 'tahsilat' && (
           <TahsilatTab
             tahsilatlar={icra.tahsilatlar || []}
@@ -310,9 +323,37 @@ export default function IcraDetayPage({ params }: { params: Promise<{ id: string
             }}
           />
         )}
-        {aktifTab === 'sureler' && <SurelerTab sureler={icra.sureler || []} />}
-        {aktifTab === 'notlar' && <NotlarTab notlar={icra.notlar || []} notText={icra.not} />}
-        {aktifTab === 'anlasma' && <AnlasmaTab anlasma={icra.anlasma} />}
+        {aktifTab === 'sureler' && (
+          <SurelerTab
+            sureler={icra.sureler || []}
+            onEkle={(s) => {
+              icraKaydet.mutate({ ...icra, sureler: [...(icra.sureler || []), s] });
+            }}
+            onSil={(sId) => {
+              icraKaydet.mutate({ ...icra, sureler: (icra.sureler || []).filter((x) => x.id !== sId) });
+            }}
+          />
+        )}
+        {aktifTab === 'notlar' && (
+          <NotlarTab
+            notlar={icra.notlar || []}
+            notText={icra.not}
+            onEkle={(n) => {
+              icraKaydet.mutate({ ...icra, notlar: [...(icra.notlar || []), n] });
+            }}
+            onSil={(nId) => {
+              icraKaydet.mutate({ ...icra, notlar: (icra.notlar || []).filter((x) => (x.id as string) !== nId) });
+            }}
+          />
+        )}
+        {aktifTab === 'anlasma' && (
+          <AnlasmaTab
+            anlasma={icra.anlasma}
+            onKaydet={(a) => {
+              icraKaydet.mutate({ ...icra, anlasma: a });
+            }}
+          />
+        )}
       </div>
 
       {/* Düzenleme Modal */}
@@ -476,46 +517,188 @@ function MiniKpi({ label, value, color }: { label: string; value: string; color?
 }
 
 // ── Süreler Sekmesi ──────────────────────────────────────────
-function SurelerTab({ sureler }: { sureler: Array<{ id: string; tip: string; baslangic: string; gun: number }> }) {
-  if (sureler.length === 0) return <EmptyTab icon="⏳" message="Henüz süre tanımlanmamış" />;
+function SurelerTab({ sureler, onEkle, onSil }: {
+  sureler: Array<{ id: string; tip: string; baslangic: string; gun: number }>;
+  onEkle: (s: { id: string; tip: string; baslangic: string; gun: number }) => void;
+  onSil: (id: string) => void;
+}) {
+  const [form, setForm] = useState(false);
+  const [yeni, setYeni] = useState({ tip: '', baslangic: new Date().toISOString().split('T')[0], gun: '' });
+  const SURE_TURLERI = ['İtiraz Süresi', 'Haciz İsteme Süresi', 'Satış İsteme Süresi', 'Şikayet Süresi', 'Ödeme Süresi', 'Takibin Kesinleşmesi', 'Diğer'];
+
+  function handleKaydet() {
+    if (!yeni.tip || !yeni.gun) return;
+    onEkle({ id: crypto.randomUUID(), tip: yeni.tip, baslangic: yeni.baslangic, gun: Number(yeni.gun) });
+    setYeni({ tip: '', baslangic: new Date().toISOString().split('T')[0], gun: '' });
+    setForm(false);
+  }
+
   return (
-    <div className="space-y-2">
-      {sureler.map((s) => {
-        const hesap = sureHesapla(s.baslangic, s.gun);
-        return (
-          <div key={s.id} className="flex items-center gap-3 p-3 bg-surface2 rounded-lg">
-            <SureBadge kalanGun={hesap.kalanGun} compact />
-            <div className="flex-1">
-              <div className="text-xs font-medium text-text">{s.tip}</div>
-              <div className="text-[11px] text-text-muted">
-                {fmtTarih(s.baslangic)} → {fmtTarih(hesap.sonTarih)} ({s.gun} gün)
-              </div>
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs text-text-muted">{sureler.length > 0 && `${sureler.length} süre`}</span>
+        <button onClick={() => setForm(!form)}
+          className="px-3 py-1.5 bg-gold text-bg font-semibold rounded-lg text-xs hover:bg-gold-light transition-colors">
+          {form ? 'İptal' : '+ Süre Ekle'}
+        </button>
+      </div>
+
+      {form && (
+        <div className="bg-surface2/50 border border-border rounded-lg p-4 mb-3 space-y-3">
+          <div className="text-xs font-bold text-text-muted uppercase tracking-wider">⏳ Yeni Süre</div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-[10px] text-text-muted block mb-1">Süre Türü *</label>
+              <select value={yeni.tip} onChange={(e) => setYeni(p => ({ ...p, tip: e.target.value }))}
+                className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold">
+                <option value="">Seçiniz...</option>
+                {SURE_TURLERI.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
             </div>
-            <SureBadge kalanGun={hesap.kalanGun} label={s.tip} />
+            <div>
+              <label className="text-[10px] text-text-muted block mb-1">Başlangıç Tarihi</label>
+              <input type="date" value={yeni.baslangic} onChange={(e) => setYeni(p => ({ ...p, baslangic: e.target.value }))}
+                className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold" />
+            </div>
+            <div>
+              <label className="text-[10px] text-text-muted block mb-1">Gün Sayısı *</label>
+              <input type="number" value={yeni.gun} onChange={(e) => setYeni(p => ({ ...p, gun: e.target.value }))} placeholder="7"
+                className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold" />
+            </div>
           </div>
-        );
-      })}
+          <div className="flex justify-end">
+            <button onClick={handleKaydet} disabled={!yeni.tip || !yeni.gun}
+              className="px-4 py-1.5 bg-gold text-bg text-xs font-semibold rounded-lg hover:bg-gold-light transition-colors disabled:opacity-40">
+              Kaydet
+            </button>
+          </div>
+        </div>
+      )}
+
+      {sureler.length === 0 && !form ? (
+        <EmptyTab icon="⏳" message="Henüz süre tanımlanmamış" />
+      ) : (
+        <div className="space-y-2">
+          {sureler.map((s) => {
+            const hesapS = sureHesapla(s.baslangic, s.gun);
+            return (
+              <div key={s.id} className="flex items-center gap-3 p-3 bg-surface2 rounded-lg group">
+                <SureBadge kalanGun={hesapS.kalanGun} compact />
+                <div className="flex-1">
+                  <div className="text-xs font-medium text-text">{s.tip}</div>
+                  <div className="text-[11px] text-text-muted">
+                    {fmtTarih(s.baslangic)} → {fmtTarih(hesapS.sonTarih)} ({s.gun} gün)
+                  </div>
+                </div>
+                <SureBadge kalanGun={hesapS.kalanGun} label={s.tip} />
+                <button onClick={() => onSil(s.id)}
+                  className="text-text-dim hover:text-red transition-colors opacity-0 group-hover:opacity-100 text-[10px]" title="Sil">🗑️</button>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
 
 // ── Harcama Sekmesi ──────────────────────────────────────────
-function HarcamaTab({ harcamalar }: { harcamalar: Array<{ id: string; kat?: string; acik?: string; tarih?: string; tutar: number }> }) {
-  if (harcamalar.length === 0) return <EmptyTab icon="💸" message="Henüz harcama kaydı yok" />;
+function HarcamaTab({ harcamalar, onEkle, onGuncelle, onSil }: {
+  harcamalar: Array<{ id: string; kat?: string; acik?: string; tarih?: string; tutar: number }>;
+  onEkle: (h: { id: string; kat: string; acik: string; tarih: string; tutar: number }) => void;
+  onGuncelle: (h: { id: string; kat?: string; acik?: string; tarih?: string; tutar: number }) => void;
+  onSil: (id: string) => void;
+}) {
+  const [form, setForm] = useState(false);
+  const [duzenleId, setDuzenleId] = useState<string | null>(null);
+  const [yeni, setYeni] = useState({ kat: '', tarih: new Date().toISOString().split('T')[0], tutar: '', acik: '' });
+  const HARCAMA_KAT = ['Harç', 'Posta/Tebligat', 'Bilirkişi', 'Keşif', 'Tanık', 'Yol/Konaklama', 'Fotokopi/Baskı', 'Vekaletname', 'Haciz Masrafı', 'Diğer'];
+
+  function handleKaydet() {
+    if (!yeni.tutar) return;
+    if (duzenleId) {
+      onGuncelle({ id: duzenleId, kat: yeni.kat, acik: yeni.acik, tarih: yeni.tarih, tutar: Number(yeni.tutar) });
+      setDuzenleId(null);
+    } else {
+      onEkle({ id: crypto.randomUUID(), kat: yeni.kat, acik: yeni.acik, tarih: yeni.tarih, tutar: Number(yeni.tutar) });
+    }
+    setYeni({ kat: '', tarih: new Date().toISOString().split('T')[0], tutar: '', acik: '' });
+    setForm(false);
+  }
+
+  function handleDuzenle(h: { id: string; kat?: string; acik?: string; tarih?: string; tutar: number }) {
+    setDuzenleId(h.id);
+    setYeni({ kat: h.kat || '', tarih: h.tarih || '', tutar: String(h.tutar), acik: h.acik || '' });
+    setForm(true);
+  }
+
   const toplam = harcamalar.reduce((t, h) => t + (h.tutar || 0), 0);
+
   return (
     <div>
-      <div className="text-xs text-text-muted mb-3">Toplam: <span className="font-bold text-text">{fmt(toplam)}</span></div>
-      <div className="space-y-1.5">
-        {harcamalar.map((h) => (
-          <div key={h.id} className="flex items-center gap-3 p-3 bg-surface2 rounded-lg text-xs">
-            <span className="text-text-dim">{fmtTarih(h.tarih)}</span>
-            {h.kat && <span className="px-2 py-0.5 bg-surface rounded text-text-muted text-[10px]">{h.kat}</span>}
-            <span className="flex-1 text-text">{h.acik || '—'}</span>
-            <span className="font-bold text-text">{fmt(h.tutar)}</span>
-          </div>
-        ))}
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-xs text-text-muted">{harcamalar.length > 0 && <>Toplam: <span className="font-bold text-text">{fmt(toplam)}</span> · {harcamalar.length} kayıt</>}</span>
+        <button onClick={() => { setForm(!form); setDuzenleId(null); setYeni({ kat: '', tarih: new Date().toISOString().split('T')[0], tutar: '', acik: '' }); }}
+          className="px-3 py-1.5 bg-gold text-bg font-semibold rounded-lg text-xs hover:bg-gold-light transition-colors">
+          {form ? 'İptal' : '+ Harcama Ekle'}
+        </button>
       </div>
+
+      {form && (
+        <div className="bg-surface2/50 border border-border rounded-lg p-4 mb-3 space-y-3">
+          <div className="text-xs font-bold text-text-muted uppercase tracking-wider">💸 {duzenleId ? 'Harcama Düzenle' : 'Yeni Harcama'}</div>
+          <div className="grid grid-cols-4 gap-3">
+            <div>
+              <label className="text-[10px] text-text-muted block mb-1">Kategori</label>
+              <select value={yeni.kat} onChange={(e) => setYeni(p => ({ ...p, kat: e.target.value }))}
+                className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold">
+                <option value="">Seçiniz...</option>
+                {HARCAMA_KAT.map(k => <option key={k} value={k}>{k}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] text-text-muted block mb-1">Tarih</label>
+              <input type="date" value={yeni.tarih} onChange={(e) => setYeni(p => ({ ...p, tarih: e.target.value }))}
+                className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold" />
+            </div>
+            <div>
+              <label className="text-[10px] text-text-muted block mb-1">Tutar *</label>
+              <input type="number" value={yeni.tutar} onChange={(e) => setYeni(p => ({ ...p, tutar: e.target.value }))} placeholder="0.00"
+                className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold" />
+            </div>
+            <div>
+              <label className="text-[10px] text-text-muted block mb-1">Açıklama</label>
+              <input value={yeni.acik} onChange={(e) => setYeni(p => ({ ...p, acik: e.target.value }))} placeholder="Harcama açıklaması"
+                className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text placeholder:text-text-dim focus:outline-none focus:border-gold" />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <button onClick={handleKaydet} disabled={!yeni.tutar}
+              className="px-4 py-1.5 bg-gold text-bg text-xs font-semibold rounded-lg hover:bg-gold-light transition-colors disabled:opacity-40">
+              {duzenleId ? 'Güncelle' : 'Kaydet'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {harcamalar.length === 0 && !form ? (
+        <EmptyTab icon="💸" message="Henüz harcama kaydı yok" />
+      ) : (
+        <div className="space-y-1.5">
+          {harcamalar.map((h) => (
+            <div key={h.id} className="flex items-center gap-3 p-3 bg-surface2 rounded-lg text-xs group">
+              <span className="text-text-dim">{fmtTarih(h.tarih)}</span>
+              {h.kat && <span className="px-2 py-0.5 bg-surface rounded text-text-muted text-[10px]">{h.kat}</span>}
+              <span className="flex-1 text-text">{h.acik || '—'}</span>
+              <span className="font-bold text-text">{fmt(h.tutar)}</span>
+              <div className="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
+                <button onClick={() => handleDuzenle(h)} className="text-text-dim hover:text-gold text-[10px]" title="Düzenle">✏️</button>
+                <button onClick={() => onSil(h.id)} className="text-text-dim hover:text-red text-[10px]" title="Sil">🗑️</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -572,14 +755,49 @@ function TahsilatTab({ tahsilatlar, onEkle, onDuzenle, onSil }: {
 }
 
 // ── Notlar Sekmesi ───────────────────────────────────────────
-function NotlarTab({ notlar, notText }: { notlar: Record<string, unknown>[]; notText?: string }) {
+function NotlarTab({ notlar, notText, onEkle, onSil }: {
+  notlar: Record<string, unknown>[];
+  notText?: string;
+  onEkle: (n: { id: string; icerik: string; tarih: string }) => void;
+  onSil: (id: string) => void;
+}) {
+  const [yeniNot, setYeniNot] = useState('');
+
+  function handleEkle() {
+    if (!yeniNot.trim()) return;
+    onEkle({ id: crypto.randomUUID(), icerik: yeniNot.trim(), tarih: new Date().toISOString().split('T')[0] });
+    setYeniNot('');
+  }
+
   return (
     <div className="space-y-3">
+      {/* Yeni not ekleme */}
+      <div className="flex gap-2">
+        <input
+          value={yeniNot}
+          onChange={(e) => setYeniNot(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') handleEkle(); }}
+          placeholder="Yeni not ekle..."
+          className="flex-1 px-3 py-2 text-xs bg-surface2 border border-border rounded-lg text-text placeholder:text-text-dim focus:outline-none focus:border-gold"
+        />
+        <button onClick={handleEkle} disabled={!yeniNot.trim()}
+          className="px-4 py-2 bg-gold text-bg text-xs font-semibold rounded-lg hover:bg-gold-light transition-colors disabled:opacity-40">
+          Ekle
+        </button>
+      </div>
+
       {notText && <div className="p-3 bg-surface2 rounded-lg text-xs text-text whitespace-pre-wrap">{notText}</div>}
       {notlar.length === 0 && !notText && <EmptyTab icon="📝" message="Henüz not eklenmemiş" />}
       {notlar.map((n, i) => (
-        <div key={(n.id as string) || i} className="p-3 bg-surface2 rounded-lg">
-          <div className="text-[11px] text-text-dim mb-1">{fmtTarih(n.tarih as string)}</div>
+        <div key={(n.id as string) || i} className="p-3 bg-surface2 rounded-lg group">
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-text-dim">{fmtTarih(n.tarih as string)}</span>
+              {typeof n.yazar === 'string' && <span className="text-[11px] text-text-muted">{n.yazar}</span>}
+            </div>
+            <button onClick={() => onSil(n.id as string)}
+              className="text-text-dim hover:text-red transition-colors opacity-0 group-hover:opacity-100 text-[10px]" title="Sil">✕</button>
+          </div>
           <div className="text-xs text-text whitespace-pre-wrap">{(n.icerik as string) || '—'}</div>
         </div>
       ))}
@@ -588,15 +806,137 @@ function NotlarTab({ notlar, notText }: { notlar: Record<string, unknown>[]; not
 }
 
 // ── Anlaşma Sekmesi ──────────────────────────────────────────
-function AnlasmaTab({ anlasma }: { anlasma?: Record<string, unknown> }) {
-  if (!anlasma || Object.keys(anlasma).length === 0) return <EmptyTab icon="🤝" message="Henüz anlaşma tanımlanmamış" />;
+function AnlasmaTab({ anlasma, onKaydet }: {
+  anlasma?: Record<string, unknown>;
+  onKaydet: (a: Record<string, unknown>) => void;
+}) {
   const turLabel: Record<string, string> = { pesin: 'Peşin', taksit: 'Taksitli', basari: 'Başarıya Göre', tahsilat: 'Tahsilata Göre', karma: 'Karma' };
+  const hasData = anlasma && Object.keys(anlasma).length > 0;
+  const [duzenle, setDuzenle] = useState(false);
+  const [form, setForm] = useState({
+    tur: (anlasma?.tur as string) || 'pesin',
+    ucret: anlasma?.ucret != null ? String(anlasma.ucret) : '',
+    toplam: anlasma?.toplam != null ? String(anlasma.toplam) : '',
+    yuzde: anlasma?.yuzde != null ? String(anlasma.yuzde) : '',
+    taksitSayisi: anlasma?.taksitSayisi != null ? String(anlasma.taksitSayisi) : '',
+    taksitOdenen: anlasma?.taksitOdenen != null ? String(anlasma.taksitOdenen) : '',
+    vadeTarihi: (anlasma?.vadeTarihi as string) || '',
+    aciklama: (anlasma?.aciklama as string) || '',
+  });
+
+  function handleKaydet() {
+    const a: Record<string, unknown> = { tur: form.tur };
+    if (form.ucret) a.ucret = Number(form.ucret);
+    if (form.toplam) a.toplam = Number(form.toplam);
+    if (form.yuzde) a.yuzde = Number(form.yuzde);
+    if (form.tur === 'taksit') {
+      if (form.taksitSayisi) a.taksitSayisi = Number(form.taksitSayisi);
+      if (form.taksitOdenen) a.taksitOdenen = Number(form.taksitOdenen);
+    }
+    if (form.vadeTarihi) a.vadeTarihi = form.vadeTarihi;
+    if (form.aciklama) a.aciklama = form.aciklama;
+    onKaydet(a);
+    setDuzenle(false);
+  }
+
+  if (!hasData && !duzenle) {
+    return (
+      <div className="text-center py-10">
+        <div className="text-3xl mb-2">🤝</div>
+        <div className="text-xs text-text-muted mb-3">Henüz anlaşma tanımlanmamış</div>
+        <button onClick={() => setDuzenle(true)}
+          className="px-4 py-2 bg-gold text-bg text-xs font-semibold rounded-lg hover:bg-gold-light transition-colors">
+          Anlaşma Tanımla
+        </button>
+      </div>
+    );
+  }
+
+  if (duzenle) {
+    return (
+      <div className="space-y-4">
+        <div className="text-xs font-bold text-text-muted uppercase tracking-wider">🤝 Anlaşma Bilgileri</div>
+        <div className="grid grid-cols-3 gap-3">
+          <div>
+            <label className="text-[10px] text-text-muted block mb-1">Ücret Türü</label>
+            <select value={form.tur} onChange={(e) => setForm(p => ({ ...p, tur: e.target.value }))}
+              className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold">
+              {Object.entries(turLabel).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] text-text-muted block mb-1">Ücret</label>
+            <input type="number" value={form.ucret} onChange={(e) => setForm(p => ({ ...p, ucret: e.target.value }))} placeholder="0.00"
+              className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold" />
+          </div>
+          <div>
+            <label className="text-[10px] text-text-muted block mb-1">Toplam</label>
+            <input type="number" value={form.toplam} onChange={(e) => setForm(p => ({ ...p, toplam: e.target.value }))} placeholder="0.00"
+              className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold" />
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <div>
+            <label className="text-[10px] text-text-muted block mb-1">Yüzde (%)</label>
+            <input type="number" value={form.yuzde} onChange={(e) => setForm(p => ({ ...p, yuzde: e.target.value }))} placeholder="0"
+              className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold" />
+          </div>
+          {form.tur === 'taksit' && (
+            <>
+              <div>
+                <label className="text-[10px] text-text-muted block mb-1">Taksit Sayısı</label>
+                <input type="number" value={form.taksitSayisi} onChange={(e) => setForm(p => ({ ...p, taksitSayisi: e.target.value }))} placeholder="0"
+                  className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold" />
+              </div>
+              <div>
+                <label className="text-[10px] text-text-muted block mb-1">Ödenen Taksit</label>
+                <input type="number" value={form.taksitOdenen} onChange={(e) => setForm(p => ({ ...p, taksitOdenen: e.target.value }))} placeholder="0"
+                  className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold" />
+              </div>
+            </>
+          )}
+          <div>
+            <label className="text-[10px] text-text-muted block mb-1">Vade Tarihi</label>
+            <input type="date" value={form.vadeTarihi} onChange={(e) => setForm(p => ({ ...p, vadeTarihi: e.target.value }))}
+              className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold" />
+          </div>
+        </div>
+        <div>
+          <label className="text-[10px] text-text-muted block mb-1">Açıklama</label>
+          <input value={form.aciklama} onChange={(e) => setForm(p => ({ ...p, aciklama: e.target.value }))} placeholder="Anlaşma detayları"
+            className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text placeholder:text-text-dim focus:outline-none focus:border-gold" />
+        </div>
+        <div className="flex justify-end gap-2">
+          <button onClick={() => setDuzenle(false)}
+            className="px-4 py-1.5 text-xs text-text-muted hover:text-text transition-colors">İptal</button>
+          <button onClick={handleKaydet}
+            className="px-4 py-1.5 bg-gold text-bg text-xs font-semibold rounded-lg hover:bg-gold-light transition-colors">
+            Kaydet
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-2">
-      <InfoRow label="Ücret Türü" value={turLabel[(anlasma.tur as string) || ''] || (anlasma.tur as string) || '—'} />
-      {typeof anlasma.ucret === 'number' && <InfoRow label="Ücret" value={fmt(anlasma.ucret)} />}
-      {anlasma.yuzde != null && <InfoRow label="Yüzde" value={`%${String(anlasma.yuzde)}`} />}
-      {anlasma.taksitSayisi != null && <InfoRow label="Taksit Sayısı" value={String(anlasma.taksitSayisi)} />}
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="text-xs font-bold text-text-muted uppercase tracking-wider">Anlaşma Detayları</div>
+        <button onClick={() => setDuzenle(true)}
+          className="text-xs px-3 py-1.5 rounded bg-gold/10 text-gold border border-gold/20 hover:bg-gold/20 transition-colors">
+          Düzenle
+        </button>
+      </div>
+      <div className="space-y-2">
+        <InfoRow label="Ücret Türü" value={turLabel[(anlasma!.tur as string) || ''] || (anlasma!.tur as string) || '—'} />
+        {typeof anlasma!.ucret === 'number' && <InfoRow label="Ücret" value={fmt(anlasma!.ucret)} />}
+        {typeof anlasma!.toplam === 'number' && <InfoRow label="Toplam" value={fmt(anlasma!.toplam)} />}
+        {anlasma!.yuzde != null && <InfoRow label="Yüzde" value={`%${String(anlasma!.yuzde)}`} />}
+        {anlasma!.taksitSayisi != null && <InfoRow label="Taksit Sayısı" value={String(anlasma!.taksitSayisi)} />}
+        {anlasma!.taksitOdenen != null && <InfoRow label="Ödenen Taksit" value={String(anlasma!.taksitOdenen)} />}
+        {typeof anlasma!.vadeTarihi === 'string' && anlasma!.vadeTarihi && <InfoRow label="Vade Tarihi" value={fmtTarih(anlasma!.vadeTarihi)} />}
+        {typeof anlasma!.aciklama === 'string' && anlasma!.aciklama && <InfoRow label="Açıklama" value={anlasma!.aciklama} />}
+      </div>
     </div>
   );
 }

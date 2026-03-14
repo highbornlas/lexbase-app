@@ -5,6 +5,7 @@ import { useIhtarnameler, useIhtarnameSil, useIhtarnameArsivle, type Ihtarname }
 import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
 import { IhtarnameModal } from '@/components/modules/IhtarnameModal';
 import { fmt, fmtTarih } from '@/lib/utils';
+import { ihtarnameDosyaBaslik } from '@/lib/utils/uyapHelpers';
 import Link from 'next/link';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
@@ -195,7 +196,7 @@ export default function IhtarnamePage() {
     return <span className="text-gold ml-0.5">{sortDir === 'asc' ? '↑' : '↓'}</span>;
   };
 
-  const GRID = 'grid-cols-[60px_30px_80px_1fr_1fr_1fr_1fr_120px_80px_90px_80px_36px]';
+  const GRID = 'grid-cols-[minmax(160px,2fr)_30px_80px_1fr_1fr_1fr_1fr_120px_80px_90px_80px_36px]';
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-8rem)]">
@@ -323,7 +324,10 @@ export default function IhtarnamePage() {
               key={i.id}
               className={`grid ${GRID} gap-2 px-4 py-3 border-b border-border/50 hover:bg-gold-dim transition-colors items-center group min-w-[1100px]`}
             >
-              <Link href={`/ihtarname/${i.id}`} className="text-xs font-bold text-gold truncate hover:underline">{i.no || '—'}</Link>
+              <Link href={`/ihtarname/${i.id}`} className="min-w-0 hover:underline">
+                <span className="font-[var(--font-playfair)] text-sm font-bold text-gold truncate block">{ihtarnameDosyaBaslik(i)}</span>
+                {i.konu && <span className="text-[10px] text-text-dim truncate block mt-0.5">{i.konu}</span>}
+              </Link>
               <span className="text-sm" title={(i.yon || 'giden') === 'giden' ? 'Giden' : 'Gelen'}>{(i.yon || 'giden') === 'giden' ? '📤' : '📥'}</span>
               <span className={`text-[10px] font-bold ${TUR_BADGE[i.tur || ''] || 'text-text-muted'}`}>
                 {i.tur || '—'}

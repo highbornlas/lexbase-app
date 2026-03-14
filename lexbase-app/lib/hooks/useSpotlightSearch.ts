@@ -7,6 +7,8 @@ import { useIcralar } from './useIcra';
 import { useVekillar } from './useVekillar';
 import { useDanismanliklar } from './useDanismanlik';
 import { useIhtarnameler } from './useIhtarname';
+import { useArabuluculuklar } from './useArabuluculuk';
+import { davaDosyaBaslik, icraDosyaBaslik, ihtarnameDosyaBaslik } from '../utils/uyapHelpers';
 
 /* ══════════════════════════════════════════════════════════════
    Spotlight Search Hook — Tüm modüllerde client-side arama
@@ -41,6 +43,7 @@ export function useSpotlightSearch(query: string) {
   const { data: vekillar } = useVekillar();
   const { data: danismanliklar } = useDanismanliklar();
   const { data: ihtarnameler } = useIhtarnameler();
+  const { data: arabuluculuklar } = useArabuluculuklar();
 
   const kategoriler = useMemo<AramaKategori[]>(() => {
     const q = query.trim().toLowerCase();
@@ -80,14 +83,16 @@ export function useSpotlightSearch(query: string) {
           eslesir(d.esasNo, q) ||
           eslesir(d.mahkeme, q) ||
           eslesir(d.hakim, q) ||
-          eslesir(d.karsi, q)
+          eslesir(d.karsi, q) ||
+          eslesir(d.il, q) ||
+          eslesir(d.mtur, q)
         )
         .slice(0, MAX_SONUC)
         .map((d) => ({
           kategori: 'Davalar',
           id: d.id,
-          baslik: d.konu || d.no || '?',
-          altBilgi: [d.mahkeme, d.esasYil && d.esasNo ? `${d.esasYil}/${d.esasNo}` : null, d.durum].filter(Boolean).join(' · '),
+          baslik: davaDosyaBaslik(d),
+          altBilgi: [d.konu, d.durum].filter(Boolean).join(' · '),
           ikon: '📁',
           href: `/davalar/${d.id}`,
         }));
@@ -103,14 +108,15 @@ export function useSpotlightSearch(query: string) {
           eslesir(i.no, q) ||
           eslesir(i.daire, q) ||
           eslesir(i.karsi, q) ||
-          eslesir(i.davno, q)
+          eslesir(i.davno, q) ||
+          eslesir(i.il, q)
         )
         .slice(0, MAX_SONUC)
         .map((i) => ({
           kategori: 'İcralar',
           id: i.id,
-          baslik: i.borclu || i.no || '?',
-          altBilgi: [i.daire, i.esas, i.durum].filter(Boolean).join(' · '),
+          baslik: icraDosyaBaslik(i),
+          altBilgi: [i.borclu, i.durum].filter(Boolean).join(' · '),
           ikon: '⚡',
           href: `/icra/${i.id}`,
         }));
@@ -159,6 +165,29 @@ export function useSpotlightSearch(query: string) {
       if (sonuclar.length > 0) result.push({ baslik: 'Danışmanlıklar', ikon: '⚖️', sonuclar });
     }
 
+    // ── Arabuluculuklar ──
+    if (arabuluculuklar) {
+      const sonuclar = arabuluculuklar
+        .filter((a) => !a._silindi && !a._arsivlendi)
+        .filter((a) =>
+          eslesir(a.konu, q) ||
+          eslesir(a.no, q) ||
+          eslesir(a.arabulucu, q) ||
+          eslesir(a.karsiTaraf, q) ||
+          eslesir(a.tur, q)
+        )
+        .slice(0, MAX_SONUC)
+        .map((a) => ({
+          kategori: 'Arabuluculuk',
+          id: a.id,
+          baslik: a.konu || a.no || '?',
+          altBilgi: [a.tur, a.arabulucu, a.durum].filter(Boolean).join(' · '),
+          ikon: '💜',
+          href: `/arabuluculuk/${a.id}`,
+        }));
+      if (sonuclar.length > 0) result.push({ baslik: 'Arabuluculuk', ikon: '💜', sonuclar });
+    }
+
     // ── İhtarnameler ──
     if (ihtarnameler) {
       const sonuclar = ihtarnameler
@@ -174,8 +203,8 @@ export function useSpotlightSearch(query: string) {
         .map((i) => ({
           kategori: 'İhtarnameler',
           id: i.id,
-          baslik: i.konu || i.no || '?',
-          altBilgi: [i.tur, i.alici, i.durum].filter(Boolean).join(' · '),
+          baslik: ihtarnameDosyaBaslik(i),
+          altBilgi: [i.konu, i.tur, i.durum].filter(Boolean).join(' · '),
           ikon: '📨',
           href: `/ihtarname/${i.id}`,
         }));
@@ -183,7 +212,7 @@ export function useSpotlightSearch(query: string) {
     }
 
     return result;
-  }, [query, muvekkillar, davalar, icralar, vekillar, danismanliklar, ihtarnameler]);
+  }, [query, muvekkillar, davalar, icralar, vekillar, danismanliklar, arabuluculuklar, ihtarnameler]);
 
   const toplamSonuc = kategoriler.reduce((sum, k) => sum + k.sonuclar.length, 0);
 

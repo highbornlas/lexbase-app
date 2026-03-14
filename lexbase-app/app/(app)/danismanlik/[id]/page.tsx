@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useDanismanlik, useDanismanlikKaydet, type Danismanlik, type EforKaydi, EFOR_KATEGORILERI } from '@/lib/hooks/useDanismanlik';
 import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
 import { fmt, fmtTarih } from '@/lib/utils';
+import { DanismanlikModal } from '@/components/modules/DanismanlikModal';
 
 const DURUM_RENK: Record<string, string> = {
   'Taslak': 'bg-surface2 text-text-dim border-border',
@@ -33,6 +34,7 @@ export default function DanismanlikDetayPage() {
   const [yeniEfor, setYeniEfor] = useState({ aciklama: '', sure: '', kategori: '', tarih: new Date().toISOString().split('T')[0] });
   // Not ekleme
   const [yeniNot, setYeniNot] = useState('');
+  const [duzenleModu, setDuzenleModu] = useState(false);
 
   const muvAd = useMemo(() => {
     if (!dan?.muvId || !muvekkillar) return '—';
@@ -112,9 +114,15 @@ export default function DanismanlikDetayPage() {
             <span className={`font-bold px-1.5 py-0.5 rounded border ${DURUM_RENK[dan.durum || ''] || ''}`}>{dan.durum || '—'}</span>
           </div>
         </div>
-        <button onClick={() => router.push('/danismanlik')} className="px-3 py-1.5 bg-surface border border-border rounded-lg text-xs text-text-muted hover:text-text transition-colors">
-          ← Listeye Dön
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setDuzenleModu(true)}
+            className="text-xs px-3 py-1.5 rounded bg-gold/10 text-gold border border-gold/20 hover:bg-gold/20 transition-colors">
+            Düzenle
+          </button>
+          <button onClick={() => router.push('/danismanlik')} className="px-3 py-1.5 bg-surface border border-border rounded-lg text-xs text-text-muted hover:text-text transition-colors">
+            ← Listeye Dön
+          </button>
+        </div>
       </div>
 
       {/* KPI Strip */}
@@ -320,6 +328,15 @@ export default function DanismanlikDetayPage() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Düzenleme Modal */}
+      {duzenleModu && (
+        <DanismanlikModal
+          open={duzenleModu}
+          onClose={() => setDuzenleModu(false)}
+          danismanlik={dan}
+        />
       )}
     </div>
   );
