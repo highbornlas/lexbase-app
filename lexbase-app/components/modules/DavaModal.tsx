@@ -8,8 +8,9 @@ import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
 import { useMahkemeHafizasi } from '@/lib/hooks/useMahkemeHafizasi';
 import { RehberSecici } from '@/components/ui/RehberSecici';
 import {
-  DAVA_TURLERI, MAHKEME_TURLERI, DAVA_DURUMLARI, DAVA_ASAMALARI,
+  DAVA_TURLERI, DAVA_DURUMLARI, DAVA_ASAMALARI,
   DAVA_TARAF, KAPANIS_SEBEPLERI_DAVA, DURUSMA_SAATLERI, ILLER,
+  YARGI_TURLERI, YARGI_BIRIMLERI,
 } from '@/lib/constants/uyap';
 import { tamMahkemeAdi, esasNoGoster } from '@/lib/utils/uyapHelpers';
 
@@ -58,6 +59,7 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
   const [form, setForm] = useState<Partial<Dava>>({ ...bos });
   const [hata, setHata] = useState('');
   const [adim, setAdim] = useState<Adim>(1);
+  const [yargiTuru, setYargiTuru] = useState<string>('');
   const { data: mevcutlar } = useDavalar();
   const { data: icralar } = useIcralar();
   const kaydet = useDavaKaydet();
@@ -67,9 +69,15 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
   useEffect(() => {
     if (dava) {
       setForm({ ...dava });
+      // Yargı türünü mtur'dan türet
+      const bulunanTur = Object.entries(YARGI_BIRIMLERI).find(([, birimler]) =>
+        birimler.some((b) => b === dava.mtur)
+      );
+      setYargiTuru(bulunanTur ? bulunanTur[0] : '');
     } else {
       const maxNo = Math.max(0, ...(mevcutlar || []).map((d) => d.kayitNo || 0));
       setForm({ ...bos, id: crypto.randomUUID(), sira: Date.now(), kayitNo: maxNo + 1 });
+      setYargiTuru('');
     }
     setHata('');
     setAdim(1);
@@ -78,6 +86,9 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
   function handleChange(field: string, value: string | number) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
+
+  // Yargı türüne bağlı birimler
+  const mevcutBirimler = useMemo(() => yargiTuru ? (YARGI_BIRIMLERI[yargiTuru] || []) : [], [yargiTuru]);
 
   // Mahkeme tam adı önizleme
   const mahkemeTamAd = useMemo(() =>
@@ -306,6 +317,20 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
 
             <div className="border-t border-border/50 pt-4">
               <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-3">Mahkeme Bilgileri</div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormGroup label="Yargı Türü">
+                  <FormSelect value={yargiTuru} onChange={(e) => { setYargiTuru(e.target.value); handleChange('mtur', ''); }}>
+                    <option value="">Seçiniz</option>
+                    {YARGI_TURLERI.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </FormSelect>
+                </FormGroup>
+                <FormGroup label="Yargı Birimi">
+                  <FormSelect value={form.mtur || ''} onChange={(e) => handleChange('mtur', e.target.value)} disabled={!yargiTuru}>
+                    <option value="">Seçiniz</option>
+                    {mevcutBirimler.map((b) => <option key={b} value={b}>{b}</option>)}
+                  </FormSelect>
+                </FormGroup>
+              </div>
               <div className="grid grid-cols-3 gap-4">
                 <FormGroup label="İl">
                   <FormSelect value={form.il || ''} onChange={(e) => handleChange('il', e.target.value)}>
@@ -333,17 +358,11 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
                     </datalist>
                   )}
                 </FormGroup>
-                <FormGroup label="Mahkeme Türü">
-                  <FormSelect value={form.mtur || ''} onChange={(e) => handleChange('mtur', e.target.value)}>
-                    <option value="">Seçiniz</option>
-                    {MAHKEME_TURLERI.map((t) => <option key={t} value={t}>{t}</option>)}
-                  </FormSelect>
-                </FormGroup>
-              </div>
-              <div className="grid grid-cols-3 gap-4 mt-3">
                 <FormGroup label="Mahkeme No">
                   <FormInput value={form.mno || ''} onChange={(e) => handleChange('mno', e.target.value)} placeholder="Ör: 3" />
                 </FormGroup>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-3">
                 <FormGroup label="Esas Yılı">
                   <FormInput value={form.esasYil || ''} onChange={(e) => handleChange('esasYil', e.target.value)} placeholder="Ör: 2026" maxLength={4} />
                 </FormGroup>

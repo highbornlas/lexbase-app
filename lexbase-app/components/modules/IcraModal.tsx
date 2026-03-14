@@ -10,6 +10,7 @@ import { RehberSecici } from '@/components/ui/RehberSecici';
 import {
   ICRA_TURLERI, ALACAK_TURLERI, ICRA_DURUMLARI,
   ICRA_MUVEKKIL_ROL, KAPANIS_SEBEPLERI_ICRA, ILLER,
+  ICRA_YARGI_BIRIMLERI,
 } from '@/lib/constants/uyap';
 import { tamIcraDairesiAdi, esasNoGoster, tamMahkemeAdi } from '@/lib/utils/uyapHelpers';
 
@@ -326,6 +327,15 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
 
             <div className="border-t border-border/50 pt-4">
               <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-3">İcra Dairesi</div>
+              {/* Yargı Birimi */}
+              <div className="grid grid-cols-2 gap-4 mb-3">
+                <FormGroup label="Yargı Birimi">
+                  <FormSelect value={form.yargiBirimi || ''} onChange={(e) => handleChange('yargiBirimi', e.target.value)}>
+                    <option value="">Seçiniz</option>
+                    {ICRA_YARGI_BIRIMLERI.map((b) => <option key={b} value={b}>{b}</option>)}
+                  </FormSelect>
+                </FormGroup>
+              </div>
               <div className="grid grid-cols-4 gap-4">
                 <FormGroup label="İl">
                   <FormSelect value={form.il || ''} onChange={(e) => handleChange('il', e.target.value)}>

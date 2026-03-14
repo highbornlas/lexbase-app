@@ -17,6 +17,7 @@ export interface Icra {
   il?: string;
   adliye?: string;
   daire?: string;
+  yargiBirimi?: string; // İCRA DAİRESİ | İCRA HUKUK MAHKEMESİ | İCRA CEZA MAHKEMESİ | SATIŞ MEMURLUĞU
   esas?: string; // eski tek alan (geriye uyumlu)
   esasYil?: string;
   esasNo?: string;
