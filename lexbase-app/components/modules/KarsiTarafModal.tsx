@@ -5,7 +5,8 @@ import { Modal, FormGroup, FormInput, FormSelect, FormTextarea, BtnGold, BtnOutl
 import { useKarsiTaraflar, useKarsiTarafKaydet, type KarsiTaraf } from '@/lib/hooks/useKarsiTaraflar';
 import { SmartBankaSecici } from '@/components/ui/SmartBankaSecici';
 import { EtiketSecici } from '@/components/ui/EtiketSecici';
-import { SmartAdresInput, type Adres } from '@/components/ui/SmartAdresInput';
+import { type Adres } from '@/components/ui/SmartAdresInput';
+import { CokluAdresInput } from '@/components/ui/CokluAdresInput';
 import {
   tcKimlikDogrula, vknDogrula, ibanDogrula, mersisDogrula,
   ticaretSicilDogrula, yabanciKimlikDogrula, bankaIbanlarDogrula,
@@ -68,7 +69,14 @@ export function KarsiTarafModal({ open, onClose, karsiTaraf, onCreated }: KarsiT
 
   useEffect(() => {
     if (karsiTaraf) {
-      setForm({ ...karsiTaraf });
+      const f = { ...karsiTaraf };
+      if (f.adres && !f.adresler) {
+        const eskiAdres = f.adres as Record<string, string>;
+        if (Object.keys(eskiAdres).length > 0) {
+          f.adresler = [{ baslik: 'Ev Adresi', ...eskiAdres } as unknown as Record<string, string>];
+        }
+      }
+      setForm(f);
     } else {
       setForm({ ...bos, id: crypto.randomUUID() });
     }
@@ -364,10 +372,10 @@ export function KarsiTarafModal({ open, onClose, karsiTaraf, onCreated }: KarsiT
             </div>
 
             <div className="border-t border-border/50 pt-4">
-              <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-3">Adres</div>
-              <SmartAdresInput
-                value={(form.adres as Adres) || {}}
-                onChange={(adres) => setForm((prev) => ({ ...prev, adres: adres as Record<string, string> }))}
+              <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-3">Adresler</div>
+              <CokluAdresInput
+                adresler={(form.adresler as Adres[]) || []}
+                onChange={(adresler) => setForm((prev) => ({ ...prev, adresler: adresler as unknown as Record<string, string>[] }))}
               />
             </div>
           </>

@@ -36,7 +36,8 @@ export interface Muvekkil {
   faks?: string;
   web?: string;
   uets?: string;
-  adres?: Record<string, string>;
+  adres?: Record<string, string>; // eski (backward compat)
+  adresler?: Array<Record<string, string>>;
   // Finans
   bankalar?: Array<{
     banka?: string;

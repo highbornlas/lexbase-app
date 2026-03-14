@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { ILLER } from '@/lib/data/iller';
 
 export interface Adres {
+  baslik?: string;
   ulke?: string;
   il?: string;
   ilce?: string;

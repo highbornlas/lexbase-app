@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Modal, FormGroup, FormInput, FormSelect, FormTextarea, BtnGold, BtnOutline } from '@/components/ui/Modal';
 import { useMuvekkillar, useMuvekkilKaydet, type Muvekkil } from '@/lib/hooks/useMuvekkillar';
-import { SmartAdresInput, type Adres } from '@/components/ui/SmartAdresInput';
+import { type Adres } from '@/components/ui/SmartAdresInput';
+import { CokluAdresInput } from '@/components/ui/CokluAdresInput';
 import { SmartBankaSecici } from '@/components/ui/SmartBankaSecici';
 import { EtiketSecici } from '@/components/ui/EtiketSecici';
 import {
@@ -69,7 +70,15 @@ export function MuvekkilModal({ open, onClose, muvekkil }: MuvekkilModalProps) {
 
   useEffect(() => {
     if (muvekkil) {
-      setForm({ ...muvekkil });
+      const f = { ...muvekkil };
+      // Eski tek adres → çoklu adres migrasyonu
+      if (f.adres && !f.adresler) {
+        const eskiAdres = f.adres as Record<string, string>;
+        if (Object.keys(eskiAdres).length > 0) {
+          f.adresler = [{ baslik: 'Ev Adresi', ...eskiAdres } as unknown as Record<string, string>];
+        }
+      }
+      setForm(f);
     } else {
       setForm({ ...bos, id: crypto.randomUUID() });
     }
@@ -401,10 +410,10 @@ export function MuvekkilModal({ open, onClose, muvekkil }: MuvekkilModalProps) {
             </div>
 
             <div className="border-t border-border/50 pt-4">
-              <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-3">Adres</div>
-              <SmartAdresInput
-                value={(form.adres as Adres) || {}}
-                onChange={(adres) => setForm((prev) => ({ ...prev, adres: adres as Record<string, string> }))}
+              <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-3">Adresler</div>
+              <CokluAdresInput
+                adresler={(form.adresler as Adres[]) || []}
+                onChange={(adresler) => setForm((prev) => ({ ...prev, adresler: adresler as unknown as Record<string, string>[] }))}
               />
             </div>
           </>
