@@ -411,15 +411,12 @@ export default function IcraPage() {
                     {ICRA_YARGI_BIRIMLERI.map((b) => <option key={b} value={b}>{b}</option>)}
                   </select>
                 </div>
-                {/* Açılış Tarihi Aralığı */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Açılış Başlangıç Tarihi</label>
-                    <input type="date" value={tarihBaslangic} onChange={(e) => setTarihBaslangic(e.target.value)} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold" />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Açılış Bitiş Tarihi</label>
-                    <input type="date" value={tarihBitis} onChange={(e) => setTarihBitis(e.target.value)} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold" />
+                {/* Kişi / Genel Arama */}
+                <div>
+                  <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Kişi / Genel Arama</label>
+                  <div className="relative">
+                    <input type="text" value={arama} onChange={(e) => setArama(e.target.value)} placeholder="Alacaklı, borçlu, daire adı..." className="w-full px-4 py-2 pl-9 bg-bg border border-border rounded text-xs text-text placeholder:text-text-dim focus:outline-none focus:border-gold transition-colors" />
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dim text-xs">&#x1F50D;</span>
                   </div>
                 </div>
               </div>
@@ -443,16 +440,17 @@ export default function IcraPage() {
                       {yillar.map((y) => <option key={y} value={y}>{y}</option>)}
                     </select>
                     <span className="text-text-dim text-sm">/</span>
-                    <input type="text" value={esasNoFiltre} onChange={(e) => setEsasNoFiltre(e.target.value)} placeholder="Dosya No" className="flex-1 px-3 py-2 bg-bg border border-border rounded text-xs text-text placeholder:text-text-dim focus:outline-none focus:border-gold" />
+                    <input type="text" value={esasNoFiltre} onChange={(e) => setEsasNoFiltre(e.target.value)} placeholder="Dosya No" className="w-24 px-3 py-2 bg-bg border border-border rounded text-xs text-text placeholder:text-text-dim focus:outline-none focus:border-gold" />
                   </div>
                 </div>
-                {/* Genel Arama */}
+                {/* Açılış Tarihi Aralığı — altlı üstlü */}
                 <div>
-                  <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Kişi / Genel Arama</label>
-                  <div className="relative">
-                    <input type="text" value={arama} onChange={(e) => setArama(e.target.value)} placeholder="Alacaklı, borçlu, daire adı..." className="w-full px-4 py-2 pl-9 bg-bg border border-border rounded text-xs text-text placeholder:text-text-dim focus:outline-none focus:border-gold transition-colors" />
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dim text-xs">&#x1F50D;</span>
-                  </div>
+                  <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Açılış Başlangıç Tarihi</label>
+                  <input type="date" value={tarihBaslangic} onChange={(e) => setTarihBaslangic(e.target.value)} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold" />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Açılış Bitiş Tarihi</label>
+                  <input type="date" value={tarihBitis} onChange={(e) => setTarihBitis(e.target.value)} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold" />
                 </div>
               </div>
             </div>
