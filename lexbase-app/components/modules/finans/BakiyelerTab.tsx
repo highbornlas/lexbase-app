@@ -127,32 +127,66 @@ export function BakiyelerTab() {
         <EmptyState icon="💳" message="Müvekkil bakiyesi bulunamadı" />
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-4">
-            {sayfadakiler.map((b) => (
-              <div key={b.id} className="bg-surface border border-border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-semibold text-text">{b.ad}</span>
-                  <span className={`text-sm font-bold ${b.genelBakiye >= 0 ? 'text-green' : 'text-red'}`}>
-                    {fmt(b.genelBakiye)}
-                  </span>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <BakiyeItem label="Toplam Masraf" value={fmt(b.masrafToplam)} />
-                  <BakiyeItem label="Vekalet Tahsil" value={fmt(b.vekaletTahsil)} color="text-green" />
-                  <BakiyeItem label="Hakediş" value={fmt(b.hakedisToplam)} color="text-gold" />
-                  <BakiyeItem label="Tahsilat" value={fmt(b.tahsilatToplam)} />
-                  {b.danismanlikGelir > 0 && (
-                    <BakiyeItem label="Danışmanlık" value={fmt(b.danismanlikGelir)} color="text-green" />
-                  )}
-                  {b.arabuluculukGelir > 0 && (
-                    <BakiyeItem label="Arabuluculuk" value={fmt(b.arabuluculukGelir)} color="text-green" />
-                  )}
-                  {b.ihtarnameGelir > 0 && (
-                    <BakiyeItem label="İhtarname" value={fmt(b.ihtarnameGelir)} color="text-green" />
-                  )}
-                </div>
-              </div>
-            ))}
+          {/* Tablo Görünümü */}
+          <div className="bg-surface border border-border rounded-lg overflow-hidden">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-border bg-surface2">
+                  <th className="text-left px-4 py-2.5 text-[10px] text-text-muted font-medium uppercase tracking-wider">Müvekkil</th>
+                  <th className="text-right px-3 py-2.5 text-[10px] text-text-muted font-medium uppercase tracking-wider">Vekalet</th>
+                  <th className="text-right px-3 py-2.5 text-[10px] text-text-muted font-medium uppercase tracking-wider">Hakediş</th>
+                  <th className="text-right px-3 py-2.5 text-[10px] text-text-muted font-medium uppercase tracking-wider">Tahsilat</th>
+                  <th className="text-right px-3 py-2.5 text-[10px] text-text-muted font-medium uppercase tracking-wider">Diğer Gelir</th>
+                  <th className="text-right px-3 py-2.5 text-[10px] text-green font-medium uppercase tracking-wider">Toplam Gelir</th>
+                  <th className="text-right px-3 py-2.5 text-[10px] text-red font-medium uppercase tracking-wider">Masraf</th>
+                  <th className="text-right px-4 py-2.5 text-[10px] text-text-muted font-medium uppercase tracking-wider">Net Bakiye</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sayfadakiler.map((b) => {
+                  const digerGelir = b.danismanlikGelir + b.arabuluculukGelir + b.ihtarnameGelir;
+                  return (
+                    <tr key={b.id} className="border-b border-border/50 hover:bg-gold-dim transition-colors">
+                      <td className="px-4 py-3 text-text font-medium">{b.ad}</td>
+                      <td className="px-3 py-3 text-right text-text-muted">{b.vekaletTahsil > 0 ? fmt(b.vekaletTahsil) : '—'}</td>
+                      <td className="px-3 py-3 text-right text-text-muted">{b.hakedisToplam > 0 ? fmt(b.hakedisToplam) : '—'}</td>
+                      <td className="px-3 py-3 text-right text-text-muted">{b.tahsilatToplam > 0 ? fmt(b.tahsilatToplam) : '—'}</td>
+                      <td className="px-3 py-3 text-right text-text-muted">
+                        {digerGelir > 0 ? (
+                          <span title={[
+                            b.danismanlikGelir > 0 ? `Danışmanlık: ${fmt(b.danismanlikGelir)}` : '',
+                            b.arabuluculukGelir > 0 ? `Arabuluculuk: ${fmt(b.arabuluculukGelir)}` : '',
+                            b.ihtarnameGelir > 0 ? `İhtarname: ${fmt(b.ihtarnameGelir)}` : '',
+                          ].filter(Boolean).join(' · ')}>
+                            {fmt(digerGelir)}
+                          </span>
+                        ) : '—'}
+                      </td>
+                      <td className="px-3 py-3 text-right font-semibold text-green">{fmt(b.toplamGelir)}</td>
+                      <td className="px-3 py-3 text-right text-red">{b.masrafToplam > 0 ? fmt(b.masrafToplam) : '—'}</td>
+                      <td className="px-4 py-3 text-right">
+                        <span className={`font-bold ${b.genelBakiye >= 0 ? 'text-green' : 'text-red'}`}>
+                          {fmt(b.genelBakiye)}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {/* Toplam Satırı */}
+                <tr className="bg-surface2 font-bold border-t border-border">
+                  <td className="px-4 py-3 text-text">TOPLAM ({bakiyeler.length} müvekkil)</td>
+                  <td className="px-3 py-3 text-right text-text-muted">{fmt(bakiyeler.reduce((t, b) => t + b.vekaletTahsil, 0))}</td>
+                  <td className="px-3 py-3 text-right text-text-muted">{fmt(bakiyeler.reduce((t, b) => t + b.hakedisToplam, 0))}</td>
+                  <td className="px-3 py-3 text-right text-text-muted">{fmt(bakiyeler.reduce((t, b) => t + b.tahsilatToplam, 0))}</td>
+                  <td className="px-3 py-3 text-right text-text-muted">{fmt(bakiyeler.reduce((t, b) => t + b.danismanlikGelir + b.arabuluculukGelir + b.ihtarnameGelir, 0))}</td>
+                  <td className="px-3 py-3 text-right text-green">{fmt(genelToplamlar.toplamGelir)}</td>
+                  <td className="px-3 py-3 text-right text-red">{fmt(genelToplamlar.toplamMasraf)}</td>
+                  <td className="px-4 py-3 text-right">
+                    <span className={genelToplamlar.netBakiye >= 0 ? 'text-green' : 'text-red'}>{fmt(genelToplamlar.netBakiye)}</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
 
           {/* Pagination */}
