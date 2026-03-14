@@ -112,6 +112,10 @@ export function MuvekkilModal({ open, onClose, muvekkil }: MuvekkilModalProps) {
       setHata(form.tip === 'tuzel' ? 'Şirket adı zorunludur.' : 'Ad zorunludur.');
       return false;
     }
+    if (form.tip === 'gercek' && !form.soyad?.trim()) {
+      setHata('Soyad zorunludur.');
+      return false;
+    }
     if (form.tip === 'gercek') {
       if (isTc && !form.tc?.trim()) { setHata('T.C. Kimlik No zorunludur.'); return false; }
       if (!isTc && !form.yabanciKimlikNo?.trim()) { setHata('Yabancı Kimlik No zorunludur.'); return false; }
@@ -278,7 +282,7 @@ export function MuvekkilModal({ open, onClose, muvekkil }: MuvekkilModalProps) {
                   <FormGroup label="Ad" required>
                     <FormInput value={form.ad || ''} onChange={(e) => handleChange('ad', e.target.value)} placeholder="Ad" />
                   </FormGroup>
-                  <FormGroup label="Soyad">
+                  <FormGroup label="Soyad" required>
                     <FormInput value={form.soyad || ''} onChange={(e) => handleChange('soyad', e.target.value)} placeholder="Soyad" />
                   </FormGroup>
                 </div>

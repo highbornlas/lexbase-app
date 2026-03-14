@@ -1,104 +1,168 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 
 /* ══════════════════════════════════════════════════════════════
-   Etiket Seçici — Müvekkil, Karşı Taraf, Avukat için ortak
-   Mevcut etiketleri gösterir, yeni etiket ekler, tıkla/sil
+   Etiket Seçici — Kullanıcı tanımlı etiketler (renk + sembol)
+   Ön tanımlı etiket YOK. Kullanıcı kendi etiketlerini oluşturur.
    ══════════════════════════════════════════════════════════════ */
 
-// Ön tanımlı etiketler (kullanıcı bunları seçebilir veya kendi etiketini yazabilir)
-export const ON_TANIMLI_ETIKETLER = [
-  'VIP', 'Aktif', 'Pasif', 'Potansiyel', 'Kurumsal',
-  'Bireysel', 'Düzenli', 'Yeni', 'Eski', 'Borçlu',
+export interface EtiketItem {
+  ad: string;
+  renk: string; // hex color
+  sembol: string; // emoji
+}
+
+/* ── Renk Paleti ── */
+const RENK_PALETI = [
+  { hex: '#ef4444', ad: 'Kırmızı' },
+  { hex: '#f97316', ad: 'Turuncu' },
+  { hex: '#eab308', ad: 'Sarı' },
+  { hex: '#22c55e', ad: 'Yeşil' },
+  { hex: '#06b6d4', ad: 'Camgöbeği' },
+  { hex: '#3b82f6', ad: 'Mavi' },
+  { hex: '#8b5cf6', ad: 'Mor' },
+  { hex: '#ec4899', ad: 'Pembe' },
+  { hex: '#c9a84c', ad: 'Altın' },
+  { hex: '#6b7280', ad: 'Gri' },
+  { hex: '#14b8a6', ad: 'Turkuaz' },
+  { hex: '#a855f7', ad: 'Eflatun' },
 ];
 
-const ETIKET_RENKLER: Record<string, string> = {
-  'VIP': 'bg-gold/15 text-gold border-gold/30',
-  'Aktif': 'bg-green/15 text-green border-green/30',
-  'Pasif': 'bg-text-dim/15 text-text-dim border-text-dim/30',
-  'Potansiyel': 'bg-blue-400/15 text-blue-400 border-blue-400/30',
-  'Kurumsal': 'bg-purple-400/15 text-purple-400 border-purple-400/30',
-  'Bireysel': 'bg-sky-400/15 text-sky-400 border-sky-400/30',
-  'Borçlu': 'bg-red/15 text-red border-red/30',
-};
+/* ── Sembol Listesi ── */
+const SEMBOL_LISTESI = [
+  '🏷️', '⭐', '🔥', '💎', '📌', '🎯', '💼', '👑',
+  '🛡️', '⚡', '🔔', '📋', '✅', '❌', '⚠️', '💰',
+  '🏢', '👤', '📞', '✉️', '📁', '⚖️', '🔒', '🌟',
+  '🏠', '🚗', '💳', '📊', '🔑', '🎓', '🩺', '🔧',
+];
 
-const VARSAYILAN_RENK = 'bg-surface2 text-text-muted border-border';
+/* ── Normalize: eski string → EtiketItem ── */
+export function normalizeEtiket(e: unknown): EtiketItem {
+  if (typeof e === 'string') {
+    return { ad: e, renk: '#6b7280', sembol: '🏷️' };
+  }
+  const item = e as Record<string, unknown>;
+  return {
+    ad: (item.ad as string) || '',
+    renk: (item.renk as string) || '#6b7280',
+    sembol: (item.sembol as string) || '🏷️',
+  };
+}
 
+/* ── Props ── */
 interface EtiketSeciciProps {
-  etiketler: string[];
-  onChange: (etiketler: string[]) => void;
+  etiketler: unknown[];
+  onChange: (etiketler: EtiketItem[]) => void;
   /** Bürodaki tüm kullanılmış etiketleri önermek için */
-  mevcutEtiketler?: string[];
+  mevcutEtiketler?: unknown[];
 }
 
 export function EtiketSecici({ etiketler, onChange, mevcutEtiketler = [] }: EtiketSeciciProps) {
   const [acik, setAcik] = useState(false);
+  const [olusturMode, setOlusturMode] = useState(false);
+  const [yeniAd, setYeniAd] = useState('');
+  const [yeniRenk, setYeniRenk] = useState(RENK_PALETI[0].hex);
+  const [yeniSembol, setYeniSembol] = useState(SEMBOL_LISTESI[0]);
   const [arama, setArama] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Dışarı tıklayınca kapat
+  /* ── Normalize ── */
+  const normalized = useMemo(() => etiketler.map(normalizeEtiket), [etiketler]);
+
+  /* ── Bürodaki tüm benzersiz etiketler ── */
+  const tumEtiketler = useMemo(() => {
+    const map = new Map<string, EtiketItem>();
+    [...mevcutEtiketler, ...etiketler].forEach((e) => {
+      const item = normalizeEtiket(e);
+      if (item.ad && !map.has(item.ad)) map.set(item.ad, item);
+    });
+    return Array.from(map.values());
+  }, [mevcutEtiketler, etiketler]);
+
+  /* ── Seçilmemiş & aranan etiketler ── */
+  const seciliAdlar = new Set(normalized.map((e) => e.ad));
+  const mevcut = tumEtiketler
+    .filter((e) => !seciliAdlar.has(e.ad))
+    .filter((e) => !arama || e.ad.toLowerCase().includes(arama.toLowerCase()));
+
+  /* ── Dışarı tıkla kapat ── */
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setAcik(false);
+        setOlusturMode(false);
       }
     }
     if (acik) document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [acik]);
 
-  // Tüm benzersiz öneriler: ön tanımlı + bürodaki mevcut etiketler
-  const tumOneriler = Array.from(new Set([...ON_TANIMLI_ETIKETLER, ...mevcutEtiketler]));
-  const filtrelenmis = tumOneriler
-    .filter((e) => !etiketler.includes(e))
-    .filter((e) => !arama || e.toLowerCase().includes(arama.toLowerCase()));
-
-  function ekle(etiket: string) {
-    const temiz = etiket.trim();
-    if (temiz && !etiketler.includes(temiz)) {
-      onChange([...etiketler, temiz]);
-    }
+  function ekle(etiket: EtiketItem) {
+    onChange([...normalized, etiket]);
     setArama('');
   }
 
-  function kaldir(etiket: string) {
-    onChange(etiketler.filter((e) => e !== etiket));
+  function kaldir(ad: string) {
+    onChange(normalized.filter((e) => e.ad !== ad));
+  }
+
+  function yeniOlustur() {
+    const temiz = yeniAd.trim();
+    if (!temiz) return;
+    if (normalized.some((e) => e.ad === temiz)) return;
+    const yeni: EtiketItem = { ad: temiz, renk: yeniRenk, sembol: yeniSembol };
+    onChange([...normalized, yeni]);
+    setYeniAd('');
+    setYeniRenk(RENK_PALETI[0].hex);
+    setYeniSembol(SEMBOL_LISTESI[0]);
+    setOlusturMode(false);
+    setArama('');
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'Enter' && arama.trim()) {
-      e.preventDefault();
-      ekle(arama);
-    }
-    if (e.key === 'Backspace' && !arama && etiketler.length > 0) {
-      kaldir(etiketler[etiketler.length - 1]);
-    }
     if (e.key === 'Escape') {
       setAcik(false);
+      setOlusturMode(false);
+    }
+    if (e.key === 'Backspace' && !arama && normalized.length > 0) {
+      kaldir(normalized[normalized.length - 1].ad);
     }
   }
 
   return (
     <div ref={containerRef} className="relative">
-      <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-1.5">Etiketler</div>
+      <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-1.5">
+        Etiketler
+      </div>
 
-      {/* Seçili etiketler + input */}
+      {/* ── Seçili etiketler + input ── */}
       <div
         className="flex flex-wrap items-center gap-1.5 px-2.5 py-2 rounded-[10px] bg-surface border border-border cursor-text min-h-[38px]"
-        onClick={() => { setAcik(true); inputRef.current?.focus(); }}
+        onClick={() => {
+          setAcik(true);
+          inputRef.current?.focus();
+        }}
       >
-        {etiketler.map((e) => (
+        {normalized.map((e) => (
           <span
-            key={e}
-            className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${ETIKET_RENKLER[e] || VARSAYILAN_RENK}`}
+            key={e.ad}
+            style={{
+              backgroundColor: e.renk + '22',
+              color: e.renk,
+              borderColor: e.renk + '55',
+            }}
+            className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border"
           >
-            {e}
+            {e.sembol} {e.ad}
             <button
               type="button"
-              onClick={(ev) => { ev.stopPropagation(); kaldir(e); }}
-              className="hover:opacity-70 text-current"
+              onClick={(ev) => {
+                ev.stopPropagation();
+                kaldir(e.ad);
+              }}
+              className="hover:opacity-70 text-current ml-0.5"
             >
               ×
             </button>
@@ -107,28 +171,145 @@ export function EtiketSecici({ etiketler, onChange, mevcutEtiketler = [] }: Etik
         <input
           ref={inputRef}
           value={arama}
-          onChange={(ev) => { setArama(ev.target.value); setAcik(true); }}
+          onChange={(ev) => {
+            setArama(ev.target.value);
+            setAcik(true);
+          }}
           onFocus={() => setAcik(true)}
           onKeyDown={handleKeyDown}
-          placeholder={etiketler.length === 0 ? 'Etiket ekle...' : ''}
+          placeholder={normalized.length === 0 ? 'Etiket seçin veya oluşturun...' : ''}
           className="flex-1 min-w-[80px] bg-transparent text-xs text-text outline-none placeholder:text-text-dim"
         />
       </div>
 
-      {/* Dropdown */}
-      {acik && filtrelenmis.length > 0 && (
-        <div className="absolute z-50 mt-1 w-full bg-surface border border-border rounded-[10px] shadow-lg max-h-40 overflow-y-auto">
-          {filtrelenmis.map((e) => (
+      {/* ── Dropdown ── */}
+      {acik && (
+        <div className="absolute z-50 mt-1 w-full bg-surface border border-border rounded-[10px] shadow-lg overflow-hidden">
+          {/* Mevcut etiketler */}
+          {mevcut.length > 0 && (
+            <div className="max-h-32 overflow-y-auto">
+              {mevcut.map((e) => (
+                <button
+                  key={e.ad}
+                  type="button"
+                  onClick={() => {
+                    ekle(e);
+                    inputRef.current?.focus();
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-xs hover:bg-surface2 transition-colors flex items-center gap-2"
+                >
+                  <span style={{ color: e.renk }}>{e.sembol}</span>
+                  <span>{e.ad}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* ── Yeni Etiket Oluştur ── */}
+          {!olusturMode ? (
             <button
-              key={e}
               type="button"
-              onClick={() => { ekle(e); inputRef.current?.focus(); }}
-              className="w-full text-left px-3 py-1.5 text-xs hover:bg-surface2 transition-colors flex items-center gap-2"
+              onClick={() => setOlusturMode(true)}
+              className="w-full text-left px-3 py-2 text-xs text-gold hover:bg-gold-dim transition-colors border-t border-border/50 font-semibold"
             >
-              <span className={`w-2 h-2 rounded-full ${ETIKET_RENKLER[e] ? ETIKET_RENKLER[e].split(' ')[0] : 'bg-text-dim/30'}`} />
-              {e}
+              + Yeni Etiket Oluştur
             </button>
-          ))}
+          ) : (
+            <div className="p-3 border-t border-border/50 space-y-2.5">
+              {/* Ad */}
+              <input
+                type="text"
+                value={yeniAd}
+                onChange={(e) => setYeniAd(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && yeniAd.trim()) {
+                    e.preventDefault();
+                    yeniOlustur();
+                  }
+                }}
+                placeholder="Etiket adı yazın..."
+                className="w-full h-8 px-3 text-xs bg-bg border border-border rounded-lg text-text placeholder:text-text-dim focus:border-gold focus:outline-none"
+                autoFocus
+              />
+
+              {/* Renk seçici */}
+              <div>
+                <div className="text-[10px] text-text-dim mb-1.5 font-medium">Renk</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {RENK_PALETI.map((r) => (
+                    <button
+                      key={r.hex}
+                      type="button"
+                      onClick={() => setYeniRenk(r.hex)}
+                      style={{ backgroundColor: r.hex }}
+                      className={`w-5 h-5 rounded-full transition-all ${
+                        yeniRenk === r.hex
+                          ? 'ring-2 ring-offset-1 ring-offset-bg ring-white/50 scale-125'
+                          : 'hover:scale-110 opacity-75 hover:opacity-100'
+                      }`}
+                      title={r.ad}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Sembol seçici */}
+              <div>
+                <div className="text-[10px] text-text-dim mb-1.5 font-medium">Sembol</div>
+                <div className="flex flex-wrap gap-1">
+                  {SEMBOL_LISTESI.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setYeniSembol(s)}
+                      className={`w-7 h-7 rounded-md text-sm flex items-center justify-center transition-all ${
+                        yeniSembol === s
+                          ? 'bg-gold/20 ring-1 ring-gold scale-110'
+                          : 'hover:bg-surface2'
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Önizleme + Butonlar */}
+              <div className="flex items-center justify-between pt-1">
+                <div>
+                  {yeniAd.trim() && (
+                    <span
+                      style={{
+                        backgroundColor: yeniRenk + '22',
+                        color: yeniRenk,
+                        borderColor: yeniRenk + '55',
+                      }}
+                      className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border"
+                    >
+                      {yeniSembol} {yeniAd}
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setOlusturMode(false)}
+                    className="px-2.5 py-1 text-[10px] text-text-dim hover:text-text transition-colors"
+                  >
+                    İptal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={yeniOlustur}
+                    disabled={!yeniAd.trim()}
+                    className="px-3 py-1 text-[10px] font-semibold bg-gold text-bg rounded-md hover:bg-gold-light disabled:opacity-50 transition-colors"
+                  >
+                    Oluştur
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -136,10 +317,18 @@ export function EtiketSecici({ etiketler, onChange, mevcutEtiketler = [] }: Etik
 }
 
 /* ── Etiket Badge (salt okunur, listede göstermek için) ── */
-export function EtiketBadge({ etiket }: { etiket: string }) {
+export function EtiketBadge({ etiket }: { etiket: unknown }) {
+  const item = normalizeEtiket(etiket);
   return (
-    <span className={`inline-flex text-[9px] font-bold px-1.5 py-0.5 rounded-full border ${ETIKET_RENKLER[etiket] || VARSAYILAN_RENK}`}>
-      {etiket}
+    <span
+      style={{
+        backgroundColor: item.renk + '22',
+        color: item.renk,
+        borderColor: item.renk + '55',
+      }}
+      className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full border"
+    >
+      {item.sembol} {item.ad}
     </span>
   );
 }

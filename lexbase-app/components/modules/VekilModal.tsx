@@ -82,6 +82,7 @@ export function VekilModal({ open, onClose, vekil, onCreated }: VekilModalProps)
 
   function adim1Dogrula(): boolean {
     if (!form.ad?.trim()) { setHata('Avukat adı zorunludur.'); return false; }
+    if (!form.soyad?.trim()) { setHata('Avukat soyadı zorunludur.'); return false; }
     let formatHata: string | null = null;
     if (form.baroSicil) formatHata = baroSicilDogrula(form.baroSicil);
     if (!formatHata && form.tbbSicil) formatHata = tbbSicilDogrula(form.tbbSicil);
@@ -191,7 +192,7 @@ export function VekilModal({ open, onClose, vekil, onCreated }: VekilModalProps)
               <FormGroup label="Ad" required>
                 <FormInput value={form.ad || ''} onChange={(e) => handleChange('ad', e.target.value)} placeholder="Ad" />
               </FormGroup>
-              <FormGroup label="Soyad">
+              <FormGroup label="Soyad" required>
                 <FormInput value={form.soyad || ''} onChange={(e) => handleChange('soyad', e.target.value)} placeholder="Soyad" />
               </FormGroup>
             </div>

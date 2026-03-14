@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { ILLER } from '@/lib/data/iller';
+import { ILCE_VERILERI } from '@/lib/data/mahalleler';
 
 export interface Adres {
   baslik?: string;
@@ -25,40 +26,66 @@ interface Props {
 export function SmartAdresInput({ value, onChange }: Props) {
   const [ilArama, setIlArama] = useState('');
   const [ilceArama, setIlceArama] = useState('');
+  const [mahalleArama, setMahalleArama] = useState('');
   const [ilDropdownOpen, setIlDropdownOpen] = useState(false);
   const [ilceDropdownOpen, setIlceDropdownOpen] = useState(false);
+  const [mahalleDropdownOpen, setMahalleDropdownOpen] = useState(false);
 
   /* ── İl filtreleme ── */
   const filtreliIller = useMemo(() => {
     if (!ilArama) return ILLER;
     const q = ilArama.toLowerCase();
-    return ILLER.filter(i => i.il.toLowerCase().includes(q));
+    return ILLER.filter((i) => i.il.toLowerCase().includes(q));
   }, [ilArama]);
 
   /* ── Seçili ilin ilçeleri ── */
   const ilceler = useMemo(() => {
     if (!value.il) return [];
-    const ilData = ILLER.find(i => i.il === value.il);
+    const ilData = ILLER.find((i) => i.il === value.il);
     if (!ilData) return [];
     if (!ilceArama) return ilData.ilceler;
     const q = ilceArama.toLowerCase();
-    return ilData.ilceler.filter(ilce => ilce.toLowerCase().includes(q));
+    return ilData.ilceler.filter((ilce) => ilce.toLowerCase().includes(q));
   }, [value.il, ilceArama]);
+
+  /* ── Seçili ilçenin mahalleler + posta kodu ── */
+  const ilceVeri = useMemo(() => {
+    if (!value.il || !value.ilce) return null;
+    return ILCE_VERILERI[value.il]?.[value.ilce] || null;
+  }, [value.il, value.ilce]);
+
+  const mahalleler = useMemo(() => {
+    if (!ilceVeri?.mahalleler) return [];
+    if (!mahalleArama) return ilceVeri.mahalleler;
+    const q = mahalleArama.toLowerCase();
+    return ilceVeri.mahalleler.filter((m) => m.toLowerCase().includes(q));
+  }, [ilceVeri, mahalleArama]);
+
+  const mahalleVerisiVar = !!(ilceVeri?.mahalleler && ilceVeri.mahalleler.length > 0);
 
   const handleField = (field: keyof Adres, val: string) => {
     onChange({ ...value, [field]: val });
   };
 
   const handleIlSec = (il: string) => {
-    onChange({ ...value, il, ilce: '' }); // İl değişince ilçeyi sıfırla
+    onChange({ ...value, il, ilce: '', mahalle: '', postaKodu: '' });
     setIlArama('');
     setIlDropdownOpen(false);
   };
 
   const handleIlceSec = (ilce: string) => {
-    onChange({ ...value, ilce });
+    // İlçe seçildiğinde posta kodunu otomatik doldur
+    const veri = ILCE_VERILERI[value.il || '']?.[ilce];
+    const postaKodu = veri?.postaKodu || '';
+    onChange({ ...value, ilce, mahalle: '', postaKodu });
     setIlceArama('');
     setIlceDropdownOpen(false);
+  };
+
+  const handleMahalleSec = (mahalle: string) => {
+    onChange({ ...value, mahalle });
+    setMahalleArama('');
+    setMahalleDropdownOpen(false);
   };
 
   return (
@@ -71,7 +98,10 @@ export function SmartAdresInput({ value, onChange }: Props) {
           <input
             type="text"
             value={ilDropdownOpen ? ilArama : value.il || ''}
-            onChange={(e) => { setIlArama(e.target.value); setIlDropdownOpen(true); }}
+            onChange={(e) => {
+              setIlArama(e.target.value);
+              setIlDropdownOpen(true);
+            }}
             onFocus={() => setIlDropdownOpen(true)}
             placeholder="İl seçin..."
             className="w-full h-9 px-3 text-xs bg-bg border border-border rounded-lg text-text placeholder:text-text-dim focus:border-gold focus:outline-none"
@@ -80,7 +110,7 @@ export function SmartAdresInput({ value, onChange }: Props) {
             <>
               <div className="fixed inset-0 z-10" onClick={() => setIlDropdownOpen(false)} />
               <div className="absolute z-20 top-full mt-1 left-0 right-0 max-h-48 overflow-y-auto bg-surface border border-border rounded-lg shadow-lg">
-                {filtreliIller.map(i => (
+                {filtreliIller.map((i) => (
                   <button
                     key={i.il}
                     type="button"
@@ -106,8 +136,13 @@ export function SmartAdresInput({ value, onChange }: Props) {
           <input
             type="text"
             value={ilceDropdownOpen ? ilceArama : value.ilce || ''}
-            onChange={(e) => { setIlceArama(e.target.value); setIlceDropdownOpen(true); }}
-            onFocus={() => { if (value.il) setIlceDropdownOpen(true); }}
+            onChange={(e) => {
+              setIlceArama(e.target.value);
+              setIlceDropdownOpen(true);
+            }}
+            onFocus={() => {
+              if (value.il) setIlceDropdownOpen(true);
+            }}
             placeholder={value.il ? 'İlçe seçin...' : 'Önce il seçin'}
             disabled={!value.il}
             className="w-full h-9 px-3 text-xs bg-bg border border-border rounded-lg text-text placeholder:text-text-dim focus:border-gold focus:outline-none disabled:opacity-50"
@@ -116,7 +151,7 @@ export function SmartAdresInput({ value, onChange }: Props) {
             <>
               <div className="fixed inset-0 z-10" onClick={() => setIlceDropdownOpen(false)} />
               <div className="absolute z-20 top-full mt-1 left-0 right-0 max-h-48 overflow-y-auto bg-surface border border-border rounded-lg shadow-lg">
-                {ilceler.map(ilce => (
+                {ilceler.map((ilce) => (
                   <button
                     key={ilce}
                     type="button"
@@ -139,15 +174,68 @@ export function SmartAdresInput({ value, onChange }: Props) {
 
       {/* Mahalle + Posta Kodu */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="col-span-2">
+        <div className="col-span-2 relative">
           <label className="block text-[11px] font-medium text-text-muted mb-1">Mahalle</label>
-          <input
-            type="text"
-            value={value.mahalle || ''}
-            onChange={(e) => handleField('mahalle', e.target.value)}
-            placeholder="Mahalle adı"
-            className="w-full h-9 px-3 text-xs bg-bg border border-border rounded-lg text-text placeholder:text-text-dim focus:border-gold focus:outline-none"
-          />
+          {mahalleVerisiVar ? (
+            /* ── Mahalle Dropdown (veri varsa) ── */
+            <>
+              <input
+                type="text"
+                value={mahalleDropdownOpen ? mahalleArama : value.mahalle || ''}
+                onChange={(e) => {
+                  setMahalleArama(e.target.value);
+                  setMahalleDropdownOpen(true);
+                }}
+                onFocus={() => setMahalleDropdownOpen(true)}
+                placeholder={value.ilce ? 'Mahalle seçin...' : 'Önce ilçe seçin'}
+                disabled={!value.ilce}
+                className="w-full h-9 px-3 text-xs bg-bg border border-border rounded-lg text-text placeholder:text-text-dim focus:border-gold focus:outline-none disabled:opacity-50"
+              />
+              {mahalleDropdownOpen && value.ilce && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setMahalleDropdownOpen(false)} />
+                  <div className="absolute z-20 top-full mt-1 left-0 right-0 max-h-48 overflow-y-auto bg-surface border border-border rounded-lg shadow-lg">
+                    {mahalleler.map((mahalle) => (
+                      <button
+                        key={mahalle}
+                        type="button"
+                        onClick={() => handleMahalleSec(mahalle)}
+                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gold-dim transition-colors ${
+                          value.mahalle === mahalle ? 'text-gold font-semibold' : 'text-text'
+                        }`}
+                      >
+                        {mahalle}
+                      </button>
+                    ))}
+                    {mahalleler.length === 0 && (
+                      <div className="px-3 py-2 text-xs text-text-dim">
+                        Sonuç bulunamadı
+                        {mahalleArama && (
+                          <button
+                            type="button"
+                            onClick={() => handleMahalleSec(mahalleArama)}
+                            className="block mt-1 text-gold hover:underline"
+                          >
+                            &quot;{mahalleArama}&quot; olarak ekle
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </>
+          ) : (
+            /* ── Mahalle Serbest Metin (veri yoksa) ── */
+            <input
+              type="text"
+              value={value.mahalle || ''}
+              onChange={(e) => handleField('mahalle', e.target.value)}
+              placeholder={value.ilce ? 'Mahalle adı' : 'Önce ilçe seçin'}
+              disabled={!value.ilce}
+              className="w-full h-9 px-3 text-xs bg-bg border border-border rounded-lg text-text placeholder:text-text-dim focus:border-gold focus:outline-none disabled:opacity-50"
+            />
+          )}
         </div>
         <div>
           <label className="block text-[11px] font-medium text-text-muted mb-1">Posta Kodu</label>
@@ -196,7 +284,7 @@ export function SmartAdresInput({ value, onChange }: Props) {
         </div>
       </div>
 
-      {/* Açık Adres (otomatik veya manuel) */}
+      {/* Açık Adres */}
       <div>
         <label className="block text-[11px] font-medium text-text-muted mb-1">Açık Adres</label>
         <textarea

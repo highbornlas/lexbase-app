@@ -32,7 +32,7 @@ export interface Vekil {
   // Notlar
   aciklama?: string;
   // Etiketler
-  etiketler?: string[];
+  etiketler?: unknown[];
   [key: string]: unknown;
 }
 

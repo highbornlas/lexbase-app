@@ -108,6 +108,10 @@ export function KarsiTarafModal({ open, onClose, karsiTaraf, onCreated }: KarsiT
       setHata(form.tip === 'tuzel' ? 'Şirket adı zorunludur.' : 'Ad zorunludur.');
       return false;
     }
+    if (form.tip === 'gercek' && !form.soyad?.trim()) {
+      setHata('Soyad zorunludur.');
+      return false;
+    }
     let formatHata: string | null = null;
     if (form.tc) formatHata = tcKimlikDogrula(form.tc);
     if (!formatHata && form.vergiNo) formatHata = vknDogrula(form.vergiNo);
@@ -243,7 +247,7 @@ export function KarsiTarafModal({ open, onClose, karsiTaraf, onCreated }: KarsiT
                   <FormGroup label="Ad" required>
                     <FormInput value={form.ad || ''} onChange={(e) => handleChange('ad', e.target.value)} placeholder="Ad" />
                   </FormGroup>
-                  <FormGroup label="Soyad">
+                  <FormGroup label="Soyad" required>
                     <FormInput value={form.soyad || ''} onChange={(e) => handleChange('soyad', e.target.value)} placeholder="Soyad" />
                   </FormGroup>
                 </div>

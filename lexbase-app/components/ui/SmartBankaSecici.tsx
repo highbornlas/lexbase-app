@@ -20,10 +20,8 @@ interface Props {
 /* ── IBAN Formatlama ── */
 function formatIban(raw: string): string {
   const clean = raw.replace(/\s/g, '').toUpperCase();
-  // TR prefix otomatik ekle
   const val = clean.startsWith('TR') ? clean : (clean.length > 0 && /^\d/.test(clean) ? 'TR' + clean : clean);
-  // 4'lü gruplara ayır
-  return val.replace(/(.{4})/g, '$1 ').trim().slice(0, 32); // TR + 24 digit + spaces
+  return val.replace(/(.{4})/g, '$1 ').trim().slice(0, 32);
 }
 
 export function SmartBankaSecici({ bankalar, onChange }: Props) {
@@ -105,10 +103,14 @@ function BankaHesapKarti({
   const filtreliBankalar = useMemo(() => {
     if (!arama) return BANKALAR;
     const q = arama.toLowerCase();
-    return BANKALAR.filter(b => b.ad.toLowerCase().includes(q));
+    return BANKALAR.filter(
+      (b) =>
+        b.ad.toLowerCase().includes(q) ||
+        (b.ticariUnvan && b.ticariUnvan.toLowerCase().includes(q))
+    );
   }, [arama]);
 
-  const seciliBanka = BANKALAR.find(b => b.ad === hesap.banka);
+  const seciliBanka = BANKALAR.find((b) => b.ad === hesap.banka);
 
   return (
     <div className="bg-surface2/50 rounded-xl border border-border/50 p-3 relative group">
@@ -130,8 +132,11 @@ function BankaHesapKarti({
           <FormGroup label="Banka Adı">
             <input
               type="text"
-              value={dropdownOpen ? arama : hesap.banka || ''}
-              onChange={(e) => { setArama(e.target.value); setDropdownOpen(true); }}
+              value={dropdownOpen ? arama : (seciliBanka?.ticariUnvan || seciliBanka?.ad || hesap.banka || '')}
+              onChange={(e) => {
+                setArama(e.target.value);
+                setDropdownOpen(true);
+              }}
               onFocus={() => setDropdownOpen(true)}
               placeholder="Banka seçin..."
               className="w-full h-8 px-3 text-xs bg-bg border border-border rounded-lg text-text placeholder:text-text-dim focus:border-gold focus:outline-none"
@@ -139,8 +144,8 @@ function BankaHesapKarti({
             {dropdownOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
-                <div className="absolute z-20 top-full mt-1 left-0 right-0 max-h-40 overflow-y-auto bg-surface border border-border rounded-lg shadow-lg">
-                  {filtreliBankalar.map(b => (
+                <div className="absolute z-20 top-full mt-1 left-0 right-0 max-h-48 overflow-y-auto bg-surface border border-border rounded-lg shadow-lg">
+                  {filtreliBankalar.map((b) => (
                     <button
                       key={b.ad}
                       type="button"
@@ -149,12 +154,30 @@ function BankaHesapKarti({
                         setArama('');
                         setDropdownOpen(false);
                       }}
-                      className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gold-dim transition-colors ${
-                        hesap.banka === b.ad ? 'text-gold font-semibold' : 'text-text'
+                      className={`w-full text-left px-3 py-2 hover:bg-gold-dim transition-colors border-b border-border/20 last:border-b-0 ${
+                        hesap.banka === b.ad ? 'bg-gold-dim/30' : ''
                       }`}
                     >
-                      <span>{b.ad}</span>
-                      {b.swift && <span className="ml-2 text-text-dim text-[10px]">{b.swift}</span>}
+                      <div className={`text-xs font-medium ${hesap.banka === b.ad ? 'text-gold' : 'text-text'}`}>
+                        {b.ticariUnvan || b.ad}
+                      </div>
+                      <div className="flex gap-3 mt-0.5">
+                        {b.mersis && (
+                          <span className="text-[10px] text-text-dim">
+                            MERSİS: {b.mersis}
+                          </span>
+                        )}
+                        {b.swift && (
+                          <span className="text-[10px] text-text-dim">
+                            SWIFT: {b.swift}
+                          </span>
+                        )}
+                        {b.kod && (
+                          <span className="text-[10px] text-text-dim">
+                            Kod: {b.kod}
+                          </span>
+                        )}
+                      </div>
                     </button>
                   ))}
                   {filtreliBankalar.length === 0 && (
@@ -175,11 +198,19 @@ function BankaHesapKarti({
         </FormGroup>
       </div>
 
-      {/* Banka bilgi satırı */}
-      {seciliBanka && (seciliBanka.swift || seciliBanka.kod) && (
-        <div className="flex gap-3 mb-2 text-[10px] text-text-dim">
-          {seciliBanka.swift && <span>SWIFT: {seciliBanka.swift}</span>}
-          {seciliBanka.kod && <span>Kod: {seciliBanka.kod}</span>}
+      {/* Banka bilgi satırı (seçili banka) */}
+      {seciliBanka && (
+        <div className="mb-2 px-2 py-1.5 bg-bg/50 rounded-lg border border-border/30">
+          {seciliBanka.ticariUnvan && (
+            <div className="text-[10px] text-gold font-medium mb-0.5">
+              {seciliBanka.ticariUnvan}
+            </div>
+          )}
+          <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[10px] text-text-dim">
+            {seciliBanka.mersis && <span>MERSİS: {seciliBanka.mersis}</span>}
+            {seciliBanka.swift && <span>SWIFT: {seciliBanka.swift}</span>}
+            {seciliBanka.kod && <span>Banka Kodu: {seciliBanka.kod}</span>}
+          </div>
         </div>
       )}
 

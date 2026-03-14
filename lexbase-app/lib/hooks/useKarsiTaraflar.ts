@@ -53,7 +53,7 @@ export interface KarsiTaraf {
   // Notlar
   aciklama?: string;
   // Etiketler
-  etiketler?: string[];
+  etiketler?: unknown[];
   [key: string]: unknown;
 }
 

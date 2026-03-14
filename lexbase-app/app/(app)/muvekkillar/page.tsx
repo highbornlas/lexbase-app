@@ -15,7 +15,7 @@ import { useBulkSelection } from '@/lib/hooks/useBulkSelection';
 import { exportMuvekkilListePDF, exportKarsiTarafListePDF, exportAvukatListePDF } from '@/lib/export/pdfExport';
 import { exportMuvekkilListeXLS, exportKarsiTarafListeXLS, exportAvukatListeXLS } from '@/lib/export/excelExport';
 import { YetkiKoruma } from '@/components/ui/YetkiKoruma';
-import { EtiketBadge } from '@/components/ui/EtiketSecici';
+import { EtiketBadge, normalizeEtiket } from '@/components/ui/EtiketSecici';
 import { IceAktarmaModal } from '@/components/modules/IceAktarmaModal';
 import { useMuvekkilKaydet } from '@/lib/hooks/useMuvekkillar';
 import { useKarsiTarafKaydet } from '@/lib/hooks/useKarsiTaraflar';
@@ -206,7 +206,7 @@ export default function RehberPage() {
     const filtered = muvekkillar.filter((m) => {
       if (filtre === 'gercek' && m.tip === 'tuzel') return false;
       if (filtre === 'tuzel' && m.tip !== 'tuzel') return false;
-      if (etiketFiltre && !(m.etiketler || []).includes(etiketFiltre)) return false;
+      if (etiketFiltre && !(m.etiketler || []).some((e) => normalizeEtiket(e).ad === etiketFiltre)) return false;
       if (arama) {
         const q = arama.toLowerCase();
         return (
@@ -229,7 +229,7 @@ export default function RehberPage() {
     const filtered = karsiTaraflar.filter((kt) => {
       if (filtre === 'gercek' && kt.tip === 'tuzel') return false;
       if (filtre === 'tuzel' && kt.tip !== 'tuzel') return false;
-      if (etiketFiltre && !(kt.etiketler || []).includes(etiketFiltre)) return false;
+      if (etiketFiltre && !(kt.etiketler || []).some((e) => normalizeEtiket(e).ad === etiketFiltre)) return false;
       if (arama) {
         const q = arama.toLowerCase();
         return (
@@ -250,7 +250,7 @@ export default function RehberPage() {
   const vFiltrelenmis = useMemo(() => {
     if (!vekillar || aktifTab !== 'avukatlar') return [];
     const filtered = vekillar.filter((v) => {
-      if (etiketFiltre && !(v.etiketler || []).includes(etiketFiltre)) return false;
+      if (etiketFiltre && !(v.etiketler || []).some((e) => normalizeEtiket(e).ad === etiketFiltre)) return false;
       if (arama) {
         const q = arama.toLowerCase();
         return (
@@ -278,9 +278,9 @@ export default function RehberPage() {
   /* ── Bürodaki tüm benzersiz etiketler ── */
   const tumEtiketler = useMemo(() => {
     const set = new Set<string>();
-    (muvekkillar || []).forEach((m) => (m.etiketler || []).forEach((e) => set.add(e)));
-    (karsiTaraflar || []).forEach((k) => (k.etiketler || []).forEach((e) => set.add(e)));
-    (vekillar || []).forEach((v) => (v.etiketler || []).forEach((e) => set.add(e)));
+    (muvekkillar || []).forEach((m) => (m.etiketler || []).forEach((e) => set.add(normalizeEtiket(e).ad)));
+    (karsiTaraflar || []).forEach((k) => (k.etiketler || []).forEach((e) => set.add(normalizeEtiket(e).ad)));
+    (vekillar || []).forEach((v) => (v.etiketler || []).forEach((e) => set.add(normalizeEtiket(e).ad)));
     return Array.from(set).sort((a, b) => a.localeCompare(b, 'tr'));
   }, [muvekkillar, karsiTaraflar, vekillar]);
 
@@ -572,7 +572,7 @@ export default function RehberPage() {
                         </div>
                         {m.etiketler && m.etiketler.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1">
-                            {m.etiketler.map((e) => <EtiketBadge key={e} etiket={e} />)}
+                            {m.etiketler.map((e, i) => <EtiketBadge key={i} etiket={e} />)}
                           </div>
                         )}
                       </div>
@@ -657,7 +657,7 @@ export default function RehberPage() {
                       </div>
                       {kt.etiketler && kt.etiketler.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {kt.etiketler.map((e) => <EtiketBadge key={e} etiket={e} />)}
+                          {kt.etiketler.map((e, i) => <EtiketBadge key={i} etiket={e} />)}
                         </div>
                       )}
                     </button>
@@ -747,7 +747,7 @@ export default function RehberPage() {
                       </div>
                       {v.etiketler && v.etiketler.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {v.etiketler.map((e) => <EtiketBadge key={e} etiket={e} />)}
+                          {v.etiketler.map((e, i) => <EtiketBadge key={i} etiket={e} />)}
                         </div>
                       )}
                     </button>
