@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
 import { useDavalar } from '@/lib/hooks/useDavalar';
 import { useIcralar } from '@/lib/hooks/useIcra';
@@ -8,7 +9,12 @@ import { useDanismanliklar } from '@/lib/hooks/useDanismanlik';
 import { useArabuluculuklar } from '@/lib/hooks/useArabuluculuk';
 import { useIhtarnameler } from '@/lib/hooks/useIhtarname';
 import { fmt } from '@/lib/utils';
-import { BakiyeItem, EmptyState, MiniKpi } from './shared';
+import { EmptyState, MiniKpi } from './shared';
+
+/* ══════════════════════════════════════════════════════════════
+   Bakiyeler Sekmesi — Müvekkil bazlı alacak/tahsilat/masraf özeti
+   MuvAlacak.tsx ile aynı hesaplama mantığını kullanır.
+   ══════════════════════════════════════════════════════════════ */
 
 const PAGE_SIZE = 20;
 
@@ -25,78 +31,95 @@ export function BakiyelerTab() {
   const bakiyeler = useMemo(() => {
     if (!muvekkillar) return [];
     return muvekkillar.map((m) => {
-      const muvDavalar = (davalar || []).filter((d) => d.muvId === m.id);
-      const muvIcralar = (icralar || []).filter((i) => i.muvId === m.id);
+      const muvDavalar = (davalar || []).filter((d) => d.muvId === m.id) as Record<string, unknown>[];
+      const muvIcralar = (icralar || []).filter((i) => i.muvId === m.id) as Record<string, unknown>[];
       const muvDanismanlik = (danismanliklar || []).filter((d) => d.muvId === m.id);
       const muvArabuluculuk = (arabuluculuklar || []).filter((a) => a.muvId === m.id);
       const muvIhtarname = (ihtarnameler || []).filter((ih) => ih.muvId === m.id);
 
+      let anlasilanToplam = 0;
+      let tahsilEdilenToplam = 0;
       let masrafToplam = 0;
-      let tahsilatToplam = 0;
-      let vekaletTahsil = 0;
-      let hakedisToplam = 0;
-      let danismanlikGelir = 0;
-      let arabuluculukGelir = 0;
-      let ihtarnameGelir = 0;
-      let ihtarnameMasraf = 0;
 
-      // Dava + İcra harcamaları ve tahsilatları
-      [...muvDavalar, ...muvIcralar].forEach((dosya) => {
-        masrafToplam += (dosya.harcamalar || []).reduce((t: number, h: { tutar: number }) => t + (h.tutar || 0), 0);
-        (dosya.tahsilatlar || []).forEach((th: { tur: string; tutar: number }) => {
-          if (th.tur === 'tahsilat') tahsilatToplam += th.tutar || 0;
-          if (th.tur === 'akdi_vekalet') vekaletTahsil += th.tutar || 0;
-          if (th.tur === 'hakediş') hakedisToplam += th.tutar || 0;
+      // ── Dava + İcra (MuvAlacak pattern) ──
+      const tumDosyalar = [...muvDavalar, ...muvIcralar];
+      tumDosyalar.forEach((dosya) => {
+        // Anlaşılan tutar: anlasma.toplam || anlasma.ucret || ucret
+        const anlasma = dosya.anlasma as Record<string, unknown> | undefined;
+        const ucret = dosya.ucret as number | string | undefined;
+        if (anlasma) {
+          anlasilanToplam += parseFloat(String(anlasma.toplam || anlasma.ucret || 0)) || 0;
+        } else if (ucret) {
+          anlasilanToplam += parseFloat(String(ucret)) || 0;
+        }
+
+        // Tahsilat: tahsilatlar dizisi + flat tahsilEdildi
+        const tahsilatlar = (dosya.tahsilatlar || []) as Array<Record<string, unknown>>;
+        tahsilatlar.forEach((th) => {
+          tahsilEdilenToplam += parseFloat(String(th.tutar || 0)) || 0;
+        });
+        tahsilEdilenToplam += parseFloat(String(dosya.tahsilEdildi || 0)) || 0;
+
+        // Masraflar: harcamalar dizisi
+        const harcamalar = (dosya.harcamalar || []) as Array<Record<string, unknown>>;
+        harcamalar.forEach((h) => {
+          masrafToplam += parseFloat(String(h.tutar || 0)) || 0;
         });
       });
 
-      // Danışmanlık gelirleri
+      // ── Danışmanlık ──
       muvDanismanlik.forEach((d) => {
-        danismanlikGelir += Number(d.tahsilEdildi || 0);
+        const ucret = Number(d.ucret || d.aylikUcret || 0);
+        if (ucret > 0) anlasilanToplam += ucret;
+        tahsilEdilenToplam += Number(d.tahsilEdildi || 0);
       });
 
-      // Arabuluculuk gelirleri
+      // ── Arabuluculuk ──
       muvArabuluculuk.forEach((a) => {
-        arabuluculukGelir += Number(a.tahsilEdildi || 0);
+        const ucret = Number(a.ucret || 0);
+        if (ucret > 0) anlasilanToplam += ucret;
+        tahsilEdilenToplam += Number(a.tahsilEdildi || 0);
       });
 
-      // İhtarname gelirleri ve masrafları
+      // ── İhtarname ──
       muvIhtarname.forEach((ih) => {
-        ihtarnameGelir += Number(ih.tahsilEdildi || 0);
-        ihtarnameMasraf += Number(ih.noterMasrafi || 0);
+        const ucret = Number(ih.ucret || 0);
+        if (ucret > 0) anlasilanToplam += ucret;
+        tahsilEdilenToplam += Number(ih.tahsilEdildi || 0);
+        masrafToplam += Number(ih.noterMasrafi || 0);
       });
 
-      const toplamGelir = vekaletTahsil + hakedisToplam + tahsilatToplam + danismanlikGelir + arabuluculukGelir + ihtarnameGelir;
-      const toplamMasraf = masrafToplam + ihtarnameMasraf;
-      const genelBakiye = toplamGelir - toplamMasraf;
+      const kalanAlacak = anlasilanToplam - tahsilEdilenToplam;
+      const netBakiye = tahsilEdilenToplam - masrafToplam;
+      const dosyaSayisi = tumDosyalar.length + muvDanismanlik.length + muvArabuluculuk.length + muvIhtarname.length;
 
       return {
-        id: m.id, ad: m.ad,
-        masrafToplam: toplamMasraf,
-        tahsilatToplam,
-        vekaletTahsil,
-        hakedisToplam,
-        danismanlikGelir,
-        arabuluculukGelir,
-        ihtarnameGelir,
-        toplamGelir,
-        genelBakiye,
+        id: m.id,
+        ad: m.ad || '—',
+        kayitNo: (m as Record<string, unknown>).kayitNo as number | undefined,
+        anlasilanToplam,
+        tahsilEdilenToplam,
+        kalanAlacak,
+        masrafToplam,
+        netBakiye,
+        dosyaSayisi,
       };
     }).filter((b) => {
       if (!arama) return true;
-      return b.ad.toLowerCase().includes(arama.toLowerCase());
+      const q = arama.toLowerCase();
+      return b.ad.toLowerCase().includes(q) || String(b.kayitNo || '').includes(q);
     });
   }, [muvekkillar, davalar, icralar, danismanliklar, arabuluculuklar, ihtarnameler, arama]);
 
   // Genel toplamlar
-  const genelToplamlar = useMemo(() => {
-    return {
-      toplamGelir: bakiyeler.reduce((t, b) => t + b.toplamGelir, 0),
-      toplamMasraf: bakiyeler.reduce((t, b) => t + b.masrafToplam, 0),
-      netBakiye: bakiyeler.reduce((t, b) => t + b.genelBakiye, 0),
-      muvSayi: bakiyeler.length,
-    };
-  }, [bakiyeler]);
+  const toplamlar = useMemo(() => ({
+    anlasilanToplam: bakiyeler.reduce((t, b) => t + b.anlasilanToplam, 0),
+    tahsilEdilenToplam: bakiyeler.reduce((t, b) => t + b.tahsilEdilenToplam, 0),
+    kalanAlacak: bakiyeler.reduce((t, b) => t + b.kalanAlacak, 0),
+    masrafToplam: bakiyeler.reduce((t, b) => t + b.masrafToplam, 0),
+    netBakiye: bakiyeler.reduce((t, b) => t + b.netBakiye, 0),
+    muvSayi: bakiyeler.length,
+  }), [bakiyeler]);
 
   // Pagination
   const toplamSayfa = Math.max(1, Math.ceil(bakiyeler.length / PAGE_SIZE));
@@ -105,11 +128,12 @@ export function BakiyelerTab() {
   return (
     <div>
       {/* KPI Strip */}
-      <div className="grid grid-cols-4 gap-3 mb-5">
-        <MiniKpi label="Müvekkil Sayısı" value={String(genelToplamlar.muvSayi)} />
-        <MiniKpi label="Toplam Gelir" value={fmt(genelToplamlar.toplamGelir)} color="text-green" />
-        <MiniKpi label="Toplam Masraf" value={fmt(genelToplamlar.toplamMasraf)} color="text-red" />
-        <MiniKpi label="Net Bakiye" value={fmt(genelToplamlar.netBakiye)} color={genelToplamlar.netBakiye >= 0 ? 'text-green' : 'text-red'} />
+      <div className="grid grid-cols-5 gap-3 mb-5">
+        <MiniKpi label="Müvekkil Sayısı" value={String(toplamlar.muvSayi)} />
+        <MiniKpi label="Anlaşılan Toplam" value={fmt(toplamlar.anlasilanToplam)} color="text-text" />
+        <MiniKpi label="Tahsil Edilen" value={fmt(toplamlar.tahsilEdilenToplam)} color="text-green" />
+        <MiniKpi label="Kalan Alacak" value={fmt(toplamlar.kalanAlacak)} color={toplamlar.kalanAlacak > 0 ? 'text-gold' : 'text-green'} />
+        <MiniKpi label="Masraflar" value={fmt(toplamlar.masrafToplam)} color="text-red" />
       </div>
 
       <div className="mb-4 relative max-w-md">
@@ -117,7 +141,7 @@ export function BakiyelerTab() {
           type="text"
           value={arama}
           onChange={(e) => { setArama(e.target.value); setSayfa(1); }}
-          placeholder="Müvekkil ara..."
+          placeholder="Müvekkil ara (ad veya kayıt no)..."
           className="w-full px-4 py-2.5 pl-9 bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-dim focus:outline-none focus:border-gold transition-colors"
         />
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dim text-sm">🔍</span>
@@ -127,66 +151,70 @@ export function BakiyelerTab() {
         <EmptyState icon="💳" message="Müvekkil bakiyesi bulunamadı" />
       ) : (
         <>
-          {/* Tablo Görünümü */}
+          {/* Tablo */}
           <div className="bg-surface border border-border rounded-lg overflow-hidden">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-border bg-surface2">
-                  <th className="text-left px-4 py-2.5 text-[10px] text-text-muted font-medium uppercase tracking-wider">Müvekkil</th>
-                  <th className="text-right px-3 py-2.5 text-[10px] text-text-muted font-medium uppercase tracking-wider">Vekalet</th>
-                  <th className="text-right px-3 py-2.5 text-[10px] text-text-muted font-medium uppercase tracking-wider">Hakediş</th>
-                  <th className="text-right px-3 py-2.5 text-[10px] text-text-muted font-medium uppercase tracking-wider">Tahsilat</th>
-                  <th className="text-right px-3 py-2.5 text-[10px] text-text-muted font-medium uppercase tracking-wider">Diğer Gelir</th>
-                  <th className="text-right px-3 py-2.5 text-[10px] text-green font-medium uppercase tracking-wider">Toplam Gelir</th>
-                  <th className="text-right px-3 py-2.5 text-[10px] text-red font-medium uppercase tracking-wider">Masraf</th>
-                  <th className="text-right px-4 py-2.5 text-[10px] text-text-muted font-medium uppercase tracking-wider">Net Bakiye</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sayfadakiler.map((b) => {
-                  const digerGelir = b.danismanlikGelir + b.arabuluculukGelir + b.ihtarnameGelir;
-                  return (
-                    <tr key={b.id} className="border-b border-border/50 hover:bg-gold-dim transition-colors">
-                      <td className="px-4 py-3 text-text font-medium">{b.ad}</td>
-                      <td className="px-3 py-3 text-right text-text-muted">{b.vekaletTahsil > 0 ? fmt(b.vekaletTahsil) : '—'}</td>
-                      <td className="px-3 py-3 text-right text-text-muted">{b.hakedisToplam > 0 ? fmt(b.hakedisToplam) : '—'}</td>
-                      <td className="px-3 py-3 text-right text-text-muted">{b.tahsilatToplam > 0 ? fmt(b.tahsilatToplam) : '—'}</td>
-                      <td className="px-3 py-3 text-right text-text-muted">
-                        {digerGelir > 0 ? (
-                          <span title={[
-                            b.danismanlikGelir > 0 ? `Danışmanlık: ${fmt(b.danismanlikGelir)}` : '',
-                            b.arabuluculukGelir > 0 ? `Arabuluculuk: ${fmt(b.arabuluculukGelir)}` : '',
-                            b.ihtarnameGelir > 0 ? `İhtarname: ${fmt(b.ihtarnameGelir)}` : '',
-                          ].filter(Boolean).join(' · ')}>
-                            {fmt(digerGelir)}
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border bg-surface2">
+                    <th className="text-left px-4 py-2.5 text-[10px] text-text-muted font-medium uppercase tracking-wider w-8">No</th>
+                    <th className="text-left px-3 py-2.5 text-[10px] text-text-muted font-medium uppercase tracking-wider">Müvekkil</th>
+                    <th className="text-center px-2 py-2.5 text-[10px] text-text-muted font-medium uppercase tracking-wider">Dosya</th>
+                    <th className="text-right px-3 py-2.5 text-[10px] text-text-muted font-medium uppercase tracking-wider">Anlaşılan</th>
+                    <th className="text-right px-3 py-2.5 text-[10px] text-green font-medium uppercase tracking-wider">Tahsil Edilen</th>
+                    <th className="text-right px-3 py-2.5 text-[10px] text-gold font-medium uppercase tracking-wider">Kalan Alacak</th>
+                    <th className="text-right px-3 py-2.5 text-[10px] text-red font-medium uppercase tracking-wider">Masraf</th>
+                    <th className="text-right px-4 py-2.5 text-[10px] text-text-muted font-medium uppercase tracking-wider">Net Bakiye</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sayfadakiler.map((b) => {
+                    const tahsilYuzde = b.anlasilanToplam > 0 ? Math.round((b.tahsilEdilenToplam / b.anlasilanToplam) * 100) : 0;
+                    return (
+                      <tr key={b.id} className="border-b border-border/50 hover:bg-gold-dim transition-colors">
+                        <td className="px-4 py-3 text-text-dim text-[10px]">{b.kayitNo || '—'}</td>
+                        <td className="px-3 py-3">
+                          <Link href={`/muvekkillar/${b.id}`} className="text-text font-medium hover:text-gold transition-colors">
+                            {b.ad}
+                          </Link>
+                        </td>
+                        <td className="px-2 py-3 text-center text-text-dim">{b.dosyaSayisi || '—'}</td>
+                        <td className="px-3 py-3 text-right text-text-muted">{b.anlasilanToplam > 0 ? fmt(b.anlasilanToplam) : '—'}</td>
+                        <td className="px-3 py-3 text-right">
+                          <div className="text-green">{b.tahsilEdilenToplam > 0 ? fmt(b.tahsilEdilenToplam) : '—'}</div>
+                          {b.anlasilanToplam > 0 && b.tahsilEdilenToplam > 0 && (
+                            <div className="w-full bg-surface2 rounded-full h-1 mt-1">
+                              <div className="bg-green rounded-full h-1 transition-all" style={{ width: `${Math.min(tahsilYuzde, 100)}%` }} />
+                            </div>
+                          )}
+                        </td>
+                        <td className={`px-3 py-3 text-right font-semibold ${b.kalanAlacak > 0 ? 'text-gold' : 'text-green'}`}>
+                          {b.kalanAlacak !== 0 ? fmt(b.kalanAlacak) : '—'}
+                        </td>
+                        <td className="px-3 py-3 text-right text-red">{b.masrafToplam > 0 ? fmt(b.masrafToplam) : '—'}</td>
+                        <td className="px-4 py-3 text-right">
+                          <span className={`font-bold ${b.netBakiye >= 0 ? 'text-green' : 'text-red'}`}>
+                            {fmt(b.netBakiye)}
                           </span>
-                        ) : '—'}
-                      </td>
-                      <td className="px-3 py-3 text-right font-semibold text-green">{fmt(b.toplamGelir)}</td>
-                      <td className="px-3 py-3 text-right text-red">{b.masrafToplam > 0 ? fmt(b.masrafToplam) : '—'}</td>
-                      <td className="px-4 py-3 text-right">
-                        <span className={`font-bold ${b.genelBakiye >= 0 ? 'text-green' : 'text-red'}`}>
-                          {fmt(b.genelBakiye)}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-                {/* Toplam Satırı */}
-                <tr className="bg-surface2 font-bold border-t border-border">
-                  <td className="px-4 py-3 text-text">TOPLAM ({bakiyeler.length} müvekkil)</td>
-                  <td className="px-3 py-3 text-right text-text-muted">{fmt(bakiyeler.reduce((t, b) => t + b.vekaletTahsil, 0))}</td>
-                  <td className="px-3 py-3 text-right text-text-muted">{fmt(bakiyeler.reduce((t, b) => t + b.hakedisToplam, 0))}</td>
-                  <td className="px-3 py-3 text-right text-text-muted">{fmt(bakiyeler.reduce((t, b) => t + b.tahsilatToplam, 0))}</td>
-                  <td className="px-3 py-3 text-right text-text-muted">{fmt(bakiyeler.reduce((t, b) => t + b.danismanlikGelir + b.arabuluculukGelir + b.ihtarnameGelir, 0))}</td>
-                  <td className="px-3 py-3 text-right text-green">{fmt(genelToplamlar.toplamGelir)}</td>
-                  <td className="px-3 py-3 text-right text-red">{fmt(genelToplamlar.toplamMasraf)}</td>
-                  <td className="px-4 py-3 text-right">
-                    <span className={genelToplamlar.netBakiye >= 0 ? 'text-green' : 'text-red'}>{fmt(genelToplamlar.netBakiye)}</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {/* Toplam */}
+                  <tr className="bg-surface2 font-bold border-t border-border">
+                    <td colSpan={2} className="px-4 py-3 text-text">TOPLAM ({bakiyeler.length} müvekkil)</td>
+                    <td className="px-2 py-3 text-center text-text-dim">{bakiyeler.reduce((t, b) => t + b.dosyaSayisi, 0)}</td>
+                    <td className="px-3 py-3 text-right text-text">{fmt(toplamlar.anlasilanToplam)}</td>
+                    <td className="px-3 py-3 text-right text-green">{fmt(toplamlar.tahsilEdilenToplam)}</td>
+                    <td className={`px-3 py-3 text-right ${toplamlar.kalanAlacak > 0 ? 'text-gold' : 'text-green'}`}>{fmt(toplamlar.kalanAlacak)}</td>
+                    <td className="px-3 py-3 text-right text-red">{fmt(toplamlar.masrafToplam)}</td>
+                    <td className="px-4 py-3 text-right">
+                      <span className={toplamlar.netBakiye >= 0 ? 'text-green' : 'text-red'}>{fmt(toplamlar.netBakiye)}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {/* Pagination */}
