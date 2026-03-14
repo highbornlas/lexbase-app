@@ -5,6 +5,7 @@ import { Modal, FormGroup, FormInput, FormTextarea, BtnGold, BtnOutline } from '
 import { useVekillar, useVekilKaydet, type Vekil } from '@/lib/hooks/useVekillar';
 import { SmartBankaSecici } from '@/components/ui/SmartBankaSecici';
 import { EtiketSecici } from '@/components/ui/EtiketSecici';
+import { useTumEtiketler } from '@/lib/hooks/useTumEtiketler';
 import { baroSicilDogrula, tbbSicilDogrula, bankaIbanlarDogrula, telefonDogrula, telefonFormatla, epostaDogrula } from '@/lib/validation';
 
 interface VekilModalProps {
@@ -54,12 +55,14 @@ export function VekilModal({ open, onClose, vekil, onCreated }: VekilModalProps)
   const [adim, setAdim] = useState<Adim>(1);
   const { data: mevcutlar } = useVekillar();
   const kaydet = useVekilKaydet();
+  const tumEtiketler = useTumEtiketler();
 
   useEffect(() => {
     if (vekil) {
       setForm({ ...vekil });
     } else {
-      setForm({ ...bos, id: crypto.randomUUID() });
+      const maxNo = Math.max(0, ...(mevcutlar || []).map((v) => v.kayitNo || 0));
+      setForm({ ...bos, id: crypto.randomUUID(), sira: Date.now(), kayitNo: maxNo + 1 });
     }
     setHata('');
     setAlanHata({});
@@ -244,7 +247,7 @@ export function VekilModal({ open, onClose, vekil, onCreated }: VekilModalProps)
             <EtiketSecici
               etiketler={form.etiketler || []}
               onChange={(etiketler) => setForm((prev) => ({ ...prev, etiketler }))}
-              mevcutEtiketler={(mevcutlar || []).flatMap((v) => v.etiketler || [])}
+              mevcutEtiketler={tumEtiketler}
             />
 
             <FormGroup label="Notlar">

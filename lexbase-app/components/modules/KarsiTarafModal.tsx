@@ -5,6 +5,7 @@ import { Modal, FormGroup, FormInput, FormSelect, FormTextarea, BtnGold, BtnOutl
 import { useKarsiTaraflar, useKarsiTarafKaydet, type KarsiTaraf } from '@/lib/hooks/useKarsiTaraflar';
 import { SmartBankaSecici } from '@/components/ui/SmartBankaSecici';
 import { EtiketSecici } from '@/components/ui/EtiketSecici';
+import { useTumEtiketler } from '@/lib/hooks/useTumEtiketler';
 import { type Adres } from '@/components/ui/SmartAdresInput';
 import { CokluAdresInput } from '@/components/ui/CokluAdresInput';
 import {
@@ -66,6 +67,7 @@ export function KarsiTarafModal({ open, onClose, karsiTaraf, onCreated }: KarsiT
   const [adim, setAdim] = useState<Adim>(1);
   const { data: mevcutlar } = useKarsiTaraflar();
   const kaydet = useKarsiTarafKaydet();
+  const tumEtiketler = useTumEtiketler();
 
   useEffect(() => {
     if (karsiTaraf) {
@@ -78,7 +80,8 @@ export function KarsiTarafModal({ open, onClose, karsiTaraf, onCreated }: KarsiT
       }
       setForm(f);
     } else {
-      setForm({ ...bos, id: crypto.randomUUID() });
+      const maxNo = Math.max(0, ...(mevcutlar || []).map((k) => k.kayitNo || 0));
+      setForm({ ...bos, id: crypto.randomUUID(), sira: Date.now(), kayitNo: maxNo + 1 });
     }
     setHata('');
     setAlanHata({});
@@ -396,7 +399,7 @@ export function KarsiTarafModal({ open, onClose, karsiTaraf, onCreated }: KarsiT
             <EtiketSecici
               etiketler={form.etiketler || []}
               onChange={(etiketler) => setForm((prev) => ({ ...prev, etiketler }))}
-              mevcutEtiketler={(mevcutlar || []).flatMap((k) => k.etiketler || [])}
+              mevcutEtiketler={tumEtiketler}
             />
 
             <FormGroup label="Notlar">

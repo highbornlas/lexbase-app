@@ -7,6 +7,7 @@ import { type Adres } from '@/components/ui/SmartAdresInput';
 import { CokluAdresInput } from '@/components/ui/CokluAdresInput';
 import { SmartBankaSecici } from '@/components/ui/SmartBankaSecici';
 import { EtiketSecici } from '@/components/ui/EtiketSecici';
+import { useTumEtiketler } from '@/lib/hooks/useTumEtiketler';
 import {
   tcKimlikDogrula, vknDogrula, ibanDogrula, mersisDogrula,
   ticaretSicilDogrula, yabanciKimlikDogrula, bankaIbanlarDogrula,
@@ -67,6 +68,7 @@ export function MuvekkilModal({ open, onClose, muvekkil }: MuvekkilModalProps) {
   const [adim, setAdim] = useState<Adim>(1);
   const { data: mevcutlar } = useMuvekkillar();
   const kaydet = useMuvekkilKaydet();
+  const tumEtiketler = useTumEtiketler();
 
   useEffect(() => {
     if (muvekkil) {
@@ -80,7 +82,8 @@ export function MuvekkilModal({ open, onClose, muvekkil }: MuvekkilModalProps) {
       }
       setForm(f);
     } else {
-      setForm({ ...bos, id: crypto.randomUUID() });
+      const maxNo = Math.max(0, ...(mevcutlar || []).map((m) => m.kayitNo || 0));
+      setForm({ ...bos, id: crypto.randomUUID(), sira: Date.now(), kayitNo: maxNo + 1 });
     }
     setHata('');
     setAlanHata({});
@@ -436,7 +439,7 @@ export function MuvekkilModal({ open, onClose, muvekkil }: MuvekkilModalProps) {
             <EtiketSecici
               etiketler={form.etiketler || []}
               onChange={(etiketler) => setForm((prev) => ({ ...prev, etiketler }))}
-              mevcutEtiketler={(mevcutlar || []).flatMap((m) => m.etiketler || [])}
+              mevcutEtiketler={tumEtiketler}
             />
 
             <FormGroup label="Notlar">

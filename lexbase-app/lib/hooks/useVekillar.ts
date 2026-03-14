@@ -12,6 +12,7 @@ import { useBuroId } from './useBuro';
 export interface Vekil {
   id: string;
   sira?: number;
+  kayitNo?: number;
   ad: string;
   soyad?: string;
   baro?: string;

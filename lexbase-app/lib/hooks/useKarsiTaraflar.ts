@@ -12,6 +12,7 @@ import { useBuroId } from './useBuro';
 export interface KarsiTaraf {
   id: string;
   sira?: number;
+  kayitNo?: number;
   tip?: 'gercek' | 'tuzel';
   ad: string;
   soyad?: string;

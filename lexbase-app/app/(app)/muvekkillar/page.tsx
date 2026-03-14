@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useMuvekkillar, useMuvekkilSil, type Muvekkil } from '@/lib/hooks/useMuvekkillar';
 import { useKarsiTaraflar, useKarsiTarafSil, type KarsiTaraf } from '@/lib/hooks/useKarsiTaraflar';
@@ -27,6 +27,12 @@ type TabKey = 'muvekkillar' | 'karsitaraflar' | 'avukatlar';
 /* ── Ad Soyad birleştirici (geriye uyumlu) ── */
 function tamAd(kayit: { ad?: string; soyad?: string }): string {
   return [kayit.ad, kayit.soyad].filter(Boolean).join(' ') || '?';
+}
+
+/* ── Kayıt numarası formatlayıcı ── */
+function kayitNoFormat(prefix: string, no?: number): string {
+  if (!no) return '';
+  return `${prefix}-${String(no).padStart(3, '0')}`;
 }
 
 /* ── Sıralama Tipleri ── */
@@ -151,6 +157,62 @@ export default function RehberPage() {
   const mKaydet = useMuvekkilKaydet();
   const ktKaydet = useKarsiTarafKaydet();
   const vKaydet = useVekilKaydet();
+
+  /* ── Eski kayıtlara kayitNo ataması (bir kez çalışır) ── */
+  const migrationDone = useRef(false);
+  useEffect(() => {
+    if (migrationDone.current) return;
+    if (mLoading || ktLoading || vLoading) return;
+
+    const atanacaklar: Array<{ kaydet: typeof mKaydet; kayit: Record<string, unknown>; prefix: string }> = [];
+
+    // Müvekkiller
+    const mNoYok = (muvekkillar || []).filter((m) => !m.kayitNo);
+    if (mNoYok.length > 0) {
+      let maxNo = Math.max(0, ...(muvekkillar || []).map((m) => m.kayitNo || 0));
+      // sira'ya göre sırala (eski→yeni), sira yoksa id'ye göre
+      const sirali = [...mNoYok].sort((a, b) => (a.sira ?? 0) - (b.sira ?? 0));
+      for (const m of sirali) {
+        maxNo++;
+        atanacaklar.push({ kaydet: mKaydet, kayit: { ...m, kayitNo: maxNo, sira: m.sira || Date.now() + maxNo }, prefix: 'M' });
+      }
+    }
+
+    // Karşı Taraflar
+    const ktNoYok = (karsiTaraflar || []).filter((k) => !k.kayitNo);
+    if (ktNoYok.length > 0) {
+      let maxNo = Math.max(0, ...(karsiTaraflar || []).map((k) => k.kayitNo || 0));
+      const sirali = [...ktNoYok].sort((a, b) => (a.sira ?? 0) - (b.sira ?? 0));
+      for (const k of sirali) {
+        maxNo++;
+        atanacaklar.push({ kaydet: ktKaydet, kayit: { ...k, kayitNo: maxNo, sira: k.sira || Date.now() + maxNo }, prefix: 'KT' });
+      }
+    }
+
+    // Avukatlar
+    const vNoYok = (vekillar || []).filter((v) => !v.kayitNo);
+    if (vNoYok.length > 0) {
+      let maxNo = Math.max(0, ...(vekillar || []).map((v) => v.kayitNo || 0));
+      const sirali = [...vNoYok].sort((a, b) => (a.sira ?? 0) - (b.sira ?? 0));
+      for (const v of sirali) {
+        maxNo++;
+        atanacaklar.push({ kaydet: vKaydet, kayit: { ...v, kayitNo: maxNo, sira: v.sira || Date.now() + maxNo }, prefix: 'AV' });
+      }
+    }
+
+    if (atanacaklar.length > 0) {
+      migrationDone.current = true;
+      (async () => {
+        for (const { kaydet, kayit } of atanacaklar) {
+          try {
+            await kaydet.mutateAsync(kayit as never);
+          } catch { /* sessiz devam */ }
+        }
+      })();
+    } else {
+      migrationDone.current = true;
+    }
+  }, [muvekkillar, karsiTaraflar, vekillar, mLoading, ktLoading, vLoading, mKaydet, ktKaydet, vKaydet]);
 
   /* ── Genel State ── */
   const [aktifTab, setAktifTab] = useState<TabKey>('muvekkillar');
@@ -555,6 +617,11 @@ export default function RehberPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
+                          {m.kayitNo && (
+                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-gold/10 text-gold border border-gold/20">
+                              {kayitNoFormat('M', m.kayitNo)}
+                            </span>
+                          )}
                           <span className="text-sm font-semibold text-text group-hover:text-gold transition-colors truncate">
                             {tamAd(m)}
                           </span>
@@ -639,6 +706,11 @@ export default function RehberPage() {
                       className="flex-1 min-w-0 text-left"
                     >
                       <div className="flex items-center gap-2">
+                        {kt.kayitNo && (
+                          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-red/10 text-red border border-red/20">
+                            {kayitNoFormat('KT', kt.kayitNo)}
+                          </span>
+                        )}
                         <span className="text-sm font-semibold text-text group-hover:text-gold transition-colors truncate">
                           {tamAd(kt)}
                         </span>
@@ -729,6 +801,11 @@ export default function RehberPage() {
                       className="flex-1 min-w-0 text-left"
                     >
                       <div className="flex items-center gap-2">
+                        {v.kayitNo && (
+                          <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-400/10 text-blue-400 border border-blue-400/20">
+                            {kayitNoFormat('AV', v.kayitNo)}
+                          </span>
+                        )}
                         <span className="text-sm font-semibold text-text group-hover:text-gold transition-colors truncate">
                           {tamAd(v)}
                         </span>
@@ -924,14 +1001,20 @@ export default function RehberPage() {
         hedefTip={aktifTab === 'muvekkillar' ? 'muvekkil' : aktifTab === 'karsitaraflar' ? 'karsiTaraf' : 'vekil'}
         mevcutKayitlar={(aktifTab === 'muvekkillar' ? muvekkillar : aktifTab === 'karsitaraflar' ? karsiTaraflar : vekillar) as Record<string, unknown>[] || []}
         onAktar={async (kayitlar) => {
+          // Mevcut en yüksek kayıt numarasını bul
+          const mevcutListe = aktifTab === 'muvekkillar' ? muvekkillar : aktifTab === 'karsitaraflar' ? karsiTaraflar : vekillar;
+          let maxNo = Math.max(0, ...(mevcutListe || []).map((k) => (k as Record<string, unknown>).kayitNo as number || 0));
+
           for (const kayit of kayitlar) {
+            maxNo++;
             const id = crypto.randomUUID();
+            const kayitWithMeta = { id, ...kayit, sira: Date.now() + maxNo, kayitNo: maxNo };
             if (aktifTab === 'muvekkillar') {
-              await mKaydet.mutateAsync({ id, ...kayit } as unknown as Muvekkil);
+              await mKaydet.mutateAsync(kayitWithMeta as unknown as Muvekkil);
             } else if (aktifTab === 'karsitaraflar') {
-              await ktKaydet.mutateAsync({ id, ...kayit } as unknown as KarsiTaraf);
+              await ktKaydet.mutateAsync(kayitWithMeta as unknown as KarsiTaraf);
             } else {
-              await vKaydet.mutateAsync({ id, ...kayit } as unknown as Vekil);
+              await vKaydet.mutateAsync(kayitWithMeta as unknown as Vekil);
             }
           }
         }}

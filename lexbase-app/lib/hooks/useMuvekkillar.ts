@@ -8,6 +8,7 @@ import { useBuroId } from './useBuro';
 export interface Muvekkil {
   id: string;
   sira?: number;
+  kayitNo?: number;
   tip?: 'gercek' | 'tuzel';
   ad: string;
   soyad?: string;

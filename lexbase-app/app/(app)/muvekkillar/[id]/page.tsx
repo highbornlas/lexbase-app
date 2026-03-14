@@ -124,8 +124,13 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
       <div className="flex items-start justify-between mb-6">
         <div>
           <div className="flex items-center gap-3 mb-1">
+            {muv.kayitNo && (
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-gold/10 text-gold border border-gold/20">
+                M-{String(muv.kayitNo).padStart(3, '0')}
+              </span>
+            )}
             <h1 className="font-[var(--font-playfair)] text-2xl text-text font-bold">
-              {muv.ad}
+              {[muv.ad, muv.soyad].filter(Boolean).join(' ')}
             </h1>
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${tipColor}`}>
               {tipLabel}
