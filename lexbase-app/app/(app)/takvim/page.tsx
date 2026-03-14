@@ -105,7 +105,7 @@ export default function TakvimPage() {
   const bugunGit = () => { setYil(bugun.getFullYear()); setAy(bugun.getMonth()); };
 
   return (
-    <div>
+    <div className="flex flex-col min-h-[calc(100vh-8rem)]">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-[var(--font-playfair)] text-2xl text-text font-bold">Takvim</h1>
@@ -117,7 +117,7 @@ export default function TakvimPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-[1fr_300px] gap-4">
+      <div className="grid grid-cols-[1fr_300px] gap-4 flex-1">
         {/* Takvim Grid */}
         <div className="bg-surface border border-border rounded-lg p-4">
           {/* Ay Navigasyonu */}

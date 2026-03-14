@@ -26,7 +26,7 @@ export default function FinansPage() {
   const [kzYil, setKzYil] = useState(new Date().getFullYear());
 
   return (
-    <div>
+    <div className="flex flex-col min-h-[calc(100vh-8rem)]">
       <h1 className="font-[var(--font-playfair)] text-2xl text-text font-bold mb-6">
         Finans
       </h1>

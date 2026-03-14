@@ -6,6 +6,7 @@ import { useDavalar } from './useDavalar';
 import { useIcralar } from './useIcra';
 import { useVekillar } from './useVekillar';
 import { useDanismanliklar } from './useDanismanlik';
+import { useIhtarnameler } from './useIhtarname';
 
 /* ══════════════════════════════════════════════════════════════
    Spotlight Search Hook — Tüm modüllerde client-side arama
@@ -39,6 +40,7 @@ export function useSpotlightSearch(query: string) {
   const { data: icralar } = useIcralar();
   const { data: vekillar } = useVekillar();
   const { data: danismanliklar } = useDanismanliklar();
+  const { data: ihtarnameler } = useIhtarnameler();
 
   const kategoriler = useMemo<AramaKategori[]>(() => {
     const q = query.trim().toLowerCase();
@@ -157,8 +159,31 @@ export function useSpotlightSearch(query: string) {
       if (sonuclar.length > 0) result.push({ baslik: 'Danışmanlıklar', ikon: '⚖️', sonuclar });
     }
 
+    // ── İhtarnameler ──
+    if (ihtarnameler) {
+      const sonuclar = ihtarnameler
+        .filter((i) => !i._silindi && !i._arsivlendi)
+        .filter((i) =>
+          eslesir(i.konu, q) ||
+          eslesir(i.no, q) ||
+          eslesir(i.alici, q) ||
+          eslesir(i.gonderen, q) ||
+          eslesir(i.noterAd, q)
+        )
+        .slice(0, MAX_SONUC)
+        .map((i) => ({
+          kategori: 'İhtarnameler',
+          id: i.id,
+          baslik: i.konu || i.no || '?',
+          altBilgi: [i.tur, i.alici, i.durum].filter(Boolean).join(' · '),
+          ikon: '📨',
+          href: `/ihtarname/${i.id}`,
+        }));
+      if (sonuclar.length > 0) result.push({ baslik: 'İhtarnameler', ikon: '📨', sonuclar });
+    }
+
     return result;
-  }, [query, muvekkillar, davalar, icralar, vekillar, danismanliklar]);
+  }, [query, muvekkillar, davalar, icralar, vekillar, danismanliklar, ihtarnameler]);
 
   const toplamSonuc = kategoriler.reduce((sum, k) => sum + k.sonuclar.length, 0);
 

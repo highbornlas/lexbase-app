@@ -20,9 +20,10 @@ interface Props {
   arabuluculuklar: Record<string, unknown>[];
   ihtarnameler: Record<string, unknown>[];
   onYeniEkle: (tur: 'dava' | 'icra' | 'arabuluculuk' | 'ihtarname') => void;
+  onIhtarnameClick?: (item: Record<string, unknown>) => void;
 }
 
-export function MuvDosyalar({ davalar, icralar, arabuluculuklar, ihtarnameler, onYeniEkle }: Props) {
+export function MuvDosyalar({ davalar, icralar, arabuluculuklar, ihtarnameler, onYeniEkle, onIhtarnameClick }: Props) {
   const [filtre, setFiltre] = useState<DosyaFiltre>('tumu');
   const [arama, setArama] = useState('');
 
@@ -197,6 +198,7 @@ export function MuvDosyalar({ davalar, icralar, arabuluculuklar, ihtarnameler, o
                 tarih: (h.tarihler as Record<string, string>)?.tarih || '',
               })}
               onYeniEkle={() => onYeniEkle('ihtarname')}
+              onItemClick={onIhtarnameClick}
             />
           )}
         </div>
@@ -219,6 +221,7 @@ function DosyaBolumu({
   durumRenk,
   kartBilgi,
   onYeniEkle,
+  onItemClick,
 }: {
   baslik: string;
   sayi: number;
@@ -229,6 +232,7 @@ function DosyaBolumu({
   durumRenk: Record<string, string>;
   kartBilgi: (d: Record<string, unknown>) => { no: string; konu: string; alt: string; durum: string; tarih: string };
   onYeniEkle: () => void;
+  onItemClick?: (item: Record<string, unknown>) => void;
 }) {
   return (
     <div>
@@ -256,6 +260,13 @@ function DosyaBolumu({
         <div className="space-y-2">
           {items.map((d) => {
             const bilgi = kartBilgi(d);
+            if (onItemClick) {
+              return (
+                <div key={d.id as string} onClick={() => onItemClick(d)}>
+                  <DosyaCard {...bilgi} durumRenk={durumRenk} />
+                </div>
+              );
+            }
             return (
               <Link key={d.id as string} href={`${linkPrefix}/${d.id}`}>
                 <DosyaCard {...bilgi} durumRenk={durumRenk} />

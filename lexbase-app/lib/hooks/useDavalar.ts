@@ -58,7 +58,8 @@ export interface Dava {
   tahsilatlar?: Array<{ id: string; tur: string; tutar: number; tarih?: string; acik?: string }>;
   anlasma?: Record<string, unknown>;
   not?: string;
-  // Soft delete
+  // Arşiv & Soft delete
+  _arsivlendi?: string;
   _silindi?: string;
   [key: string]: unknown;
 }
@@ -80,7 +81,30 @@ export function useDavalar() {
       if (error) throw error;
       return (data || [])
         .map((r) => ({ id: r.id, ...(r.data as object) }) as Dava)
-        .filter((d) => !d._silindi);
+        .filter((d) => !d._silindi && !d._arsivlendi);
+    },
+    enabled: !!buroId,
+  });
+}
+
+// ── Arşivlenmiş Davalar ──────────────────────────────────────
+export function useArsivDavalar() {
+  const buroId = useBuroId();
+
+  return useQuery<Dava[]>({
+    queryKey: ['davalar-arsiv', buroId],
+    queryFn: async () => {
+      if (!buroId) return [];
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('davalar')
+        .select('id, data')
+        .eq('buro_id', buroId);
+
+      if (error) throw error;
+      return (data || [])
+        .map((r) => ({ id: r.id, ...(r.data as object) }) as Dava)
+        .filter((d) => d._arsivlendi && !d._silindi);
     },
     enabled: !!buroId,
   });
@@ -240,6 +264,72 @@ export function useDavaGeriYukle() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['davalar'] });
+    },
+  });
+}
+
+// ── Arşive Kaldır ────────────────────────────────────────────
+export function useDavaArsivle() {
+  const buroId = useBuroId();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      if (!buroId) throw new Error('Büro bulunamadı');
+      const supabase = createClient();
+
+      const { data: mevcut } = await supabase
+        .from('davalar')
+        .select('data')
+        .eq('id', id)
+        .eq('buro_id', buroId)
+        .single();
+
+      if (!mevcut) throw new Error('Dava bulunamadı');
+
+      const { error } = await supabase.from('davalar').update({
+        data: { ...(mevcut.data as object), _arsivlendi: new Date().toISOString() },
+      }).eq('id', id).eq('buro_id', buroId);
+
+      if (error) throw error;
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['davalar'] });
+      queryClient.invalidateQueries({ queryKey: ['davalar-arsiv'] });
+    },
+  });
+}
+
+// ── Arşivden Çıkar ───────────────────────────────────────────
+export function useDavaArsivdenCikar() {
+  const buroId = useBuroId();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      if (!buroId) throw new Error('Büro bulunamadı');
+      const supabase = createClient();
+
+      const { data: mevcut } = await supabase
+        .from('davalar')
+        .select('data')
+        .eq('id', id)
+        .eq('buro_id', buroId)
+        .single();
+
+      if (!mevcut) throw new Error('Dava bulunamadı');
+
+      const data = { ...(mevcut.data as Record<string, unknown>) };
+      delete data._arsivlendi;
+
+      const { error } = await supabase.from('davalar').update({ data })
+        .eq('id', id).eq('buro_id', buroId);
+
+      if (error) throw error;
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['davalar'] });
+      queryClient.invalidateQueries({ queryKey: ['davalar-arsiv'] });
     },
   });
 }

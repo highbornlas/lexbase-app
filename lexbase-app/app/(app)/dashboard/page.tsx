@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
 import { useDavalar } from '@/lib/hooks/useDavalar';
 import { useIcralar } from '@/lib/hooks/useIcra';
@@ -14,8 +14,6 @@ import { useDashboardLayout } from '@/lib/hooks/useDashboardLayout';
 import { DashboardSkeleton } from '@/components/ui/DashboardSkeleton';
 import { WidgetGrid } from '@/components/dashboard/WidgetGrid';
 import { DashboardEditMode } from '@/components/dashboard/DashboardEditMode';
-import { HavaDurumuBadge } from '@/components/dashboard/HavaDurumuBadge';
-import { HavaDurumuModal } from '@/components/dashboard/HavaDurumuModal';
 
 /* ══════════════════════════════════════════════════════════════
    Dashboard — Widget tabanlı, sürükle-bırak, özelleştirilebilir
@@ -56,9 +54,6 @@ export default function DashboardPage() {
     mounted,
   } = useDashboardLayout();
 
-  /* ── Hava Durumu Modal (hook'lar conditional return'dan ÖNCE olmalı) ── */
-  const [havaOpen, setHavaOpen] = useState(false);
-
   /* ── Müvekkil adı çözücü ── */
   const muvAdMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -86,17 +81,11 @@ export default function DashboardPage() {
     : 'Avukat';
 
   return (
-    <div className="w-full">
-      {/* ── Hava Durumu Modal ── */}
-      <HavaDurumuModal open={havaOpen} onClose={() => setHavaOpen(false)} />
-
+    <div className="w-full flex flex-col min-h-[calc(100vh-8rem)]">
       {/* ── BAŞLIK ── */}
       <div className="flex justify-between items-end flex-wrap gap-3 mb-5">
         <div>
-          <div className="flex items-center gap-3 mb-0.5">
-            <h1 className="font-[var(--font-playfair)] text-xl sm:text-2xl text-text font-bold leading-tight">Genel Bakış</h1>
-            <HavaDurumuBadge onClick={() => setHavaOpen(true)} />
-          </div>
+          <h1 className="font-[var(--font-playfair)] text-xl sm:text-2xl text-text font-bold leading-tight mb-0.5">Genel Bakış</h1>
           <p className="text-sm text-text-muted">{getSelamlama()}, {kullaniciAd} — {tarihStr} {gunAdi}</p>
         </div>
         <DashboardEditMode

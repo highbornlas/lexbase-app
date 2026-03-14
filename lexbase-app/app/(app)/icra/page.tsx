@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { useIcralar, useIcraKaydet, type Icra } from '@/lib/hooks/useIcra';
+import { useIcralar, useIcraKaydet, useIcraArsivle, useIcraSil, type Icra } from '@/lib/hooks/useIcra';
 import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
 import { fmt, fmtTarih } from '@/lib/utils';
 import { IcraModal } from '@/components/modules/IcraModal';
@@ -27,7 +27,7 @@ type SortKey = 'kayitNo' | 'esasNo' | 'daire' | 'alacakli' | 'borclu' | 'acilisT
 type SortDir = 'asc' | 'desc';
 
 /* ── Sütun tanımları ── */
-type IcraColKey = 'sira' | 'esasNo' | 'daire' | 'alacakli' | 'borclu' | 'acilis' | 'teblig' | 'durum' | 'alacak' | 'tahsilat' | 'sure';
+type IcraColKey = 'sira' | 'esasNo' | 'daire' | 'alacakli' | 'borclu' | 'acilis' | 'teblig' | 'durum' | 'alacak' | 'tahsilat' | 'sure' | 'aksiyon';
 
 const ICRA_SUTUNLAR: { key: IcraColKey; label: string; sortKey?: SortKey; varsayilan: boolean }[] = [
   { key: 'sira', label: '#', sortKey: 'kayitNo', varsayilan: true },
@@ -41,11 +41,13 @@ const ICRA_SUTUNLAR: { key: IcraColKey; label: string; sortKey?: SortKey; varsay
   { key: 'alacak', label: 'Alacak', sortKey: 'alacak', varsayilan: true },
   { key: 'tahsilat', label: 'Tahsilat', sortKey: 'tahsilat', varsayilan: true },
   { key: 'sure', label: 'Süre', sortKey: 'sure', varsayilan: true },
+  { key: 'aksiyon', label: '', varsayilan: true },
 ];
 
 const LS_KEY_COLS = 'lb_icra_cols';
 const LS_KEY_FILTERS = 'lb_icra_saved_filters';
-const PAGE_SIZE = 25;
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
+const DEFAULT_PAGE_SIZE = 10;
 
 /* ── Süre gün sayisi (tür bazli) ── */
 function itirazGunSayisi(tur?: string): number {
@@ -94,6 +96,8 @@ export default function IcraPage() {
   const { data: icralar, isLoading } = useIcralar();
   const { data: muvekkillar } = useMuvekkillar();
   const kaydetMutation = useIcraKaydet();
+  const arsivleMut = useIcraArsivle();
+  const silMut = useIcraSil();
 
   const [arama, setArama] = useState('');
   const [dosyaDurumu, setDosyaDurumu] = useState<'acik' | 'kapali'>('acik');
@@ -108,6 +112,7 @@ export default function IcraPage() {
   const [modalAcik, setModalAcik] = useState(false);
   const [seciliIcra, setSeciliIcra] = useState<Icra | null>(null);
   const [sorguPaneliAcik, setSorguPaneliAcik] = useState(true);
+  const [aksiyonMenuId, setAksiyonMenuId] = useState<string | null>(null);
 
   const yillar = useMemo(() => {
     const buYil = new Date().getFullYear();
@@ -116,6 +121,7 @@ export default function IcraPage() {
 
   // Sayfalama
   const [sayfa, setSayfa] = useState(1);
+  const [sayfaBoyutu, setSayfaBoyutu] = useState(DEFAULT_PAGE_SIZE);
 
   // Sütun görünürlük
   const [gorunenSutunlar, setGorunenSutunlar] = useState<IcraColKey[]>(() => {
@@ -171,14 +177,47 @@ export default function IcraPage() {
     return map;
   }, [icralar]);
 
-  /* ── KPI ── */
+  /* ── Actionable KPI ── */
   const kpis = useMemo(() => {
-    if (!icralar) return { toplam: 0, aktifTakip: 0, toplamAlacak: 0, tahsilEdilen: 0, kalan: 0, yaklasanSure: 0 };
-    const aktifTakip = icralar.filter((i) => i.durum !== 'Kapandı').length;
-    const toplamAlacak = icralar.reduce((t, i) => t + (i.alacak || 0), 0);
-    const tahsilEdilen = icralar.reduce((t, i) => t + (i.tahsil || 0), 0);
-    const yaklasanSure = icralar.filter((ic) => { const s = sureMap[ic.id]; return s && !s.gecmis && s.kalanGun <= 7; }).length;
-    return { toplam: icralar.length, aktifTakip, toplamAlacak, tahsilEdilen, kalan: toplamAlacak - tahsilEdilen, yaklasanSure };
+    if (!icralar) return { aktifTakip: 0, kritikSure: 0, hacizAsamasi: 0, avansBiten: 0, hareketsiz: 0, bekleyenTahsilat: 0 };
+    const simdi = Date.now();
+    const gun7 = 7 * 86400000;
+    const gun60 = 60 * 86400000;
+
+    let kritikSure = 0;
+    let avansBiten = 0;
+    let hareketsiz = 0;
+    let bekleyenTahsilat = 0;
+
+    const aktifler = icralar.filter((i) => i.durum !== 'Kapandı');
+
+    aktifler.forEach((ic) => {
+      // Kritik süreler
+      const s = sureMap[ic.id];
+      if (s && !s.gecmis && s.kalanGun <= 7) kritikSure++;
+      // Avansı biten
+      const topHarcama = (ic.harcamalar || []).reduce((t: number, h: { tutar: number }) => t + (h.tutar || 0), 0);
+      const topTahsilat = (ic.tahsilatlar || []).reduce((t: number, h: { tutar: number }) => t + (h.tutar || 0), 0);
+      if (topHarcama > 0 && topTahsilat <= topHarcama) avansBiten++;
+      // Bekleyen alacak (alacak - tahsil)
+      const kalan = (ic.alacak || 0) - (ic.tahsil || 0);
+      if (kalan > 0) bekleyenTahsilat += kalan;
+      // Hareketsiz dosya
+      const sonIslem = ic.tarih || '';
+      if (sonIslem) {
+        const fark = simdi - new Date(sonIslem).getTime();
+        if (fark > gun60) hareketsiz++;
+      }
+    });
+
+    return {
+      aktifTakip: aktifler.length,
+      kritikSure,
+      hacizAsamasi: icralar.filter((i) => i.durum === 'Haciz Aşaması').length,
+      avansBiten,
+      hareketsiz,
+      bekleyenTahsilat,
+    };
   }, [icralar, sureMap]);
 
   /* ── Filtreleme + Siralama ── */
@@ -229,11 +268,11 @@ export default function IcraPage() {
   }, [icralar, arama, dosyaDurumu, turFiltre, yargiBirimi, esasYilFiltre, esasNoFiltre, tarihBaslangic, tarihBitis, sortKey, sortDir, muvAdMap, sureMap]);
 
   /* ── Sayfalama ── */
-  const toplamSayfa = Math.max(1, Math.ceil(filtrelenmis.length / PAGE_SIZE));
+  const toplamSayfa = Math.max(1, Math.ceil(filtrelenmis.length / sayfaBoyutu));
   const sayfadakiler = useMemo(() => {
-    const bas = (sayfa - 1) * PAGE_SIZE;
-    return filtrelenmis.slice(bas, bas + PAGE_SIZE);
-  }, [filtrelenmis, sayfa]);
+    const bas = (sayfa - 1) * sayfaBoyutu;
+    return filtrelenmis.slice(bas, bas + sayfaBoyutu);
+  }, [filtrelenmis, sayfa, sayfaBoyutu]);
 
   useEffect(() => { setSayfa(1); }, [arama, dosyaDurumu, turFiltre, yargiBirimi, esasYilFiltre, esasNoFiltre, tarihBaslangic, tarihBitis]);
 
@@ -301,13 +340,14 @@ export default function IcraPage() {
     alacak: '90px',
     tahsilat: '80px',
     sure: '60px',
+    aksiyon: '40px',
   };
 
   const gridClass = 'grid gap-2 px-4 min-w-[1050px]';
   const gridStyle = { gridTemplateColumns: ['28px', ...gorunenSutunlar.map((k) => COL_WIDTHS[k])].join(' ') };
 
   return (
-    <div>
+    <div className="flex flex-col min-h-[calc(100vh-8rem)]">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-[var(--font-playfair)] text-2xl text-text font-bold">
@@ -363,14 +403,14 @@ export default function IcraPage() {
         </div>
       </div>
 
-      {/* KPI Strip */}
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-5">
-        <MiniKpi label="Toplam" value={kpis.toplam.toString()} />
-        <MiniKpi label="Aktif Takip" value={kpis.aktifTakip.toString()} color="text-green" />
-        <MiniKpi label="Toplam Alacak" value={fmt(kpis.toplamAlacak)} color="text-gold" />
-        <MiniKpi label="Tahsil Edilen" value={fmt(kpis.tahsilEdilen)} color="text-green" />
-        <MiniKpi label="Kalan" value={fmt(kpis.kalan)} color="text-red" />
-        <MiniKpi label="Yaklaşan Süre" value={kpis.yaklasanSure.toString()} color={kpis.yaklasanSure > 0 ? 'text-orange-400' : 'text-text-muted'} />
+      {/* ── Actionable KPI Strip ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
+        <KpiCard label="Aktif Takip" value={kpis.aktifTakip} icon={svgBriefcase} color="text-blue-400" />
+        <KpiCard label="Kritik Süreler" value={kpis.kritikSure} icon={svgHourglass} color={kpis.kritikSure > 0 ? 'text-red' : 'text-text-muted'} pulse={kpis.kritikSure > 0} />
+        <KpiCard label="Haciz Aşaması" value={kpis.hacizAsamasi} icon={svgGavel} color="text-orange-400" />
+        <KpiCard label="Avansı Bitenler" value={kpis.avansBiten} icon={svgWallet} color={kpis.avansBiten > 0 ? 'text-orange-400' : 'text-text-muted'} />
+        <KpiCard label="Hareketsiz Dosya" value={kpis.hareketsiz} icon={svgSleep} color={kpis.hareketsiz > 0 ? 'text-yellow-500' : 'text-text-muted'} />
+        <KpiCard label="Bekleyen Tahsilat" value={kpis.bekleyenTahsilat > 0 ? new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(kpis.bekleyenTahsilat) : '₺0'} icon={svgMoney} color={kpis.bekleyenTahsilat > 0 ? 'text-red' : 'text-green'} />
       </div>
 
       {/* ── UYAP Dosya Sorgulama Paneli ──────────────────────── */}
@@ -391,72 +431,65 @@ export default function IcraPage() {
 
         {/* Panel İçerik */}
         {sorguPaneliAcik && (
-          <div className="px-4 py-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-4">
-              {/* Sol Kolon */}
-              <div className="space-y-3">
-                {/* İcra Türü */}
+          <div className="px-4 py-2.5">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-2 max-w-3xl">
+              {/* Sol Kolon — İcra Türü, Yargı Birimi, Arama */}
+              <div className="space-y-2">
                 <div>
-                  <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">İcra Türü</label>
-                  <select value={turFiltre} onChange={(e) => setTurFiltre(e.target.value)} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold">
+                  <label className="block text-[10px] text-text-muted uppercase tracking-wider mb-1 font-medium">İcra Türü</label>
+                  <select value={turFiltre} onChange={(e) => setTurFiltre(e.target.value)} className="w-full px-2 py-1.5 bg-bg border border-border rounded text-[11px] text-text focus:outline-none focus:border-gold">
                     <option value="hepsi">Seçiniz</option>
                     {ICRA_TURLERI.map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
-                {/* Yargı Birimi */}
                 <div>
-                  <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Yargı Birimi</label>
-                  <select value={yargiBirimi} onChange={(e) => setYargiBirimi(e.target.value)} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold">
+                  <label className="block text-[10px] text-text-muted uppercase tracking-wider mb-1 font-medium">Yargı Birimi</label>
+                  <select value={yargiBirimi} onChange={(e) => setYargiBirimi(e.target.value)} className="w-full px-2 py-1.5 bg-bg border border-border rounded text-[11px] text-text focus:outline-none focus:border-gold">
                     <option value="hepsi">Seçiniz</option>
                     {ICRA_YARGI_BIRIMLERI.map((b) => <option key={b} value={b}>{b}</option>)}
                   </select>
                 </div>
-                {/* Kişi / Genel Arama */}
                 <div>
-                  <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Kişi / Genel Arama</label>
+                  <label className="block text-[10px] text-text-muted uppercase tracking-wider mb-1 font-medium">Kişi / Genel Arama</label>
                   <div className="relative">
-                    <input type="text" value={arama} onChange={(e) => setArama(e.target.value)} placeholder="Alacaklı, borçlu, daire adı..." className="w-full px-4 py-2 pl-9 bg-bg border border-border rounded text-xs text-text placeholder:text-text-dim focus:outline-none focus:border-gold transition-colors" />
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dim text-xs">&#x1F50D;</span>
+                    <input type="text" value={arama} onChange={(e) => setArama(e.target.value)} placeholder="Alacaklı, borçlu, daire adı..." className="w-full px-2 py-1.5 pl-7 bg-bg border border-border rounded text-[11px] text-text placeholder:text-text-dim focus:outline-none focus:border-gold" />
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-text-dim text-[10px]">&#x1F50D;</span>
                   </div>
                 </div>
               </div>
-
-              {/* Sağ Kolon */}
-              <div className="space-y-3">
-                {/* Dosya Durumu — Toggle */}
+              {/* Sağ Kolon — Durum, Dosya Yıl/No, Açılış Tarihi */}
+              <div className="space-y-2">
                 <div>
-                  <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Dosya Durumu</label>
+                  <label className="block text-[10px] text-text-muted uppercase tracking-wider mb-1 font-medium">Dosya Durumu</label>
                   <div className="flex items-center gap-0 bg-bg border border-border rounded overflow-hidden w-fit">
-                    <button type="button" onClick={() => setDosyaDurumu('acik')} className={`px-4 py-2 text-xs font-medium transition-colors ${dosyaDurumu === 'acik' ? 'bg-blue-600 text-white' : 'text-text-muted hover:text-text'}`}>Açık</button>
-                    <button type="button" onClick={() => setDosyaDurumu('kapali')} className={`px-4 py-2 text-xs font-medium transition-colors ${dosyaDurumu === 'kapali' ? 'bg-blue-600 text-white' : 'text-text-muted hover:text-text'}`}>Kapalı</button>
+                    <button type="button" onClick={() => setDosyaDurumu('acik')} className={`px-3 py-1.5 text-[11px] font-medium transition-colors ${dosyaDurumu === 'acik' ? 'bg-gold text-bg' : 'text-text-muted hover:text-text'}`}>Açık</button>
+                    <button type="button" onClick={() => setDosyaDurumu('kapali')} className={`px-3 py-1.5 text-[11px] font-medium transition-colors ${dosyaDurumu === 'kapali' ? 'bg-gold text-bg' : 'text-text-muted hover:text-text'}`}>Kapalı</button>
                   </div>
                 </div>
-                {/* Dosya Yıl / No */}
                 <div>
-                  <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Dosya Yıl / No</label>
-                  <div className="flex items-center gap-2">
-                    <select value={esasYilFiltre} onChange={(e) => setEsasYilFiltre(e.target.value)} className="w-28 px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold">
-                      <option value="">Seçiniz</option>
+                  <label className="block text-[10px] text-text-muted uppercase tracking-wider mb-1 font-medium">Dosya Yıl / No</label>
+                  <div className="flex items-center gap-1">
+                    <select value={esasYilFiltre} onChange={(e) => setEsasYilFiltre(e.target.value)} className="w-[72px] px-1.5 py-1.5 bg-bg border border-border rounded text-[11px] text-text focus:outline-none focus:border-gold">
+                      <option value="">Yıl</option>
                       {yillar.map((y) => <option key={y} value={y}>{y}</option>)}
                     </select>
-                    <span className="text-text-dim text-sm">/</span>
-                    <input type="text" value={esasNoFiltre} onChange={(e) => setEsasNoFiltre(e.target.value)} placeholder="Dosya No" className="w-24 px-3 py-2 bg-bg border border-border rounded text-xs text-text placeholder:text-text-dim focus:outline-none focus:border-gold" />
+                    <span className="text-text-dim text-[10px]">/</span>
+                    <input type="text" value={esasNoFiltre} onChange={(e) => setEsasNoFiltre(e.target.value)} placeholder="No" className="w-16 px-1.5 py-1.5 bg-bg border border-border rounded text-[11px] text-text placeholder:text-text-dim focus:outline-none focus:border-gold" />
                   </div>
                 </div>
-                {/* Açılış Tarihi Aralığı — altlı üstlü */}
                 <div>
-                  <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Açılış Başlangıç Tarihi</label>
-                  <input type="date" value={tarihBaslangic} onChange={(e) => setTarihBaslangic(e.target.value)} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold" />
-                </div>
-                <div>
-                  <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Açılış Bitiş Tarihi</label>
-                  <input type="date" value={tarihBitis} onChange={(e) => setTarihBitis(e.target.value)} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold" />
+                  <label className="block text-[10px] text-text-muted uppercase tracking-wider mb-1 font-medium">Açılış Tarihi</label>
+                  <div className="flex items-center gap-1">
+                    <input type="date" value={tarihBaslangic} onChange={(e) => setTarihBaslangic(e.target.value)} className="flex-1 min-w-0 px-1.5 py-1.5 bg-bg border border-border rounded text-[11px] text-text focus:outline-none focus:border-gold" />
+                    <span className="text-[9px] text-text-dim">—</span>
+                    <input type="date" value={tarihBitis} onChange={(e) => setTarihBitis(e.target.value)} className="flex-1 min-w-0 px-1.5 py-1.5 bg-bg border border-border rounded text-[11px] text-text focus:outline-none focus:border-gold" />
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Alt Aksiyon Satırı */}
-            <div className="flex items-center justify-between pt-4 mt-4 border-t border-border/50">
+            <div className="flex items-center justify-between pt-3 mt-3 border-t border-border/50">
               <div className="text-[11px] text-text-dim">
                 {filtreAktif ? `${filtrelenmis.length} / ${icralar?.length ?? 0} sonuç` : `${filtrelenmis.length} dosya listeleniyor`}
               </div>
@@ -466,7 +499,7 @@ export default function IcraPage() {
                     Temizle
                   </button>
                 )}
-                <button type="button" className="px-4 py-1.5 bg-blue-600 text-white text-[11px] font-medium rounded hover:bg-blue-700 transition-colors flex items-center gap-1.5">
+                <button type="button" className="px-4 py-1.5 bg-gold text-bg text-[11px] font-medium rounded hover:bg-gold-light transition-colors flex items-center gap-1.5">
                   <span>&#x1F50D;</span> Sorgula
                 </button>
               </div>
@@ -494,7 +527,7 @@ export default function IcraPage() {
           <div className="text-sm text-text-muted">{filtreAktif ? 'Arama sonucu bulunamadı' : 'Henüz icra dosyası eklenmemiş'}</div>
         </div>
       ) : (
-        <div className="bg-surface border border-border rounded-lg overflow-hidden overflow-x-auto">
+        <div className="bg-surface border border-border rounded-lg overflow-hidden overflow-x-auto flex-1">
           {/* Sticky Tablo Başlık */}
           <div className={`${gridClass} py-2.5 border-b border-border text-[11px] text-text-muted font-medium uppercase tracking-wider sticky top-0 z-10 bg-surface`} style={gridStyle}>
             <label className="flex items-center justify-center cursor-pointer">
@@ -504,7 +537,7 @@ export default function IcraPage() {
               const col = ICRA_SUTUNLAR.find((s) => s.key === colKey);
               if (!col) return null;
               return col.sortKey ? (
-                <button key={col.key} type="button" onClick={() => toggleSort(col.sortKey!)} className="text-left hover:text-text transition-colors truncate">{col.label}{sortIcon(col.sortKey)}</button>
+                <button key={col.key} type="button" onClick={() => toggleSort(col.sortKey!)} className="text-left hover:text-text transition-colors truncate flex items-center gap-1"><span>{col.label}</span><span className="opacity-50 text-[9px]">{sortIcon(col.sortKey)}</span></button>
               ) : <span key={col.key}>{col.label}</span>;
             })}
           </div>
@@ -521,7 +554,7 @@ export default function IcraPage() {
             const kalanGun = sureInfo ? sureInfo.kalanGun : null;
             const rowVurgu = kalanGun !== null ? satirVurgu(kalanGun) : '';
             const secili = seciliIdler.has(ic.id);
-            const globalIdx = (sayfa - 1) * PAGE_SIZE + idx;
+            const globalIdx = (sayfa - 1) * sayfaBoyutu + idx;
 
             return (
               <div key={ic.id} className={`${gridClass} py-3 border-b border-border/50 hover:bg-gold-dim transition-colors items-center ${rowVurgu} ${secili ? 'bg-gold-dim/50' : ''}`} style={gridStyle}>
@@ -534,13 +567,16 @@ export default function IcraPage() {
                     case 'sira': return <span key={colKey} className="text-[11px] text-text-dim">{globalIdx + 1}</span>;
                     case 'esasNo': return (
                       <Link key={colKey} href={`/icra/${ic.id}`} className="min-w-0 flex items-center gap-1.5 hover:underline">
+                        {ic.muvRol && (
+                          <span className={`text-[8px] font-black w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border ${ic.muvRol === 'alacakli' ? 'text-green bg-green-dim border-green/30' : 'text-red bg-red-dim border-red/30'}`} title={`Müvekkil: ${ic.muvRol === 'alacakli' ? 'Alacaklı' : 'Borçlu'}`}>M</span>
+                        )}
                         <span className="font-[var(--font-playfair)] text-sm font-bold text-gold truncate">{esasStr || '—'}</span>
                         {ic.tur && <span className="text-[9px] px-1 py-0.5 rounded bg-surface2 text-text-dim border border-border/50 whitespace-nowrap flex-shrink-0">{ic.tur}</span>}
                       </Link>
                     );
                     case 'daire': return <Link key={colKey} href={`/icra/${ic.id}`} className="text-xs text-text truncate hover:underline" title={daireFull}>{daireFull || '—'}</Link>;
-                    case 'alacakli': return <span key={colKey} className="text-xs text-text truncate" title={alacakli}>{alacakli || '—'}</span>;
-                    case 'borclu': return <span key={colKey} className="text-xs text-text-muted truncate" title={borclu}>{borclu || '—'}</span>;
+                    case 'alacakli': return <span key={colKey} className="text-xs text-text truncate" title={alacakli}>{alacakli || <span className="text-text-dim/40">—</span>}</span>;
+                    case 'borclu': return <span key={colKey} className="text-xs text-text-muted truncate" title={borclu}>{borclu || <span className="text-text-dim/40">—</span>}</span>;
                     case 'acilis': return <span key={colKey} className={`text-[11px] ${tarihRenkSinifi(ic.tarih)}`} title={tarihTooltip(ic.tarih)}>{ic.tarih ? fmtTarih(ic.tarih) : '—'}</span>;
                     case 'teblig': return <span key={colKey} className={`text-[11px] ${tebligRenkSinifi(ic.tebligTarihi, ic.tur)}`}>{ic.tebligTarihi ? fmtTarih(ic.tebligTarihi) : '—'}</span>;
                     case 'durum': return <span key={colKey}><span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${DURUM_RENK[ic.durum || ''] || 'text-text-dim bg-surface2 border-border'}`}>{ic.durum || '—'}</span></span>;
@@ -558,6 +594,34 @@ export default function IcraPage() {
                         {sureInfo ? <SureBadge kalanGun={sureInfo.kalanGun} compact /> : <span className="text-[10px] text-text-dim">—</span>}
                       </span>
                     );
+                    case 'aksiyon': return (
+                      <div key={colKey} className="relative flex items-center justify-center">
+                        <button type="button" onClick={(e) => { e.stopPropagation(); setAksiyonMenuId(aksiyonMenuId === ic.id ? null : ic.id); }} className="p-1 rounded hover:bg-surface2 text-text-dim hover:text-text transition-colors">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                        </button>
+                        {aksiyonMenuId === ic.id && (
+                          <div className="absolute right-0 top-full mt-1 w-40 bg-surface border border-border rounded-lg shadow-xl z-50 py-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                            <Link href={`/icra/${ic.id}`} onClick={() => setAksiyonMenuId(null)} className="flex items-center gap-2 px-3 py-1.5 text-xs text-text hover:bg-surface2 transition-colors">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/></svg>
+                              Dosyaya Git
+                            </Link>
+                            <button onClick={() => { setSeciliIcra(ic); setModalAcik(true); setAksiyonMenuId(null); }} className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-xs text-text hover:bg-surface2 transition-colors">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                              Düzenle
+                            </button>
+                            <div className="my-1 border-t border-border/50" />
+                            <button onClick={() => { arsivleMut.mutate(ic.id); setAksiyonMenuId(null); }} className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-xs text-orange-400 hover:bg-orange-400/10 transition-colors">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 002 2h12a2 2 0 002-2V8"/><path d="M10 12h4"/></svg>
+                              Arşive Kaldır
+                            </button>
+                            <button onClick={() => { if (confirm('Bu icra dosyasını silmek istediğinize emin misiniz?')) { silMut.mutate(ic.id); } setAksiyonMenuId(null); }} className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-xs text-red hover:bg-red/10 transition-colors">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                              Sil
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
                     default: return null;
                   }
                 })}
@@ -569,10 +633,18 @@ export default function IcraPage() {
 
       {/* Sayfalama */}
       {!isLoading && filtrelenmis.length > 0 && (
-        <div className="flex items-center justify-between mt-3">
-          <div className="text-[11px] text-text-dim">
-            {filtreAktif ? `${filtrelenmis.length} / ${icralar?.length ?? 0} dosya` : `${filtrelenmis.length} dosya`}
-            {filtrelenmis.length > PAGE_SIZE && ` — Sayfa ${sayfa}/${toplamSayfa}`}
+        <div className="flex items-center justify-between mt-3 flex-wrap gap-2">
+          <div className="flex items-center gap-3">
+            <div className="text-[11px] text-text-dim">
+              {filtreAktif ? `${filtrelenmis.length} / ${icralar?.length ?? 0} dosya` : `${filtrelenmis.length} dosya`}
+              {toplamSayfa > 1 && ` — Sayfa ${sayfa}/${toplamSayfa}`}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-text-dim">Göster:</span>
+              <select value={sayfaBoyutu} onChange={(e) => { setSayfaBoyutu(Number(e.target.value)); setSayfa(1); }} className="px-1.5 py-0.5 text-[11px] bg-bg border border-border rounded text-text focus:outline-none focus:border-gold">
+                {PAGE_SIZE_OPTIONS.map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
           </div>
           {toplamSayfa > 1 && (
             <div className="flex items-center gap-1">
@@ -600,12 +672,27 @@ export default function IcraPage() {
   );
 }
 
-/* ── Mini KPI Bileşeni ── */
-function MiniKpi({ label, value, color }: { label: string; value: string; color?: string }) {
+/* ── SVG İkon Sabitleri ── */
+const svgBriefcase = <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>;
+const svgHourglass = <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 2h12v6l-4 4 4 4v6H6v-6l4-4-4-4V2z"/></svg>;
+const svgGavel = <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14.5 3l5 5-7 7-5-5 7-7z"/><path d="M9 12l-4 4 2 2 4-4"/><path d="M3 21h18"/></svg>;
+const svgWallet = <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="16" cy="14" r="1"/></svg>;
+const svgSleep = <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><rect x="9" y="8" width="2" height="8" rx="0.5"/><rect x="13" y="8" width="2" height="8" rx="0.5"/></svg>;
+const svgMoney = <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6"/></svg>;
+
+/* ── KPI Kartı ── */
+function KpiCard({ label, value, icon, color, pulse }: { label: string; value: number | string; icon: React.ReactNode; color?: string; pulse?: boolean }) {
   return (
-    <div className="bg-surface border border-border rounded-lg px-3 py-2.5 text-center">
-      <div className="text-[10px] text-text-muted uppercase tracking-wider mb-0.5">{label}</div>
-      <div className={`font-[var(--font-playfair)] text-lg font-bold ${color || 'text-text'}`}>{value}</div>
+    <div className="relative bg-surface border border-border rounded-xl px-4 py-3 overflow-hidden group hover:border-gold/30 transition-colors">
+      <div className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 opacity-[0.07] text-text pointer-events-none">
+        {icon}
+      </div>
+      <div className="relative z-10">
+        <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1 font-medium">{label}</div>
+        <div className={`font-[var(--font-playfair)] text-xl font-bold ${color || 'text-text'} ${pulse ? 'animate-pulse' : ''}`}>
+          {value}
+        </div>
+      </div>
     </div>
   );
 }

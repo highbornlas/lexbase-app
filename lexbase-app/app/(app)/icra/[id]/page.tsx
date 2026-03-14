@@ -19,6 +19,7 @@ import { DosyaEvrakTab } from '@/components/modules/DosyaEvrakTab';
 const TABS = [
   { key: 'ozet', label: 'Özet', icon: '📋' },
   { key: 'evrak', label: 'Evraklar', icon: '📄' },
+  { key: 'tebligatlar', label: 'Tebligatlar', icon: '📬' },
   { key: 'harcama', label: 'Harcamalar', icon: '💸' },
   { key: 'tahsilat', label: 'Tahsilat', icon: '💰' },
   { key: 'sureler', label: 'Süreler', icon: '⏳' },
@@ -276,6 +277,9 @@ export default function IcraDetayPage({ params }: { params: Promise<{ id: string
             }`}
           >
             {tab.icon} {tab.label}
+            {tab.key === 'tebligatlar' && (icra.tebligatlar || []).length > 0 && (
+              <span className="ml-1 text-[10px] bg-orange-400/10 text-orange-400 px-1 rounded">{icra.tebligatlar!.length}</span>
+            )}
             {tab.key === 'sureler' && (icra.sureler || []).length > 0 && (
               <span className="ml-1 text-[10px] bg-gold/10 text-gold px-1 rounded">{icra.sureler!.length}</span>
             )}
@@ -290,6 +294,7 @@ export default function IcraDetayPage({ params }: { params: Promise<{ id: string
       <div className="bg-surface border border-border rounded-lg p-5">
         {aktifTab === 'ozet' && <OzetTab icra={icra} muvAd={muvAd} daireAdi={daireAdi} taraflar={taraflar} esasNo={esasNo} hesap={hesap} itirazBilgi={itirazBilgi} />}
         {aktifTab === 'evrak' && <DosyaEvrakTab dosyaId={id} dosyaTipi="icra" muvId={icra.muvId} />}
+        {aktifTab === 'tebligatlar' && <TebligatlarTab icra={icra} onUpdate={(guncel) => icraKaydet.mutate(guncel)} />}
         {aktifTab === 'harcama' && <HarcamaTab harcamalar={icra.harcamalar || []} />}
         {aktifTab === 'tahsilat' && <TahsilatTab tahsilatlar={icra.tahsilatlar || []} />}
         {aktifTab === 'sureler' && <SurelerTab sureler={icra.sureler || []} />}
@@ -540,6 +545,254 @@ function AnlasmaTab({ anlasma }: { anlasma?: Record<string, unknown> }) {
       {typeof anlasma.ucret === 'number' && <InfoRow label="Ücret" value={fmt(anlasma.ucret)} />}
       {anlasma.yuzde != null && <InfoRow label="Yüzde" value={`%${String(anlasma.yuzde)}`} />}
       {anlasma.taksitSayisi != null && <InfoRow label="Taksit Sayısı" value={String(anlasma.taksitSayisi)} />}
+    </div>
+  );
+}
+
+// ── Tebligatlar Sekmesi (PTT Barkod Takibi) ─────────────────
+function TebligatlarTab({ icra, onUpdate }: { icra: import('@/lib/hooks/useIcra').Icra; onUpdate: (icra: import('@/lib/hooks/useIcra').Icra) => void }) {
+  const [yeniForm, setYeniForm] = useState(false);
+  const [form, setForm] = useState({
+    tur: 'Ödeme Emri',
+    alici: '',
+    tarih: new Date().toISOString().split('T')[0],
+    pttBarkod: '',
+    tebligDurum: 'Gönderilmedi' as string,
+    tebligTarih: '',
+    not: '',
+  });
+  const [pttLoading, setPttLoading] = useState<string | null>(null);
+  const [pttSonuc, setPttSonuc] = useState<Record<string, string>>({});
+
+  const tebligatlar = icra.tebligatlar || [];
+
+  function handleYeniEkle() {
+    if (!form.alici?.trim()) return;
+    const yeniTebligat = {
+      id: crypto.randomUUID(),
+      ...form,
+    };
+    onUpdate({ ...icra, tebligatlar: [...tebligatlar, yeniTebligat] });
+    setForm({ tur: 'Ödeme Emri', alici: '', tarih: new Date().toISOString().split('T')[0], pttBarkod: '', tebligDurum: 'Gönderilmedi', tebligTarih: '', not: '' });
+    setYeniForm(false);
+  }
+
+  function handleSil(id: string) {
+    if (!confirm('Bu tebligat kaydını silmek istediğinize emin misiniz?')) return;
+    onUpdate({ ...icra, tebligatlar: tebligatlar.filter((t) => t.id !== id) });
+  }
+
+  async function handlePttSorgula(tebligatId: string, barkod: string) {
+    if (!barkod?.trim()) return;
+    setPttLoading(tebligatId);
+    setPttSonuc((prev) => ({ ...prev, [tebligatId]: '' }));
+    try {
+      const res = await fetch('/api/ptt-sorgula', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ barkod: barkod.trim() }),
+      });
+      const data = await res.json();
+      if (data.durum) {
+        setPttSonuc((prev) => ({ ...prev, [tebligatId]: `${data.durum}${data.tarih ? ` — ${data.tarih}` : ''}` }));
+        // Otomatik güncelleme
+        if (data.tebligDurum) {
+          const guncelTebligatlar = tebligatlar.map((t) =>
+            t.id === tebligatId
+              ? {
+                  ...t,
+                  tebligDurum: data.tebligDurum,
+                  ...(data.tebligTarih ? { tebligTarih: data.tebligTarih } : {}),
+                  pttSonSorgu: new Date().toISOString(),
+                  pttSonuc: data.durum,
+                }
+              : t
+          );
+          onUpdate({ ...icra, tebligatlar: guncelTebligatlar });
+        }
+      } else {
+        setPttSonuc((prev) => ({ ...prev, [tebligatId]: 'Otomatik sorgu başarısız. PTT sitesi açılıyor...' }));
+        window.open(`https://gonderitakip.ptt.gov.tr/Track/Verify?q=${barkod.trim()}`, '_blank');
+      }
+    } catch {
+      setPttSonuc((prev) => ({ ...prev, [tebligatId]: 'Bağlantı hatası. PTT sitesi açılıyor...' }));
+      window.open(`https://gonderitakip.ptt.gov.tr/Track/Verify?q=${barkod.trim()}`, '_blank');
+    } finally {
+      setPttLoading(null);
+    }
+  }
+
+  const TEBLIGAT_DURUM_RENK: Record<string, string> = {
+    'Gönderilmedi': 'bg-surface2 text-text-dim border-border',
+    "PTT'de Bekliyor": 'bg-orange-400/10 text-orange-400 border-orange-400/20',
+    'Tebliğ Edildi': 'bg-green-dim text-green border-green/20',
+    'İade Döndü': 'bg-red-dim text-red border-red/20',
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Başlık + Yeni Ekle */}
+      <div className="flex items-center justify-between">
+        <div className="text-xs text-text-muted">{tebligatlar.length} tebligat kaydı</div>
+        <button
+          onClick={() => setYeniForm(!yeniForm)}
+          className="text-xs px-3 py-1.5 rounded bg-gold/10 text-gold border border-gold/20 hover:bg-gold/20 transition-colors"
+        >
+          {yeniForm ? 'İptal' : '+ Yeni Tebligat'}
+        </button>
+      </div>
+
+      {/* Yeni Tebligat Formu */}
+      {yeniForm && (
+        <div className="bg-surface2/50 border border-border rounded-lg p-4 space-y-3">
+          <div className="text-xs font-bold text-text-muted uppercase tracking-wider">📬 Yeni Tebligat Ekle</div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-[10px] text-text-muted block mb-1">Tür</label>
+              <select
+                value={form.tur}
+                onChange={(e) => setForm((p) => ({ ...p, tur: e.target.value }))}
+                className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold"
+              >
+                <option>Ödeme Emri</option>
+                <option>İcra Emri</option>
+                <option>Haciz İhbarnamesi</option>
+                <option>Satış İlanı</option>
+                <option>103 Davetiye</option>
+                <option>Diğer</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] text-text-muted block mb-1">Alıcı *</label>
+              <input
+                value={form.alici}
+                onChange={(e) => setForm((p) => ({ ...p, alici: e.target.value }))}
+                placeholder="Tebligat alıcısı"
+                className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text placeholder:text-text-dim focus:outline-none focus:border-gold"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] text-text-muted block mb-1">Gönderim Tarihi</label>
+              <input
+                type="date"
+                value={form.tarih}
+                onChange={(e) => setForm((p) => ({ ...p, tarih: e.target.value }))}
+                className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-[10px] text-text-muted block mb-1">PTT Barkod No</label>
+              <input
+                value={form.pttBarkod}
+                onChange={(e) => setForm((p) => ({ ...p, pttBarkod: e.target.value }))}
+                placeholder="RR123456789TR"
+                className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text placeholder:text-text-dim focus:outline-none focus:border-gold"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] text-text-muted block mb-1">Tebliğ Durumu</label>
+              <select
+                value={form.tebligDurum}
+                onChange={(e) => setForm((p) => ({ ...p, tebligDurum: e.target.value }))}
+                className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold"
+              >
+                <option>Gönderilmedi</option>
+                <option>PTT&apos;de Bekliyor</option>
+                <option>Tebliğ Edildi</option>
+                <option>İade Döndü</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] text-text-muted block mb-1">Not</label>
+              <input
+                value={form.not}
+                onChange={(e) => setForm((p) => ({ ...p, not: e.target.value }))}
+                placeholder="Opsiyonel not"
+                className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text placeholder:text-text-dim focus:outline-none focus:border-gold"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <button
+              onClick={handleYeniEkle}
+              disabled={!form.alici?.trim()}
+              className="px-4 py-1.5 bg-gold text-bg text-xs font-semibold rounded-lg hover:bg-gold-light transition-colors disabled:opacity-40"
+            >
+              Kaydet
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Tebligat Listesi */}
+      {tebligatlar.length === 0 && !yeniForm ? (
+        <EmptyTab icon="📬" message="Henüz tebligat kaydı eklenmemiş" />
+      ) : (
+        <div className="space-y-3">
+          {tebligatlar.map((t) => (
+            <div key={t.id} className="bg-surface2 rounded-lg p-4 border border-border space-y-2">
+              {/* Üst satır: Tür + Alıcı + Durum + Sil */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-surface border border-border text-text-muted">
+                    {t.tur || 'Tebligat'}
+                  </span>
+                  <span className="text-xs font-medium text-text">{t.alici || '—'}</span>
+                  {t.tarih && <span className="text-[10px] text-text-dim">{fmtTarih(t.tarih)}</span>}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${TEBLIGAT_DURUM_RENK[t.tebligDurum || 'Gönderilmedi'] || 'bg-surface2 text-text-dim border-border'}`}>
+                    {t.tebligDurum || 'Gönderilmedi'}
+                  </span>
+                  {t.tebligTarih && <span className="text-[10px] text-text-dim">{fmtTarih(t.tebligTarih)}</span>}
+                  <button onClick={() => handleSil(t.id)} className="text-[10px] text-red hover:text-red/70 transition-colors" title="Sil">✕</button>
+                </div>
+              </div>
+
+              {/* PTT Barkod Sorgulama */}
+              {t.pttBarkod && (
+                <div className="flex items-center gap-2 pt-1 border-t border-border/50">
+                  <span className="text-[10px] text-text-dim">📦 Barkod:</span>
+                  <span className="text-[11px] font-mono text-text">{t.pttBarkod}</span>
+                  <button
+                    onClick={() => handlePttSorgula(t.id, t.pttBarkod!)}
+                    disabled={pttLoading === t.id}
+                    className="ml-auto px-3 py-1 bg-[#E30613] text-white text-[10px] font-bold rounded hover:bg-[#c00510] disabled:opacity-40 transition-all flex items-center gap-1"
+                  >
+                    {pttLoading === t.id ? <span className="animate-spin">⏳</span> : <span>📦</span>}
+                    {pttLoading === t.id ? 'Sorgulanıyor...' : "PTT'den Sorgula"}
+                  </button>
+                </div>
+              )}
+
+              {/* PTT Sonucu */}
+              {pttSonuc[t.id] && (
+                <div className={`text-[11px] px-3 py-1.5 rounded border ${
+                  pttSonuc[t.id].includes('Tebliğ Edildi') ? 'bg-green-dim border-green/20 text-green' :
+                  pttSonuc[t.id].includes('İade') ? 'bg-red-dim border-red/20 text-red' :
+                  pttSonuc[t.id].includes('hata') || pttSonuc[t.id].includes('başarısız') ? 'bg-orange-400/10 border-orange-400/20 text-orange-400' :
+                  'bg-blue-400/10 border-blue-400/20 text-blue-400'
+                }`}>
+                  📬 {pttSonuc[t.id]}
+                </div>
+              )}
+
+              {/* Son Sorgu Bilgisi */}
+              {t.pttSonSorgu && (
+                <div className="text-[10px] text-text-dim">
+                  Son sorgu: {new Date(t.pttSonSorgu).toLocaleString('tr-TR')}
+                  {t.pttSonuc && ` — ${t.pttSonuc}`}
+                </div>
+              )}
+
+              {/* Not */}
+              {t.not && <div className="text-[11px] text-text-muted italic">{t.not}</div>}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { useDavalar, type Dava } from '@/lib/hooks/useDavalar';
+import { useDavalar, useDavaArsivle, useDavaSil, type Dava } from '@/lib/hooks/useDavalar';
 import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
 import { DavaModal } from '@/components/modules/DavaModal';
 import { ExportMenu } from '@/components/ui/ExportMenu';
@@ -38,7 +38,7 @@ type SortDir = 'asc' | 'desc';
 
 // ── Sütun tanımları ──────────────────────────────────────────
 
-type DavaColKey = 'sira' | 'esasNo' | 'mahkeme' | 'davaci' | 'davali' | 'acilis' | 'asama' | 'durum' | 'durusma';
+type DavaColKey = 'sira' | 'esasNo' | 'mahkeme' | 'davaci' | 'davali' | 'acilis' | 'asama' | 'durum' | 'durusma' | 'aksiyon';
 
 const DAVA_SUTUNLAR: { key: DavaColKey; label: string; sortKey?: SortKey; varsayilan: boolean }[] = [
   { key: 'sira', label: '#', sortKey: 'kayitNo', varsayilan: true },
@@ -50,11 +50,13 @@ const DAVA_SUTUNLAR: { key: DavaColKey; label: string; sortKey?: SortKey; varsay
   { key: 'asama', label: 'Aşama', sortKey: 'asama', varsayilan: true },
   { key: 'durum', label: 'Durum', sortKey: 'durum', varsayilan: true },
   { key: 'durusma', label: 'Duruşma', sortKey: 'durusmaTarihi', varsayilan: true },
+  { key: 'aksiyon', label: '', varsayilan: true },
 ];
 
 const LS_KEY_COLS = 'lb_dava_cols';
 const LS_KEY_FILTERS = 'lb_dava_saved_filters';
-const PAGE_SIZE = 25;
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
+const DEFAULT_PAGE_SIZE = 10;
 
 // ── Tarih renk yardımcısı ────────────────────────────────────
 
@@ -81,6 +83,8 @@ function tarihTooltip(tarih?: string): string {
 export default function DavalarPage() {
   const { data: davalar, isLoading } = useDavalar();
   const { data: muvekkillar } = useMuvekkillar();
+  const arsivleMut = useDavaArsivle();
+  const silMut = useDavaSil();
 
   // UI state
   const [arama, setArama] = useState('');
@@ -96,6 +100,7 @@ export default function DavalarPage() {
   const [modalAcik, setModalAcik] = useState(false);
   const [seciliDava, setSeciliDava] = useState<Dava | null>(null);
   const [sorguPaneliAcik, setSorguPaneliAcik] = useState(true);
+  const [aksiyonMenuId, setAksiyonMenuId] = useState<string | null>(null);
 
   // Yargı Türü değişince birimi resetle
   const mevcutBirimler = yargiTuru !== 'hepsi' ? (YARGI_BIRIMLERI[yargiTuru] || []) : [];
@@ -106,6 +111,7 @@ export default function DavalarPage() {
 
   // Sayfalama
   const [sayfa, setSayfa] = useState(1);
+  const [sayfaBoyutu, setSayfaBoyutu] = useState(DEFAULT_PAGE_SIZE);
 
   // Sütun görünürlük
   const [gorunenSutunlar, setGorunenSutunlar] = useState<DavaColKey[]>(() => {
@@ -160,21 +166,57 @@ export default function DavalarPage() {
     return map;
   }, [muvekkillar]);
 
-  // ── KPI hesaplama ──────────────────────────────────────────
+  // ── Actionable KPI hesaplama ─────────────────────────────────
   const kpis = useMemo(() => {
-    if (!davalar) return { toplam: 0, aktif: 0, yaklasanDurusma: 0, istinaf: 0, temyiz: 0, kapali: 0 };
+    if (!davalar) return { aktifDosya: 0, yaklasanDurusma: 0, kesinSure: 0, avansBiten: 0, hareketsiz: 0, bekleyenTahsilat: 0 };
+    const simdi = Date.now();
+    const gun15 = 15 * 86400000;
+    const gun7 = 7 * 86400000;
+    const gun60 = 60 * 86400000;
+
     let yaklasanDurusma = 0;
-    davalar.forEach((d) => {
-      const kalan = durusmayaKalanGun(d.durusma);
-      if (kalan !== null && kalan >= 0 && kalan <= 7) yaklasanDurusma++;
+    let kesinSure = 0;
+    let avansBiten = 0;
+    let hareketsiz = 0;
+    let bekleyenTahsilat = 0;
+
+    const aktifler = davalar.filter((d) => d.durum !== 'Kapalı');
+
+    aktifler.forEach((d) => {
+      // Yaklaşan duruşma (15 gün)
+      if (d.durusma) {
+        const fark = new Date(d.durusma).getTime() - simdi;
+        if (fark >= 0 && fark <= gun15) yaklasanDurusma++;
+      }
+      // Kesin süreler (7 gün) — sureler array check
+      if (d.sureler && Array.isArray(d.sureler)) {
+        d.sureler.forEach((s: { baslangic: string; gun: number }) => {
+          const bitis = new Date(s.baslangic).getTime() + s.gun * 86400000;
+          const kalan = bitis - simdi;
+          if (kalan >= 0 && kalan <= gun7) kesinSure++;
+        });
+      }
+      // Avansı biten — harcamalar toplamı > tahsilatlar toplamı
+      const topHarcama = (d.harcamalar || []).reduce((t: number, h: { tutar: number }) => t + (h.tutar || 0), 0);
+      const topTahsilat = (d.tahsilatlar || []).reduce((t: number, h: { tutar: number }) => t + (h.tutar || 0), 0);
+      if (topHarcama > 0 && topTahsilat <= topHarcama) avansBiten++;
+      // Bekleyen tahsilat
+      if (topHarcama > topTahsilat) bekleyenTahsilat += (topHarcama - topTahsilat);
+      // Hareketsiz dosya (60 gün)
+      const sonIslem = d.tarih || d.durusma || '';
+      if (sonIslem) {
+        const fark = simdi - new Date(sonIslem).getTime();
+        if (fark > gun60) hareketsiz++;
+      }
     });
+
     return {
-      toplam: davalar.length,
-      aktif: davalar.filter((d) => d.durum === 'Aktif' || d.durum === 'Devam Ediyor').length,
+      aktifDosya: aktifler.length,
       yaklasanDurusma,
-      istinaf: davalar.filter((d) => d.asama === 'İstinaf').length,
-      temyiz: davalar.filter((d) => d.asama?.startsWith('Temyiz')).length,
-      kapali: davalar.filter((d) => d.durum === 'Kapalı').length,
+      kesinSure,
+      avansBiten,
+      hareketsiz,
+      bekleyenTahsilat,
     };
   }, [davalar]);
 
@@ -242,11 +284,11 @@ export default function DavalarPage() {
   }, [filtrelenmis, sortKey, sortDir, muvAdMap]);
 
   // ── Sayfalama ──────────────────────────────────────────────
-  const toplamSayfa = Math.max(1, Math.ceil(sirali.length / PAGE_SIZE));
+  const toplamSayfa = Math.max(1, Math.ceil(sirali.length / sayfaBoyutu));
   const sayfadakiler = useMemo(() => {
-    const bas = (sayfa - 1) * PAGE_SIZE;
-    return sirali.slice(bas, bas + PAGE_SIZE);
-  }, [sirali, sayfa]);
+    const bas = (sayfa - 1) * sayfaBoyutu;
+    return sirali.slice(bas, bas + sayfaBoyutu);
+  }, [sirali, sayfa, sayfaBoyutu]);
 
   // Filtre değişince sayfa 1'e dön
   useEffect(() => { setSayfa(1); }, [arama, dosyaDurumu, yargiTuru, yargiBirimi, esasYilFiltre, esasNoFiltre, tarihBaslangic, tarihBitis]);
@@ -343,6 +385,7 @@ export default function DavalarPage() {
     asama: '80px',
     durum: '75px',
     durusma: '100px',
+    aksiyon: '40px',
   };
 
   const gridTemplate = useMemo(() => {
@@ -355,7 +398,7 @@ export default function DavalarPage() {
   const gridStyle = { gridTemplateColumns: ['28px', ...gorunenSutunlar.map((k) => COL_WIDTHS[k])].join(' ') };
 
   return (
-    <div>
+    <div className="flex flex-col min-h-[calc(100vh-8rem)]">
       {/* ── Header ───────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-[var(--font-playfair)] text-2xl text-text font-bold">
@@ -440,14 +483,14 @@ export default function DavalarPage() {
         </div>
       </div>
 
-      {/* ── KPI Strip ────────────────────────────────────────── */}
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-5">
-        <MiniKpi label="Toplam" value={kpis.toplam} />
-        <MiniKpi label="Aktif" value={kpis.aktif} color="text-green" />
-        <MiniKpi label="Yaklaşan Duruşma" value={kpis.yaklasanDurusma} color="text-gold" />
-        <MiniKpi label="İstinaf" value={kpis.istinaf} color="text-purple-400" />
-        <MiniKpi label="Temyiz" value={kpis.temyiz} color="text-orange-400" />
-        <MiniKpi label="Kapalı" value={kpis.kapali} color="text-text-muted" />
+      {/* ── Actionable KPI Strip ───────────────────────────────── */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
+        <KpiCard label="Aktif Dosyalar" value={kpis.aktifDosya} icon={svgBriefcase} color="text-blue-400" />
+        <KpiCard label="Yaklaşan Duruşma" value={kpis.yaklasanDurusma} icon={svgCalendar} color="text-gold" pulse={kpis.yaklasanDurusma > 0} />
+        <KpiCard label="Kesin Süreler" value={kpis.kesinSure} icon={svgHourglass} color={kpis.kesinSure > 0 ? 'text-red' : 'text-text-muted'} pulse={kpis.kesinSure > 0} />
+        <KpiCard label="Avansı Bitenler" value={kpis.avansBiten} icon={svgWallet} color={kpis.avansBiten > 0 ? 'text-orange-400' : 'text-text-muted'} />
+        <KpiCard label="Hareketsiz Dosya" value={kpis.hareketsiz} icon={svgSleep} color={kpis.hareketsiz > 0 ? 'text-yellow-500' : 'text-text-muted'} />
+        <KpiCard label="Bekleyen Tahsilat" value={kpis.bekleyenTahsilat > 0 ? new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(kpis.bekleyenTahsilat) : '₺0'} icon={svgMoney} color={kpis.bekleyenTahsilat > 0 ? 'text-red' : 'text-green'} />
       </div>
 
       {/* ── UYAP Dosya Sorgulama Paneli ──────────────────────── */}
@@ -468,72 +511,65 @@ export default function DavalarPage() {
 
         {/* Panel İçerik */}
         {sorguPaneliAcik && (
-          <div className="px-4 py-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-4">
-              {/* Sol Kolon */}
-              <div className="space-y-3">
-                {/* Yargı Türü */}
+          <div className="px-4 py-2.5">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-2 max-w-3xl">
+              {/* Sol Kolon — Yargı Türü, Yargı Birimi, Arama */}
+              <div className="space-y-2">
                 <div>
-                  <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Yargı Türü</label>
-                  <select value={yargiTuru} onChange={(e) => { setYargiTuru(e.target.value); setYargiBirimi('hepsi'); }} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold">
+                  <label className="block text-[10px] text-text-muted uppercase tracking-wider mb-1 font-medium">Yargı Türü</label>
+                  <select value={yargiTuru} onChange={(e) => { setYargiTuru(e.target.value); setYargiBirimi('hepsi'); }} className="w-full px-2 py-1.5 bg-bg border border-border rounded text-[11px] text-text focus:outline-none focus:border-gold">
                     <option value="hepsi">Seçiniz</option>
                     {YARGI_TURLERI.map((t) => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
-                {/* Yargı Birimi */}
                 <div>
-                  <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Yargı Birimi</label>
-                  <select value={yargiBirimi} onChange={(e) => setYargiBirimi(e.target.value)} disabled={yargiTuru === 'hepsi'} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold disabled:opacity-50 disabled:cursor-not-allowed">
+                  <label className="block text-[10px] text-text-muted uppercase tracking-wider mb-1 font-medium">Yargı Birimi</label>
+                  <select value={yargiBirimi} onChange={(e) => setYargiBirimi(e.target.value)} disabled={yargiTuru === 'hepsi'} className="w-full px-2 py-1.5 bg-bg border border-border rounded text-[11px] text-text focus:outline-none focus:border-gold disabled:opacity-50 disabled:cursor-not-allowed">
                     <option value="hepsi">Seçiniz</option>
                     {mevcutBirimler.map((b) => <option key={b} value={b}>{b}</option>)}
                   </select>
                 </div>
-                {/* Kişi / Genel Arama */}
                 <div>
-                  <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Kişi / Genel Arama</label>
+                  <label className="block text-[10px] text-text-muted uppercase tracking-wider mb-1 font-medium">Kişi / Genel Arama</label>
                   <div className="relative">
-                    <input type="text" value={arama} onChange={(e) => setArama(e.target.value)} placeholder="Taraf adı, mahkeme, konu..." className="w-full px-4 py-2 pl-9 bg-bg border border-border rounded text-xs text-text placeholder:text-text-dim focus:outline-none focus:border-gold transition-colors" />
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dim text-xs">&#x1F50D;</span>
+                    <input type="text" value={arama} onChange={(e) => setArama(e.target.value)} placeholder="Taraf adı, mahkeme, konu..." className="w-full px-2 py-1.5 pl-7 bg-bg border border-border rounded text-[11px] text-text placeholder:text-text-dim focus:outline-none focus:border-gold" />
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-text-dim text-[10px]">&#x1F50D;</span>
                   </div>
                 </div>
               </div>
-
-              {/* Sağ Kolon */}
-              <div className="space-y-3">
-                {/* Dosya Durumu — Toggle */}
+              {/* Sağ Kolon — Durum, Dosya Yıl/No, Açılış Tarihi */}
+              <div className="space-y-2">
                 <div>
-                  <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Dosya Durumu</label>
+                  <label className="block text-[10px] text-text-muted uppercase tracking-wider mb-1 font-medium">Dosya Durumu</label>
                   <div className="flex items-center gap-0 bg-bg border border-border rounded overflow-hidden w-fit">
-                    <button type="button" onClick={() => setDosyaDurumu('acik')} className={`px-4 py-2 text-xs font-medium transition-colors ${dosyaDurumu === 'acik' ? 'bg-blue-600 text-white' : 'text-text-muted hover:text-text'}`}>Açık</button>
-                    <button type="button" onClick={() => setDosyaDurumu('kapali')} className={`px-4 py-2 text-xs font-medium transition-colors ${dosyaDurumu === 'kapali' ? 'bg-blue-600 text-white' : 'text-text-muted hover:text-text'}`}>Kapalı</button>
+                    <button type="button" onClick={() => setDosyaDurumu('acik')} className={`px-3 py-1.5 text-[11px] font-medium transition-colors ${dosyaDurumu === 'acik' ? 'bg-gold text-bg' : 'text-text-muted hover:text-text'}`}>Açık</button>
+                    <button type="button" onClick={() => setDosyaDurumu('kapali')} className={`px-3 py-1.5 text-[11px] font-medium transition-colors ${dosyaDurumu === 'kapali' ? 'bg-gold text-bg' : 'text-text-muted hover:text-text'}`}>Kapalı</button>
                   </div>
                 </div>
-                {/* Dosya Yıl / No */}
                 <div>
-                  <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Dosya Yıl / No</label>
-                  <div className="flex items-center gap-2">
-                    <select value={esasYilFiltre} onChange={(e) => setEsasYilFiltre(e.target.value)} className="w-28 px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold">
-                      <option value="">Seçiniz</option>
+                  <label className="block text-[10px] text-text-muted uppercase tracking-wider mb-1 font-medium">Dosya Yıl / No</label>
+                  <div className="flex items-center gap-1">
+                    <select value={esasYilFiltre} onChange={(e) => setEsasYilFiltre(e.target.value)} className="w-[72px] px-1.5 py-1.5 bg-bg border border-border rounded text-[11px] text-text focus:outline-none focus:border-gold">
+                      <option value="">Yıl</option>
                       {yillar.map((y) => <option key={y} value={y}>{y}</option>)}
                     </select>
-                    <span className="text-text-dim text-sm">/</span>
-                    <input type="text" value={esasNoFiltre} onChange={(e) => setEsasNoFiltre(e.target.value)} placeholder="Dosya No" className="w-24 px-3 py-2 bg-bg border border-border rounded text-xs text-text placeholder:text-text-dim focus:outline-none focus:border-gold" />
+                    <span className="text-text-dim text-[10px]">/</span>
+                    <input type="text" value={esasNoFiltre} onChange={(e) => setEsasNoFiltre(e.target.value)} placeholder="No" className="w-16 px-1.5 py-1.5 bg-bg border border-border rounded text-[11px] text-text placeholder:text-text-dim focus:outline-none focus:border-gold" />
                   </div>
                 </div>
-                {/* Açılış Tarihi Aralığı — altlı üstlü */}
                 <div>
-                  <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Açılış Başlangıç Tarihi</label>
-                  <input type="date" value={tarihBaslangic} onChange={(e) => setTarihBaslangic(e.target.value)} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold" />
-                </div>
-                <div>
-                  <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Açılış Bitiş Tarihi</label>
-                  <input type="date" value={tarihBitis} onChange={(e) => setTarihBitis(e.target.value)} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold" />
+                  <label className="block text-[10px] text-text-muted uppercase tracking-wider mb-1 font-medium">Açılış Tarihi</label>
+                  <div className="flex items-center gap-1">
+                    <input type="date" value={tarihBaslangic} onChange={(e) => setTarihBaslangic(e.target.value)} className="flex-1 min-w-0 px-1.5 py-1.5 bg-bg border border-border rounded text-[11px] text-text focus:outline-none focus:border-gold" />
+                    <span className="text-[9px] text-text-dim">—</span>
+                    <input type="date" value={tarihBitis} onChange={(e) => setTarihBitis(e.target.value)} className="flex-1 min-w-0 px-1.5 py-1.5 bg-bg border border-border rounded text-[11px] text-text focus:outline-none focus:border-gold" />
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Alt Aksiyon Satırı */}
-            <div className="flex items-center justify-between pt-4 mt-4 border-t border-border/50">
+            <div className="flex items-center justify-between pt-3 mt-3 border-t border-border/50">
               <div className="text-[11px] text-text-dim">
                 {filtreAktif ? `${sirali.length} / ${davalar?.length ?? 0} sonuç` : `${sirali.length} dosya listeleniyor`}
               </div>
@@ -543,7 +579,7 @@ export default function DavalarPage() {
                     Temizle
                   </button>
                 )}
-                <button type="button" className="px-4 py-1.5 bg-blue-600 text-white text-[11px] font-medium rounded hover:bg-blue-700 transition-colors flex items-center gap-1.5">
+                <button type="button" className="px-4 py-1.5 bg-gold text-bg text-[11px] font-medium rounded hover:bg-gold-light transition-colors flex items-center gap-1.5">
                   <span>&#x1F50D;</span> Sorgula
                 </button>
               </div>
@@ -571,7 +607,7 @@ export default function DavalarPage() {
           <div className="text-sm text-text-muted">{filtreAktif ? 'Arama sonucu bulunamadı' : 'Henüz dava kaydı eklenmemiş'}</div>
         </div>
       ) : (
-        <div className="bg-surface border border-border rounded-lg overflow-x-auto">
+        <div className="bg-surface border border-border rounded-lg overflow-x-auto flex-1">
           {/* Sticky Tablo Başlık */}
           <div className={`${gridClass} py-2.5 border-b border-border text-[11px] text-text-muted font-medium uppercase tracking-wider sticky top-0 z-10 bg-surface`} style={gridStyle}>
             <label className="flex items-center justify-center cursor-pointer">
@@ -581,7 +617,7 @@ export default function DavalarPage() {
               const col = DAVA_SUTUNLAR.find((s) => s.key === colKey);
               if (!col) return null;
               return col.sortKey ? (
-                <button key={col.key} type="button" onClick={() => toggleSort(col.sortKey!)} className="text-left hover:text-text transition-colors truncate">{col.label}{sortIcon(col.sortKey)}</button>
+                <button key={col.key} type="button" onClick={() => toggleSort(col.sortKey!)} className="text-left hover:text-text transition-colors truncate flex items-center gap-1"><span>{col.label}</span><span className="opacity-50 text-[9px]">{sortIcon(col.sortKey)}</span></button>
               ) : (
                 <span key={col.key}>{col.label}</span>
               );
@@ -597,7 +633,7 @@ export default function DavalarPage() {
             const esasStr = esasNoGoster(d.esasYil, d.esasNo);
             const vurgu = satirVurgu(d);
             const secili = seciliIdler.has(d.id);
-            const globalIdx = (sayfa - 1) * PAGE_SIZE + idx;
+            const globalIdx = (sayfa - 1) * sayfaBoyutu + idx;
 
             return (
               <div key={d.id} className={`${gridClass} py-3 border-b border-border/50 hover:bg-gold-dim transition-colors items-center ${vurgu} ${secili ? 'bg-gold-dim/50' : ''}`} style={gridStyle}>
@@ -610,21 +646,52 @@ export default function DavalarPage() {
                     case 'sira': return <span key={colKey} className="text-[11px] text-text-dim">{globalIdx + 1}</span>;
                     case 'esasNo': return (
                       <Link key={colKey} href={`/davalar/${d.id}`} className="min-w-0 flex items-center gap-1.5 hover:underline">
+                        {d.taraf && (
+                          <span className={`text-[8px] font-black w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border ${d.taraf === 'davacı' ? 'text-green bg-green-dim border-green/30' : 'text-red bg-red-dim border-red/30'}`} title={`Müvekkil: ${d.taraf === 'davacı' ? 'Davacı' : 'Davalı'}`}>M</span>
+                        )}
                         <span className="font-[var(--font-playfair)] text-sm font-bold text-gold truncate">{esasStr || '—'}</span>
                         {d.davaTuru && <span className="text-[9px] px-1 py-0.5 rounded bg-surface2 text-text-dim border border-border/50 whitespace-nowrap flex-shrink-0">{d.davaTuru}</span>}
                       </Link>
                     );
-                    case 'mahkeme': return <Link key={colKey} href={`/davalar/${d.id}`} className="text-xs text-text truncate hover:underline" title={mahkeme || d.konu || ''}>{mahkeme || d.konu || '—'}</Link>;
-                    case 'davaci': return <span key={colKey} className="text-xs text-text truncate" title={davaci}>{davaci || '—'}</span>;
-                    case 'davali': return <span key={colKey} className="text-xs text-text truncate" title={davali}>{davali || '—'}</span>;
+                    case 'mahkeme': return <Link key={colKey} href={`/davalar/${d.id}`} className="text-xs text-text truncate hover:underline" title={mahkeme || d.konu || ''}>{mahkeme || d.konu || <span className="text-text-dim/40">—</span>}</Link>;
+                    case 'davaci': return <span key={colKey} className="text-xs text-text truncate" title={davaci}>{davaci || <span className="text-text-dim/40">—</span>}</span>;
+                    case 'davali': return <span key={colKey} className="text-xs text-text truncate" title={davali}>{davali || <span className="text-text-dim/40">—</span>}</span>;
                     case 'acilis': return (
                       <span key={colKey} className={`text-[11px] ${tarihRenkSinifi(d.tarih)}`} title={tarihTooltip(d.tarih)}>
-                        {d.tarih ? fmtTarih(d.tarih) : '—'}
+                        {d.tarih ? fmtTarih(d.tarih) : <span className="text-text-dim/40">—</span>}
                       </span>
                     );
                     case 'asama': return <span key={colKey}><span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${ASAMA_RENK[d.asama || ''] || 'text-text-dim bg-surface2'}`}>{d.asama || '—'}</span></span>;
                     case 'durum': return <span key={colKey}><span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${DURUM_RENK[d.durum || ''] || 'text-text-dim bg-surface2 border-border'}`}>{d.durum || '—'}</span></span>;
                     case 'durusma': return <span key={colKey}><DurusmaBadge tarih={d.durusma} saat={d.durusmaSaati} /></span>;
+                    case 'aksiyon': return (
+                      <div key={colKey} className="relative flex items-center justify-center">
+                        <button type="button" onClick={(e) => { e.stopPropagation(); setAksiyonMenuId(aksiyonMenuId === d.id ? null : d.id); }} className="p-1 rounded hover:bg-surface2 text-text-dim hover:text-text transition-colors">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                        </button>
+                        {aksiyonMenuId === d.id && (
+                          <div className="absolute right-0 top-full mt-1 w-40 bg-surface border border-border rounded-lg shadow-xl z-50 py-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                            <Link href={`/davalar/${d.id}`} onClick={() => setAksiyonMenuId(null)} className="flex items-center gap-2 px-3 py-1.5 text-xs text-text hover:bg-surface2 transition-colors">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/></svg>
+                              Dosyaya Git
+                            </Link>
+                            <button onClick={() => { setSeciliDava(d); setModalAcik(true); setAksiyonMenuId(null); }} className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-xs text-text hover:bg-surface2 transition-colors">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                              Düzenle
+                            </button>
+                            <div className="my-1 border-t border-border/50" />
+                            <button onClick={() => { arsivleMut.mutate(d.id); setAksiyonMenuId(null); }} className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-xs text-orange-400 hover:bg-orange-400/10 transition-colors">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 002 2h12a2 2 0 002-2V8"/><path d="M10 12h4"/></svg>
+                              Arşive Kaldır
+                            </button>
+                            <button onClick={() => { if (confirm('Bu davayı silmek istediğinize emin misiniz?')) { silMut.mutate(d.id); } setAksiyonMenuId(null); }} className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-xs text-red hover:bg-red/10 transition-colors">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                              Sil
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
                     default: return null;
                   }
                 })}
@@ -636,10 +703,18 @@ export default function DavalarPage() {
 
       {/* ── Sayfalama ───────────────────────────────────────── */}
       {!isLoading && sirali.length > 0 && (
-        <div className="flex items-center justify-between mt-3">
-          <div className="text-[11px] text-text-dim">
-            {filtreAktif ? `${sirali.length} / ${davalar?.length ?? 0} dava` : `${sirali.length} dava`}
-            {sirali.length > PAGE_SIZE && ` — Sayfa ${sayfa}/${toplamSayfa}`}
+        <div className="flex items-center justify-between mt-3 flex-wrap gap-2">
+          <div className="flex items-center gap-3">
+            <div className="text-[11px] text-text-dim">
+              {filtreAktif ? `${sirali.length} / ${davalar?.length ?? 0} dava` : `${sirali.length} dava`}
+              {toplamSayfa > 1 && ` — Sayfa ${sayfa}/${toplamSayfa}`}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-text-dim">Göster:</span>
+              <select value={sayfaBoyutu} onChange={(e) => { setSayfaBoyutu(Number(e.target.value)); setSayfa(1); }} className="px-1.5 py-0.5 text-[11px] bg-bg border border-border rounded text-text focus:outline-none focus:border-gold">
+                {PAGE_SIZE_OPTIONS.map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
           </div>
           {toplamSayfa > 1 && (
             <div className="flex items-center gap-1">
@@ -669,14 +744,33 @@ export default function DavalarPage() {
 }
 
 // ══════════════════════════════════════════════════════════════
-//  Mini KPI Kartı
+//  SVG İkon Sabitleri (KPI arka plan)
 // ══════════════════════════════════════════════════════════════
 
-function MiniKpi({ label, value, color }: { label: string; value: number | string; color?: string }) {
+const svgBriefcase = <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>;
+const svgCalendar = <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>;
+const svgHourglass = <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 2h12v6l-4 4 4 4v6H6v-6l4-4-4-4V2z"/></svg>;
+const svgWallet = <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="16" cy="14" r="1"/></svg>;
+const svgSleep = <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><rect x="9" y="8" width="2" height="8" rx="0.5"/><rect x="13" y="8" width="2" height="8" rx="0.5"/></svg>;
+const svgMoney = <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6"/></svg>;
+
+// ══════════════════════════════════════════════════════════════
+//  KPI Kartı (Arka plan SVG ikonlu)
+// ══════════════════════════════════════════════════════════════
+
+function KpiCard({ label, value, icon, color, pulse }: { label: string; value: number | string; icon: React.ReactNode; color?: string; pulse?: boolean }) {
   return (
-    <div className="bg-surface border border-border rounded-lg px-3 py-2.5 text-center">
-      <div className="text-[10px] text-text-muted uppercase tracking-wider mb-0.5">{label}</div>
-      <div className={`font-[var(--font-playfair)] text-xl font-bold ${color || 'text-text'}`}>{value}</div>
+    <div className="relative bg-surface border border-border rounded-xl px-4 py-3 overflow-hidden group hover:border-gold/30 transition-colors">
+      {/* Arka plan ikon */}
+      <div className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 opacity-[0.07] text-text pointer-events-none">
+        {icon}
+      </div>
+      <div className="relative z-10">
+        <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1 font-medium">{label}</div>
+        <div className={`font-[var(--font-playfair)] text-xl font-bold ${color || 'text-text'} ${pulse ? 'animate-pulse' : ''}`}>
+          {value}
+        </div>
+      </div>
     </div>
   );
 }

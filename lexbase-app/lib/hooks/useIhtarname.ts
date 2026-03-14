@@ -10,6 +10,7 @@ export interface Ihtarname {
   muvId?: string;
   konu?: string;
   tur?: string; // İhtar, İhbarname, Fesih İhtarı, Ödeme İhtarı, Tahliye İhtarı
+  yon?: string; // 'giden' | 'gelen'
   durum?: string; // Taslak, Hazırlandı, Gönderildi, Tebliğ Edildi, Cevap Geldi, Sonuçlandı
   gonderen?: string;
   alici?: string;
@@ -18,7 +19,16 @@ export interface Ihtarname {
   noterNo?: string;
   tarih?: string;
   gonderimTarih?: string;
+  // Tebliğ & Süre Takibi
+  tebligDurum?: string; // Gönderilmedi, PTT'de Bekliyor, Tebliğ Edildi, İade Döndü
   tebligTarih?: string;
+  cevapSuresi?: number; // gün cinsinden
+  sureSonu?: string; // hesaplanmış son tarih
+  // PTT Barkod
+  pttBarkod?: string;
+  pttSonSorgu?: string; // son sorgulama tarihi
+  pttSonuc?: string; // son sorgulama sonucu
+  //
   cevapTarih?: string;
   ucret?: number;
   tahsilEdildi?: number;
@@ -27,6 +37,9 @@ export interface Ihtarname {
   cevapOzet?: string;
   evraklar?: Record<string, unknown>[];
   notlar?: Record<string, unknown>[];
+  // Soft delete / Arşiv
+  _silindi?: string;
+  _arsivlendi?: string;
   [key: string]: unknown;
 }
 
@@ -49,6 +62,12 @@ export function useIhtarnameler() {
   });
 }
 
+/* Arşivlenmiş ihtarnameler */
+export function useArsivIhtarnameler() {
+  const { data: tumu } = useIhtarnameler();
+  return { data: tumu?.filter((i) => i._arsivlendi && !i._silindi) ?? [] };
+}
+
 export function useIhtarnameKaydet() {
   const buroId = useBuroId();
   const queryClient = useQueryClient();
@@ -67,7 +86,19 @@ export function useIhtarnameKaydet() {
   });
 }
 
+/* Soft delete — _silindi timestamp */
 export function useIhtarnameSil() {
+  const kaydet = useIhtarnameKaydet();
+
+  return useMutation({
+    mutationFn: async (ihtarname: Ihtarname) => {
+      await kaydet.mutateAsync({ ...ihtarname, _silindi: new Date().toISOString() });
+    },
+  });
+}
+
+/* Hard delete — Supabase'den tamamen sil */
+export function useIhtarnameHardSil() {
   const buroId = useBuroId();
   const queryClient = useQueryClient();
 
@@ -80,6 +111,30 @@ export function useIhtarnameSil() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['ihtarnameler'] });
+    },
+  });
+}
+
+/* Arşivle */
+export function useIhtarnameArsivle() {
+  const kaydet = useIhtarnameKaydet();
+
+  return useMutation({
+    mutationFn: async (ihtarname: Ihtarname) => {
+      await kaydet.mutateAsync({ ...ihtarname, _arsivlendi: new Date().toISOString() });
+    },
+  });
+}
+
+/* Arşivden çıkar */
+export function useIhtarnameArsivdenCikar() {
+  const kaydet = useIhtarnameKaydet();
+
+  return useMutation({
+    mutationFn: async (ihtarname: Ihtarname) => {
+      const { _arsivlendi, ...rest } = ihtarname;
+      void _arsivlendi;
+      await kaydet.mutateAsync({ ...rest, _arsivlendi: undefined });
     },
   });
 }

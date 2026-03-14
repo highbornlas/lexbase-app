@@ -122,7 +122,7 @@ export default function GorevlerPage() {
   };
 
   return (
-    <div>
+    <div className="flex flex-col min-h-[calc(100vh-8rem)]">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-[var(--font-playfair)] text-2xl text-text font-bold">
@@ -177,7 +177,7 @@ export default function GorevlerPage() {
       {isLoading ? (
         <div className="text-center py-12 text-text-muted text-sm">Yükleniyor...</div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 flex-1">
           {Array.from(gruplar.entries()).map(([grupAd, gorevler]) => {
             if (gorevler.length === 0) return null;
             return (

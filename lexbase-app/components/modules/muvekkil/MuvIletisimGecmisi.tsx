@@ -9,7 +9,6 @@ const KANAL_RENK: Record<string, string> = {
   'Telefon': 'text-green bg-green-dim border-green/20',
   'E-posta': 'text-blue-400 bg-blue-400/10 border-blue-400/20',
   'Yüz Yüze': 'text-gold bg-gold-dim border-gold/20',
-  'WhatsApp': 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
   'Faks': 'text-text-dim bg-surface2 border-border',
   'Posta': 'text-orange-400 bg-orange-400/10 border-orange-400/20',
   'Video': 'text-purple-400 bg-purple-400/10 border-purple-400/20',

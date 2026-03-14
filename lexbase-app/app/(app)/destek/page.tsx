@@ -2,11 +2,11 @@
 
 export default function DestekPage() {
   return (
-    <div>
+    <div className="flex flex-col min-h-[calc(100vh-8rem)]">
       <h1 className="font-[var(--font-playfair)] text-2xl text-text font-bold mb-1">Destek</h1>
       <p className="text-sm text-text-muted mb-6">Yardım ve iletişim</p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
         {/* İletişim */}
         <div className="card p-6">
           <h2 className="text-base font-semibold text-text mb-4">📞 İletişim</h2>
@@ -23,13 +23,6 @@ export default function DestekPage() {
               <div>
                 <div className="text-xs font-semibold text-text">Telefon</div>
                 <div className="text-sm text-text-muted">+90 (212) 000 00 00</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 p-3 bg-[#25D366]/10 rounded-[10px] border border-[#25D366]/20">
-              <span className="text-lg">📱</span>
-              <div>
-                <div className="text-xs font-semibold text-[#25D366]">WhatsApp Destek</div>
-                <div className="text-sm text-text-muted">Hızlı yanıt almak için WhatsApp ile yazın</div>
               </div>
             </div>
           </div>

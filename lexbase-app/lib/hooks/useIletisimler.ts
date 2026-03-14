@@ -18,7 +18,7 @@ export interface Iletisim {
 }
 
 export const KANALLAR = [
-  'Telefon', 'E-posta', 'Yüz Yüze', 'WhatsApp', 'Faks', 'Posta', 'Video', 'Diğer'
+  'Telefon', 'E-posta', 'Yüz Yüze', 'Faks', 'Posta', 'Video', 'Diğer'
 ] as const;
 
 // ── Müvekkile bağlı iletişimler ──────────────────────────────

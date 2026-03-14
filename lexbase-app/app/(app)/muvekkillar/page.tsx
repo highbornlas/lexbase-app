@@ -418,7 +418,7 @@ export default function RehberPage() {
   const activeList = aktifTab === 'muvekkillar' ? mFiltrelenmis : aktifTab === 'karsitaraflar' ? ktFiltrelenmis : vFiltrelenmis;
 
   return (
-    <div>
+    <div className="flex flex-col min-h-[calc(100vh-8rem)]">
       {/* Başlık */}
       <h1 className="font-[var(--font-playfair)] text-2xl text-text font-bold mb-1">Rehber</h1>
       <p className="text-sm text-text-muted mb-5">Müvekkiller, karşı taraflar ve avukatlar</p>
@@ -453,7 +453,7 @@ export default function RehberPage() {
       {/* ═══════════════════════════════════════════════════════════
          ORTAK TOOLBAR
          ═══════════════════════════════════════════════════════════ */}
-      <div className="bg-surface border border-border rounded-lg">
+      <div className="bg-surface border border-border rounded-lg flex-1 flex flex-col">
         <div className="flex items-center justify-between p-4 border-b border-border flex-wrap gap-2">
           <div className="text-sm font-semibold text-text">
             {aktifTab === 'muvekkillar' ? 'Müvekkil Listesi' : aktifTab === 'karsitaraflar' ? 'Karşı Taraf Listesi' : 'Avukat / Vekil Listesi'}

@@ -64,6 +64,7 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
   const [yeniIcraOpen, setYeniIcraOpen] = useState(false);
   const [yeniArabuluculukOpen, setYeniArabuluculukOpen] = useState(false);
   const [yeniIhtarnameOpen, setYeniIhtarnameOpen] = useState(false);
+  const [seciliIhtarname, setSeciliIhtarname] = useState<Record<string, unknown> | null>(null);
 
   /* ── Dosya sayıları (KPI) ── */
   const davaArr = davalar || [];
@@ -159,7 +160,7 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
       <DavaModal open={yeniDavaOpen} onClose={() => setYeniDavaOpen(false)} />
       <IcraModal open={yeniIcraOpen} onClose={() => setYeniIcraOpen(false)} />
       <ArabuluculukModal open={yeniArabuluculukOpen} onClose={() => setYeniArabuluculukOpen(false)} />
-      <IhtarnameModal open={yeniIhtarnameOpen} onClose={() => setYeniIhtarnameOpen(false)} />
+      <IhtarnameModal open={yeniIhtarnameOpen} onClose={() => { setYeniIhtarnameOpen(false); setSeciliIhtarname(null); }} ihtarname={seciliIhtarname as import('@/lib/hooks/useIhtarname').Ihtarname | null} />
 
       {/* KPI Cards */}
       <MuvKpiCards
@@ -196,6 +197,7 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
             arabuluculuklar={arabArr}
             ihtarnameler={ihtArr}
             onYeniEkle={handleYeniEkle}
+            onIhtarnameClick={(item) => { setSeciliIhtarname(item); setYeniIhtarnameOpen(true); }}
           />
         )}
         {aktifTab === 'kimlik' && <MuvKimlik muv={muv} />}

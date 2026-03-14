@@ -171,7 +171,7 @@ export default function EvrakPage() {
   }), [muvekkillar, davalar, icralar]);
 
   return (
-    <div>
+    <div className="flex flex-col min-h-[calc(100vh-8rem)]">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-[var(--font-playfair)] text-2xl text-text font-bold">
@@ -225,7 +225,7 @@ export default function EvrakPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-[200px_1fr] gap-4">
+      <div className="grid grid-cols-[200px_1fr] gap-4 flex-1">
         {/* Sidebar: Kategoriler */}
         <div className="bg-surface border border-border rounded-lg p-3">
           <h3 className="text-xs font-semibold text-text mb-3 uppercase tracking-wider">Kategoriler</h3>

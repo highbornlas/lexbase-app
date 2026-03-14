@@ -5,6 +5,14 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  // Bundle boyutunu küçültme
+  experimental: {
+    optimizePackageImports: [
+      '@supabase/supabase-js',
+      'react-hot-toast',
+      'framer-motion',
+    ],
+  },
 };
 
 // Dev ortamında Cloudflare bindings emülasyonu

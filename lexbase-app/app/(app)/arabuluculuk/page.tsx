@@ -21,6 +21,9 @@ const TUR_RENK: Record<string, string> = {
   'Aile': 'text-purple-400',
 };
 
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
+const DEFAULT_PAGE_SIZE = 10;
+
 export default function ArabuluculukPage() {
   const { data: arabuluculuklar, isLoading } = useArabuluculuklar();
   const { data: muvekkillar } = useMuvekkillar();
@@ -28,6 +31,8 @@ export default function ArabuluculukPage() {
   const [durumFiltre, setDurumFiltre] = useState('hepsi');
   const [modalAcik, setModalAcik] = useState(false);
   const [secili, setSecili] = useState<Arabuluculuk | null>(null);
+  const [sayfa, setSayfa] = useState(1);
+  const [sayfaBoyutu, setSayfaBoyutu] = useState(DEFAULT_PAGE_SIZE);
 
   const muvAdMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -65,8 +70,15 @@ export default function ArabuluculukPage() {
     }).sort((a, b) => (b.basvuruTarih || '').localeCompare(a.basvuruTarih || ''));
   }, [arabuluculuklar, arama, durumFiltre, muvAdMap]);
 
+  // Sayfa sıfırlama (filtre değişince)
+  const toplamSayfa = Math.max(1, Math.ceil(filtrelenmis.length / sayfaBoyutu));
+  const sayfadakiler = useMemo(() => {
+    const baslangic = (sayfa - 1) * sayfaBoyutu;
+    return filtrelenmis.slice(baslangic, baslangic + sayfaBoyutu);
+  }, [filtrelenmis, sayfa, sayfaBoyutu]);
+
   return (
-    <div>
+    <div className="flex flex-col min-h-[calc(100vh-8rem)]">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-[var(--font-playfair)] text-2xl text-text font-bold">
@@ -96,7 +108,7 @@ export default function ArabuluculukPage() {
           <input
             type="text"
             value={arama}
-            onChange={(e) => setArama(e.target.value)}
+            onChange={(e) => { setArama(e.target.value); setSayfa(1); }}
             placeholder="Dosya no, konu, arabulucu, karşı taraf ile ara..."
             className="w-full px-4 py-2.5 pl-9 bg-surface border border-border rounded-lg text-sm text-text placeholder:text-text-dim focus:outline-none focus:border-gold transition-colors"
           />
@@ -104,7 +116,7 @@ export default function ArabuluculukPage() {
         </div>
         <select
           value={durumFiltre}
-          onChange={(e) => setDurumFiltre(e.target.value)}
+          onChange={(e) => { setDurumFiltre(e.target.value); setSayfa(1); }}
           className="px-3 py-2.5 bg-surface border border-border rounded-lg text-xs text-text focus:outline-none focus:border-gold"
         >
           <option value="hepsi">Tüm Durumlar</option>
@@ -127,7 +139,7 @@ export default function ArabuluculukPage() {
           </div>
         </div>
       ) : (
-        <div className="bg-surface border border-border rounded-lg overflow-hidden">
+        <div className="bg-surface border border-border rounded-lg overflow-hidden flex-1">
           {/* Tablo Başlık */}
           <div className="grid grid-cols-[60px_80px_1fr_1fr_1fr_80px_100px_100px_80px] gap-2 px-4 py-2.5 border-b border-border text-[11px] text-text-muted font-medium uppercase tracking-wider">
             <span>No</span>
@@ -142,7 +154,7 @@ export default function ArabuluculukPage() {
           </div>
 
           {/* Satırlar */}
-          {filtrelenmis.map((a) => (
+          {sayfadakiler.map((a) => (
             <div
               key={a.id}
               onClick={() => { setSecili(a); setModalAcik(true); }}
@@ -167,6 +179,42 @@ export default function ArabuluculukPage() {
           ))}
         </div>
       )}
+
+      {/* Pagination */}
+      {!isLoading && filtrelenmis.length > 0 && (
+        <div className="flex items-center justify-between mt-3 flex-wrap gap-2">
+          <div className="flex items-center gap-3">
+            <div className="text-[11px] text-text-dim">
+              {filtrelenmis.length} dosya{toplamSayfa > 1 && ` — Sayfa ${sayfa}/${toplamSayfa}`}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-text-dim">Göster:</span>
+              <select value={sayfaBoyutu} onChange={(e) => { setSayfaBoyutu(Number(e.target.value)); setSayfa(1); }} className="px-1.5 py-0.5 text-[11px] bg-bg border border-border rounded text-text focus:outline-none focus:border-gold">
+                {PAGE_SIZE_OPTIONS.map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+          </div>
+          {toplamSayfa > 1 && (
+            <div className="flex items-center gap-1">
+              <button onClick={() => setSayfa(1)} disabled={sayfa === 1} className="px-2 py-1 text-[11px] rounded border border-border bg-surface text-text-muted hover:border-gold disabled:opacity-30 transition-colors">&laquo;</button>
+              <button onClick={() => setSayfa((p) => Math.max(1, p - 1))} disabled={sayfa === 1} className="px-2 py-1 text-[11px] rounded border border-border bg-surface text-text-muted hover:border-gold disabled:opacity-30 transition-colors">&lsaquo;</button>
+              {Array.from({ length: Math.min(5, toplamSayfa) }, (_, i) => {
+                let pg: number;
+                if (toplamSayfa <= 5) pg = i + 1;
+                else if (sayfa <= 3) pg = i + 1;
+                else if (sayfa >= toplamSayfa - 2) pg = toplamSayfa - 4 + i;
+                else pg = sayfa - 2 + i;
+                return (
+                  <button key={pg} onClick={() => setSayfa(pg)} className={`px-2.5 py-1 text-[11px] rounded border transition-colors ${pg === sayfa ? 'border-gold bg-gold text-bg font-bold' : 'border-border bg-surface text-text-muted hover:border-gold'}`}>{pg}</button>
+                );
+              })}
+              <button onClick={() => setSayfa((p) => Math.min(toplamSayfa, p + 1))} disabled={sayfa === toplamSayfa} className="px-2 py-1 text-[11px] rounded border border-border bg-surface text-text-muted hover:border-gold disabled:opacity-30 transition-colors">&rsaquo;</button>
+              <button onClick={() => setSayfa(toplamSayfa)} disabled={sayfa === toplamSayfa} className="px-2 py-1 text-[11px] rounded border border-border bg-surface text-text-muted hover:border-gold disabled:opacity-30 transition-colors">&raquo;</button>
+            </div>
+          )}
+        </div>
+      )}
+
       <ArabuluculukModal open={modalAcik} onClose={() => setModalAcik(false)} arabuluculuk={secili} />
     </div>
   );

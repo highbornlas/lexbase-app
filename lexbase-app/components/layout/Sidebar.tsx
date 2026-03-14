@@ -8,6 +8,7 @@ import { useIcralar } from '@/lib/hooks/useIcra';
 import { useDanismanliklar } from '@/lib/hooks/useDanismanlik';
 import { useTodolar } from '@/lib/hooks/useTodolar';
 import { useFinansUyarilar } from '@/lib/hooks/useFinans';
+import { useIhtarnameler } from '@/lib/hooks/useIhtarname';
 import { useRol, yetkiVar } from '@/lib/hooks/useRol';
 
 /* ══════════════════════════════════════════════════════════════
@@ -75,6 +76,7 @@ function useBadgeCounts(): Record<string, number> {
   const { data: danismanliklar } = useDanismanliklar();
   const { data: gorevler } = useTodolar();
   const { data: uyarilar } = useFinansUyarilar();
+  const { data: ihtarnameler } = useIhtarnameler();
 
   return {
     muvekkil: muvekkillar?.length ?? 0,
@@ -84,7 +86,7 @@ function useBadgeCounts(): Record<string, number> {
     gorev: gorevler?.filter((g) => g.durum !== 'Tamamlandı' && g.durum !== 'İptal').length ?? 0,
     finans: Array.isArray(uyarilar) ? uyarilar.length : 0,
     arabuluculuk: 0,
-    ihtarname: 0,
+    ihtarname: ihtarnameler?.filter((i) => !i._silindi && !i._arsivlendi && i.durum !== 'Sonuçlandı').length ?? 0,
     takvim: 0,
   };
 }

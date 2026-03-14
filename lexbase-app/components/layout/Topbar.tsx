@@ -7,16 +7,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useBildirimler, useBildirimOkundu, useTumBildirimlerOku } from '@/lib/hooks/useBildirimler';
 import { SpotlightSearch } from '@/components/search/SpotlightSearch';
 import { useRol, ROL_ETIKETLERI } from '@/lib/hooks/useRol';
-
-/* ── Yeni Olustur Menu Items ─────────────────────────────── */
-const yeniMenuItems = [
-  { icon: '👤', label: 'Yeni Müvekkil', href: '/muvekkillar?yeni=1' },
-  { icon: '📁', label: 'Yeni Dava', href: '/davalar?yeni=1' },
-  { icon: '⚡', label: 'Yeni İcra', href: '/icra?yeni=1' },
-  { icon: '📅', label: 'Yeni Etkinlik', href: '/takvim?yeni=1' },
-  { icon: '✅', label: 'Yeni Görev', href: '/gorevler?yeni=1' },
-  { icon: '📨', label: 'Yeni İhtarname', href: '/ihtarname?yeni=1' },
-];
+import { HavaDurumuBadge } from '@/components/dashboard/HavaDurumuBadge';
+import { HavaDurumuModal } from '@/components/dashboard/HavaDurumuModal';
 
 /* ── Zaman farkı formatı ───────────────────────────────────── */
 function zamanFarki(tarih: string): string {
@@ -51,9 +43,9 @@ export function Topbar({ onToggleSidebar }: TopbarProps) {
 
   /* ── State ──────────────────────────────────────────────── */
   const [user, setUser] = useState<{ email?: string; ad?: string } | null>(null);
-  const [yeniMenuOpen, setYeniMenuOpen] = useState(false);
   const [bildirimOpen, setBildirimOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [havaOpen, setHavaOpen] = useState(false);
   const rol = useRol();
   const rolInfo = ROL_ETIKETLERI[rol] || ROL_ETIKETLERI.avukat;
 
@@ -65,7 +57,6 @@ export function Topbar({ onToggleSidebar }: TopbarProps) {
   const okunmamisSayi = bildirimler?.filter((b) => !b.okundu).length ?? 0;
 
   /* ── Refs for click-outside ─────────────────────────────── */
-  const yeniMenuRef = useRef<HTMLDivElement>(null);
   const bildirimRef = useRef<HTMLDivElement>(null);
 
   /* ── Fetch user ─────────────────────────────────────────── */
@@ -84,9 +75,6 @@ export function Topbar({ onToggleSidebar }: TopbarProps) {
   /* ── Click outside to close dropdowns ───────────────────── */
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (yeniMenuRef.current && !yeniMenuRef.current.contains(e.target as Node)) {
-        setYeniMenuOpen(false);
-      }
       if (bildirimRef.current && !bildirimRef.current.contains(e.target as Node)) {
         setBildirimOpen(false);
       }
@@ -160,36 +148,9 @@ export function Topbar({ onToggleSidebar }: TopbarProps) {
       {/* ── Right Group ──────────────────────────────────── */}
       <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 ml-auto">
 
-        {/* ── + Yeni Olustur ── Premium Gradient Button ── */}
-        <div className="relative" ref={yeniMenuRef}>
-          <button
-            onClick={() => {
-              setYeniMenuOpen((prev) => !prev);
-              setBildirimOpen(false);
-            }}
-            className="btn-header-gold flex items-center gap-1"
-          >
-            <span>+</span>
-            <span className="hidden sm:inline">Yeni Oluştur</span>
-          </button>
-
-          {/* Dropdown — Premium Shadow */}
-          {yeniMenuOpen && (
-            <div className="dropdown-menu absolute right-0 top-full mt-1.5 w-48 py-1.5 z-50 animate-fade-in-up">
-              {yeniMenuItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setYeniMenuOpen(false)}
-                  className="dropdown-item flex items-center gap-2.5 px-3 py-2 text-sm text-text-muted
-                             hover:text-text"
-                >
-                  <span className="text-base w-5 text-center">{item.icon}</span>
-                  <span>{item.label}</span>
-                </Link>
-              ))}
-            </div>
-          )}
+        {/* ── Hava Durumu ──────────────────────────────── */}
+        <div className="hidden sm:block">
+          <HavaDurumuBadge onClick={() => setHavaOpen(true)} />
         </div>
 
         {/* ── Bildirim (Notification Bell) ──────────────── */}
@@ -197,7 +158,6 @@ export function Topbar({ onToggleSidebar }: TopbarProps) {
           <button
             onClick={() => {
               setBildirimOpen((prev) => !prev);
-              setYeniMenuOpen(false);
             }}
             className="relative w-9 h-9 flex items-center justify-center rounded-lg
                        text-text-muted hover:bg-surface2 hover:text-text transition-all duration-200 text-base"
@@ -323,22 +283,13 @@ export function Topbar({ onToggleSidebar }: TopbarProps) {
           🚪
         </button>
 
-        {/* ── WhatsApp ──────────────────────────────────── */}
-        <button
-          onClick={() => {
-            console.log('WhatsApp modal');
-          }}
-          className="w-8 h-8 flex items-center justify-center rounded-lg
-                     bg-[#25D366] text-white text-[11px] font-semibold
-                     hover:bg-[#20bd5a] hover:shadow-[0_4px_12px_rgba(37,211,102,0.3)] transition-all duration-200"
-          title="WhatsApp Gönder"
-        >
-          📱
-        </button>
       </div>
 
       {/* ── Spotlight Search Modal ─────────────────────────── */}
       <SpotlightSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
+
+      {/* ── Hava Durumu Modal ─────────────────────────────── */}
+      <HavaDurumuModal open={havaOpen} onClose={() => setHavaOpen(false)} />
     </header>
   );
 }

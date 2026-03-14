@@ -27,7 +27,7 @@ export default function PersonelPage() {
   }, [personeller]);
 
   return (
-    <div>
+    <div className="flex flex-col min-h-[calc(100vh-8rem)]">
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-[var(--font-playfair)] text-2xl text-text font-bold">
           Personel
@@ -58,7 +58,7 @@ export default function PersonelPage() {
           <div className="text-sm text-text-muted">Henüz personel eklenmemiş</div>
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-3 flex-1">
           {personeller.map((p) => {
             const rol = ROL_RENK[p.rol || ''] || { bg: 'bg-surface2', text: 'text-text-muted', label: p.rol || '—' };
             return (

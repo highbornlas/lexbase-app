@@ -9,7 +9,7 @@ export const FEATURES = [
     tag: 'Müvekkil Yönetimi',
     title: 'Tüm müvekkilleriniz, tek merkezde.',
     desc: 'Gerçek ve tüzel kişi profillerini eksiksiz yönetin. TC kimlik, vergi no, MERSİS, IBAN bilgilerinden dava geçmişine kadar her şey elinizin altında.',
-    list: ['Gerçek & tüzel kişi profilleri', 'Bağlı dava, icra ve arabuluculuk dosyaları', 'Belge arşivi & WhatsApp entegrasyonu'],
+    list: ['Gerçek & tüzel kişi profilleri', 'Bağlı dava, icra ve arabuluculuk dosyaları', 'Belge arşivi & iletişim geçmişi'],
     icon: '📒',
   },
   {
@@ -62,7 +62,7 @@ export const PLANLAR = [
     periyotAylik: '/ 30 gün', periyotYillik: '/ 30 gün',
     ozellikler: [
       { text: '25 Müvekkil', var: true }, { text: '30 Dava, 15 İcra', var: true },
-      { text: 'Arabuluculuk', var: true }, { text: 'WhatsApp', var: false },
+      { text: 'Arabuluculuk', var: true }, { text: 'İletişim Geçmişi', var: false },
       { text: 'Finans & Fatura', var: false }, { text: 'Personel hesabı', var: false },
     ],
     vurgu: false, btnText: 'Ücretsiz Başla',
@@ -73,7 +73,7 @@ export const PLANLAR = [
     periyotAylik: '/ ay', periyotYillik: '/ ay (yıllık)',
     ozellikler: [
       { text: '150 Müvekkil', var: true }, { text: '200 Dava, 100 İcra', var: true },
-      { text: 'WhatsApp', var: true }, { text: 'Finans & Fatura', var: true },
+      { text: 'İletişim Geçmişi', var: true }, { text: 'Finans & Fatura', var: true },
       { text: 'Araç Kutusu', var: true }, { text: 'Personel hesabı', var: false },
     ],
     vurgu: false, btnText: 'Planı Seç',
@@ -84,7 +84,7 @@ export const PLANLAR = [
     periyotAylik: '/ ay', periyotYillik: '/ ay (yıllık)',
     ozellikler: [
       { text: '500 Müvekkil', var: true }, { text: '750 Dava, 400 İcra', var: true },
-      { text: 'WhatsApp & Finans', var: true }, { text: 'Araç Kutusu', var: true },
+      { text: 'Finans & Fatura', var: true }, { text: 'Araç Kutusu', var: true },
       { text: '5 Personel Hesabı', var: true }, { text: 'Bulut Yedek', var: false },
     ],
     vurgu: true, btnText: 'Planı Seç',
@@ -174,10 +174,6 @@ export const SSS_DATA = [
         cevap: 'Evet, Araç Kutusu modülümüzde vekâletname, ihtarname, dilekçe ve sözleşme gibi sık kullanılan hukuki belgeleri şablon üzerinden oluşturabilirsiniz. Müvekkil ve dosya bilgileri otomatik olarak belgeye aktarılır. Oluşturulan belgeler PDF formatında indirilebilir veya doğrudan yazdırılabilir.',
       },
       {
-        soru: 'WhatsApp entegrasyonu ne anlama geliyor?',
-        cevap: 'WhatsApp entegrasyonu sayesinde müvekkil profilinden tek tıkla WhatsApp mesajı gönderebilirsiniz. Müvekkilin telefon numarası otomatik olarak tanınır. Bu özellik özellikle randevu hatırlatma, duruşma bilgilendirme ve hızlı iletişim için tasarlanmıştır. Profesyonel ve üzeri planlarda kullanılabilir.',
-      },
-      {
         soru: 'Offline (çevrimdışı) kullanılabilir mi?',
         cevap: 'LexBase tamamen bulut tabanlı bir platform olduğundan internet bağlantısı gerektirir. Bu tercih bilinçli olarak yapılmıştır: verileriniz her zaman güncel, güvende ve her cihazdan erişilebilir olsun. Mobil cihazlarda düşük bant genişliğinde bile sorunsuz çalışacak şekilde optimize edilmiştir.',
       },
@@ -255,7 +251,7 @@ export const KARSILASTIRMA_DATA: KarsilastirmaSatir[] = [
   { kategori: 'Müvekkil Yönetimi', ozellik: 'Müvekkil Limiti', baslangic: '25', profesyonel: '150', buro: '500', kurumsal: 'Sınırsız' },
   { kategori: 'Müvekkil Yönetimi', ozellik: 'Gerçek & Tüzel Kişi Profili', baslangic: true, profesyonel: true, buro: true, kurumsal: true },
   { kategori: 'Müvekkil Yönetimi', ozellik: 'TC / Vergi No Doğrulama', baslangic: true, profesyonel: true, buro: true, kurumsal: true },
-  { kategori: 'Müvekkil Yönetimi', ozellik: 'WhatsApp Entegrasyonu', baslangic: false, profesyonel: true, buro: true, kurumsal: true },
+  { kategori: 'Müvekkil Yönetimi', ozellik: 'İletişim Geçmişi', baslangic: false, profesyonel: true, buro: true, kurumsal: true },
   { kategori: 'Müvekkil Yönetimi', ozellik: 'Belge Arşivi', baslangic: false, profesyonel: true, buro: true, kurumsal: true },
   // Dava & İcra
   { kategori: 'Dava & İcra', ozellik: 'Dava Limiti', baslangic: '30', profesyonel: '200', buro: '750', kurumsal: 'Sınırsız' },
