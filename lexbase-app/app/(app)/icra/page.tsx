@@ -9,7 +9,7 @@ import { IcraModal } from '@/components/modules/IcraModal';
 import { ExportMenu } from '@/components/ui/ExportMenu';
 import { SureBadge } from '@/components/ui/SureBadge';
 import { tamIcraDairesiAdi, esasNoGoster, dosyaNoOlustur, alacakliBelirle, sureHesapla } from '@/lib/utils/uyapHelpers';
-import { ICRA_TURLERI, ICRA_DURUMLARI } from '@/lib/constants/uyap';
+import { ICRA_TURLERI, ICRA_DURUMLARI, ICRA_YARGI_BIRIMLERI } from '@/lib/constants/uyap';
 import { exportIcraListeUYAPXLS } from '@/lib/export/excelExport';
 import { exportIcraListePDF } from '@/lib/export/pdfExport';
 
@@ -96,8 +96,11 @@ export default function IcraPage() {
   const kaydetMutation = useIcraKaydet();
 
   const [arama, setArama] = useState('');
-  const [durumFiltre, setDurumFiltre] = useState<string>('hepsi');
+  const [dosyaDurumu, setDosyaDurumu] = useState<'acik' | 'kapali'>('acik');
   const [turFiltre, setTurFiltre] = useState<string>('hepsi');
+  const [yargiBirimi, setYargiBirimi] = useState<string>('hepsi');
+  const [esasYilFiltre, setEsasYilFiltre] = useState<string>('');
+  const [esasNoFiltre, setEsasNoFiltre] = useState<string>('');
   const [tarihBaslangic, setTarihBaslangic] = useState('');
   const [tarihBitis, setTarihBitis] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('kayitNo');
@@ -105,6 +108,11 @@ export default function IcraPage() {
   const [modalAcik, setModalAcik] = useState(false);
   const [seciliIcra, setSeciliIcra] = useState<Icra | null>(null);
   const [sorguPaneliAcik, setSorguPaneliAcik] = useState(true);
+
+  const yillar = useMemo(() => {
+    const buYil = new Date().getFullYear();
+    return Array.from({ length: buYil - 1999 }, (_, i) => (buYil - i).toString());
+  }, []);
 
   // Sayfalama
   const [sayfa, setSayfa] = useState(1);
@@ -177,8 +185,17 @@ export default function IcraPage() {
   const filtrelenmis = useMemo(() => {
     if (!icralar) return [];
     let sonuc = icralar.filter((ic) => {
-      if (durumFiltre !== 'hepsi' && ic.durum !== durumFiltre) return false;
+      // Dosya durumu toggle
+      if (dosyaDurumu === 'acik' && ic.durum === 'Kapandı') return false;
+      if (dosyaDurumu === 'kapali' && ic.durum !== 'Kapandı') return false;
       if (turFiltre !== 'hepsi' && ic.tur !== turFiltre) return false;
+      if (yargiBirimi !== 'hepsi') {
+        const daireStr = tamIcraDairesiAdi(ic.il, ic.daire).toLowerCase();
+        if (!daireStr.includes(yargiBirimi.toLowerCase())) return false;
+      }
+      // Esas yıl/no filtresi
+      if (esasYilFiltre && ic.esasYil !== esasYilFiltre) return false;
+      if (esasNoFiltre && !(ic.esasNo || '').toString().includes(esasNoFiltre)) return false;
       if (tarihBaslangic && ic.tarih && ic.tarih < tarihBaslangic) return false;
       if (tarihBitis && ic.tarih && ic.tarih > tarihBitis) return false;
       if (arama) {
@@ -209,7 +226,7 @@ export default function IcraPage() {
       return sortDir === 'desc' ? -cmp : cmp;
     });
     return sonuc;
-  }, [icralar, arama, durumFiltre, turFiltre, tarihBaslangic, tarihBitis, sortKey, sortDir, muvAdMap, sureMap]);
+  }, [icralar, arama, dosyaDurumu, turFiltre, yargiBirimi, esasYilFiltre, esasNoFiltre, tarihBaslangic, tarihBitis, sortKey, sortDir, muvAdMap, sureMap]);
 
   /* ── Sayfalama ── */
   const toplamSayfa = Math.max(1, Math.ceil(filtrelenmis.length / PAGE_SIZE));
@@ -218,7 +235,7 @@ export default function IcraPage() {
     return filtrelenmis.slice(bas, bas + PAGE_SIZE);
   }, [filtrelenmis, sayfa]);
 
-  useEffect(() => { setSayfa(1); }, [arama, durumFiltre, turFiltre, tarihBaslangic, tarihBitis]);
+  useEffect(() => { setSayfa(1); }, [arama, dosyaDurumu, turFiltre, yargiBirimi, esasYilFiltre, esasNoFiltre, tarihBaslangic, tarihBitis]);
 
   /* ── Siralama toggle ── */
   function toggleSort(key: SortKey) {
@@ -247,12 +264,12 @@ export default function IcraPage() {
   /* ── Kayıtlı filtre ── */
   function filtreKaydet() {
     if (!filtreAdi.trim()) return;
-    const yeni = { ad: filtreAdi.trim(), filtre: { arama, durumFiltre, turFiltre, tarihBaslangic, tarihBitis } };
+    const yeni = { ad: filtreAdi.trim(), filtre: { arama, dosyaDurumu, turFiltre, yargiBirimi, esasYilFiltre, esasNoFiltre, tarihBaslangic, tarihBitis } };
     setKayitliFiltreler((prev) => [...prev.filter((f) => f.ad !== yeni.ad), yeni]);
     setFiltreAdi(''); setKayitliFiltreMenuAcik(false);
   }
   function filtreUygula(f: Record<string, string>) {
-    setArama(f.arama || ''); setDurumFiltre(f.durumFiltre || 'hepsi'); setTurFiltre(f.turFiltre || 'hepsi'); setTarihBaslangic(f.tarihBaslangic || ''); setTarihBitis(f.tarihBitis || '');
+    setArama(f.arama || ''); setDosyaDurumu((f.dosyaDurumu as 'acik' | 'kapali') || 'acik'); setTurFiltre(f.turFiltre || 'hepsi'); setYargiBirimi(f.yargiBirimi || 'hepsi'); setEsasYilFiltre(f.esasYilFiltre || ''); setEsasNoFiltre(f.esasNoFiltre || ''); setTarihBaslangic(f.tarihBaslangic || ''); setTarihBitis(f.tarihBitis || '');
     setKayitliFiltreMenuAcik(false);
   }
   function filtreSil(ad: string) { setKayitliFiltreler((prev) => prev.filter((f) => f.ad !== ad)); }
@@ -269,7 +286,7 @@ export default function IcraPage() {
     exportIcraListePDF(hedef as unknown as Array<Record<string, unknown>>, muvAdMap);
   }
 
-  const filtreAktif = arama || durumFiltre !== 'hepsi' || turFiltre !== 'hepsi' || tarihBaslangic || tarihBitis;
+  const filtreAktif = arama || turFiltre !== 'hepsi' || yargiBirimi !== 'hepsi' || !!esasYilFiltre || !!esasNoFiltre || tarihBaslangic || tarihBitis;
 
   /* ── Grid template — dinamik sütunlara göre ── */
   const COL_WIDTHS: Record<IcraColKey, string> = {
@@ -375,52 +392,85 @@ export default function IcraPage() {
         {/* Panel İçerik */}
         {sorguPaneliAcik && (
           <div className="px-4 py-4">
-            {/* 1. Satır — Genel Arama */}
-            <div className="mb-4">
-              <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Genel Arama</label>
-              <div className="relative">
-                <input type="text" value={arama} onChange={(e) => setArama(e.target.value)} placeholder="Esas no, daire, alacaklı/borçlu adı, tür ile ara..." className="w-full px-4 py-2 pl-9 bg-bg border border-border rounded text-sm text-text placeholder:text-text-dim focus:outline-none focus:border-gold transition-colors" />
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dim text-xs">&#x1F50D;</span>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-4">
+              {/* Sol Kolon */}
+              <div className="space-y-3">
+                {/* İcra Türü */}
+                <div>
+                  <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">İcra Türü</label>
+                  <select value={turFiltre} onChange={(e) => setTurFiltre(e.target.value)} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold">
+                    <option value="hepsi">Seçiniz</option>
+                    {ICRA_TURLERI.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                {/* Yargı Birimi */}
+                <div>
+                  <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Yargı Birimi</label>
+                  <select value={yargiBirimi} onChange={(e) => setYargiBirimi(e.target.value)} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold">
+                    <option value="hepsi">Seçiniz</option>
+                    {ICRA_YARGI_BIRIMLERI.map((b) => <option key={b} value={b}>{b}</option>)}
+                  </select>
+                </div>
+                {/* Açılış Tarihi Aralığı */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Açılış Başlangıç Tarihi</label>
+                    <input type="date" value={tarihBaslangic} onChange={(e) => setTarihBaslangic(e.target.value)} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Açılış Bitiş Tarihi</label>
+                    <input type="date" value={tarihBitis} onChange={(e) => setTarihBitis(e.target.value)} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Sağ Kolon */}
+              <div className="space-y-3">
+                {/* Dosya Durumu — Toggle */}
+                <div>
+                  <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Dosya Durumu</label>
+                  <div className="flex items-center gap-0 bg-bg border border-border rounded overflow-hidden w-fit">
+                    <button type="button" onClick={() => setDosyaDurumu('acik')} className={`px-4 py-2 text-xs font-medium transition-colors ${dosyaDurumu === 'acik' ? 'bg-blue-600 text-white' : 'text-text-muted hover:text-text'}`}>Açık</button>
+                    <button type="button" onClick={() => setDosyaDurumu('kapali')} className={`px-4 py-2 text-xs font-medium transition-colors ${dosyaDurumu === 'kapali' ? 'bg-blue-600 text-white' : 'text-text-muted hover:text-text'}`}>Kapalı</button>
+                  </div>
+                </div>
+                {/* Dosya Yıl / No */}
+                <div>
+                  <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Dosya Yıl / No</label>
+                  <div className="flex items-center gap-2">
+                    <select value={esasYilFiltre} onChange={(e) => setEsasYilFiltre(e.target.value)} className="w-28 px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold">
+                      <option value="">Seçiniz</option>
+                      {yillar.map((y) => <option key={y} value={y}>{y}</option>)}
+                    </select>
+                    <span className="text-text-dim text-sm">/</span>
+                    <input type="text" value={esasNoFiltre} onChange={(e) => setEsasNoFiltre(e.target.value)} placeholder="Dosya No" className="flex-1 px-3 py-2 bg-bg border border-border rounded text-xs text-text placeholder:text-text-dim focus:outline-none focus:border-gold" />
+                  </div>
+                </div>
+                {/* Genel Arama */}
+                <div>
+                  <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Kişi / Genel Arama</label>
+                  <div className="relative">
+                    <input type="text" value={arama} onChange={(e) => setArama(e.target.value)} placeholder="Alacaklı, borçlu, daire adı..." className="w-full px-4 py-2 pl-9 bg-bg border border-border rounded text-xs text-text placeholder:text-text-dim focus:outline-none focus:border-gold transition-colors" />
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dim text-xs">&#x1F50D;</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* 2. Satır — Filtre Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-3 mb-4">
-              <div>
-                <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Durum</label>
-                <select value={durumFiltre} onChange={(e) => setDurumFiltre(e.target.value)} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold">
-                  <option value="hepsi">Tümü</option>
-                  {ICRA_DURUMLARI.map((d) => <option key={d} value={d}>{d}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">İcra Türü</label>
-                <select value={turFiltre} onChange={(e) => setTurFiltre(e.target.value)} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold">
-                  <option value="hepsi">Tümü</option>
-                  {ICRA_TURLERI.map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Başlangıç Tarihi</label>
-                <input type="date" value={tarihBaslangic} onChange={(e) => setTarihBaslangic(e.target.value)} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold" />
-              </div>
-              <div>
-                <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Bitiş Tarihi</label>
-                <input type="date" value={tarihBitis} onChange={(e) => setTarihBitis(e.target.value)} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold" />
-              </div>
-            </div>
-
-            {/* 3. Satır — Aksiyon Butonları */}
-            <div className="flex items-center justify-between pt-3 border-t border-border/50">
+            {/* Alt Aksiyon Satırı */}
+            <div className="flex items-center justify-between pt-4 mt-4 border-t border-border/50">
               <div className="text-[11px] text-text-dim">
                 {filtreAktif ? `${filtrelenmis.length} / ${icralar?.length ?? 0} sonuç` : `${filtrelenmis.length} dosya listeleniyor`}
               </div>
               <div className="flex items-center gap-2">
                 {filtreAktif && (
-                  <button onClick={() => { setArama(''); setDurumFiltre('hepsi'); setTurFiltre('hepsi'); setTarihBaslangic(''); setTarihBitis(''); }} className="px-3 py-1.5 text-[11px] text-text-muted bg-bg border border-border rounded hover:border-red hover:text-red transition-colors">
+                  <button onClick={() => { setArama(''); setDosyaDurumu('acik'); setTurFiltre('hepsi'); setYargiBirimi('hepsi'); setEsasYilFiltre(''); setEsasNoFiltre(''); setTarihBaslangic(''); setTarihBitis(''); }} className="px-3 py-1.5 text-[11px] text-gold hover:text-gold-light transition-colors">
                     Temizle
                   </button>
                 )}
+                <button type="button" className="px-4 py-1.5 bg-blue-600 text-white text-[11px] font-medium rounded hover:bg-blue-700 transition-colors flex items-center gap-1.5">
+                  <span>&#x1F50D;</span> Sorgula
+                </button>
               </div>
             </div>
           </div>

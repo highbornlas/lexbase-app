@@ -205,6 +205,65 @@ export const ICRA_EVRAK_TURLERI = [
   { key: 'diger', label: 'Diğer', icon: '📄' },
 ] as const;
 
+// ── Yargı Türleri ──
+export const YARGI_TURLERI = [
+  'Ceza',
+  'Hukuk',
+  'İdari Yargı',
+  'Savcılık',
+  'Tazminat Komisyonu Başkanlığı',
+] as const;
+
+// ── Yargı Birimleri (Yargı Türüne bağlı) ──
+export const YARGI_BIRIMLERI: Record<string, string[]> = {
+  'Ceza': [
+    'AĞIR CEZA MAHKEMESİ',
+    'ASLİYE CEZA MAHKEMESİ',
+    'Bölge Adliye Mah. Ceza Dairesi',
+    'ÇOCUK AĞIR CEZA MAHKEMESİ',
+    'ÇOCUK MAHKEMESİ',
+    'FİKRİ VE SINAİ HAKLAR CEZA MAHKEMESİ',
+    'İCRA CEZA HAKİMLİĞİ',
+    'İNFAZ HAKİMLİĞİ',
+    'İSTİNAF CEZA DAİRESİ (İLK DERECE)',
+    'SULH CEZA HAKİMLİĞİ',
+    'YARGITAY CEZA DAİRESİ (İLK DERECE)',
+  ],
+  'Hukuk': [
+    'AİLE MAHKEMESİ',
+    'ASLİYE HUKUK MAHKEMESİ',
+    'ASLİYE TİCARET MAHKEMESİ',
+    'BAM Hukuk Dairesi (İlk Derece)',
+    'Bölge Adliye Mah. Hukuk Dairesi',
+    'FİKRİ VE SINAİ HAKLAR HUKUK MAHKEMESİ',
+    'İCRA HUKUK MAHKEMESİ',
+    'İŞ MAHKEMESİ',
+    'KADASTRO MAHKEMESİ',
+    'KADASTRO MAHKEMESİ (MÜS)',
+    'SULH HUKUK MAHKEMESİ',
+    'TÜKETİCİ MAHKEMESİ',
+  ],
+  'İdari Yargı': [
+    'BÖLGE İDARE MAHKEMESİ',
+    'İDARE MAHKEMESİ',
+    'VERGİ MAHKEMESİ',
+  ],
+  'Savcılık': [
+    'Savcılık',
+  ],
+  'Tazminat Komisyonu Başkanlığı': [
+    'Tazminat Komisyonu Başkanlığı',
+  ],
+};
+
+// ── İcra Yargı Birimleri (İcra modülüne özel) ──
+export const ICRA_YARGI_BIRIMLERI = [
+  'İCRA DAİRESİ',
+  'İCRA HUKUK MAHKEMESİ',
+  'İCRA CEZA MAHKEMESİ',
+  'SATIŞ MEMURLUĞU',
+] as const;
+
 // ── İller ──
 export const ILLER = [
   'Adana', 'Adıyaman', 'Afyonkarahisar', 'Ağrı', 'Aksaray', 'Amasya', 'Ankara', 'Antalya',

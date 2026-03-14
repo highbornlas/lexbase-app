@@ -9,7 +9,7 @@ import { ExportMenu } from '@/components/ui/ExportMenu';
 import { DurusmaBadge } from '@/components/ui/SureBadge';
 import { tamMahkemeAdi, esasNoGoster, dosyaNoOlustur, davaciBelirle, durusmayaKalanGun } from '@/lib/utils/uyapHelpers';
 import { fmtTarih } from '@/lib/utils';
-import { DAVA_TURLERI, DAVA_DURUMLARI, DAVA_ASAMALARI } from '@/lib/constants/uyap';
+import { DAVA_DURUMLARI, YARGI_TURLERI, YARGI_BIRIMLERI } from '@/lib/constants/uyap';
 import { exportDavaListeUYAPXLS } from '@/lib/export/excelExport';
 import { exportDavaListePDF } from '@/lib/export/pdfExport';
 
@@ -84,9 +84,11 @@ export default function DavalarPage() {
 
   // UI state
   const [arama, setArama] = useState('');
-  const [durumFiltre, setDurumFiltre] = useState<string>('hepsi');
-  const [asamaFiltre, setAsamaFiltre] = useState<string>('hepsi');
-  const [davaTuruFiltre, setDavaTuruFiltre] = useState<string>('hepsi');
+  const [dosyaDurumu, setDosyaDurumu] = useState<'acik' | 'kapali'>('acik');
+  const [yargiTuru, setYargiTuru] = useState<string>('hepsi');
+  const [yargiBirimi, setYargiBirimi] = useState<string>('hepsi');
+  const [esasYilFiltre, setEsasYilFiltre] = useState<string>('');
+  const [esasNoFiltre, setEsasNoFiltre] = useState<string>('');
   const [tarihBaslangic, setTarihBaslangic] = useState('');
   const [tarihBitis, setTarihBitis] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('kayitNo');
@@ -94,6 +96,13 @@ export default function DavalarPage() {
   const [modalAcik, setModalAcik] = useState(false);
   const [seciliDava, setSeciliDava] = useState<Dava | null>(null);
   const [sorguPaneliAcik, setSorguPaneliAcik] = useState(true);
+
+  // Yargı Türü değişince birimi resetle
+  const mevcutBirimler = yargiTuru !== 'hepsi' ? (YARGI_BIRIMLERI[yargiTuru] || []) : [];
+  const yillar = useMemo(() => {
+    const buYil = new Date().getFullYear();
+    return Array.from({ length: buYil - 1999 }, (_, i) => (buYil - i).toString());
+  }, []);
 
   // Sayfalama
   const [sayfa, setSayfa] = useState(1);
@@ -173,9 +182,20 @@ export default function DavalarPage() {
   const filtrelenmis = useMemo(() => {
     if (!davalar) return [];
     return davalar.filter((d) => {
-      if (durumFiltre !== 'hepsi' && d.durum !== durumFiltre) return false;
-      if (asamaFiltre !== 'hepsi' && d.asama !== asamaFiltre) return false;
-      if (davaTuruFiltre !== 'hepsi' && d.davaTuru !== davaTuruFiltre) return false;
+      // Dosya durumu toggle
+      if (dosyaDurumu === 'acik' && d.durum === 'Kapalı') return false;
+      if (dosyaDurumu === 'kapali' && d.durum !== 'Kapalı') return false;
+      // Yargı birimi filtresi (mtur alanına karşı)
+      if (yargiBirimi !== 'hepsi' && d.mtur !== yargiBirimi) return false;
+      // Yargı türü filtresi (birimi seçilmemişse, türün tüm birimleri dahil)
+      if (yargiTuru !== 'hepsi' && yargiBirimi === 'hepsi') {
+        const birimler = YARGI_BIRIMLERI[yargiTuru] || [];
+        if (birimler.length > 0 && d.mtur && !birimler.some((b) => d.mtur?.toLowerCase().includes(b.toLowerCase()))) return false;
+      }
+      // Esas yıl/no filtresi
+      if (esasYilFiltre && d.esasYil !== esasYilFiltre) return false;
+      if (esasNoFiltre && !(d.esasNo || '').toString().includes(esasNoFiltre)) return false;
+      // Tarih aralığı
       if (tarihBaslangic || tarihBitis) {
         const davaTarih = d.tarih || '';
         if (tarihBaslangic && davaTarih < tarihBaslangic) return false;
@@ -198,7 +218,7 @@ export default function DavalarPage() {
       }
       return true;
     });
-  }, [davalar, arama, durumFiltre, asamaFiltre, davaTuruFiltre, tarihBaslangic, tarihBitis, muvAdMap]);
+  }, [davalar, arama, dosyaDurumu, yargiTuru, yargiBirimi, esasYilFiltre, esasNoFiltre, tarihBaslangic, tarihBitis, muvAdMap]);
 
   // ── Sıralama ───────────────────────────────────────────────
   const sirali = useMemo(() => {
@@ -229,7 +249,7 @@ export default function DavalarPage() {
   }, [sirali, sayfa]);
 
   // Filtre değişince sayfa 1'e dön
-  useEffect(() => { setSayfa(1); }, [arama, durumFiltre, asamaFiltre, davaTuruFiltre, tarihBaslangic, tarihBitis]);
+  useEffect(() => { setSayfa(1); }, [arama, dosyaDurumu, yargiTuru, yargiBirimi, esasYilFiltre, esasNoFiltre, tarihBaslangic, tarihBitis]);
 
   // ── Sıralama toggle ──────────────────────────────────────
   function toggleSort(key: SortKey) {
@@ -266,7 +286,7 @@ export default function DavalarPage() {
     if (!filtreAdi.trim()) return;
     const yeni = {
       ad: filtreAdi.trim(),
-      filtre: { arama, durumFiltre, asamaFiltre, davaTuruFiltre, tarihBaslangic, tarihBitis },
+      filtre: { arama, dosyaDurumu, yargiTuru, yargiBirimi, esasYilFiltre, esasNoFiltre, tarihBaslangic, tarihBitis },
     };
     setKayitliFiltreler((prev) => [...prev.filter((f) => f.ad !== yeni.ad), yeni]);
     setFiltreAdi('');
@@ -274,9 +294,11 @@ export default function DavalarPage() {
   }
   function filtreUygula(f: Record<string, string>) {
     setArama(f.arama || '');
-    setDurumFiltre(f.durumFiltre || 'hepsi');
-    setAsamaFiltre(f.asamaFiltre || 'hepsi');
-    setDavaTuruFiltre(f.davaTuruFiltre || 'hepsi');
+    setDosyaDurumu((f.dosyaDurumu as 'acik' | 'kapali') || 'acik');
+    setYargiTuru(f.yargiTuru || 'hepsi');
+    setYargiBirimi(f.yargiBirimi || 'hepsi');
+    setEsasYilFiltre(f.esasYilFiltre || '');
+    setEsasNoFiltre(f.esasNoFiltre || '');
     setTarihBaslangic(f.tarihBaslangic || '');
     setTarihBitis(f.tarihBitis || '');
     setKayitliFiltreMenuAcik(false);
@@ -308,7 +330,7 @@ export default function DavalarPage() {
   }, [sirali, muvAdMap, seciliIdler]);
 
   // ── Filtrelerin aktif olup olmadigi ────────────────────────
-  const filtreAktif = durumFiltre !== 'hepsi' || asamaFiltre !== 'hepsi' || davaTuruFiltre !== 'hepsi' || !!tarihBaslangic || !!tarihBitis || !!arama;
+  const filtreAktif = yargiTuru !== 'hepsi' || yargiBirimi !== 'hepsi' || !!esasYilFiltre || !!esasNoFiltre || !!tarihBaslangic || !!tarihBitis || !!arama;
 
   // ── Grid template — dinamik sütunlara göre ─────────────────
   const COL_WIDTHS: Record<DavaColKey, string> = {
@@ -447,59 +469,85 @@ export default function DavalarPage() {
         {/* Panel İçerik */}
         {sorguPaneliAcik && (
           <div className="px-4 py-4">
-            {/* 1. Satır — Genel Arama */}
-            <div className="mb-4">
-              <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Genel Arama</label>
-              <div className="relative">
-                <input type="text" value={arama} onChange={(e) => setArama(e.target.value)} placeholder="Esas no, mahkeme, taraf, konu, dava türü..." className="w-full px-4 py-2 pl-9 bg-bg border border-border rounded text-sm text-text placeholder:text-text-dim focus:outline-none focus:border-gold transition-colors" />
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dim text-xs">&#x1F50D;</span>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-4">
+              {/* Sol Kolon */}
+              <div className="space-y-3">
+                {/* Yargı Türü */}
+                <div>
+                  <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Yargı Türü</label>
+                  <select value={yargiTuru} onChange={(e) => { setYargiTuru(e.target.value); setYargiBirimi('hepsi'); }} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold">
+                    <option value="hepsi">Seçiniz</option>
+                    {YARGI_TURLERI.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                {/* Yargı Birimi */}
+                <div>
+                  <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Yargı Birimi</label>
+                  <select value={yargiBirimi} onChange={(e) => setYargiBirimi(e.target.value)} disabled={yargiTuru === 'hepsi'} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold disabled:opacity-50 disabled:cursor-not-allowed">
+                    <option value="hepsi">Seçiniz</option>
+                    {mevcutBirimler.map((b) => <option key={b} value={b}>{b}</option>)}
+                  </select>
+                </div>
+                {/* Açılış Tarihi Aralığı */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Açılış Başlangıç Tarihi</label>
+                    <input type="date" value={tarihBaslangic} onChange={(e) => setTarihBaslangic(e.target.value)} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Açılış Bitiş Tarihi</label>
+                    <input type="date" value={tarihBitis} onChange={(e) => setTarihBitis(e.target.value)} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Sağ Kolon */}
+              <div className="space-y-3">
+                {/* Dosya Durumu — Toggle */}
+                <div>
+                  <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Dosya Durumu</label>
+                  <div className="flex items-center gap-0 bg-bg border border-border rounded overflow-hidden w-fit">
+                    <button type="button" onClick={() => setDosyaDurumu('acik')} className={`px-4 py-2 text-xs font-medium transition-colors ${dosyaDurumu === 'acik' ? 'bg-blue-600 text-white' : 'text-text-muted hover:text-text'}`}>Açık</button>
+                    <button type="button" onClick={() => setDosyaDurumu('kapali')} className={`px-4 py-2 text-xs font-medium transition-colors ${dosyaDurumu === 'kapali' ? 'bg-blue-600 text-white' : 'text-text-muted hover:text-text'}`}>Kapalı</button>
+                  </div>
+                </div>
+                {/* Dosya Yıl / No */}
+                <div>
+                  <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Dosya Yıl / No</label>
+                  <div className="flex items-center gap-2">
+                    <select value={esasYilFiltre} onChange={(e) => setEsasYilFiltre(e.target.value)} className="w-28 px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold">
+                      <option value="">Seçiniz</option>
+                      {yillar.map((y) => <option key={y} value={y}>{y}</option>)}
+                    </select>
+                    <span className="text-text-dim text-sm">/</span>
+                    <input type="text" value={esasNoFiltre} onChange={(e) => setEsasNoFiltre(e.target.value)} placeholder="Dosya No" className="flex-1 px-3 py-2 bg-bg border border-border rounded text-xs text-text placeholder:text-text-dim focus:outline-none focus:border-gold" />
+                  </div>
+                </div>
+                {/* Genel Arama */}
+                <div>
+                  <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Kişi / Genel Arama</label>
+                  <div className="relative">
+                    <input type="text" value={arama} onChange={(e) => setArama(e.target.value)} placeholder="Taraf adı, mahkeme, konu..." className="w-full px-4 py-2 pl-9 bg-bg border border-border rounded text-xs text-text placeholder:text-text-dim focus:outline-none focus:border-gold transition-colors" />
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dim text-xs">&#x1F50D;</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* 2. Satır — Filtre Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-3 mb-4">
-              <div>
-                <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Durum</label>
-                <select value={durumFiltre} onChange={(e) => setDurumFiltre(e.target.value)} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold">
-                  <option value="hepsi">Tümü</option>
-                  {DAVA_DURUMLARI.map((d) => <option key={d} value={d}>{d}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Aşama</label>
-                <select value={asamaFiltre} onChange={(e) => setAsamaFiltre(e.target.value)} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold">
-                  <option value="hepsi">Tümü</option>
-                  {DAVA_ASAMALARI.map((a) => <option key={a} value={a}>{a}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Dava Türü</label>
-                <select value={davaTuruFiltre} onChange={(e) => setDavaTuruFiltre(e.target.value)} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold">
-                  <option value="hepsi">Tümü</option>
-                  {DAVA_TURLERI.map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Başlangıç Tarihi</label>
-                <input type="date" value={tarihBaslangic} onChange={(e) => setTarihBaslangic(e.target.value)} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold" />
-              </div>
-              <div>
-                <label className="block text-[10px] text-text-dim uppercase tracking-wider mb-1.5 font-medium">Bitiş Tarihi</label>
-                <input type="date" value={tarihBitis} onChange={(e) => setTarihBitis(e.target.value)} className="w-full px-3 py-2 bg-bg border border-border rounded text-xs text-text focus:outline-none focus:border-gold" />
-              </div>
-            </div>
-
-            {/* 3. Satır — Aksiyon Butonları */}
-            <div className="flex items-center justify-between pt-3 border-t border-border/50">
+            {/* Alt Aksiyon Satırı */}
+            <div className="flex items-center justify-between pt-4 mt-4 border-t border-border/50">
               <div className="text-[11px] text-text-dim">
                 {filtreAktif ? `${sirali.length} / ${davalar?.length ?? 0} sonuç` : `${sirali.length} dosya listeleniyor`}
               </div>
               <div className="flex items-center gap-2">
                 {filtreAktif && (
-                  <button onClick={() => { setArama(''); setDurumFiltre('hepsi'); setAsamaFiltre('hepsi'); setDavaTuruFiltre('hepsi'); setTarihBaslangic(''); setTarihBitis(''); }} className="px-3 py-1.5 text-[11px] text-text-muted bg-bg border border-border rounded hover:border-red hover:text-red transition-colors">
+                  <button onClick={() => { setArama(''); setDosyaDurumu('acik'); setYargiTuru('hepsi'); setYargiBirimi('hepsi'); setEsasYilFiltre(''); setEsasNoFiltre(''); setTarihBaslangic(''); setTarihBitis(''); }} className="px-3 py-1.5 text-[11px] text-gold hover:text-gold-light transition-colors">
                     Temizle
                   </button>
                 )}
+                <button type="button" className="px-4 py-1.5 bg-blue-600 text-white text-[11px] font-medium rounded hover:bg-blue-700 transition-colors flex items-center gap-1.5">
+                  <span>&#x1F50D;</span> Sorgula
+                </button>
               </div>
             </div>
           </div>
