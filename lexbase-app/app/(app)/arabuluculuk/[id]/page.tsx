@@ -147,9 +147,9 @@ export default function ArabuluculukDetayPage() {
             📦
           </button>
           <button
-            onClick={() => {
+            onClick={async () => {
               if (confirm(`"${arb.konu || arb.no || 'Bu dosya'}" silinecek. Emin misiniz?`)) {
-                silMut.mutate(arb);
+                await silMut.mutateAsync(arb);
                 router.push('/arabuluculuk');
               }
             }}

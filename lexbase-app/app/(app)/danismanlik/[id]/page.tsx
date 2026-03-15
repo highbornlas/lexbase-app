@@ -129,9 +129,9 @@ export default function DanismanlikDetayPage() {
             📦
           </button>
           <button
-            onClick={() => {
+            onClick={async () => {
               if (confirm(`"${dan.konu || dan.no || 'Bu danışmanlık'}" silinecek. Emin misiniz?`)) {
-                silMut.mutate(dan);
+                await silMut.mutateAsync(dan);
                 router.push('/danismanlik');
               }
             }}

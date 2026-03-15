@@ -2,6 +2,7 @@
 
 import { use, useState, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useMuvekkil, useMuvDavalar, useMuvIcralar, useMuvArabuluculuklar, useMuvIhtarnameler } from '@/lib/hooks/useMuvekkillar';
 import { useFinansOzet } from '@/lib/hooks/useFinans';
 import { MuvKpiCards } from '@/components/modules/muvekkil/MuvKpiCards';
@@ -53,6 +54,9 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
   const { data: icralar } = useMuvIcralar(id);
   const { data: arabuluculuklar } = useMuvArabuluculuklar(id);
   const { data: ihtarnameler } = useMuvIhtarnameler(id);
+
+  /* ── Navigation ── */
+  const router = useRouter();
 
   /* ── Mutation ── */
   const kaydetMutation = useMuvekkilKaydet();
@@ -154,10 +158,10 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
             ✏️ Düzenle
           </button>
           <button
-            onClick={() => {
+            onClick={async () => {
               if (confirm(`"${muv.ad}" silinecek. Emin misiniz?`)) {
-                silMut.mutate(id);
-                window.location.href = '/muvekkillar';
+                await silMut.mutateAsync(id);
+                router.push('/muvekkillar');
               }
             }}
             className="px-3 py-1.5 text-xs font-medium text-red border border-red/20 rounded-lg hover:bg-red-dim transition-colors"

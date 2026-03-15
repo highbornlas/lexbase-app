@@ -2,6 +2,7 @@
 
 import { use, useState, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useDava, useDavaKaydet, useDavaSil, useDavaArsivle } from '@/lib/hooks/useDavalar';
 import { useIcralar } from '@/lib/hooks/useIcra';
 import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
@@ -47,6 +48,7 @@ export default function DavaDetayPage({ params }: { params: Promise<{ id: string
   const { data: dava, isLoading } = useDava(id);
   const { data: muvekkillar } = useMuvekkillar();
   const { data: icralar } = useIcralar();
+  const router = useRouter();
   const davaKaydet = useDavaKaydet();
   const silMut = useDavaSil();
   const arsivleMut = useDavaArsivle();
@@ -167,10 +169,10 @@ export default function DavaDetayPage({ params }: { params: Promise<{ id: string
             📦
           </button>
           <button
-            onClick={() => {
+            onClick={async () => {
               if (confirm(`"${esasNo || dava.konu || 'Bu dava'}" silinecek. Emin misiniz?`)) {
-                silMut.mutate(id);
-                window.location.href = '/davalar';
+                await silMut.mutateAsync(id);
+                router.push('/davalar');
               }
             }}
             className="text-xs px-3 py-1.5 rounded bg-surface text-red border border-red/20 hover:bg-red-dim transition-colors"
