@@ -86,7 +86,9 @@ const YETKI_HARITASI: Record<Rol, Set<string>> = {
   ]),
 };
 
-// ── useRol — Kullanıcının rolünü döndürür ─────────────────────
+// ── useRol — Aktif bürodaki rolü döndürür ──────────────────────
+// Önce uyelikler tablosundan aktif bürodaki rolü arar,
+// bulamazsa kullanicilar tablosundan fallback yapar.
 export function useRol(): { rol: Rol | null; loading: boolean } {
   const [rol, setRol] = useState<Rol | null>(null);
   const [loading, setLoading] = useState(true);
@@ -99,18 +101,41 @@ export function useRol(): { rol: Rol | null; loading: boolean } {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user || cancelled) return;
 
+      const GECERLI_ROLLER: Rol[] = ['sahip', 'yonetici', 'avukat', 'stajyer', 'sekreter'];
+
+      // 1. Aktif büro seçiliyse uyelikler'den rolü al
+      const aktifBuroId = typeof window !== 'undefined'
+        ? localStorage.getItem('lb_aktif_buro_id')
+        : null;
+
+      if (aktifBuroId) {
+        const { data: uyelik } = await supabase
+          .from('uyelikler')
+          .select('rol')
+          .eq('auth_id', user.id)
+          .eq('buro_id', aktifBuroId)
+          .eq('durum', 'aktif')
+          .single();
+
+        if (!cancelled && uyelik?.rol && GECERLI_ROLLER.includes(uyelik.rol as Rol)) {
+          setRol(uyelik.rol as Rol);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // 2. Fallback: kullanicilar tablosundan
       const { data: kul } = await supabase
         .from('kullanicilar')
         .select('rol')
         .eq('auth_id', user.id)
         .single();
 
-      const GECERLI_ROLLER: Rol[] = ['sahip', 'yonetici', 'avukat', 'stajyer', 'sekreter'];
       if (!cancelled) {
         if (kul?.rol && GECERLI_ROLLER.includes(kul.rol as Rol)) {
           setRol(kul.rol as Rol);
         } else {
-          setRol('avukat'); // fallback only after fetch completes
+          setRol('avukat');
         }
         setLoading(false);
       }

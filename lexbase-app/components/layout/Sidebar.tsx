@@ -10,6 +10,7 @@ import { useTodolar } from '@/lib/hooks/useTodolar';
 import { useFinansUyarilar } from '@/lib/hooks/useFinans';
 import { useIhtarnameler } from '@/lib/hooks/useIhtarname';
 import { useRol, yetkiVar } from '@/lib/hooks/useRol';
+import { BuroSecici } from './BuroSecici';
 
 /* ══════════════════════════════════════════════════════════════
    Premium Sidebar — Responsive + Mobil Toggle
@@ -170,8 +171,13 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           </Link>
         </div>
 
+        {/* Büro Seçici (çoklu büro varsa) */}
+        <div className="pt-3">
+          <BuroSecici />
+        </div>
+
         {/* Main Navigation */}
-        <nav className="flex-1 pt-4 overflow-y-auto flex flex-col">
+        <nav className="flex-1 pt-2 overflow-y-auto flex flex-col">
           {sidebarGroups.map((group, gi) => (
             <div key={gi}>
               {gi > 0 && <div className="h-px bg-border/30 mx-3 my-1.5" />}
