@@ -23,9 +23,9 @@ export function MenfaatWidget({ muvekkillar, davalar }: MenfaatWidgetProps) {
     const muvIdMap = new Map<string, string>();
     muvekkillar.forEach((m) => {
       const ad = String(m.ad || '').trim();
-      if (ad) { muvAdlar.set(ad.toLowerCase(), ad); muvIdMap.set(m.id as string, ad); }
+      if (ad) { muvAdlar.set(ad.toLocaleLowerCase('tr'), ad); muvIdMap.set(m.id as string, ad); }
       const unvan = String(m.unvan || '').trim();
-      if (unvan) muvAdlar.set(unvan.toLowerCase(), unvan);
+      if (unvan) muvAdlar.set(unvan.toLocaleLowerCase('tr'), unvan);
     });
 
     const bulunanlar: Array<{ muvekkil: string; karsi: string; davaNo: string }> = [];
@@ -35,7 +35,7 @@ export function MenfaatWidget({ muvekkillar, davalar }: MenfaatWidgetProps) {
       const muvAd = muvIdMap.get(d.muvId as string) || '';
       const karsiAd = String(d.karsi || '').trim();
 
-      if (karsiAd && muvAdlar.has(karsiAd.toLowerCase()) && karsiAd.toLowerCase() !== muvAd.toLowerCase()) {
+      if (karsiAd && muvAdlar.has(karsiAd.toLocaleLowerCase('tr')) && karsiAd.toLocaleLowerCase('tr') !== muvAd.toLocaleLowerCase('tr')) {
         bulunanlar.push({ muvekkil: muvAd, karsi: karsiAd, davaNo });
       }
     });

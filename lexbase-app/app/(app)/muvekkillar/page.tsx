@@ -270,13 +270,13 @@ export default function RehberPage() {
       if (filtre === 'tuzel' && m.tip !== 'tuzel') return false;
       if (etiketFiltre && !(m.etiketler || []).some((e) => normalizeEtiket(e).ad === etiketFiltre)) return false;
       if (arama) {
-        const q = arama.toLowerCase();
+        const q = arama.toLocaleLowerCase('tr');
         return (
-          (m.ad || '').toLowerCase().includes(q) ||
-          (m.soyad || '').toLowerCase().includes(q) ||
+          (m.ad || '').toLocaleLowerCase('tr').includes(q) ||
+          (m.soyad || '').toLocaleLowerCase('tr').includes(q) ||
           (m.tc || '').includes(q) ||
           (m.tel || '').includes(q) ||
-          (m.mail || '').toLowerCase().includes(q) ||
+          (m.mail || '').toLocaleLowerCase('tr').includes(q) ||
           (m.vergiNo || '').includes(q)
         );
       }
@@ -293,13 +293,13 @@ export default function RehberPage() {
       if (filtre === 'tuzel' && kt.tip !== 'tuzel') return false;
       if (etiketFiltre && !(kt.etiketler || []).some((e) => normalizeEtiket(e).ad === etiketFiltre)) return false;
       if (arama) {
-        const q = arama.toLowerCase();
+        const q = arama.toLocaleLowerCase('tr');
         return (
-          (kt.ad || '').toLowerCase().includes(q) ||
-          (kt.soyad || '').toLowerCase().includes(q) ||
+          (kt.ad || '').toLocaleLowerCase('tr').includes(q) ||
+          (kt.soyad || '').toLocaleLowerCase('tr').includes(q) ||
           (kt.tc || '').includes(q) ||
           (kt.tel || '').includes(q) ||
-          (kt.mail || '').toLowerCase().includes(q) ||
+          (kt.mail || '').toLocaleLowerCase('tr').includes(q) ||
           (kt.vergiNo || '').includes(q)
         );
       }
@@ -314,15 +314,15 @@ export default function RehberPage() {
     const filtered = vekillar.filter((v) => {
       if (etiketFiltre && !(v.etiketler || []).some((e) => normalizeEtiket(e).ad === etiketFiltre)) return false;
       if (arama) {
-        const q = arama.toLowerCase();
+        const q = arama.toLocaleLowerCase('tr');
         return (
-          (v.ad || '').toLowerCase().includes(q) ||
-          (v.soyad || '').toLowerCase().includes(q) ||
-          (v.baro || '').toLowerCase().includes(q) ||
+          (v.ad || '').toLocaleLowerCase('tr').includes(q) ||
+          (v.soyad || '').toLocaleLowerCase('tr').includes(q) ||
+          (v.baro || '').toLocaleLowerCase('tr').includes(q) ||
           (v.baroSicil || '').includes(q) ||
           (v.tbbSicil || '').includes(q) ||
           (v.tel || '').includes(q) ||
-          (v.mail || '').toLowerCase().includes(q)
+          (v.mail || '').toLocaleLowerCase('tr').includes(q)
         );
       }
       return true;

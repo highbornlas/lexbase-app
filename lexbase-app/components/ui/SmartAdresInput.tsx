@@ -34,8 +34,8 @@ export function SmartAdresInput({ value, onChange }: Props) {
   /* ── İl filtreleme ── */
   const filtreliIller = useMemo(() => {
     if (!ilArama) return ILLER;
-    const q = ilArama.toLowerCase();
-    return ILLER.filter((i) => i.il.toLowerCase().includes(q));
+    const q = ilArama.toLocaleLowerCase('tr');
+    return ILLER.filter((i) => i.il.toLocaleLowerCase('tr').includes(q));
   }, [ilArama]);
 
   /* ── Seçili ilin ilçeleri ── */
@@ -44,8 +44,8 @@ export function SmartAdresInput({ value, onChange }: Props) {
     const ilData = ILLER.find((i) => i.il === value.il);
     if (!ilData) return [];
     if (!ilceArama) return ilData.ilceler;
-    const q = ilceArama.toLowerCase();
-    return ilData.ilceler.filter((ilce) => ilce.toLowerCase().includes(q));
+    const q = ilceArama.toLocaleLowerCase('tr');
+    return ilData.ilceler.filter((ilce) => ilce.toLocaleLowerCase('tr').includes(q));
   }, [value.il, ilceArama]);
 
   /* ── Seçili ilçenin mahalleler + posta kodu ── */
@@ -57,8 +57,8 @@ export function SmartAdresInput({ value, onChange }: Props) {
   const mahalleler = useMemo(() => {
     if (!ilceVeri?.mahalleler) return [];
     if (!mahalleArama) return ilceVeri.mahalleler;
-    const q = mahalleArama.toLowerCase();
-    return ilceVeri.mahalleler.filter((m) => m.toLowerCase().includes(q));
+    const q = mahalleArama.toLocaleLowerCase('tr');
+    return ilceVeri.mahalleler.filter((m) => m.toLocaleLowerCase('tr').includes(q));
   }, [ilceVeri, mahalleArama]);
 
   const mahalleVerisiVar = !!(ilceVeri?.mahalleler && ilceVeri.mahalleler.length > 0);

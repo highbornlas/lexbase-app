@@ -33,7 +33,7 @@ const MAX_SONUC = 5;
 
 function eslesir(metin: string | undefined | null, sorgu: string): boolean {
   if (!metin) return false;
-  return metin.toLowerCase().includes(sorgu);
+  return metin.toLocaleLowerCase('tr').includes(sorgu);
 }
 
 export function useSpotlightSearch(query: string) {
@@ -46,7 +46,7 @@ export function useSpotlightSearch(query: string) {
   const { data: arabuluculuklar } = useArabuluculuklar();
 
   const kategoriler = useMemo<AramaKategori[]>(() => {
-    const q = query.trim().toLowerCase();
+    const q = query.trim().toLocaleLowerCase('tr');
     if (q.length < 2) return [];
 
     const result: AramaKategori[] = [];

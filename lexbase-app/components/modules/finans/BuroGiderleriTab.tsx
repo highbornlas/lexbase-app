@@ -40,11 +40,11 @@ export function BuroGiderleriTab() {
         if (tekrarFiltre === 'tekrarli' && (!g.tekrar || g.tekrar === 'tek')) return false;
         // Arama
         if (arama) {
-          const q = arama.toLowerCase();
+          const q = arama.toLocaleLowerCase('tr');
           return (
-            (g.aciklama || '').toLowerCase().includes(q) ||
-            (g.kategori || '').toLowerCase().includes(q) ||
-            (g.belgeNo || '').toLowerCase().includes(q)
+            (g.aciklama || '').toLocaleLowerCase('tr').includes(q) ||
+            (g.kategori || '').toLocaleLowerCase('tr').includes(q) ||
+            (g.belgeNo || '').toLocaleLowerCase('tr').includes(q)
           );
         }
         return true;

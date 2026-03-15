@@ -106,8 +106,8 @@ export function BakiyelerTab() {
       };
     }).filter((b) => {
       if (!arama) return true;
-      const q = arama.toLowerCase();
-      return b.ad.toLowerCase().includes(q) || String(b.kayitNo || '').includes(q);
+      const q = arama.toLocaleLowerCase('tr');
+      return b.ad.toLocaleLowerCase('tr').includes(q) || String(b.kayitNo || '').includes(q);
     });
   }, [muvekkillar, davalar, icralar, danismanliklar, arabuluculuklar, ihtarnameler, arama]);
 

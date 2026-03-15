@@ -232,7 +232,7 @@ export default function DavalarPage() {
       // Yargı türü filtresi (birimi seçilmemişse, türün tüm birimleri dahil)
       if (yargiTuru !== 'hepsi' && yargiBirimi === 'hepsi') {
         const birimler = YARGI_BIRIMLERI[yargiTuru] || [];
-        if (birimler.length > 0 && d.mtur && !birimler.some((b) => d.mtur?.toLowerCase().includes(b.toLowerCase()))) return false;
+        if (birimler.length > 0 && d.mtur && !birimler.some((b) => d.mtur?.toLocaleLowerCase('tr').includes(b.toLocaleLowerCase('tr')))) return false;
       }
       // Esas yıl/no filtresi
       if (esasYilFiltre && d.esasYil !== esasYilFiltre) return false;
@@ -244,18 +244,18 @@ export default function DavalarPage() {
         if (tarihBitis && davaTarih > tarihBitis) return false;
       }
       if (arama) {
-        const q = arama.toLowerCase();
+        const q = arama.toLocaleLowerCase('tr');
         const muvAd = muvAdMap[d.muvId || ''] || '';
         const esasStr = esasNoGoster(d.esasYil, d.esasNo);
         const mahkemeStr = tamMahkemeAdi(d.il, d.mno, d.mtur);
         return (
-          esasStr.toLowerCase().includes(q) ||
-          mahkemeStr.toLowerCase().includes(q) ||
-          muvAd.toLowerCase().includes(q) ||
-          (d.karsi || '').toLowerCase().includes(q) ||
-          (d.konu || '').toLowerCase().includes(q) ||
-          (d.davaTuru || '').toLowerCase().includes(q) ||
-          (d.no || '').toLowerCase().includes(q)
+          esasStr.toLocaleLowerCase('tr').includes(q) ||
+          mahkemeStr.toLocaleLowerCase('tr').includes(q) ||
+          muvAd.toLocaleLowerCase('tr').includes(q) ||
+          (d.karsi || '').toLocaleLowerCase('tr').includes(q) ||
+          (d.konu || '').toLocaleLowerCase('tr').includes(q) ||
+          (d.davaTuru || '').toLocaleLowerCase('tr').includes(q) ||
+          (d.no || '').toLocaleLowerCase('tr').includes(q)
         );
       }
       return true;
@@ -377,7 +377,7 @@ export default function DavalarPage() {
   // ── Grid template — dinamik sütunlara göre ─────────────────
   const COL_WIDTHS: Record<DavaColKey, string> = {
     sira: '36px',
-    esasNo: 'minmax(80px,1fr)',
+    esasNo: 'minmax(200px,3fr)',
     mahkeme: 'minmax(140px,2fr)',
     davaci: 'minmax(100px,1fr)',
     davali: 'minmax(100px,1fr)',

@@ -19,11 +19,11 @@ export function KarlilikTab() {
   // Arama filtresi
   const filtrelenmis = arama
     ? tumDosyalar.filter((d) => {
-        const q = arama.toLowerCase();
+        const q = arama.toLocaleLowerCase('tr');
         return (
-          ((d.dosyaNo as string) || '').toLowerCase().includes(q) ||
-          ((d.muvAd as string) || '').toLowerCase().includes(q) ||
-          ((d.konu as string) || '').toLowerCase().includes(q)
+          ((d.dosyaNo as string) || '').toLocaleLowerCase('tr').includes(q) ||
+          ((d.muvAd as string) || '').toLocaleLowerCase('tr').includes(q) ||
+          ((d.konu as string) || '').toLocaleLowerCase('tr').includes(q)
         );
       })
     : tumDosyalar;

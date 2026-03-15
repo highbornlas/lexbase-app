@@ -113,7 +113,7 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
   // Adliye önerileri (seçilen ile göre)
   const adliyeOnerileri = useMemo(() => {
     if (!form.il) return adliyeler;
-    return adliyeler.filter((a) => a.toLowerCase().includes(form.il!.toLowerCase()));
+    return adliyeler.filter((a) => a.toLocaleLowerCase('tr').includes(form.il!.toLocaleLowerCase('tr')));
   }, [form.il, adliyeler]);
 
   // Mahkeme hafızasından otomatik doldur

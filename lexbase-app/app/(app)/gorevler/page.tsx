@@ -81,11 +81,11 @@ export default function GorevlerPage() {
 
     // Arama
     if (arama) {
-      const q = arama.toLowerCase();
+      const q = arama.toLocaleLowerCase('tr');
       filtrelenmis = filtrelenmis.filter((t) =>
-        (t.baslik || '').toLowerCase().includes(q) ||
-        (t.aciklama || '').toLowerCase().includes(q) ||
-        (muvAdMap[t.muvId || ''] || '').toLowerCase().includes(q)
+        (t.baslik || '').toLocaleLowerCase('tr').includes(q) ||
+        (t.aciklama || '').toLocaleLowerCase('tr').includes(q) ||
+        (muvAdMap[t.muvId || ''] || '').toLocaleLowerCase('tr').includes(q)
       );
     }
 

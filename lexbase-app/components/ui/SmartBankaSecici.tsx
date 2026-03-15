@@ -102,11 +102,11 @@ function BankaHesapKarti({
 
   const filtreliBankalar = useMemo(() => {
     if (!arama) return BANKALAR;
-    const q = arama.toLowerCase();
+    const q = arama.toLocaleLowerCase('tr');
     return BANKALAR.filter(
       (b) =>
-        b.ad.toLowerCase().includes(q) ||
-        (b.ticariUnvan && b.ticariUnvan.toLowerCase().includes(q))
+        b.ad.toLocaleLowerCase('tr').includes(q) ||
+        (b.ticariUnvan && b.ticariUnvan.toLocaleLowerCase('tr').includes(q))
     );
   }, [arama]);
 

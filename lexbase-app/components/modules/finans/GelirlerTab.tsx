@@ -40,12 +40,12 @@ export function GelirlerTab() {
       if (makbuzFiltre === 'makbuzsuz' && g.makbuzKesildi) return false;
       // Arama
       if (arama) {
-        const q = arama.toLowerCase();
+        const q = arama.toLocaleLowerCase('tr');
         return (
-          g.muvAd.toLowerCase().includes(q) ||
-          g.dosyaNo.toLowerCase().includes(q) ||
-          g.tur.toLowerCase().includes(q) ||
-          (g.makbuzNo || '').toLowerCase().includes(q)
+          g.muvAd.toLocaleLowerCase('tr').includes(q) ||
+          g.dosyaNo.toLocaleLowerCase('tr').includes(q) ||
+          g.tur.toLocaleLowerCase('tr').includes(q) ||
+          (g.makbuzNo || '').toLocaleLowerCase('tr').includes(q)
         );
       }
       return true;

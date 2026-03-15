@@ -107,13 +107,13 @@ export default function ArabuluculukPage() {
     const filtered = arabuluculuklar.filter((a) => {
       if (durumFiltre !== 'hepsi' && a.durum !== durumFiltre) return false;
       if (arama) {
-        const q = arama.toLowerCase();
+        const q = arama.toLocaleLowerCase('tr');
         return (
-          (a.no || '').toLowerCase().includes(q) ||
-          (a.konu || '').toLowerCase().includes(q) ||
-          (a.arabulucu || '').toLowerCase().includes(q) ||
-          (a.karsiTaraf || '').toLowerCase().includes(q) ||
-          (muvAdMap[a.muvId || ''] || '').toLowerCase().includes(q)
+          (a.no || '').toLocaleLowerCase('tr').includes(q) ||
+          (a.konu || '').toLocaleLowerCase('tr').includes(q) ||
+          (a.arabulucu || '').toLocaleLowerCase('tr').includes(q) ||
+          (a.karsiTaraf || '').toLocaleLowerCase('tr').includes(q) ||
+          (muvAdMap[a.muvId || ''] || '').toLocaleLowerCase('tr').includes(q)
         );
       }
       return true;

@@ -77,9 +77,9 @@ export function RehberSecici({
   /* ── Filtreleme ── */
   const filtrelenmis = useMemo(() => {
     if (!value.trim()) return secenekler;
-    const q = value.toLowerCase();
+    const q = value.toLocaleLowerCase('tr');
     return secenekler.filter(
-      (s) => s.ad.toLowerCase().includes(q) || (s.meta || '').toLowerCase().includes(q)
+      (s) => s.ad.toLocaleLowerCase('tr').includes(q) || (s.meta || '').toLocaleLowerCase('tr').includes(q)
     );
   }, [secenekler, value]);
 
@@ -112,7 +112,7 @@ export function RehberSecici({
   /* ── Input change (serbest metin) ── */
   function handleInputChange(text: string) {
     // Eğer serbest metin yazılıyorsa, ID'yi temizle
-    const match = secenekler.find((s) => s.ad.toLowerCase() === text.toLowerCase());
+    const match = secenekler.find((s) => s.ad.toLocaleLowerCase('tr') === text.toLocaleLowerCase('tr'));
     onChange(match?.id ?? null, text);
     if (!acik) setAcik(true);
   }

@@ -85,7 +85,7 @@ export function EtiketSecici({ etiketler, onChange, mevcutEtiketler = [] }: Etik
   const seciliAdlar = new Set(normalized.map((e) => e.ad));
   const mevcut = tumEtiketler
     .filter((e) => !seciliAdlar.has(e.ad))
-    .filter((e) => !arama || e.ad.toLowerCase().includes(arama.toLowerCase()));
+    .filter((e) => !arama || e.ad.toLocaleLowerCase('tr').includes(arama.toLocaleLowerCase('tr')));
 
   /* ── Dışarı tıkla kapat ── */
   useEffect(() => {

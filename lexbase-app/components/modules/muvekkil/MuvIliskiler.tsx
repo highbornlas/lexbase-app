@@ -177,7 +177,7 @@ function IliskiEkleModal({
   const [arama, setArama] = useState('');
 
   const filtreli = arama
-    ? muvekkillar.filter((m) => m.ad.toLowerCase().includes(arama.toLowerCase()))
+    ? muvekkillar.filter((m) => m.ad.toLocaleLowerCase('tr').includes(arama.toLocaleLowerCase('tr')))
     : muvekkillar;
 
   const handleSubmit = () => {

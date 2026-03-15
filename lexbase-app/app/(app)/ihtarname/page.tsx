@@ -108,14 +108,14 @@ export default function IhtarnamePage() {
       if (durumFiltre !== 'hepsi' && i.durum !== durumFiltre) return false;
       if (yonFiltre !== 'hepsi' && (i.yon || 'giden') !== yonFiltre) return false;
       if (arama) {
-        const q = arama.toLowerCase();
+        const q = arama.toLocaleLowerCase('tr');
         return (
-          (i.no || '').toLowerCase().includes(q) ||
-          (i.konu || '').toLowerCase().includes(q) ||
-          (i.alici || '').toLowerCase().includes(q) ||
-          (i.gonderen || '').toLowerCase().includes(q) ||
-          (i.noterAd || '').toLowerCase().includes(q) ||
-          (muvAdMap[i.muvId || ''] || '').toLowerCase().includes(q)
+          (i.no || '').toLocaleLowerCase('tr').includes(q) ||
+          (i.konu || '').toLocaleLowerCase('tr').includes(q) ||
+          (i.alici || '').toLocaleLowerCase('tr').includes(q) ||
+          (i.gonderen || '').toLocaleLowerCase('tr').includes(q) ||
+          (i.noterAd || '').toLocaleLowerCase('tr').includes(q) ||
+          (muvAdMap[i.muvId || ''] || '').toLocaleLowerCase('tr').includes(q)
         );
       }
       return true;

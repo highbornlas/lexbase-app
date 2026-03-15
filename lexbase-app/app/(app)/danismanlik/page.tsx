@@ -86,12 +86,12 @@ export default function DanismanlikPage() {
       if (durumFiltre !== 'hepsi' && d.durum !== durumFiltre) return false;
       if (modelFiltre !== 'hepsi' && (d.sozlesmeModeli || 'tek_seferlik') !== modelFiltre) return false;
       if (arama) {
-        const q = arama.toLowerCase();
+        const q = arama.toLocaleLowerCase('tr');
         return (
-          (d.konu || '').toLowerCase().includes(q) ||
-          (d.tur || '').toLowerCase().includes(q) ||
-          (d.no || '').toLowerCase().includes(q) ||
-          (muvAdMap[d.muvId || ''] || '').toLowerCase().includes(q)
+          (d.konu || '').toLocaleLowerCase('tr').includes(q) ||
+          (d.tur || '').toLocaleLowerCase('tr').includes(q) ||
+          (d.no || '').toLocaleLowerCase('tr').includes(q) ||
+          (muvAdMap[d.muvId || ''] || '').toLocaleLowerCase('tr').includes(q)
         );
       }
       return true;

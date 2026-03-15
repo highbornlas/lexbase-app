@@ -48,11 +48,11 @@ export function MuvDosyalar({ davalar, icralar, arabuluculuklar, ihtarnameler, o
   /* ── Arama filtresi ── */
   const araFiltre = (items: Record<string, unknown>[]) => {
     if (!arama) return items;
-    const q = arama.toLowerCase();
+    const q = arama.toLocaleLowerCase('tr');
     return items.filter((d) =>
-      ((d.no as string) || '').toLowerCase().includes(q) ||
-      ((d.konu as string) || '').toLowerCase().includes(q) ||
-      ((d.borclu as string) || '').toLowerCase().includes(q)
+      ((d.no as string) || '').toLocaleLowerCase('tr').includes(q) ||
+      ((d.konu as string) || '').toLocaleLowerCase('tr').includes(q) ||
+      ((d.borclu as string) || '').toLocaleLowerCase('tr').includes(q)
     );
   };
 

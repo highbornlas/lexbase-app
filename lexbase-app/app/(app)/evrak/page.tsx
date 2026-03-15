@@ -146,8 +146,8 @@ export default function EvrakPage() {
     return SABLONLAR.filter((s) => {
       if (secilenKategori !== 'Tümü' && s.kategori !== secilenKategori) return false;
       if (arama) {
-        const q = arama.toLowerCase();
-        return s.baslik.toLowerCase().includes(q) || s.aciklama.toLowerCase().includes(q);
+        const q = arama.toLocaleLowerCase('tr');
+        return s.baslik.toLocaleLowerCase('tr').includes(q) || s.aciklama.toLocaleLowerCase('tr').includes(q);
       }
       return true;
     });

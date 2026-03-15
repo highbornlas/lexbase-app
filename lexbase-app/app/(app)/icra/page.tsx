@@ -229,8 +229,8 @@ export default function IcraPage() {
       if (dosyaDurumu === 'kapali' && ic.durum !== 'Kapandı') return false;
       if (turFiltre !== 'hepsi' && ic.tur !== turFiltre) return false;
       if (yargiBirimi !== 'hepsi') {
-        const daireStr = tamIcraDairesiAdi(ic.il, ic.daire).toLowerCase();
-        if (!daireStr.includes(yargiBirimi.toLowerCase())) return false;
+        const daireStr = tamIcraDairesiAdi(ic.il, ic.daire).toLocaleLowerCase('tr');
+        if (!daireStr.includes(yargiBirimi.toLocaleLowerCase('tr'))) return false;
       }
       // Esas yıl/no filtresi
       if (esasYilFiltre && ic.esasYil !== esasYilFiltre) return false;
@@ -238,11 +238,11 @@ export default function IcraPage() {
       if (tarihBaslangic && ic.tarih && ic.tarih < tarihBaslangic) return false;
       if (tarihBitis && ic.tarih && ic.tarih > tarihBitis) return false;
       if (arama) {
-        const q = arama.toLowerCase();
+        const q = arama.toLocaleLowerCase('tr');
         const muvAd = muvAdMap[ic.muvId || ''] || '';
         const esasStr = esasNoGoster(ic.esasYil, ic.esasNo) || ic.esas || '';
         const daireStr = tamIcraDairesiAdi(ic.il, ic.daire);
-        return (ic.no || '').toLowerCase().includes(q) || esasStr.toLowerCase().includes(q) || (ic.borclu || '').toLowerCase().includes(q) || muvAd.toLowerCase().includes(q) || daireStr.toLowerCase().includes(q) || (ic.tur || '').toLowerCase().includes(q);
+        return (ic.no || '').toLocaleLowerCase('tr').includes(q) || esasStr.toLocaleLowerCase('tr').includes(q) || (ic.borclu || '').toLocaleLowerCase('tr').includes(q) || muvAd.toLocaleLowerCase('tr').includes(q) || daireStr.toLocaleLowerCase('tr').includes(q) || (ic.tur || '').toLocaleLowerCase('tr').includes(q);
       }
       return true;
     });
@@ -330,7 +330,7 @@ export default function IcraPage() {
   /* ── Grid template — dinamik sütunlara göre ── */
   const COL_WIDTHS: Record<IcraColKey, string> = {
     sira: '36px',
-    esasNo: 'minmax(80px,1fr)',
+    esasNo: 'minmax(200px,3fr)',
     daire: 'minmax(120px,2fr)',
     alacakli: 'minmax(90px,1fr)',
     borclu: 'minmax(90px,1fr)',

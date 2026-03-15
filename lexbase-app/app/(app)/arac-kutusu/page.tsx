@@ -634,8 +634,8 @@ export default function AracKutusuPage() {
     ? ARACLAR.map((kat) => ({
         ...kat,
         items: kat.items.filter((a) =>
-          a.ad.toLowerCase().includes(arama.toLowerCase()) ||
-          a.aciklama.toLowerCase().includes(arama.toLowerCase())
+          a.ad.toLocaleLowerCase('tr').includes(arama.toLocaleLowerCase('tr')) ||
+          a.aciklama.toLocaleLowerCase('tr').includes(arama.toLocaleLowerCase('tr'))
         ),
       })).filter((kat) => kat.items.length > 0)
     : ARACLAR;
