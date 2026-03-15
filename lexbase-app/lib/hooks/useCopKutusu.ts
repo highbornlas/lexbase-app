@@ -8,9 +8,17 @@ import { useBuroId } from './useBuro';
    Çöp Kutusu Hook — Tüm soft-deleted kayıtları listeler
    ══════════════════════════════════════════════════════════════ */
 
+export type CopTabloTipi =
+  | 'muvekkillar'
+  | 'karsi_taraflar'
+  | 'vekillar'
+  | 'davalar'
+  | 'icra'
+  | 'ihtarnameler';
+
 export interface SilinenKayit {
   id: string;
-  tablo: 'muvekkillar' | 'karsi_taraflar' | 'vekillar';
+  tablo: CopTabloTipi;
   tabloLabel: string;
   ad: string;
   tip?: string;
@@ -18,10 +26,13 @@ export interface SilinenKayit {
   kalanSure: number; // ms cinsinden
 }
 
-const TABLO_LABELS: Record<string, string> = {
+const TABLO_LABELS: Record<CopTabloTipi, string> = {
   muvekkillar: 'Müvekkil',
   karsi_taraflar: 'Karşı Taraf',
   vekillar: 'Avukat',
+  davalar: 'Dava',
+  icra: 'İcra',
+  ihtarnameler: 'İhtarname',
 };
 
 // Varsayılan saklama süresi: 24 saat (ms)
@@ -48,6 +59,35 @@ export const SURE_SECENEKLERI = [
   { label: '30 gün', ms: 30 * 24 * 60 * 60 * 1000 },
 ];
 
+/** Dosya tablolarındaki kayıttan okunabilir isim üret */
+function buildAd(tablo: CopTabloTipi, d: Record<string, unknown>): string {
+  if (tablo === 'davalar') {
+    const parts: string[] = [];
+    if (d.mtur) parts.push(d.mtur as string);
+    if (d.esasYil && d.esasNo) parts.push(`${d.esasYil}/${d.esasNo}`);
+    if (parts.length === 0 && d.konu) parts.push(d.konu as string);
+    return parts.join(' — ') || '(isimsiz dava)';
+  }
+
+  if (tablo === 'icra') {
+    const parts: string[] = [];
+    if (d.daire) parts.push(d.daire as string);
+    else if (d.yargiBirimi) parts.push(d.yargiBirimi as string);
+    if (d.esasYil && d.esasNo) parts.push(`${d.esasYil}/${d.esasNo}`);
+    if (parts.length === 0 && d.konu) parts.push(d.konu as string);
+    return parts.join(' — ') || '(isimsiz icra)';
+  }
+
+  if (tablo === 'ihtarnameler') {
+    if (d.konu) return d.konu as string;
+    if (d.no) return `İhtarname #${d.no}`;
+    return '(isimsiz ihtarname)';
+  }
+
+  // Rehber tabloları (müvekkil, karşı taraf, vekil)
+  return ((d.ad as string) || '') + ((d.soyad as string) ? ' ' + (d.soyad as string) : '');
+}
+
 export function useCopKutusu() {
   const buroId = useBuroId();
 
@@ -59,10 +99,13 @@ export function useCopKutusu() {
       const saklamaSuresi = getCopKutusuSuresi();
       const sonuc: SilinenKayit[] = [];
 
-      const tablolar: Array<'muvekkillar' | 'karsi_taraflar' | 'vekillar'> = [
+      const tablolar: CopTabloTipi[] = [
         'muvekkillar',
         'karsi_taraflar',
         'vekillar',
+        'davalar',
+        'icra',
+        'ihtarnameler',
       ];
 
       for (const tablo of tablolar) {
@@ -82,13 +125,25 @@ export function useCopKutusu() {
             const silinmeMs = new Date(silinmeTarihi).getTime();
             const kalanMs = saklamaSuresi - (Date.now() - silinmeMs);
 
-            if (kalanMs <= 0) continue; // süresi dolmuş, gösterme
+            // Süresi dolmuş — kalıcı sil
+            if (kalanMs <= 0) {
+              try {
+                await supabase
+                  .from(tablo)
+                  .delete()
+                  .eq('id', row.id)
+                  .eq('buro_id', buroId);
+              } catch {
+                // silme başarısız olsa da devam et
+              }
+              continue;
+            }
 
             sonuc.push({
               id: row.id,
               tablo,
               tabloLabel: TABLO_LABELS[tablo] || tablo,
-              ad: ((d.ad as string) || '') + ((d.soyad as string) ? ' ' + (d.soyad as string) : ''),
+              ad: buildAd(tablo, d),
               tip: d.tip as string | undefined,
               silinmeTarihi,
               kalanSure: kalanMs,

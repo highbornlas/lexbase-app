@@ -110,6 +110,40 @@ export function useIhtarnameSil() {
   });
 }
 
+/* Geri Yükle — _silindi flag'i kaldır */
+export function useIhtarnameGeriYukle() {
+  const buroId = useBuroId();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      if (!buroId) throw new Error('Büro bulunamadı');
+      const supabase = createClient();
+
+      const { data: mevcut } = await supabase
+        .from('ihtarnameler')
+        .select('data')
+        .eq('id', id)
+        .eq('buro_id', buroId)
+        .single();
+
+      if (!mevcut) throw new Error('İhtarname bulunamadı');
+
+      const data = { ...(mevcut.data as Record<string, unknown>) };
+      delete data._silindi;
+
+      const { error } = await supabase.from('ihtarnameler').update({ data })
+        .eq('id', id).eq('buro_id', buroId);
+
+      if (error) throw error;
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['ihtarnameler'] });
+      queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
+    },
+  });
+}
+
 /* Hard delete — Supabase'den tamamen sil */
 export function useIhtarnameHardSil() {
   const buroId = useBuroId();

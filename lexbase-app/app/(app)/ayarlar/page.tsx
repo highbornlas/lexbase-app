@@ -7,6 +7,9 @@ import { useCopKutusu, getCopKutusuSuresi, setCopKutusuSuresi, SURE_SECENEKLERI 
 import { useMuvekkilGeriYukle, useMuvekkilKaliciSil } from '@/lib/hooks/useMuvekkillar';
 import { useKarsiTarafGeriYukle, useKarsiTarafKaliciSil } from '@/lib/hooks/useKarsiTaraflar';
 import { useVekilGeriYukle, useVekilKaliciSil } from '@/lib/hooks/useVekillar';
+import { useDavaGeriYukle, useDavaKaliciSil } from '@/lib/hooks/useDavalar';
+import { useIcraGeriYukle, useIcraKaliciSil } from '@/lib/hooks/useIcra';
+import { useIhtarnameGeriYukle, useIhtarnameHardSil } from '@/lib/hooks/useIhtarname';
 
 const TABS = [
   { key: 'profil', label: 'Profil', icon: '👤' },
@@ -284,6 +287,7 @@ function BuroTab() {
 function CopKutusuTab() {
   const { data: silinenler, isLoading } = useCopKutusu();
   const [sure, setSure] = useState(0);
+  const [tick, setTick] = useState(0);
 
   const mGeriYukle = useMuvekkilGeriYukle();
   const mKaliciSil = useMuvekkilKaliciSil();
@@ -291,9 +295,21 @@ function CopKutusuTab() {
   const ktKaliciSil = useKarsiTarafKaliciSil();
   const vGeriYukle = useVekilGeriYukle();
   const vKaliciSil = useVekilKaliciSil();
+  const dGeriYukle = useDavaGeriYukle();
+  const dKaliciSil = useDavaKaliciSil();
+  const iGeriYukle = useIcraGeriYukle();
+  const iKaliciSil = useIcraKaliciSil();
+  const ihGeriYukle = useIhtarnameGeriYukle();
+  const ihKaliciSil = useIhtarnameHardSil();
 
   useEffect(() => {
     setSure(getCopKutusuSuresi());
+  }, []);
+
+  // Live countdown — her saniye tick artır
+  useEffect(() => {
+    const t = setInterval(() => setTick((p) => p + 1), 1000);
+    return () => clearInterval(t);
   }, []);
 
   function handleSureDegistir(ms: number) {
@@ -305,21 +321,46 @@ function CopKutusuTab() {
     if (tablo === 'muvekkillar') mGeriYukle.mutate(id);
     else if (tablo === 'karsi_taraflar') ktGeriYukle.mutate(id);
     else if (tablo === 'vekillar') vGeriYukle.mutate(id);
+    else if (tablo === 'davalar') dGeriYukle.mutate(id);
+    else if (tablo === 'icra') iGeriYukle.mutate(id);
+    else if (tablo === 'ihtarnameler') ihGeriYukle.mutate(id);
   }
 
   function handleKaliciSil(tablo: string, id: string) {
     if (tablo === 'muvekkillar') mKaliciSil.mutate(id);
     else if (tablo === 'karsi_taraflar') ktKaliciSil.mutate(id);
     else if (tablo === 'vekillar') vKaliciSil.mutate(id);
+    else if (tablo === 'davalar') dKaliciSil.mutate(id);
+    else if (tablo === 'icra') iKaliciSil.mutate(id);
+    else if (tablo === 'ihtarnameler') ihKaliciSil.mutate(id);
   }
 
-  function kalanSureFormat(ms: number): string {
+  function kalanSureFormat(silinmeTarihi: string): string {
+    const saklamaSuresi = getCopKutusuSuresi();
+    const ms = saklamaSuresi - (Date.now() - new Date(silinmeTarihi).getTime());
     if (ms <= 0) return 'Süresi doldu';
     const saat = Math.floor(ms / (1000 * 60 * 60));
     const dk = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+    const sn = Math.floor((ms % (1000 * 60)) / 1000);
     if (saat > 24) return `${Math.floor(saat / 24)} gün ${saat % 24} saat`;
-    if (saat > 0) return `${saat} saat ${dk} dk`;
-    return `${dk} dk`;
+    if (saat > 0) return `${saat} saat ${dk} dk ${sn} sn`;
+    if (dk > 0) return `${dk} dk ${sn} sn`;
+    return `${sn} sn`;
+  }
+
+  // tick kullanımı — React'ın optimize etmemesi için
+  void tick;
+
+  function badgeClass(tablo: string): string {
+    switch (tablo) {
+      case 'muvekkillar': return 'text-green bg-green-dim';
+      case 'karsi_taraflar': return 'text-red bg-red/10';
+      case 'vekillar': return 'text-gold bg-gold/10';
+      case 'davalar': return 'text-yellow-600 bg-yellow-500/10';
+      case 'icra': return 'text-purple-400 bg-purple-500/10';
+      case 'ihtarnameler': return 'text-blue-400 bg-blue-500/10';
+      default: return 'text-text-muted bg-surface2';
+    }
   }
 
   return (
@@ -360,11 +401,7 @@ function CopKutusuTab() {
               className="flex items-center gap-3 bg-surface2 border border-border/50 rounded-lg px-4 py-3"
             >
               {/* Tip badge */}
-              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                s.tablo === 'muvekkillar' ? 'text-green bg-green-dim' :
-                s.tablo === 'karsi_taraflar' ? 'text-red bg-red/10' :
-                'text-gold bg-gold/10'
-              }`}>
+              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${badgeClass(s.tablo)}`}>
                 {s.tabloLabel}
               </span>
 
@@ -372,7 +409,7 @@ function CopKutusuTab() {
               <div className="flex-1 min-w-0">
                 <span className="text-sm text-text font-medium truncate block">{s.ad || '(adsız)'}</span>
                 <span className="text-[10px] text-text-dim">
-                  Silindi: {new Date(s.silinmeTarihi).toLocaleString('tr-TR')} — Kalan: {kalanSureFormat(s.kalanSure)}
+                  Silindi: {new Date(s.silinmeTarihi).toLocaleString('tr-TR')} — Kalan: {kalanSureFormat(s.silinmeTarihi)}
                 </span>
               </div>
 
