@@ -1,9 +1,7 @@
 'use client';
 
-import { useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useQueryClient } from '@tanstack/react-query';
 import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
 import { useDavalar } from '@/lib/hooks/useDavalar';
 import { useIcralar } from '@/lib/hooks/useIcra';
@@ -12,8 +10,6 @@ import { useTodolar } from '@/lib/hooks/useTodolar';
 import { useFinansUyarilar } from '@/lib/hooks/useFinans';
 import { useIhtarnameler } from '@/lib/hooks/useIhtarname';
 import { useRol, yetkiVar } from '@/lib/hooks/useRol';
-import { useBuroId } from '@/lib/hooks/useBuro';
-import { createClient } from '@/lib/supabase/client';
 
 /* ══════════════════════════════════════════════════════════════
    Premium Sidebar — Responsive + Mobil Toggle
@@ -100,54 +96,11 @@ interface SidebarProps {
   onClose: () => void;
 }
 
-/* ── Route → query key + table mapping for prefetch ── */
-const PREFETCH_MAP: Record<string, { queryKey: string; table: string }> = {
-  '/davalar': { queryKey: 'davalar', table: 'davalar' },
-  '/icra': { queryKey: 'icra', table: 'icra' },
-  '/muvekkillar': { queryKey: 'muvekkillar', table: 'muvekkillar' },
-  '/ihtarname': { queryKey: 'ihtarnameler', table: 'ihtarnameler' },
-  '/arabuluculuk': { queryKey: 'arabuluculuk', table: 'arabuluculuk' },
-  '/danismanlik': { queryKey: 'danismanlik', table: 'danismanlik' },
-};
 
 export function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
   const badgeCounts = useBadgeCounts();
   const { rol, loading: rolLoading } = useRol();
-  const queryClient = useQueryClient();
-  const buroId = useBuroId();
-  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const prefetchData = useCallback((href: string) => {
-    const mapping = PREFETCH_MAP[href];
-    if (!mapping || !buroId) return;
-
-    queryClient.prefetchQuery({
-      queryKey: [mapping.queryKey, buroId],
-      queryFn: async () => {
-        const supabase = createClient();
-        const { data, error } = await supabase
-          .from(mapping.table)
-          .select('id, data')
-          .eq('buro_id', buroId);
-        if (error) throw error;
-        return (data || []).map((r) => ({ id: r.id, ...(r.data as object) }));
-      },
-      staleTime: 30_000, // don't refetch if already fresh
-    });
-  }, [queryClient, buroId]);
-
-  const handleMouseEnter = useCallback((href: string) => {
-    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
-    hoverTimerRef.current = setTimeout(() => prefetchData(href), 100);
-  }, [prefetchData]);
-
-  const handleMouseLeave = useCallback(() => {
-    if (hoverTimerRef.current) {
-      clearTimeout(hoverTimerRef.current);
-      hoverTimerRef.current = null;
-    }
-  }, []);
 
   const renderItem = (item: MenuItem) => {
     const isActive =
@@ -162,8 +115,6 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         key={item.href}
         href={item.href}
         onClick={onClose}
-        onMouseEnter={() => handleMouseEnter(item.href)}
-        onMouseLeave={handleMouseLeave}
         className={`
           flex items-center gap-2 px-3 py-[7px] mx-2 my-[1px]
           text-[13px] rounded-lg transition-all duration-200 group
