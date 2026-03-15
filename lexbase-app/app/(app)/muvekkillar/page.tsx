@@ -248,7 +248,7 @@ export default function RehberPage() {
   const [profilVekil, setProfilVekil] = useState<Vekil | null>(null);
 
   /* ── Silme Onay State ── */
-  const [silOnay, setSilOnay] = useState<{ tip: 'kt' | 'vekil'; id: string; ad: string } | null>(null);
+  const [silOnay, setSilOnay] = useState<{ tip: 'muvekkil' | 'kt' | 'vekil'; id: string; ad: string } | null>(null);
 
   /* ── İçe Aktarma State ── */
   const [iceAktarmaOpen, setIceAktarmaOpen] = useState(false);
@@ -394,7 +394,9 @@ export default function RehberPage() {
   /* ── Silme Handler (tekli) ── */
   function handleSil() {
     if (!silOnay) return;
-    if (silOnay.tip === 'kt') {
+    if (silOnay.tip === 'muvekkil') {
+      mSil.mutate(silOnay.id);
+    } else if (silOnay.tip === 'kt') {
       ktSil.mutate(silOnay.id);
     } else {
       vSil.mutate(silOnay.id);
@@ -648,6 +650,13 @@ export default function RehberPage() {
                       </div>
                       <span className="text-text-dim group-hover:text-gold transition-colors text-lg">›</span>
                     </Link>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setSilOnay({ tip: 'muvekkil', id: m.id, ad: tamAd(m) }); }}
+                      className="ml-2 p-1.5 text-text-muted hover:text-red hover:bg-red/10 rounded transition-colors opacity-0 group-hover:opacity-100"
+                      title="Sil"
+                    >
+                      🗑️
+                    </button>
                   </div>
                 ))}
               </div>
