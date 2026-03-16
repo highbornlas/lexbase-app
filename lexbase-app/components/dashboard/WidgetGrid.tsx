@@ -53,6 +53,18 @@ const VekaletnameSureWidget = dynamic(
   () => import('./widgets/VekaletnameSureWidget').then((m) => m.VekaletnameSureWidget),
   { ssr: false },
 );
+const MuvekkilBakiyeWidget = dynamic(
+  () => import('./widgets/MuvekkilBakiyeWidget').then((m) => m.MuvekkilBakiyeWidget),
+  { ssr: false },
+);
+const BeklenenGelirWidget = dynamic(
+  () => import('./widgets/BeklenenGelirWidget').then((m) => m.BeklenenGelirWidget),
+  { ssr: false },
+);
+const PersonelOzetWidget = dynamic(
+  () => import('./widgets/PersonelOzetWidget').then((m) => m.PersonelOzetWidget),
+  { ssr: false },
+);
 
 /* ══════════════════════════════════════════════════════════════
    Widget Grid — react-grid-layout ile sürükle-bırak dashboard
@@ -66,6 +78,9 @@ const WIDGET_CONFIG: Record<string, { title: string; icon: string; linkText?: st
   'gorevler': { title: '✅ Bu Hafta Yapılacaklar', icon: '✅', linkText: 'Tümü ›', linkHref: '/gorevler', color: 'purple' },
   'kritik': { title: '⚠️ Kritik Süreler', icon: '⚠️', linkText: 'Takvim ›', linkHref: '/takvim', color: 'gold' },
   'finans-uyari': { title: '🔴 Finansal Uyarılar', icon: '🔴', linkText: 'Finans ›', linkHref: '/finans', color: 'red' },
+  'muvekkil-bakiye': { title: '💰 Müvekkil Bakiyeleri', icon: '💰', linkText: 'Finans ›', linkHref: '/finans', color: 'gold' },
+  'beklenen-gelir': { title: '📈 Beklenen Gelir', icon: '📈', linkText: 'Finans ›', linkHref: '/finans', color: 'green' },
+  'personel-ozet': { title: '👥 Personel Özeti', icon: '👥', linkText: 'Tümü ›', linkHref: '/personel', color: 'blue' },
   'menfaat': { title: '🔍 Menfaat Çakışması', icon: '🔍', color: 'red' },
   'hizmetler': { title: '⚖️ Devam Eden Hizmetler', icon: '⚖️', linkText: 'Tümü ›', linkHref: '/danismanlik', color: 'gold' },
   'aktivite': { title: '📋 Son Aktiviteler', icon: '📋', color: 'blue' },
@@ -94,6 +109,7 @@ interface WidgetGridProps {
   arabuluculuklar: Array<Record<string, unknown>>;
   ihtarnameler: Array<Record<string, unknown>>;
   buroGiderleri: Array<Record<string, unknown>>;
+  personeller: Array<Record<string, unknown>>;
   yilNet: number;
   muvAdMap: Record<string, string>;
 }
@@ -115,6 +131,7 @@ export function WidgetGrid({
   arabuluculuklar,
   ihtarnameler,
   buroGiderleri,
+  personeller,
   yilNet,
   muvAdMap,
 }: WidgetGridProps) {
@@ -124,7 +141,7 @@ export function WidgetGrid({
   const renderWidget = useCallback((widgetId: string) => {
     switch (widgetId) {
       case 'kpi':
-        return <KpiWidget muvekkillar={muvekkillar} davalar={davalar} icralar={icralar} yilNet={yilNet} />;
+        return <KpiWidget muvekkillar={muvekkillar} davalar={davalar} icralar={icralar} danismanliklar={danismanliklar} arabuluculuklar={arabuluculuklar} ihtarnameler={ihtarnameler} yilNet={yilNet} />;
       case 'performans':
         return <PerformansWidget davalar={davalar} icralar={icralar} danismanliklar={danismanliklar} arabuluculuklar={arabuluculuklar} ihtarnameler={ihtarnameler} buroGiderleri={buroGiderleri} />;
       case 'gundem':
@@ -135,12 +152,18 @@ export function WidgetGrid({
         return <KritikWidget davalar={davalar} icralar={icralar} />;
       case 'finans-uyari':
         return <FinansUyariWidget uyarilar={uyarilar} />;
+      case 'muvekkil-bakiye':
+        return <MuvekkilBakiyeWidget muvekkillar={muvekkillar} davalar={davalar} icralar={icralar} danismanliklar={danismanliklar} arabuluculuklar={arabuluculuklar} ihtarnameler={ihtarnameler} muvAdMap={muvAdMap} />;
+      case 'beklenen-gelir':
+        return <BeklenenGelirWidget davalar={davalar} icralar={icralar} danismanliklar={danismanliklar} muvAdMap={muvAdMap} />;
+      case 'personel-ozet':
+        return <PersonelOzetWidget personeller={personeller} />;
       case 'menfaat':
         return <MenfaatWidget muvekkillar={muvekkillar} davalar={davalar} />;
       case 'hizmetler':
         return <HizmetlerWidget danismanliklar={danismanliklar} muvAdMap={muvAdMap} />;
       case 'aktivite':
-        return <AktiviteWidget davalar={davalar} icralar={icralar} gorevler={gorevler} muvAdMap={muvAdMap} />;
+        return <AktiviteWidget davalar={davalar} icralar={icralar} gorevler={gorevler} danismanliklar={danismanliklar} arabuluculuklar={arabuluculuklar} ihtarnameler={ihtarnameler} muvAdMap={muvAdMap} />;
       case 'hizli-erisim':
         return <HizliErisimWidget />;
       case 'vekaletname-sure':
@@ -148,7 +171,7 @@ export function WidgetGrid({
       default:
         return <div className="text-text-dim text-sm p-4">Widget bulunamadı</div>;
     }
-  }, [muvekkillar, davalar, icralar, gorevler, danismanliklar, etkinlikler, uyarilar, belgeler, yilNet, muvAdMap]);
+  }, [muvekkillar, davalar, icralar, gorevler, danismanliklar, etkinlikler, uyarilar, belgeler, arabuluculuklar, ihtarnameler, buroGiderleri, personeller, yilNet, muvAdMap]);
 
   // Görünür layout items — gizli widget'ları filtrele
   const gorunurIds = useMemo(() => new Set(gorunurWidgetler.map((w) => w.id)), [gorunurWidgetler]);

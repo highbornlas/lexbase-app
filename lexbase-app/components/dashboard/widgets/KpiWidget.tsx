@@ -4,13 +4,16 @@ import { useMemo } from 'react';
 import { fmt } from '@/lib/utils';
 
 /* ══════════════════════════════════════════════════════════════
-   KPI Widget — Üst sıra KPI kartları
+   KPI Widget — Üst sıra KPI kartları (genişletilmiş)
    ══════════════════════════════════════════════════════════════ */
 
 interface KpiWidgetProps {
   muvekkillar: Array<Record<string, unknown>>;
   davalar: Array<Record<string, unknown>>;
   icralar: Array<Record<string, unknown>>;
+  danismanliklar: Array<Record<string, unknown>>;
+  arabuluculuklar: Array<Record<string, unknown>>;
+  ihtarnameler: Array<Record<string, unknown>>;
   yilNet: number;
 }
 
@@ -38,7 +41,7 @@ function KpiCard({ icon, value, label, sub, accent, color }: {
   );
 }
 
-export function KpiWidget({ muvekkillar, davalar, icralar, yilNet }: KpiWidgetProps) {
+export function KpiWidget({ muvekkillar, davalar, icralar, danismanliklar, arabuluculuklar, ihtarnameler, yilNet }: KpiWidgetProps) {
   const kpis = useMemo(() => {
     const muvSayi = muvekkillar?.length ?? 0;
     const muvGercek = muvekkillar?.filter((m) => m.tip === 'gercek').length ?? 0;
@@ -57,15 +60,72 @@ export function KpiWidget({ muvekkillar, davalar, icralar, yilNet }: KpiWidgetPr
       return t >= bugun && t <= haftaSonu;
     }).length ?? 0;
 
-    return { muvSayi, muvGercek, muvTuzel, aktifDava, davaSayi, aktifIcra, icraSayi, buHaftaDurusma };
-  }, [muvekkillar, davalar, icralar]);
+    // Bu ay tahsilat (tüm kaynaklardan)
+    const buAy = bugun.getMonth();
+    const buYil = bugun.getFullYear();
+    let buAyTahsilat = 0;
+
+    // Dava + İcra tahsilatları
+    [...(davalar || []), ...(icralar || [])].forEach((d) => {
+      (d.tahsilatlar as Array<{ tutar: number; tarih?: string }> | undefined)?.forEach((t) => {
+        if (!t.tarih) return;
+        const td = new Date(t.tarih);
+        if (td.getMonth() === buAy && td.getFullYear() === buYil) {
+          buAyTahsilat += (t.tutar || 0);
+        }
+      });
+    });
+
+    // Danışmanlık tahsilatları
+    (danismanliklar || []).forEach((d) => {
+      const tutar = Number(d.tahsilEdildi || 0);
+      if (tutar <= 0) return;
+      const tarih = (d.sonucTarih || d.tarih) as string;
+      if (!tarih) return;
+      const td = new Date(tarih);
+      if (td.getMonth() === buAy && td.getFullYear() === buYil) buAyTahsilat += tutar;
+    });
+
+    // Arabuluculuk tahsilatları
+    (arabuluculuklar || []).forEach((a) => {
+      const tutar = Number(a.tahsilEdildi || 0);
+      if (tutar <= 0) return;
+      const tarih = (a.sonucTarih || a.basvuruTarih) as string;
+      if (!tarih) return;
+      const td = new Date(tarih);
+      if (td.getMonth() === buAy && td.getFullYear() === buYil) buAyTahsilat += tutar;
+    });
+
+    // İhtarname tahsilatları
+    (ihtarnameler || []).forEach((ih) => {
+      const tutar = Number(ih.tahsilEdildi || 0);
+      if (tutar <= 0) return;
+      const tarih = ih.tarih as string;
+      if (!tarih) return;
+      const td = new Date(tarih);
+      if (td.getMonth() === buAy && td.getFullYear() === buYil) buAyTahsilat += tutar;
+    });
+
+    // Bekleyen alacak (masraf - tahsilat toplamı, pozitif = alacak)
+    let toplamMasraf = 0;
+    let toplamTahsilat = 0;
+    [...(davalar || []), ...(icralar || [])].forEach((d) => {
+      (d.tahsilatlar as Array<{ tutar: number }> | undefined)?.forEach((t) => { toplamTahsilat += (t.tutar || 0); });
+      (d.harcamalar as Array<{ tutar: number }> | undefined)?.forEach((h) => { toplamMasraf += (h.tutar || 0); });
+    });
+    const bekleyenAlacak = toplamMasraf - toplamTahsilat;
+
+    return { muvSayi, muvGercek, muvTuzel, aktifDava, davaSayi, aktifIcra, icraSayi, buHaftaDurusma, buAyTahsilat, bekleyenAlacak };
+  }, [muvekkillar, davalar, icralar, danismanliklar, arabuluculuklar, ihtarnameler]);
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
       <KpiCard icon="👥" value={kpis.muvSayi} label="MÜVEKKİLLER" sub={`${kpis.muvGercek} Gerçek · ${kpis.muvTuzel} Tüzel`} />
       <KpiCard icon="📁" value={kpis.aktifDava} label="DERDEST DAVA" sub={`${kpis.davaSayi} dosya`} color="text-gold" />
       <KpiCard icon="⚡" value={kpis.aktifIcra} label="DERDEST İCRA" sub={`${kpis.icraSayi} dosya`} color="text-red" />
       <KpiCard icon="📅" value={kpis.buHaftaDurusma} label="BU HAFTA DURUŞMA" sub={`${kpis.buHaftaDurusma} adet`} color="text-red" accent />
+      <KpiCard icon="💰" value={fmt(kpis.buAyTahsilat)} label="BU AY TAHSİLAT" color="text-green" />
+      <KpiCard icon="📊" value={fmt(kpis.bekleyenAlacak)} label="BEKLEYEN ALACAK" color={kpis.bekleyenAlacak > 0 ? 'text-red' : 'text-green'} />
       <KpiCard icon="💎" value={fmt(yilNet)} label={`${new Date().getFullYear()} NET GELİR`} sub="Kâr" color={yilNet >= 0 ? 'text-green' : 'text-red'} />
     </div>
   );

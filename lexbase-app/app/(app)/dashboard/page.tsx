@@ -12,6 +12,7 @@ import { useBuroGiderleri } from '@/lib/hooks/useBuroGiderleri';
 import { useTodolar } from '@/lib/hooks/useTodolar';
 import { useEtkinlikler } from '@/lib/hooks/useEtkinlikler';
 import { useBelgeler } from '@/lib/hooks/useBelgeler';
+import { usePersoneller } from '@/lib/hooks/usePersonel';
 import { useKullanici } from '@/lib/hooks/useBuro';
 import { useDashboardLayout } from '@/lib/hooks/useDashboardLayout';
 import { DashboardSkeleton } from '@/components/ui/DashboardSkeleton';
@@ -46,6 +47,7 @@ export default function DashboardPage() {
   const { data: gorevler } = useTodolar();
   const { data: etkinlikler } = useEtkinlikler();
   const { data: belgeler } = useBelgeler();
+  const { data: personeller } = usePersoneller();
   const kullanici = useKullanici();
 
   /* ── Dashboard Layout ── */
@@ -123,6 +125,7 @@ export default function DashboardPage() {
         arabuluculuklar={arabuluculuklar || []}
         ihtarnameler={ihtarnameler || []}
         buroGiderleri={buroGiderleri || []}
+        personeller={personeller || []}
         yilNet={yilNet}
         muvAdMap={muvAdMap}
       />
