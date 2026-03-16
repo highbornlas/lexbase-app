@@ -10,6 +10,7 @@ import { useTodolar } from '@/lib/hooks/useTodolar';
 import { useFinansUyarilar } from '@/lib/hooks/useFinans';
 import { useIhtarnameler } from '@/lib/hooks/useIhtarname';
 import { useRol, yetkiVar } from '@/lib/hooks/useRol';
+import { useOnayBekleyenSayisi } from '@/lib/hooks/useOnay';
 import { BuroSecici } from './BuroSecici';
 
 /* ══════════════════════════════════════════════════════════════
@@ -38,28 +39,29 @@ const sidebarGroups: SidebarGroup[] = [
   {
     items: [
       { href: '/dashboard', icon: '🏛', label: 'Ana Sayfa' },
-      { href: '/muvekkillar', icon: '📒', label: 'Rehber', badge: 'count', countKey: 'muvekkil' },
+      { href: '/muvekkillar', icon: '📒', label: 'Rehber', badge: 'count', countKey: 'muvekkil', yetki: 'muvekkil:oku' },
     ],
   },
   {
     items: [
-      { href: '/davalar', icon: '📁', label: 'Davalar', badge: 'count', countKey: 'dava' },
-      { href: '/icra', icon: '⚡', label: 'İcra', badge: 'count', countKey: 'icra' },
-      { href: '/arabuluculuk', icon: '🤝', label: 'Arabuluculuk', badge: 'count', countKey: 'arabuluculuk' },
-      { href: '/danismanlik', icon: '⚖️', label: 'Danışmanlık', badge: 'count', countKey: 'danismanlik' },
-      { href: '/ihtarname', icon: '📨', label: 'İhtarname', badge: 'count', countKey: 'ihtarname' },
-      { href: '/gorevler', icon: '✅', label: 'Görevler', badge: 'count', countKey: 'gorev' },
+      { href: '/davalar', icon: '📁', label: 'Davalar', badge: 'count', countKey: 'dava', yetki: 'dosya:oku' },
+      { href: '/icra', icon: '⚡', label: 'İcra', badge: 'count', countKey: 'icra', yetki: 'dosya:oku' },
+      { href: '/arabuluculuk', icon: '🤝', label: 'Arabuluculuk', badge: 'count', countKey: 'arabuluculuk', yetki: 'dosya:oku' },
+      { href: '/danismanlik', icon: '⚖️', label: 'Danışmanlık', badge: 'count', countKey: 'danismanlik', yetki: 'danismanlik:oku' },
+      { href: '/ihtarname', icon: '📨', label: 'İhtarname', badge: 'count', countKey: 'ihtarname', yetki: 'dosya:oku' },
+      { href: '/gorevler', icon: '✅', label: 'Görevler', badge: 'count', countKey: 'gorev', yetki: 'gorev:oku' },
     ],
   },
   {
     items: [
       { href: '/finans', icon: '💰', label: 'Finans', badge: 'red', countKey: 'finans', yetki: 'finans:oku' },
-      { href: '/takvim', icon: '📅', label: 'Takvim', badge: 'count', countKey: 'takvim' },
+      { href: '/onaylar', icon: '📋', label: 'Onaylar', badge: 'red', countKey: 'onay', yetki: 'kullanici:yonet' },
+      { href: '/takvim', icon: '📅', label: 'Takvim', badge: 'count', countKey: 'takvim', yetki: 'takvim:oku' },
     ],
   },
   {
     items: [
-      { href: '/personel', icon: '👥', label: 'Personel' },
+      { href: '/personel', icon: '👥', label: 'Personel', yetki: 'kullanici:yonet' },
       { href: '/arac-kutusu', icon: '🧰', label: 'Araç Kutusu', badge: 'count' },
     ],
   },
@@ -79,6 +81,7 @@ function useBadgeCounts(): Record<string, number> {
   const { data: gorevler } = useTodolar();
   const { data: uyarilar } = useFinansUyarilar();
   const { data: ihtarnameler } = useIhtarnameler();
+  const onayBekleyen = useOnayBekleyenSayisi();
 
   return {
     muvekkil: muvekkillar?.length ?? 0,
@@ -87,6 +90,7 @@ function useBadgeCounts(): Record<string, number> {
     danismanlik: danismanliklar?.filter((d) => d.durum === 'Aktif' || d.durum === 'Devam Ediyor').length ?? 0,
     gorev: gorevler?.filter((g) => g.durum !== 'Tamamlandı' && g.durum !== 'İptal').length ?? 0,
     finans: Array.isArray(uyarilar) ? uyarilar.length : 0,
+    onay: onayBekleyen,
     arabuluculuk: 0,
     ihtarname: ihtarnameler?.filter((i) => !i._silindi && !i._arsivlendi && i.durum !== 'Sonuçlandı').length ?? 0,
     takvim: 0,

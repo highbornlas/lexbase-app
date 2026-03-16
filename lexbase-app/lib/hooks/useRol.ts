@@ -66,12 +66,14 @@ const YETKI_HARITASI: Record<Rol, Set<string>> = {
   stajyer: new Set([
     'muvekkil:oku',
     'dosya:oku',
-    'belge:oku',
-    'gorev:oku', 'gorev:duzenle',
+    'belge:oku', 'belge:yukle',
+    'gorev:oku', 'gorev:ekle', 'gorev:duzenle',
     'takvim:oku',
     'iletisim:oku',
     'danismanlik:oku',
-    'rapor:oku',
+    // finans:oku YOK — stajyer finans göremez
+    // ayarlar:oku YOK — stajyer ayarlara erişemez
+    // kullanici:yonet YOK — stajyer personel yönetemez
   ]),
   sekreter: new Set([
     'muvekkil:oku',
@@ -81,7 +83,9 @@ const YETKI_HARITASI: Record<Rol, Set<string>> = {
     'takvim:oku', 'takvim:ekle', 'takvim:duzenle',
     'iletisim:oku', 'iletisim:ekle',
     'danismanlik:oku',
-    'rapor:oku',
+    // finans:oku YOK — sekreter finans göremez
+    // kullanici:yonet YOK — sekreter personel yönetemez
+    'ayarlar:oku',
     'toplu:export',
   ]),
 };

@@ -127,9 +127,10 @@ export function PersonelModal({ open, onClose, personel }: PersonelModalProps) {
         setYukleniyor(false);
 
         if (basarili) {
-          // Başarılı personel durumunu güncelle
-          await kaydet.mutateAsync({ ...personelData, durum: 'aktif' });
+          // Başarılı → durum 'davet_gonderildi' olarak kalır (davet kabul edildiğinde aktif olur)
+          // Zaten personelData.durum = 'davet_gonderildi' olarak ayarlandı
         }
+        // Başarısız → durum güncellenmez, mevcut haliyle kalır
 
         setTimeout(() => onClose(), 2000);
         return;
@@ -183,6 +184,7 @@ export function PersonelModal({ open, onClose, personel }: PersonelModalProps) {
           </FormGroup>
           <FormGroup label="Rol">
             <FormSelect value={form.rol || ''} onChange={(e) => handleChange('rol', e.target.value)}>
+              <option value="yonetici">Yönetici</option>
               <option value="avukat">Avukat</option>
               <option value="stajyer">Stajyer</option>
               <option value="sekreter">Sekreter</option>

@@ -7,7 +7,7 @@ import { useBuroId } from './useBuro';
 export interface Personel {
   id: string;
   ad?: string;
-  rol?: 'sahip' | 'avukat' | 'stajyer' | 'sekreter';
+  rol?: 'sahip' | 'yonetici' | 'avukat' | 'stajyer' | 'sekreter';
   email?: string;
   tel?: string;
   tc?: string;
@@ -65,7 +65,7 @@ export function usePersonelSil() {
       if (!buroId) throw new Error('Büro bulunamadı');
       const supabase = createClient();
 
-      // Önce personelin email'ini al (uyelik senkronizasyonu için)
+      // 1. Personelin email'ini al (uyelik senkronizasyonu için)
       const { data: personelData } = await supabase
         .from('personel')
         .select('data')
@@ -73,33 +73,25 @@ export function usePersonelSil() {
         .eq('buro_id', buroId)
         .single();
 
-      // Personel kaydını sil
+      const email = (personelData?.data as Record<string, unknown>)?.email as string;
+
+      // 2. Eğer email varsa, uyelikler kaydını pasif yap (ayrı işlem, personel silinmeden önce)
+      if (email) {
+        // Email'e ait auth kullanıcısını bul ve uyelik'i pasifleştir
+        // RLS sadece kendi büromüzdeki kayıtları güncellememize izin verir
+        // Not: uyelikler tablosunda auth_id ile eşleşme yapılır,
+        // personel tablosundaki email'den auth_id'yi bulamayız (client-side),
+        // bu yüzden Edge Function kullanılmalı — ama şimdilik personel kaydını sil,
+        // invite-user zaten uyelik yönetimini hallediyor
+      }
+
+      // 3. Personel kaydını sil
       const { error } = await supabase
         .from('personel')
         .delete()
         .eq('id', id)
         .eq('buro_id', buroId);
       if (error) throw error;
-
-      // Eğer email varsa, uyelikler kaydını da pasif yap
-      const email = (personelData?.data as Record<string, unknown>)?.email as string;
-      if (email) {
-        // Edge function olmadan direkt uyelikler'i güncelle
-        // Not: RLS nedeniyle sadece kendi bürosundaki kaydı güncelleyebilir
-        // Bu işlem admin tarafından yapılmalı, trigger halleder
-        // Trigger sadece UPDATE'te çalışır, DELETE'te değil
-        // Bu yüzden önce pasif yap, sonra sil
-        await supabase
-          .from('personel')
-          .upsert({ id, buro_id: buroId, data: { ...(personelData?.data as object), durum: 'pasif' } });
-
-        // Şimdi sil
-        await supabase
-          .from('personel')
-          .delete()
-          .eq('id', id)
-          .eq('buro_id', buroId);
-      }
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['personel'] });

@@ -6,16 +6,18 @@ import { PersonelModal } from '@/components/modules/PersonelModal';
 
 const ROL_RENK: Record<string, { bg: string; text: string; label: string }> = {
   sahip: { bg: 'bg-gold-dim', text: 'text-gold', label: 'Büro Sahibi' },
+  yonetici: { bg: 'bg-gold-dim', text: 'text-gold', label: 'Yönetici' },
   avukat: { bg: 'bg-blue-400/10', text: 'text-blue-400', label: 'Avukat' },
   stajyer: { bg: 'bg-purple-400/10', text: 'text-purple-400', label: 'Stajyer' },
   sekreter: { bg: 'bg-green-dim', text: 'text-green', label: 'Sekreter' },
 };
 
-type RolFiltre = 'hepsi' | 'sahip' | 'avukat' | 'stajyer' | 'sekreter';
+type RolFiltre = 'hepsi' | 'sahip' | 'yonetici' | 'avukat' | 'stajyer' | 'sekreter';
 
 const ROL_FILTRE_LABELS: Record<RolFiltre, string> = {
   hepsi: 'Tüm Roller',
   sahip: 'Büro Sahibi',
+  yonetici: 'Yönetici',
   avukat: 'Avukat',
   stajyer: 'Stajyer',
   sekreter: 'Sekreter',
