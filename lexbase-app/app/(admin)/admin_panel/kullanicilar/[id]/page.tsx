@@ -20,7 +20,7 @@ function useKullaniciDetay(authId: string) {
       const supabase = createClient();
       const [kulRes, uyeRes, ipRes, auditRes] = await Promise.all([
         supabase.from('kullanicilar').select('*').eq('auth_id', authId).single(),
-        supabase.from('uyelikler').select('*, buro:buro_id(id, data)').eq('auth_id', authId),
+        supabase.from('uyelikler').select('*, buro:buro_id(id, ad, adres)').eq('auth_id', authId),
         supabase.from('ip_loglari').select('*').eq('auth_id', authId).order('created_at', { ascending: false }).limit(20),
         supabase.from('audit_log').select('*').eq('user_id', authId).order('created_at', { ascending: false }).limit(30),
       ]);
@@ -59,7 +59,7 @@ export default function KullaniciDetayPage() {
     );
   }
 
-  const kData = (data.kullanici.data || {}) as Record<string, string>;
+  const kul = data.kullanici as Record<string, unknown>;
 
   const sekmeler: { key: Sekme; label: string; icon: string }[] = [
     { key: 'profil', label: 'Profil', icon: '📋' },
@@ -74,16 +74,16 @@ export default function KullaniciDetayPage() {
       <div className="flex items-center gap-2 text-[11px] text-zinc-600">
         <Link href="/admin_panel/kullanicilar" className="hover:text-amber-500 transition-colors">Kullanıcılar</Link>
         <span>›</span>
-        <span className="text-zinc-400">{kData.ad || 'Kullanıcı Detay'}</span>
+        <span className="text-zinc-400">{(kul.ad as string) || 'Kullanıcı Detay'}</span>
       </div>
 
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-lg font-bold text-amber-500">
-          {(kData.ad || '?')[0].toUpperCase()}
+          {((kul.ad as string) || '?')[0].toUpperCase()}
         </div>
         <div>
-          <h1 className="text-lg font-bold text-zinc-200">{kData.ad || 'İsimsiz'}</h1>
+          <h1 className="text-lg font-bold text-zinc-200">{(kul.ad as string) || 'İsimsiz'}</h1>
           <div className="text-[11px] text-zinc-500">{data.kullanici.email || '—'}</div>
         </div>
       </div>
@@ -108,11 +108,11 @@ export default function KullaniciDetayPage() {
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
-              { label: 'Ad Soyad', value: kData.ad },
+              { label: 'Ad Soyad', value: (kul.ad as string) },
               { label: 'Email', value: data.kullanici.email },
-              { label: 'Telefon', value: kData.tel },
-              { label: 'Baro Sicil', value: kData.baroSicil },
-              { label: 'TC Kimlik', value: kData.tc ? `****${kData.tc.slice(-4)}` : undefined },
+              { label: 'Telefon', value: (kul.tel as string) },
+              { label: 'Baro Sicil', value: (kul.baro_sicil as string) },
+              { label: 'TC Kimlik', value: (kul.tc as string) ? `****${(kul.tc as string).slice(-4)}` : undefined },
               { label: 'Kayıt Tarihi', value: data.kullanici.created_at ? new Date(data.kullanici.created_at).toLocaleDateString('tr-TR') : undefined },
               { label: 'Üye Olduğu Büro Sayısı', value: String(data.uyelikler.length) },
               { label: 'Toplam Giriş', value: String(data.ipLoglari.length) },
@@ -131,7 +131,6 @@ export default function KullaniciDetayPage() {
         <div className="space-y-2">
           {data.uyelikler.map((uye: Record<string, unknown>) => {
             const buro = (uye.buro || {}) as Record<string, unknown>;
-            const buroData = (buro.data || {}) as Record<string, string>;
             return (
               <Link
                 key={uye.id as string}
@@ -141,8 +140,8 @@ export default function KullaniciDetayPage() {
                 <div className="flex items-center gap-3">
                   <span className="text-lg">🏢</span>
                   <div>
-                    <div className="text-[13px] font-medium text-zinc-300">{buroData.ad || 'İsimsiz Büro'}</div>
-                    <div className="text-[10px] text-zinc-600">{buroData.sehir || '—'}</div>
+                    <div className="text-[13px] font-medium text-zinc-300">{(buro.ad as string) || 'İsimsiz Büro'}</div>
+                    <div className="text-[10px] text-zinc-600">{(buro.adres as string)?.split(',')[0] || '—'}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

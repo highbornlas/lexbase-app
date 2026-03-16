@@ -99,7 +99,7 @@ export default function BuroDetayPage() {
     );
   }
 
-  const buroData = (data.buro.data || {}) as Record<string, string>;
+  const buro = data.buro as Record<string, unknown>;
   const abonelikDurum = data.abonelik?.durum || 'trial';
 
   const handleDurumDegistir = (yeniDurum: string) => {
@@ -127,7 +127,7 @@ export default function BuroDetayPage() {
       <div className="flex items-center gap-2 text-[11px] text-zinc-600">
         <Link href="/admin_panel/burolar" className="hover:text-amber-500 transition-colors">Bürolar</Link>
         <span>›</span>
-        <span className="text-zinc-400">{buroData.ad || 'Büro Detay'}</span>
+        <span className="text-zinc-400">{(buro.ad as string) || 'Büro Detay'}</span>
       </div>
 
       {/* Header */}
@@ -137,8 +137,8 @@ export default function BuroDetayPage() {
             🏢
           </div>
           <div>
-            <h1 className="text-lg font-bold text-zinc-200">{buroData.ad || 'İsimsiz Büro'}</h1>
-            <div className="text-[11px] text-zinc-500">{buroData.sehir || '—'} · {buroData.email || '—'}</div>
+            <h1 className="text-lg font-bold text-zinc-200">{(buro.ad as string) || 'İsimsiz Büro'}</h1>
+            <div className="text-[11px] text-zinc-500">{(buro.adres as string)?.split(',')[0] || '—'} · {(buro.mail as string) || '—'}</div>
           </div>
         </div>
         <span className={`inline-flex items-center px-2.5 py-1 rounded-full border text-[10px] font-bold ${DURUM_RENK[abonelikDurum] || DURUM_RENK.aktif}`}>
@@ -183,14 +183,13 @@ export default function BuroDetayPage() {
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/30 p-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
-              { label: 'Büro Adı', value: buroData.ad },
-              { label: 'Email', value: buroData.email },
-              { label: 'Telefon', value: buroData.tel },
-              { label: 'Adres', value: buroData.adres },
-              { label: 'Şehir', value: buroData.sehir },
-              { label: 'Vergi No', value: buroData.vergiNo },
-              { label: 'Vergi Dairesi', value: buroData.vergiDairesi },
-              { label: 'Baro', value: buroData.baro },
+              { label: 'Büro Adı', value: (buro.ad as string) },
+              { label: 'Email', value: (buro.mail as string) },
+              { label: 'Telefon', value: (buro.tel as string) },
+              { label: 'Adres', value: (buro.adres as string) },
+              { label: 'Vergi No', value: (buro.vergi_no as string) },
+              { label: 'Vergi Dairesi', value: (buro.vergi_dairesi as string) },
+              { label: 'Baro', value: (buro.baro as string) },
               { label: 'Kayıt Tarihi', value: data.buro.created_at ? new Date(data.buro.created_at).toLocaleDateString('tr-TR') : '—' },
             ].map((item) => (
               <div key={item.label}>

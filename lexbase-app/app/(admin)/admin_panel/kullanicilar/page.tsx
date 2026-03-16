@@ -49,12 +49,11 @@ export default function KullanicilarPage() {
   const filtreli = useMemo(() => {
     if (!kullanicilar) return [];
     return kullanicilar.filter((k: Record<string, unknown>) => {
-      const data = (k.data || {}) as Record<string, string>;
       const uyelikler = (k.uyelikler || []) as Array<Record<string, string>>;
       const q = arama.toLowerCase();
       const aramaUygun = !arama ||
-        (data.ad || '').toLowerCase().includes(q) ||
-        (k.email as string || '').toLowerCase().includes(q);
+        ((k.ad as string) || '').toLowerCase().includes(q) ||
+        ((k.email as string) || '').toLowerCase().includes(q);
       const rolUygun = rolFiltre === 'tumu' || uyelikler.some((u) => u.rol === rolFiltre);
       return aramaUygun && rolUygun;
     });
@@ -115,15 +114,14 @@ export default function KullanicilarPage() {
             </thead>
             <tbody>
               {filtreli.map((kul: Record<string, unknown>) => {
-                const data = (kul.data || {}) as Record<string, string>;
                 const uyelikler = (kul.uyelikler || []) as Array<Record<string, string>>;
                 const roller = [...new Set(uyelikler.map((u) => u.rol))];
 
                 return (
                   <tr key={kul.auth_id as string} className="border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors">
                     <td className="px-4 py-3">
-                      <div className="text-[13px] font-medium text-zinc-300">{data.ad || 'İsimsiz'}</div>
-                      <div className="text-[10px] text-zinc-600">{kul.email as string || '—'}</div>
+                      <div className="text-[13px] font-medium text-zinc-300">{(kul.ad as string) || 'İsimsiz'}</div>
+                      <div className="text-[10px] text-zinc-600">{(kul.email as string) || '—'}</div>
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell">
                       <div className="flex flex-wrap gap-1">

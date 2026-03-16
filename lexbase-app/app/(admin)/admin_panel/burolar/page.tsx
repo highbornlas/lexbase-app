@@ -18,11 +18,10 @@ export default function BurolarPage() {
     if (!arama.trim()) return burolar;
     const q = arama.toLowerCase();
     return burolar.filter((b: Record<string, unknown>) => {
-      const data = (b.data || {}) as Record<string, string>;
       return (
-        (data.ad || '').toLowerCase().includes(q) ||
-        (data.email || '').toLowerCase().includes(q) ||
-        (data.vergiNo || '').toLowerCase().includes(q)
+        ((b.ad as string) || '').toLowerCase().includes(q) ||
+        ((b.mail as string) || '').toLowerCase().includes(q) ||
+        ((b.vergi_no as string) || '').toLowerCase().includes(q)
       );
     });
   }, [burolar, arama]);
@@ -86,19 +85,18 @@ export default function BurolarPage() {
             </thead>
             <tbody>
               {filtreliBurolar.map((buro: Record<string, unknown>) => {
-                const data = (buro.data || {}) as Record<string, string>;
                 return (
                   <tr key={buro.id as string} className="border-b border-zinc-800/50 hover:bg-zinc-800/20 transition-colors">
                     <td className="px-4 py-3">
-                      <div className="text-[13px] font-medium text-zinc-300">{data.ad || 'İsimsiz Büro'}</div>
-                      <div className="text-[10px] text-zinc-600">{data.sehir || '—'}</div>
+                      <div className="text-[13px] font-medium text-zinc-300">{(buro.ad as string) || 'İsimsiz Büro'}</div>
+                      <div className="text-[10px] text-zinc-600">{(buro.adres as string)?.split(',')[0] || '—'}</div>
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell">
-                      <div className="text-[11px] text-zinc-400">{data.email || '—'}</div>
-                      <div className="text-[10px] text-zinc-600">{data.tel || '—'}</div>
+                      <div className="text-[11px] text-zinc-400">{(buro.mail as string) || '—'}</div>
+                      <div className="text-[10px] text-zinc-600">{(buro.tel as string) || '—'}</div>
                     </td>
                     <td className="px-4 py-3 hidden lg:table-cell">
-                      <span className="text-[11px] text-zinc-500">{data.vergiNo || '—'}</span>
+                      <span className="text-[11px] text-zinc-500">{(buro.vergi_no as string) || '—'}</span>
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-[10px] text-zinc-600">
@@ -132,7 +130,6 @@ export default function BurolarPage() {
       {!isLoading && gorunum === 'kart' && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {filtreliBurolar.map((buro: Record<string, unknown>) => {
-            const data = (buro.data || {}) as Record<string, string>;
             return (
               <Link
                 key={buro.id as string}
@@ -143,19 +140,19 @@ export default function BurolarPage() {
                   <span className="text-lg">🏢</span>
                   <div>
                     <div className="text-[13px] font-medium text-zinc-300 group-hover:text-amber-500 transition-colors">
-                      {data.ad || 'İsimsiz Büro'}
+                      {(buro.ad as string) || 'İsimsiz Büro'}
                     </div>
-                    <div className="text-[10px] text-zinc-600">{data.sehir || '—'}</div>
+                    <div className="text-[10px] text-zinc-600">{(buro.adres as string)?.split(',')[0] || '—'}</div>
                   </div>
                 </div>
                 <div className="space-y-1">
                   <div className="flex justify-between text-[10px]">
                     <span className="text-zinc-600">Email</span>
-                    <span className="text-zinc-400">{data.email || '—'}</span>
+                    <span className="text-zinc-400">{(buro.mail as string) || '—'}</span>
                   </div>
                   <div className="flex justify-between text-[10px]">
                     <span className="text-zinc-600">Telefon</span>
-                    <span className="text-zinc-400">{data.tel || '—'}</span>
+                    <span className="text-zinc-400">{(buro.tel as string) || '—'}</span>
                   </div>
                   <div className="flex justify-between text-[10px]">
                     <span className="text-zinc-600">Kayıt</span>
