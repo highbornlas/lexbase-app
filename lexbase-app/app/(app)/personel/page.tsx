@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { usePersoneller, usePersonelSil, type Personel } from '@/lib/hooks/usePersonel';
 import { useTodolar } from '@/lib/hooks/useTodolar';
 import { useDavalar } from '@/lib/hooks/useDavalar';
@@ -381,7 +382,7 @@ function PersonelKart({ personel: p, stat, yoneticiMi, silmeOnay, onDuzenle, onS
   const kapasiteAsimi = stat && (stat.gorevSayisi >= 5 || stat.gecikmisSayisi >= 2);
 
   return (
-    <div className={`bg-surface border rounded-lg p-4 transition-all group ${
+    <div className={`bg-surface border rounded-lg p-4 transition-all group/card ${
       kapasiteAsimi ? 'border-red/30 shadow-[0_0_8px_rgba(231,76,60,0.1)]' : 'border-border hover:border-gold/30'
     } ${p.durum === 'pasif' ? 'opacity-60' : ''}`}>
       {/* Üst: Avatar + Ad + Rol + Durum */}
@@ -465,14 +466,12 @@ function PersonelKart({ personel: p, stat, yoneticiMi, silmeOnay, onDuzenle, onS
         </div>
       )}
 
-      {/* Sadece okuma — tıklayınca düzenle */}
-      {!yoneticiMi && (
-        <div className="pt-2 border-t border-border/50">
-          <button onClick={onDuzenle} className="w-full px-2 py-1 text-[11px] text-text-muted hover:text-gold transition-colors text-center">
-            Detay Görüntüle
-          </button>
-        </div>
-      )}
+      {/* Detay sayfasına git */}
+      <div className={`pt-2 border-t border-border/50 ${yoneticiMi ? 'hidden group-hover/card:block' : ''}`}>
+        <button onClick={() => window.location.href = `/personel/${p.id}`} className="w-full px-2 py-1 text-[11px] text-text-muted hover:text-gold transition-colors text-center">
+          Detaylı Görüntüle →
+        </button>
+      </div>
     </div>
   );
 }
