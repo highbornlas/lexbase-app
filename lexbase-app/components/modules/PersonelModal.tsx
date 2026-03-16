@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Modal, FormGroup, FormInput, FormSelect, FormTextarea, BtnGold, BtnOutline } from '@/components/ui/Modal';
 import { usePersonelKaydet, type Personel } from '@/lib/hooks/usePersonel';
+import { useBildirimGonder } from '@/lib/hooks/useBildirimler';
+import { ROL_ETIKETLERI, type Rol } from '@/lib/hooks/useRol';
 import { createClient } from '@/lib/supabase/client';
 
 interface PersonelModalProps {
@@ -30,6 +32,8 @@ export function PersonelModal({ open, onClose, personel }: PersonelModalProps) {
   const [yukleniyor, setYukleniyor] = useState(false);
   const [davetGonder, setDavetGonder] = useState(false);
   const kaydet = usePersonelKaydet();
+  const bildirimGonder = useBildirimGonder();
+  const oncekiRef = useRef<Partial<Personel> | null>(null);
 
   const yeniKayit = !personel;
   // Mevcut personel daveti başarısız olmuşsa tekrar gönderebilsin
@@ -39,9 +43,11 @@ export function PersonelModal({ open, onClose, personel }: PersonelModalProps) {
   useEffect(() => {
     if (personel) {
       setForm({ ...personel });
-      setDavetGonder(personel.durum === 'davet_gonderildi'); // Bekleyen davet varsa otomatik seç
+      oncekiRef.current = { ...personel }; // Önceki değerleri kaydet (değişiklik tespiti için)
+      setDavetGonder(personel.durum === 'davet_gonderildi');
     } else {
       setForm({ ...bos, id: crypto.randomUUID() });
+      oncekiRef.current = null;
       setDavetGonder(true);
     }
     setHata('');
@@ -121,16 +127,58 @@ export function PersonelModal({ open, onClose, personel }: PersonelModalProps) {
 
       await kaydet.mutateAsync(personelData);
 
-      // 2. Davet gönder
+      // 2. Değişiklik bildirimleri gönder (düzenleme modunda)
+      if (!yeniKayit && oncekiRef.current) {
+        const onceki = oncekiRef.current;
+        const ad = form.ad || '(adsız)';
+
+        // Rol değişikliği bildirimi
+        if (onceki.rol && form.rol && onceki.rol !== form.rol) {
+          const eskiRol = ROL_ETIKETLERI[(onceki.rol as Rol)]?.label || onceki.rol;
+          const yeniRol = ROL_ETIKETLERI[(form.rol as Rol)]?.label || form.rol;
+          bildirimGonder.mutate({
+            tip: 'sistem',
+            baslik: '🔄 Rol değişikliği',
+            mesaj: `${ad} — ${eskiRol} → ${yeniRol}`,
+            link: '/personel',
+          });
+        }
+
+        // Durum değişikliği bildirimi
+        const oncekiDurum = onceki.durum || 'aktif';
+        const yeniDurum = personelData.durum || 'aktif';
+        if (oncekiDurum !== yeniDurum && yeniDurum !== 'davet_gonderildi') {
+          const durumLabels: Record<string, string> = {
+            aktif: 'aktif',
+            pasif: 'pasif',
+          };
+          bildirimGonder.mutate({
+            tip: 'sistem',
+            baslik: yeniDurum === 'pasif' ? '⏸️ Personel pasifleştirildi' : '▶️ Personel aktifleştirildi',
+            mesaj: `${ad} ${durumLabels[yeniDurum] || yeniDurum} durumuna geçirildi.`,
+            link: '/personel',
+          });
+        }
+      }
+
+      // Yeni personel ekleme bildirimi
+      if (yeniKayit && !davetGonder) {
+        bildirimGonder.mutate({
+          tip: 'sistem',
+          baslik: '👤 Yeni personel eklendi',
+          mesaj: `${form.ad || '(adsız)'} ekibe eklendi.`,
+          link: '/personel',
+        });
+      }
+
+      // 3. Davet gönder
       if (davetGonder && form.email?.trim()) {
         const basarili = await davetGonderFn();
         setYukleniyor(false);
 
         if (basarili) {
-          // Başarılı → durum 'davet_gonderildi' olarak kalır (davet kabul edildiğinde aktif olur)
-          // Zaten personelData.durum = 'davet_gonderildi' olarak ayarlandı
+          // Başarılı → durum 'davet_gonderildi' olarak kalır
         }
-        // Başarısız → durum güncellenmez, mevcut haliyle kalır
 
         setTimeout(() => onClose(), 2000);
         return;

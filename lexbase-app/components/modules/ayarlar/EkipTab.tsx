@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { usePersoneller, usePersonelKaydet, usePersonelSil, type Personel } from '@/lib/hooks/usePersonel';
 import { useYetki } from '@/lib/hooks/useRol';
 import { ROL_ETIKETLERI, type Rol } from '@/lib/hooks/useRol';
+import { useBildirimGonder } from '@/lib/hooks/useBildirimler';
 import { PersonelModal } from '@/components/modules/PersonelModal';
 import { SectionTitle, Badge, AyarlarEmptyState, AyarInput } from './shared';
 
@@ -22,6 +23,7 @@ export function EkipTab() {
   const { yetkili } = useYetki('kullanici:yonet');
   const kaydet = usePersonelKaydet();
   const sil = usePersonelSil();
+  const bildirimGonder = useBildirimGonder();
 
   const [arama, setArama] = useState('');
   const [rolFiltre, setRolFiltre] = useState<string>('');
@@ -29,6 +31,7 @@ export function EkipTab() {
   const [modalAcik, setModalAcik] = useState(false);
   const [seciliPersonel, setSeciliPersonel] = useState<Personel | null>(null);
   const [aksiyonOnay, setAksiyonOnay] = useState<{ id: string; tip: 'pasif' | 'sil' } | null>(null);
+  const [davetYukleniyor, setDavetYukleniyor] = useState<string | null>(null);
 
   const filtrelenmis = useMemo(() => {
     if (!personeller) return [];
@@ -69,12 +72,64 @@ export function EkipTab() {
   async function handlePasifYap(p: Personel) {
     const yeniDurum = p.durum === 'pasif' ? 'aktif' : 'pasif';
     await kaydet.mutateAsync({ ...p, durum: yeniDurum });
+    bildirimGonder.mutate({
+      tip: 'sistem',
+      baslik: yeniDurum === 'pasif' ? '⏸️ Personel pasifleştirildi' : '▶️ Personel aktifleştirildi',
+      mesaj: `${p.ad || '(adsız)'} ${yeniDurum === 'pasif' ? 'pasif' : 'aktif'} durumuna geçirildi.`,
+      link: '/personel',
+    });
     setAksiyonOnay(null);
   }
 
   async function handleSil(p: Personel) {
     await sil.mutateAsync(p.id);
     setAksiyonOnay(null);
+  }
+
+  // Bekleyen davetler
+  const bekleyenDavetler = useMemo(() => {
+    if (!personeller) return [];
+    return personeller.filter((p) => p.durum === 'davet_gonderildi');
+  }, [personeller]);
+
+  // Daveti iptal et (pasif yap)
+  async function handleDavetIptal(p: Personel) {
+    await kaydet.mutateAsync({ ...p, durum: 'pasif' });
+    bildirimGonder.mutate({
+      tip: 'sistem',
+      baslik: '❌ Davet iptal edildi',
+      mesaj: `${p.ad || '(adsız)'} için gönderilen davet iptal edildi.`,
+      link: '/personel',
+    });
+  }
+
+  // Daveti tekrar gönder
+  async function handleDavetTekrar(p: Personel) {
+    if (!p.email) return;
+    setDavetYukleniyor(p.id);
+    try {
+      const { createClient: cc } = await import('@/lib/supabase/client');
+      const supabase = cc();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      await fetch(`${supabaseUrl}/functions/v1/invite-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          email: p.email.trim(),
+          ad: (p.ad || '').trim(),
+          rol: p.rol || 'avukat',
+        }),
+      });
+    } catch {
+      // Hata sessizce geçilsin
+    }
+    setDavetYukleniyor(null);
   }
 
   if (!yetkili) {
@@ -227,6 +282,53 @@ export function EkipTab() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Bekleyen Davetler Paneli */}
+      {bekleyenDavetler.length > 0 && (
+        <div className="mt-6">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-sm font-semibold text-gold">📨 Bekleyen Davetler</span>
+            <span className="bg-gold text-bg text-[9px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+              {bekleyenDavetler.length}
+            </span>
+          </div>
+          <div className="space-y-2">
+            {bekleyenDavetler.map((p) => (
+              <div
+                key={`davet-${p.id}`}
+                className="flex items-center gap-3 bg-gold-dim/20 border border-gold/20 rounded-lg px-4 py-2.5"
+              >
+                <div className="w-7 h-7 rounded-full bg-gold/20 flex items-center justify-center text-xs font-bold text-gold">
+                  ✉️
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-text truncate">{p.ad || '(adsız)'}</div>
+                  <div className="text-[11px] text-text-dim truncate">
+                    {p.email || 'E-posta yok'}
+                    {p.rol && ` · ${ROL_ETIKETLERI[(p.rol as Rol)]?.label || p.rol}`}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => handleDavetTekrar(p)}
+                    disabled={davetYukleniyor === p.id}
+                    className="px-2 py-1 text-[11px] text-gold border border-gold/20 rounded-lg hover:bg-gold-dim transition-colors disabled:opacity-50"
+                  >
+                    {davetYukleniyor === p.id ? '...' : '🔄 Tekrar Gönder'}
+                  </button>
+                  <button
+                    onClick={() => handleDavetIptal(p)}
+                    disabled={kaydet.isPending}
+                    className="px-2 py-1 text-[11px] text-red border border-red/20 rounded-lg hover:bg-red/10 transition-colors disabled:opacity-50"
+                  >
+                    İptal
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

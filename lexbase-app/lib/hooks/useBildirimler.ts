@@ -146,6 +146,45 @@ export function useBildirimOkundu() {
 /**
  * Tüm bildirimleri okundu olarak işaretle
  */
+/**
+ * Bildirim gönderme helper'ı — client-side bildirim oluşturur
+ * Personel değişiklikleri, silme, rol/durum güncellemelerinde kullanılır
+ */
+export function useBildirimGonder() {
+  const buroId = useBuroId();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (bildirim: {
+      tip: string;
+      baslik: string;
+      mesaj?: string;
+      link?: string;
+      hedef_auth_id?: string | null; // null = büro geneline
+    }) => {
+      if (!buroId) throw new Error('Büro bulunamadı');
+      const supabase = createClient();
+      const { error } = await supabase.from('bildirimler').insert({
+        id: crypto.randomUUID(),
+        buro_id: buroId,
+        tip: bildirim.tip,
+        baslik: bildirim.baslik,
+        mesaj: bildirim.mesaj || null,
+        link: bildirim.link || null,
+        hedef_auth_id: bildirim.hedef_auth_id ?? null,
+        okundu: false,
+      });
+      if (error) throw error;
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['bildirimler'] });
+    },
+  });
+}
+
+/**
+ * Tüm bildirimleri okundu olarak işaretle
+ */
 export function useTumBildirimlerOku() {
   const buroId = useBuroId();
   const queryClient = useQueryClient();

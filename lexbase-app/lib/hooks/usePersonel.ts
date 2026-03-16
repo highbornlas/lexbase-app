@@ -65,7 +65,7 @@ export function usePersonelSil() {
       if (!buroId) throw new Error('Büro bulunamadı');
       const supabase = createClient();
 
-      // 1. Personelin email'ini al (uyelik senkronizasyonu için)
+      // 1. Personelin bilgilerini al (bildirim + uyelik için)
       const { data: personelData } = await supabase
         .from('personel')
         .select('data')
@@ -73,16 +73,22 @@ export function usePersonelSil() {
         .eq('buro_id', buroId)
         .single();
 
-      const email = (personelData?.data as Record<string, unknown>)?.email as string;
+      const data = personelData?.data as Record<string, unknown> | null;
+      const ad = (data?.ad as string) || '(adsız)';
 
-      // 2. Eğer email varsa, uyelikler kaydını pasif yap (ayrı işlem, personel silinmeden önce)
-      if (email) {
-        // Email'e ait auth kullanıcısını bul ve uyelik'i pasifleştir
-        // RLS sadece kendi büromüzdeki kayıtları güncellememize izin verir
-        // Not: uyelikler tablosunda auth_id ile eşleşme yapılır,
-        // personel tablosundaki email'den auth_id'yi bulamayız (client-side),
-        // bu yüzden Edge Function kullanılmalı — ama şimdilik personel kaydını sil,
-        // invite-user zaten uyelik yönetimini hallediyor
+      // 2. Büro geneline bildirim gönder (silme öncesi)
+      try {
+        await supabase.from('bildirimler').insert({
+          id: crypto.randomUUID(),
+          buro_id: buroId,
+          tip: 'sistem',
+          baslik: '👤 Personel çıkarıldı',
+          mesaj: `${ad} ekipten çıkarıldı.`,
+          link: '/personel',
+          okundu: false,
+        });
+      } catch {
+        // Bildirim hatası silme işlemini engellemesin
       }
 
       // 3. Personel kaydını sil
