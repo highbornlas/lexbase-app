@@ -7,11 +7,12 @@ import { createClient } from '@/lib/supabase/client';
 /**
  * AdminGuard — Admin paneli erişim kontrolü
  *
- * Sadece oturum açmış kullanıcıları kontrol eder.
- * Asıl güvenlik katmanı: Cloudflare Access (URL bazlı koruma)
- *
- * 1. Auth oturumu kontrol et (yoksa → /giris)
- * 2. Oturum varsa → children render
+ * Güvenlik modeli:
+ * 1. Cloudflare Access → URL bazlı koruma (asıl güvenlik katmanı)
+ * 2. Auth oturumu kontrol → yoksa /giris
+ * 3. platform_adminler tablosuna otomatik kayıt (bootstrap)
+ *    → Cloudflare Access'i geçen + oturum açmış kullanıcı = admin
+ *    → Hesaba bağlı değil, Cloudflare Access güvenliğine dayanır
  */
 export function AdminGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -29,6 +30,25 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
         setDurum('yetkisiz');
         router.replace('/giris');
         return;
+      }
+
+      // platform_adminler tablosunda var mı kontrol et
+      const { data: admin } = await supabase
+        .from('platform_adminler')
+        .select('auth_id')
+        .eq('auth_id', user.id)
+        .single();
+
+      if (cancelled) return;
+
+      // Yoksa otomatik kaydet (bootstrap)
+      // Cloudflare Access bu URL'e erişimi kısıtlar — buraya ulaşan kullanıcı admin'dir
+      if (!admin) {
+        await supabase.rpc('admin_bootstrap', {
+          p_auth_id: user.id,
+          p_email: user.email || '',
+          p_ad: user.user_metadata?.ad || user.email?.split('@')[0] || 'Admin',
+        });
       }
 
       setDurum('yetkili');
