@@ -339,6 +339,9 @@ function GirisForm({ onClose, onSwitchTab }: { onClose: () => void; onSwitchTab:
       return;
     }
 
+    // IP loglama (fire and forget)
+    fetch('/api/log-giris', { method: 'POST' }).catch(() => {});
+
     onClose();
     router.push('/dashboard');
   }

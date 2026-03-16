@@ -6,6 +6,7 @@ import { Topbar } from '@/components/layout/Topbar';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { InfoModal } from '@/components/ui/InfoModal';
+import { InactivityWarning } from '@/components/auth/InactivityWarning';
 import {
   KullanimKosullari, GizlilikPolitikasi, KvkkAydinlatma,
   VeriGuvenligi, CerezAyarlari,
@@ -77,6 +78,9 @@ export default function AppLayout({
             </div>
           </footer>
         </div>
+
+        {/* Hareketsizlik Uyarısı */}
+        <InactivityWarning />
 
         {/* Yasal İçerik Modal */}
         <InfoModal

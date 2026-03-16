@@ -168,6 +168,7 @@ export default function KullaniciDetayPage() {
                 <th className="text-left px-4 py-2.5 text-[10px] font-semibold text-zinc-600 uppercase">Tarih</th>
                 <th className="text-left px-4 py-2.5 text-[10px] font-semibold text-zinc-600 uppercase">IP</th>
                 <th className="text-left px-4 py-2.5 text-[10px] font-semibold text-zinc-600 uppercase hidden md:table-cell">Konum</th>
+                <th className="text-left px-4 py-2.5 text-[10px] font-semibold text-zinc-600 uppercase hidden lg:table-cell">Cihaz</th>
               </tr>
             </thead>
             <tbody>
@@ -176,14 +177,21 @@ export default function KullaniciDetayPage() {
                   <td className="px-4 py-2.5 text-[11px] text-zinc-400">
                     {new Date(log.created_at as string).toLocaleString('tr-TR')}
                   </td>
-                  <td className="px-4 py-2.5 text-[11px] text-zinc-500 font-mono">{log.ip_address as string || '—'}</td>
+                  <td className="px-4 py-2.5 text-[11px] text-zinc-500 font-mono">{((log.ip as string) || '—').replace('/32', '').replace('/128', '')}</td>
                   <td className="px-4 py-2.5 text-[11px] text-zinc-500 hidden md:table-cell">
-                    {[log.city, log.country].filter(Boolean).join(', ') || '—'}
+                    {(log.konum as string) || '—'}
+                  </td>
+                  <td className="px-4 py-2.5 text-[10px] text-zinc-600 hidden lg:table-cell max-w-[200px] truncate">
+                    {(log.cihaz as string)?.includes('Windows') ? '🖥️ Windows' :
+                     (log.cihaz as string)?.includes('Mac') ? '💻 Mac' :
+                     (log.cihaz as string)?.includes('iPhone') ? '📱 iPhone' :
+                     (log.cihaz as string)?.includes('Android') ? '📱 Android' :
+                     (log.cihaz as string) || '—'}
                   </td>
                 </tr>
               ))}
               {data.ipLoglari.length === 0 && (
-                <tr><td colSpan={3} className="px-4 py-6 text-center text-[12px] text-zinc-600">Oturum kaydı yok</td></tr>
+                <tr><td colSpan={4} className="px-4 py-6 text-center text-[12px] text-zinc-600">Oturum kaydı yok</td></tr>
               )}
             </tbody>
           </table>
