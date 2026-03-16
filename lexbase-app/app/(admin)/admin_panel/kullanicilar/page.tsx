@@ -48,11 +48,12 @@ export default function KullanicilarPage() {
 
   // DEBUG: Veri yapısını kontrol et
   if (kullanicilar && kullanicilar.length > 0) {
+    const ilk = kullanicilar[0] as Record<string, unknown>;
     console.log('🔍 KULLANICILAR DEBUG:', {
-      ilkKayit: kullanicilar[0],
-      keys: Object.keys(kullanicilar[0]),
-      ad: kullanicilar[0].ad,
-      typeofAd: typeof kullanicilar[0].ad,
+      ilkKayit: ilk,
+      keys: Object.keys(ilk),
+      ad: ilk.ad,
+      typeofAd: typeof ilk.ad,
     });
   }
 
