@@ -46,6 +46,16 @@ export default function KullanicilarPage() {
   const [arama, setArama] = useState('');
   const [rolFiltre, setRolFiltre] = useState<string>('tumu');
 
+  // DEBUG: Veri yapısını kontrol et
+  if (kullanicilar && kullanicilar.length > 0) {
+    console.log('🔍 KULLANICILAR DEBUG:', {
+      ilkKayit: kullanicilar[0],
+      keys: Object.keys(kullanicilar[0]),
+      ad: kullanicilar[0].ad,
+      typeofAd: typeof kullanicilar[0].ad,
+    });
+  }
+
   const filtreli = useMemo(() => {
     if (!kullanicilar) return [];
     return kullanicilar.filter((k: Record<string, unknown>) => {

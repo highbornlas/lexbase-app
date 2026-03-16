@@ -13,6 +13,16 @@ export default function BurolarPage() {
   const [arama, setArama] = useState('');
   const [gorunum, setGorunum] = useState<'tablo' | 'kart'>('tablo');
 
+  // DEBUG: Veri yapısını kontrol et
+  if (burolar && burolar.length > 0) {
+    console.log('🔍 BUROLAR DEBUG:', {
+      ilkKayit: burolar[0],
+      keys: Object.keys(burolar[0]),
+      ad: burolar[0].ad,
+      typeofAd: typeof burolar[0].ad,
+    });
+  }
+
   const filtreliBurolar = useMemo(() => {
     if (!burolar) return [];
     if (!arama.trim()) return burolar;
