@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Modal, FormGroup, FormInput, FormSelect, BtnGold, BtnOutline } from '@/components/ui/Modal';
+import { useModalDraft } from '@/lib/hooks/useModalDraft';
 import { fmt } from '@/lib/utils';
 import { bruttenNete, nettenBrute } from '@/lib/hooks/useGelirHesapla';
 
@@ -54,18 +55,27 @@ const bos: TahsilatKaydi = {
 
 export function TahsilatModal({ open, onClose, onKaydet, tahsilat }: TahsilatModalProps) {
   const [form, setForm] = useState<TahsilatKaydi>({ ...bos });
+  const [initialForm, setInitialForm] = useState<TahsilatKaydi>({ ...bos });
   const [tutarModu, setTutarModu] = useState<'brut' | 'net'>('brut');
   const [hata, setHata] = useState('');
 
   useEffect(() => {
+    let init: TahsilatKaydi;
     if (tahsilat) {
-      setForm({ ...tahsilat });
+      init = { ...tahsilat };
     } else {
-      setForm({ ...bos, id: crypto.randomUUID() });
+      init = { ...bos, id: crypto.randomUUID() };
     }
+    setInitialForm(init);
+    setForm(init);
     setHata('');
     setTutarModu('brut');
   }, [tahsilat, open]);
+
+  const draftKey = `tahsilat_${form.id || 'yeni'}`;
+  const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(
+    draftKey, form as unknown as Record<string, unknown>, initialForm as unknown as Record<string, unknown>, open
+  );
 
   function handleChange(field: string, value: string | number | boolean) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -78,6 +88,7 @@ export function TahsilatModal({ open, onClose, onKaydet, tahsilat }: TahsilatMod
     }
     setHata('');
     onKaydet(form);
+    clearDraft();
     onClose();
   }
 
@@ -87,7 +98,12 @@ export function TahsilatModal({ open, onClose, onKaydet, tahsilat }: TahsilatMod
   const hesap = bruttenNete(form.tutar || 0, efektifKdv, efektifStopaj);
 
   return (
-    <Modal open={open} onClose={onClose} title={tahsilat ? 'Tahsilat Düzenle' : 'Yeni Tahsilat'} maxWidth="max-w-lg">
+    <Modal open={open} onClose={onClose} title={tahsilat ? 'Tahsilat Düzenle' : 'Yeni Tahsilat'} maxWidth="max-w-lg"
+      dirty={isDirty}
+      hasDraft={hasDraft()}
+      onLoadDraft={() => { const d = loadDraft(); if (d) setForm(d as unknown as TahsilatKaydi); clearDraft(); }}
+      onDiscardDraft={clearDraft}
+    >
       <div className="space-y-4">
         {hata && (
           <div className="bg-red-dim border border-red/20 rounded-lg px-3 py-2 text-xs text-red">{hata}</div>

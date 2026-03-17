@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Modal, FormGroup, FormInput, FormSelect, FormTextarea, BtnGold, BtnOutline } from '@/components/ui/Modal';
+import { useModalDraft } from '@/lib/hooks/useModalDraft';
 import {
   useArabuluculukKaydet,
   type Arabuluculuk,
@@ -49,6 +50,7 @@ const bos: Partial<Arabuluculuk> = {
 
 export function ArabuluculukModal({ open, onClose, arabuluculuk, onAnlasamama }: ArabuluculukModalProps) {
   const [form, setForm] = useState<Partial<Arabuluculuk>>({ ...bos });
+  const [initialForm, setInitialForm] = useState<Partial<Arabuluculuk>>({ ...bos });
   const [hata, setHata] = useState('');
   const [anlasamamaDialog, setAnlasamamaDialog] = useState(false);
   const [yeniKtAd, setYeniKtAd] = useState('');
@@ -62,15 +64,23 @@ export function ArabuluculukModal({ open, onClose, arabuluculuk, onAnlasamama }:
   const etkinlikKaydet = useEtkinlikKaydet();
 
   useEffect(() => {
+    let init: Partial<Arabuluculuk>;
     if (arabuluculuk) {
-      setForm({ ...arabuluculuk });
+      init = { ...arabuluculuk };
     } else {
-      setForm({ ...bos, id: crypto.randomUUID() });
+      init = { ...bos, id: crypto.randomUUID() };
     }
+    setInitialForm(init);
+    setForm(init);
     setHata('');
     setAnlasamamaDialog(false);
     setYeniKtGoster(false);
   }, [arabuluculuk, open]);
+
+  const draftKey = `arabuluculuk_${form.id || 'yeni'}`;
+  const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(
+    draftKey, form as Record<string, unknown>, initialForm as Record<string, unknown>, open
+  );
 
   function handleChange(field: string, value: string | number) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -162,6 +172,7 @@ export function ArabuluculukModal({ open, onClose, arabuluculuk, onAnlasamama }:
         return; // Modal kapanmasın, dialog göstersin
       }
 
+      clearDraft();
       onClose();
     } catch {
       setHata('Kayıt sırasında bir hata oluştu.');
@@ -170,6 +181,7 @@ export function ArabuluculukModal({ open, onClose, arabuluculuk, onAnlasamama }:
 
   function handleAnlasamamaOnay() {
     setAnlasamamaDialog(false);
+    clearDraft();
     onClose();
     if (onAnlasamama) {
       onAnlasamama(form as Arabuluculuk);
@@ -182,6 +194,10 @@ export function ArabuluculukModal({ open, onClose, arabuluculuk, onAnlasamama }:
       onClose={onClose}
       title={arabuluculuk ? 'Arabuluculuk Düzenle' : 'Yeni Arabuluculuk'}
       maxWidth="max-w-3xl"
+      dirty={isDirty}
+      hasDraft={hasDraft()}
+      onLoadDraft={() => { const d = loadDraft(); if (d) setForm(d as Partial<Arabuluculuk>); clearDraft(); }}
+      onDiscardDraft={clearDraft}
       footer={
         anlasamamaDialog ? undefined : (
           <>

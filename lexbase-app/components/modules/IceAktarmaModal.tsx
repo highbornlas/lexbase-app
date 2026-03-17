@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useMemo } from 'react';
 import { Modal } from '@/components/ui/Modal';
+import { useModalDraft } from '@/lib/hooks/useModalDraft';
 import { telefonDogrula, telefonFormatla, epostaDogrula } from '@/lib/validation';
 
 /* ══════════════════════════════════════════════════════════════
@@ -243,6 +244,13 @@ export function IceAktarmaModal({ open, onClose, hedefTip, mevcutKayitlar, onAkt
   const [mukerrerHaric, setMukerrerHaric] = useState(true);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const iceAktarmaForm = useMemo(() => ({ adim, eslestirme: JSON.stringify(eslestirme), mukerrerHaric }), [adim, eslestirme, mukerrerHaric]);
+  const iceAktarmaInitial = useMemo(() => ({ adim: 'yukle' as Adim, eslestirme: '{}', mukerrerHaric: true }), []);
+  const draftKey = 'iceAktarma';
+  const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(
+    draftKey, iceAktarmaForm as Record<string, unknown>, iceAktarmaInitial as Record<string, unknown>, open
+  );
+
   const hedefAlanlar = alanlarByTip(hedefTip);
 
   // ── Dosya oku ──
@@ -352,6 +360,7 @@ export function IceAktarmaModal({ open, onClose, hedefTip, mevcutKayitlar, onAkt
 
     try {
       await onAktar(aktarilacak);
+      clearDraft();
       setAktarimSonuc({ basarili: aktarilacak.length, hata: 0 });
       setAktarimDurum('bitti');
     } catch {
@@ -374,9 +383,10 @@ export function IceAktarmaModal({ open, onClose, hedefTip, mevcutKayitlar, onAkt
   }, []);
 
   const handleKapat = useCallback(() => {
+    clearDraft();
     sifirla();
     onClose();
-  }, [sifirla, onClose]);
+  }, [clearDraft, sifirla, onClose]);
 
   const tipLabel = hedefTip === 'muvekkil' ? 'Müvekkil' : hedefTip === 'karsiTaraf' ? 'Karşı Taraf' : hedefTip === 'vekil' ? 'Avukat' : hedefTip === 'dava' ? 'Dava' : 'İcra';
 
@@ -386,7 +396,23 @@ export function IceAktarmaModal({ open, onClose, hedefTip, mevcutKayitlar, onAkt
     .filter((a) => !Object.values(eslestirme).includes(a.key));
 
   return (
-    <Modal open={open} onClose={handleKapat} title={`📥 ${tipLabel} İçe Aktar (CSV)`} maxWidth="max-w-2xl">
+    <Modal open={open} onClose={handleKapat} title={`📥 ${tipLabel} İçe Aktar (CSV)`} maxWidth="max-w-2xl"
+      dirty={isDirty}
+      hasDraft={hasDraft()}
+      onLoadDraft={() => {
+        const d = loadDraft();
+        if (d) {
+          const draft = d as Record<string, unknown>;
+          if (draft.adim) setAdim(draft.adim as Adim);
+          if (draft.eslestirme) {
+            try { setEslestirme(JSON.parse(draft.eslestirme as string)); } catch { /* ignore */ }
+          }
+          if (typeof draft.mukerrerHaric === 'boolean') setMukerrerHaric(draft.mukerrerHaric);
+        }
+        clearDraft();
+      }}
+      onDiscardDraft={clearDraft}
+    >
       <div className="space-y-4 max-h-[70vh] overflow-y-auto p-1">
 
         {/* ═══ ADIM 1: DOSYA YÜKLE ═══ */}

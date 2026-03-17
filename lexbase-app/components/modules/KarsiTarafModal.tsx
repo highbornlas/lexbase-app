@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Modal, FormGroup, FormInput, FormSelect, FormTextarea, BtnGold, BtnOutline } from '@/components/ui/Modal';
+import { useModalDraft } from '@/lib/hooks/useModalDraft';
 import { useKarsiTaraflar, useKarsiTarafKaydet, type KarsiTaraf } from '@/lib/hooks/useKarsiTaraflar';
 import { SmartBankaSecici } from '@/components/ui/SmartBankaSecici';
 import { EtiketSecici } from '@/components/ui/EtiketSecici';
@@ -62,6 +63,7 @@ const ADIM_BASLIKLAR: Record<Adim, string> = {
 
 export function KarsiTarafModal({ open, onClose, karsiTaraf, onCreated }: KarsiTarafModalProps) {
   const [form, setForm] = useState<Partial<KarsiTaraf>>({ ...bos });
+  const [initialForm, setInitialForm] = useState<Partial<KarsiTaraf>>({ ...bos });
   const [hata, setHata] = useState('');
   const [alanHata, setAlanHata] = useState<Record<string, string | null>>({});
   const [adim, setAdim] = useState<Adim>(1);
@@ -70,23 +72,30 @@ export function KarsiTarafModal({ open, onClose, karsiTaraf, onCreated }: KarsiT
   const tumEtiketler = useTumEtiketler();
 
   useEffect(() => {
+    let init: Partial<KarsiTaraf>;
     if (karsiTaraf) {
-      const f = { ...karsiTaraf };
-      if (f.adres && !f.adresler) {
-        const eskiAdres = f.adres as Record<string, string>;
+      init = { ...karsiTaraf };
+      if (init.adres && !init.adresler) {
+        const eskiAdres = init.adres as Record<string, string>;
         if (Object.keys(eskiAdres).length > 0) {
-          f.adresler = [{ baslik: 'Ev Adresi', ...eskiAdres } as unknown as Record<string, string>];
+          init.adresler = [{ baslik: 'Ev Adresi', ...eskiAdres } as unknown as Record<string, string>];
         }
       }
-      setForm(f);
     } else {
       const maxNo = Math.max(0, ...(mevcutlar || []).map((k) => k.kayitNo || 0));
-      setForm({ ...bos, id: crypto.randomUUID(), sira: Date.now(), kayitNo: maxNo + 1 });
+      init = { ...bos, id: crypto.randomUUID(), sira: Date.now(), kayitNo: maxNo + 1 };
     }
+    setInitialForm(init);
+    setForm(init);
     setHata('');
     setAlanHata({});
     setAdim(1);
   }, [karsiTaraf, open]);
+
+  const draftKey = `karsiTaraf_${form.id || 'yeni'}`;
+  const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(
+    draftKey, form as Record<string, unknown>, initialForm as Record<string, unknown>, open
+  );
 
   function handleChange(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -168,6 +177,7 @@ export function KarsiTarafModal({ open, onClose, karsiTaraf, onCreated }: KarsiT
     try {
       await kaydet.mutateAsync(form as KarsiTaraf);
       onCreated?.(form as KarsiTaraf);
+      clearDraft();
       onClose();
     } catch {
       setHata('Kayıt sırasında bir hata oluştu.');
@@ -180,6 +190,10 @@ export function KarsiTarafModal({ open, onClose, karsiTaraf, onCreated }: KarsiT
       onClose={onClose}
       title={karsiTaraf ? 'Karşı Taraf Düzenle' : 'Yeni Karşı Taraf'}
       maxWidth="max-w-3xl"
+      dirty={isDirty}
+      hasDraft={hasDraft()}
+      onLoadDraft={() => { const d = loadDraft(); if (d) setForm(d as Partial<KarsiTaraf>); clearDraft(); }}
+      onDiscardDraft={clearDraft}
       footer={
         <div className="flex items-center justify-between w-full">
           <div>{adim > 1 && <BtnOutline onClick={geri}>← Geri</BtnOutline>}</div>

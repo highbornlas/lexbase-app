@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Modal, FormGroup, FormInput, FormSelect, FormTextarea, BtnGold, BtnOutline } from '@/components/ui/Modal';
+import { useModalDraft } from '@/lib/hooks/useModalDraft';
 import { useIcralar, useIcraKaydet, type Icra } from '@/lib/hooks/useIcra';
 import { useDavalar } from '@/lib/hooks/useDavalar';
 import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
@@ -64,6 +65,7 @@ const ADIM_BASLIKLAR: Record<Adim, string> = {
 
 export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraModalProps) {
   const [form, setForm] = useState<Partial<Icra>>({ ...bos });
+  const [initialForm, setInitialForm] = useState<Partial<Icra>>({ ...bos });
   const [hata, setHata] = useState('');
   const [adim, setAdim] = useState<Adim>(1);
   const { data: mevcutlar } = useIcralar();
@@ -73,33 +75,38 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
   const { daireler, adliyeler, kullanılanIller } = useMahkemeHafizasi();
 
   useEffect(() => {
+    let init: Partial<Icra>;
     if (icra) {
       // Eski esas alanını parçala (geriye uyumluluk)
-      const f = { ...icra };
-      if (f.esas && !f.esasYil && !f.esasNo) {
-        const parts = f.esas.split('/');
+      init = { ...icra };
+      if (init.esas && !init.esasYil && !init.esasNo) {
+        const parts = init.esas.split('/');
         if (parts.length === 2) {
-          f.esasYil = parts[0].trim();
-          f.esasNo = parts[1].trim();
+          init.esasYil = parts[0].trim();
+          init.esasNo = parts[1].trim();
         }
       }
-      setForm(f);
     } else {
       const maxNo = Math.max(0, ...(mevcutlar || []).map((i) => i.kayitNo || 0));
-      const yeniForm: Partial<Icra> = { ...bos, id: crypto.randomUUID(), sira: Date.now(), kayitNo: maxNo + 1 };
+      init = { ...bos, id: crypto.randomUUID(), sira: Date.now(), kayitNo: maxNo + 1 };
 
       // Dava'dan gelen otomatik doldurma
       if (davaKaynak) {
-        yeniForm.iliskiliDavaId = davaKaynak.davaId;
-        yeniForm.muvId = davaKaynak.muvId;
-        yeniForm.dayanak = davaKaynak.dayanak;
+        init.iliskiliDavaId = davaKaynak.davaId;
+        init.muvId = davaKaynak.muvId;
+        init.dayanak = davaKaynak.dayanak;
       }
-
-      setForm(yeniForm);
     }
+    setInitialForm(init);
+    setForm(init);
     setHata('');
     setAdim(1);
   }, [icra, open, davaKaynak]);
+
+  const draftKey = `icra_${form.id || 'yeni'}`;
+  const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(
+    draftKey, form as Record<string, unknown>, initialForm as Record<string, unknown>, open
+  );
 
   function handleChange(field: string, value: string | number) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -176,6 +183,7 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
     try {
       await kaydet.mutateAsync(form as Icra);
       onCreated?.(form as Icra);
+      clearDraft();
       onClose();
     } catch {
       setHata('Kayıt sırasında bir hata oluştu.');
@@ -188,6 +196,10 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
       onClose={onClose}
       title={icra ? 'İcra Dosyası Düzenle' : 'Yeni İcra Dosyası'}
       maxWidth="max-w-3xl"
+      dirty={isDirty}
+      hasDraft={hasDraft()}
+      onLoadDraft={() => { const d = loadDraft(); if (d) setForm(d as Partial<Icra>); clearDraft(); }}
+      onDiscardDraft={clearDraft}
       footer={
         <div className="flex items-center justify-between w-full">
           <div>{adim > 1 && <BtnOutline onClick={geri}>← Geri</BtnOutline>}</div>

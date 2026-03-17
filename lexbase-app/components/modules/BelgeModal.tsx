@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Modal, FormGroup, FormInput, FormSelect, BtnGold, BtnOutline } from '@/components/ui/Modal';
+import { useModalDraft } from '@/lib/hooks/useModalDraft';
 import { BELGE_TURLERI, type BelgeTur } from '@/lib/hooks/useBelgeler';
 
 interface Props {
@@ -34,6 +35,13 @@ export function BelgeModal({ open, onClose, onKaydet, yukleniyor }: Props) {
   const [etiketStr, setEtiketStr] = useState('');
   const [dragOver, setDragOver] = useState(false);
   const [boyutHata, setBoyutHata] = useState('');
+
+  const belgeForm = useMemo(() => ({ ad, tur, tarih, etiketStr }), [ad, tur, tarih, etiketStr]);
+  const belgeInitial = useMemo(() => ({ ad: '', tur: 'diger' as BelgeTur, tarih: new Date().toISOString().slice(0, 10), etiketStr: '' }), []);
+  const draftKey = 'belge_yeni';
+  const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(
+    draftKey, belgeForm as Record<string, unknown>, belgeInitial as Record<string, unknown>, open
+  );
 
   // Vekaletname özel
   const [vekBitis, setVekBitis] = useState('');
@@ -85,6 +93,7 @@ export function BelgeModal({ open, onClose, onKaydet, yukleniyor }: Props) {
       };
     }
 
+    clearDraft();
     onKaydet(formData, dosya);
   };
 
@@ -111,7 +120,22 @@ export function BelgeModal({ open, onClose, onKaydet, yukleniyor }: Props) {
   };
 
   return (
-    <Modal open={open} onClose={handleClose} title="Belge Yükle" maxWidth="max-w-xl" footer={
+    <Modal open={open} onClose={handleClose} title="Belge Yükle" maxWidth="max-w-xl"
+      dirty={isDirty}
+      hasDraft={hasDraft()}
+      onLoadDraft={() => {
+        const d = loadDraft();
+        if (d) {
+          const draft = d as Record<string, unknown>;
+          if (draft.ad) setAd(draft.ad as string);
+          if (draft.tur) setTur(draft.tur as BelgeTur);
+          if (draft.tarih) setTarih(draft.tarih as string);
+          if (draft.etiketStr) setEtiketStr(draft.etiketStr as string);
+        }
+        clearDraft();
+      }}
+      onDiscardDraft={clearDraft}
+      footer={
       <div className="flex justify-end gap-2">
         <BtnOutline onClick={handleClose}>İptal</BtnOutline>
         <BtnGold onClick={handleSubmit} disabled={!dosya || !ad.trim() || yukleniyor}>

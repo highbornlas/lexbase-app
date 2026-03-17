@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Modal, FormGroup, FormInput, FormSelect, FormTextarea, BtnGold, BtnOutline } from '@/components/ui/Modal';
+import { useModalDraft } from '@/lib/hooks/useModalDraft';
 import { useDavalar, useDavaKaydet, type Dava } from '@/lib/hooks/useDavalar';
 import { useIcralar } from '@/lib/hooks/useIcra';
 import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
@@ -57,6 +58,7 @@ const ADIM_BASLIKLAR: Record<Adim, string> = {
 
 export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
   const [form, setForm] = useState<Partial<Dava>>({ ...bos });
+  const [initialForm, setInitialForm] = useState<Partial<Dava>>({ ...bos });
   const [hata, setHata] = useState('');
   const [adim, setAdim] = useState<Adim>(1);
   const [yargiTuru, setYargiTuru] = useState<string>('');
@@ -67,8 +69,9 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
   const { mahkemeler, adliyeler, kullanılanIller } = useMahkemeHafizasi();
 
   useEffect(() => {
+    let init: Partial<Dava>;
     if (dava) {
-      setForm({ ...dava });
+      init = { ...dava };
       // Yargı türünü mtur'dan türet
       const bulunanTur = Object.entries(YARGI_BIRIMLERI).find(([, birimler]) =>
         birimler.some((b) => b === dava.mtur)
@@ -76,12 +79,19 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
       setYargiTuru(bulunanTur ? bulunanTur[0] : '');
     } else {
       const maxNo = Math.max(0, ...(mevcutlar || []).map((d) => d.kayitNo || 0));
-      setForm({ ...bos, id: crypto.randomUUID(), sira: Date.now(), kayitNo: maxNo + 1 });
+      init = { ...bos, id: crypto.randomUUID(), sira: Date.now(), kayitNo: maxNo + 1 };
       setYargiTuru('');
     }
+    setInitialForm(init);
+    setForm(init);
     setHata('');
     setAdim(1);
   }, [dava, open]);
+
+  const draftKey = `dava_${form.id || 'yeni'}`;
+  const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(
+    draftKey, form as Record<string, unknown>, initialForm as Record<string, unknown>, open
+  );
 
   function handleChange(field: string, value: string | number) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -162,6 +172,7 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
     try {
       await kaydet.mutateAsync(form as Dava);
       onCreated?.(form as Dava);
+      clearDraft();
       onClose();
     } catch {
       setHata('Kayıt sırasında bir hata oluştu.');
@@ -174,6 +185,10 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
       onClose={onClose}
       title={dava ? 'Dava Düzenle' : 'Yeni Dava'}
       maxWidth="max-w-3xl"
+      dirty={isDirty}
+      hasDraft={hasDraft()}
+      onLoadDraft={() => { const d = loadDraft(); if (d) setForm(d as Partial<Dava>); clearDraft(); }}
+      onDiscardDraft={clearDraft}
       footer={
         <div className="flex items-center justify-between w-full">
           <div>{adim > 1 && <BtnOutline onClick={geri}>← Geri</BtnOutline>}</div>

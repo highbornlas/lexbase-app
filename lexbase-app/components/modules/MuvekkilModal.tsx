@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Modal, FormGroup, FormInput, FormSelect, FormTextarea, BtnGold, BtnOutline } from '@/components/ui/Modal';
+import { useModalDraft } from '@/lib/hooks/useModalDraft';
 import { useMuvekkillar, useMuvekkilKaydet, type Muvekkil } from '@/lib/hooks/useMuvekkillar';
 import { type Adres } from '@/components/ui/SmartAdresInput';
 import { CokluAdresInput } from '@/components/ui/CokluAdresInput';
@@ -63,6 +64,7 @@ const ADIM_BASLIKLAR: Record<Adim, string> = {
 
 export function MuvekkilModal({ open, onClose, muvekkil }: MuvekkilModalProps) {
   const [form, setForm] = useState<Partial<Muvekkil>>({ ...bos });
+  const [initialForm, setInitialForm] = useState<Partial<Muvekkil>>({ ...bos });
   const [hata, setHata] = useState('');
   const [alanHata, setAlanHata] = useState<Record<string, string | null>>({});
   const [adim, setAdim] = useState<Adim>(1);
@@ -71,24 +73,31 @@ export function MuvekkilModal({ open, onClose, muvekkil }: MuvekkilModalProps) {
   const tumEtiketler = useTumEtiketler();
 
   useEffect(() => {
+    let init: Partial<Muvekkil>;
     if (muvekkil) {
-      const f = { ...muvekkil };
+      init = { ...muvekkil };
       // Eski tek adres → çoklu adres migrasyonu
-      if (f.adres && !f.adresler) {
-        const eskiAdres = f.adres as Record<string, string>;
+      if (init.adres && !init.adresler) {
+        const eskiAdres = init.adres as Record<string, string>;
         if (Object.keys(eskiAdres).length > 0) {
-          f.adresler = [{ baslik: 'Ev Adresi', ...eskiAdres } as unknown as Record<string, string>];
+          init.adresler = [{ baslik: 'Ev Adresi', ...eskiAdres } as unknown as Record<string, string>];
         }
       }
-      setForm(f);
     } else {
       const maxNo = Math.max(0, ...(mevcutlar || []).map((m) => m.kayitNo || 0));
-      setForm({ ...bos, id: crypto.randomUUID(), sira: Date.now(), kayitNo: maxNo + 1 });
+      init = { ...bos, id: crypto.randomUUID(), sira: Date.now(), kayitNo: maxNo + 1 };
     }
+    setInitialForm(init);
+    setForm(init);
     setHata('');
     setAlanHata({});
     setAdim(1);
   }, [muvekkil, open]);
+
+  const draftKey = `muvekkil_${form.id || 'yeni'}`;
+  const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(
+    draftKey, form as Record<string, unknown>, initialForm as Record<string, unknown>, open
+  );
 
   function handleChange(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -189,6 +198,7 @@ export function MuvekkilModal({ open, onClose, muvekkil }: MuvekkilModalProps) {
     setHata('');
     try {
       await kaydet.mutateAsync(form as Muvekkil);
+      clearDraft();
       onClose();
     } catch {
       setHata('Kayıt sırasında bir hata oluştu.');
@@ -201,6 +211,10 @@ export function MuvekkilModal({ open, onClose, muvekkil }: MuvekkilModalProps) {
       onClose={onClose}
       title={muvekkil ? 'Müvekkil Düzenle' : 'Yeni Müvekkil'}
       maxWidth="max-w-3xl"
+      dirty={isDirty}
+      hasDraft={hasDraft()}
+      onLoadDraft={() => { const d = loadDraft(); if (d) setForm(d as Partial<Muvekkil>); clearDraft(); }}
+      onDiscardDraft={clearDraft}
       footer={
         <div className="flex items-center justify-between w-full">
           <div>

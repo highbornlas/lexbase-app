@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Modal, FormGroup, FormInput, FormSelect, FormTextarea, BtnGold, BtnOutline } from '@/components/ui/Modal';
+import { useModalDraft } from '@/lib/hooks/useModalDraft';
 import { useIhtarnameKaydet, useIhtarnameler, type Ihtarname } from '@/lib/hooks/useIhtarname';
 import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
 import { useEtkinlikKaydet } from '@/lib/hooks/useEtkinlikler';
@@ -45,6 +46,7 @@ const bos: Partial<Ihtarname> = {
 
 export function IhtarnameModal({ open, onClose, ihtarname }: IhtarnameModalProps) {
   const [form, setForm] = useState<Partial<Ihtarname>>({ ...bos });
+  const [initialForm, setInitialForm] = useState<Partial<Ihtarname>>({ ...bos });
   const [hata, setHata] = useState('');
   const [pttLoading, setPttLoading] = useState(false);
   const [pttSonuc, setPttSonuc] = useState('');
@@ -181,16 +183,24 @@ export function IhtarnameModal({ open, onClose, ihtarname }: IhtarnameModalProps
   }
 
   useEffect(() => {
+    let init: Partial<Ihtarname>;
     if (ihtarname) {
-      setForm({ ...ihtarname });
+      init = { ...ihtarname };
     } else {
-      setForm({ ...bos, id: crypto.randomUUID(), no: sonrakiNo });
+      init = { ...bos, id: crypto.randomUUID(), no: sonrakiNo };
     }
+    setInitialForm(init);
+    setForm(init);
     setHata('');
     setPttSonuc('');
     setYeniKarsiTarafGoster(false);
     setYeniKarsiTarafAd('');
   }, [ihtarname, open, sonrakiNo]);
+
+  const draftKey = `ihtarname_${form.id || 'yeni'}`;
+  const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(
+    draftKey, form as Record<string, unknown>, initialForm as Record<string, unknown>, open
+  );
 
   function handleChange(field: string, value: string | number) {
     setForm((prev) => {
@@ -295,6 +305,7 @@ export function IhtarnameModal({ open, onClose, ihtarname }: IhtarnameModalProps
         });
       }
 
+      clearDraft();
       onClose();
     } catch {
       setHata('Kayıt sırasında bir hata oluştu.');
@@ -310,6 +321,10 @@ export function IhtarnameModal({ open, onClose, ihtarname }: IhtarnameModalProps
       onClose={onClose}
       title={ihtarname ? 'İhtarname Düzenle' : 'Yeni İhtarname'}
       maxWidth="max-w-3xl"
+      dirty={isDirty}
+      hasDraft={hasDraft()}
+      onLoadDraft={() => { const d = loadDraft(); if (d) setForm(d as Partial<Ihtarname>); clearDraft(); }}
+      onDiscardDraft={clearDraft}
       footer={
         <>
           <BtnOutline onClick={onClose}>İptal</BtnOutline>

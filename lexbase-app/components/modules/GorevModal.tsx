@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Modal, FormGroup, FormInput, FormSelect, FormTextarea, BtnGold, BtnOutline } from '@/components/ui/Modal';
+import { useModalDraft } from '@/lib/hooks/useModalDraft';
 import { useTodoKaydet, useTodoSil, useTodolar, type Todo } from '@/lib/hooks/useTodolar';
 import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
 import { useDavalar } from '@/lib/hooks/useDavalar';
@@ -71,6 +72,7 @@ const bos: Partial<Todo> = {
 
 export function GorevModal({ open, onClose, gorev, muvId }: GorevModalProps) {
   const [form, setForm] = useState<Partial<Todo>>({ ...bos });
+  const [initialForm, setInitialForm] = useState<Partial<Todo>>({ ...bos });
   const [hata, setHata] = useState('');
   const [silOnay, setSilOnay] = useState(false);
   const authIdRef = useRef<string | null>(null);
@@ -114,17 +116,20 @@ export function GorevModal({ open, onClose, gorev, muvId }: GorevModalProps) {
   }, []);
 
   useEffect(() => {
+    let init: Partial<Todo>;
     if (gorev) {
-      setForm({ ...gorev });
+      init = { ...gorev };
     } else {
-      setForm({
+      init = {
         ...bos,
         id: crypto.randomUUID(),
         olusturmaTarih: new Date().toISOString(),
         olusturanId: authIdRef.current || '',
         ...(muvId ? { muvId } : {}),
-      });
+      };
     }
+    setInitialForm(init);
+    setForm(init);
     setHata('');
     setSilOnay(false);
     setYeniAltGorev('');
@@ -133,6 +138,11 @@ export function GorevModal({ open, onClose, gorev, muvId }: GorevModalProps) {
     setYeniKatAd('');
     setKategoriler(getKategoriler());
   }, [gorev, open, muvId]);
+
+  const draftKey = `gorev_${form.id || 'yeni'}`;
+  const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(
+    draftKey, form as Record<string, unknown>, initialForm as Record<string, unknown>, open
+  );
 
   function handleChange(field: string, value: string) {
     setForm((prev) => {
@@ -158,6 +168,7 @@ export function GorevModal({ open, onClose, gorev, muvId }: GorevModalProps) {
     setHata('');
     try {
       await kaydet.mutateAsync(form as Todo);
+      clearDraft();
       onClose();
     } catch {
       setHata('Kayıt sırasında bir hata oluştu.');
@@ -273,6 +284,10 @@ export function GorevModal({ open, onClose, gorev, muvId }: GorevModalProps) {
       onClose={onClose}
       title={gorev ? 'Görev Düzenle' : 'Yeni Görev'}
       maxWidth="max-w-xl"
+      dirty={isDirty}
+      hasDraft={hasDraft()}
+      onLoadDraft={() => { const d = loadDraft(); if (d) setForm(d as Partial<Todo>); clearDraft(); }}
+      onDiscardDraft={clearDraft}
       footer={
         <div className="flex w-full items-center justify-between">
           <div>

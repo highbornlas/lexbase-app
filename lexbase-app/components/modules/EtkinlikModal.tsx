@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Modal, FormGroup, FormInput, FormSelect, FormTextarea, BtnGold, BtnOutline } from '@/components/ui/Modal';
+import { useModalDraft } from '@/lib/hooks/useModalDraft';
 import { useEtkinlikKaydet, useEtkinlikSil, type Etkinlik } from '@/lib/hooks/useEtkinlikler';
 import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
 import { useDavalar } from '@/lib/hooks/useDavalar';
@@ -51,6 +52,7 @@ const bos: Partial<Etkinlik> = {
 
 export function EtkinlikModal({ open, onClose, etkinlik, prefillTarih, prefillMuvId }: EtkinlikModalProps) {
   const [form, setForm] = useState<Partial<Etkinlik>>({ ...bos });
+  const [initialForm, setInitialForm] = useState<Partial<Etkinlik>>({ ...bos });
   const [hata, setHata] = useState('');
   const [silOnay, setSilOnay] = useState(false);
   const kaydet = useEtkinlikKaydet();
@@ -65,19 +67,27 @@ export function EtkinlikModal({ open, onClose, etkinlik, prefillTarih, prefillMu
   const { yetkili: silYetkisi } = useYetki('gorev:sil'); // genel silme yetkisi
 
   useEffect(() => {
+    let init: Partial<Etkinlik>;
     if (etkinlik) {
-      setForm({ ...etkinlik });
+      init = { ...etkinlik };
     } else {
-      setForm({
+      init = {
         ...bos,
         id: crypto.randomUUID(),
         tarih: prefillTarih || new Date().toISOString().split('T')[0],
         muvId: prefillMuvId || '',
-      });
+      };
     }
+    setInitialForm(init);
+    setForm(init);
     setHata('');
     setSilOnay(false);
   }, [etkinlik, open, prefillTarih, prefillMuvId]);
+
+  const draftKey = `etkinlik_${form.id || 'yeni'}`;
+  const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(
+    draftKey, form as Record<string, unknown>, initialForm as Record<string, unknown>, open
+  );
 
   function handleChange(field: string, value: string | string[]) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -144,6 +154,7 @@ export function EtkinlikModal({ open, onClose, etkinlik, prefillTarih, prefillMu
     setHata('');
     try {
       await kaydet.mutateAsync(form as Etkinlik);
+      clearDraft();
       onClose();
     } catch {
       setHata('Kayıt sırasında bir hata oluştu.');
@@ -168,6 +179,10 @@ export function EtkinlikModal({ open, onClose, etkinlik, prefillTarih, prefillMu
       onClose={onClose}
       title={isSanal ? '📌 Sanal Etkinlik Detayı' : etkinlik ? 'Etkinlik Düzenle' : 'Yeni Etkinlik'}
       maxWidth="max-w-2xl"
+      dirty={isDirty}
+      hasDraft={hasDraft()}
+      onLoadDraft={() => { const d = loadDraft(); if (d) setForm(d as Partial<Etkinlik>); clearDraft(); }}
+      onDiscardDraft={clearDraft}
       footer={
         isSanal ? (
           <BtnOutline onClick={onClose}>Kapat</BtnOutline>

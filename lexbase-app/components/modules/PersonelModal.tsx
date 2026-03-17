@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Modal, FormGroup, FormInput, FormSelect, FormTextarea, BtnGold, BtnOutline } from '@/components/ui/Modal';
+import { useModalDraft } from '@/lib/hooks/useModalDraft';
 import { usePersonelKaydet, type Personel } from '@/lib/hooks/usePersonel';
 import { useBildirimGonder } from '@/lib/hooks/useBildirimler';
 import { ROL_ETIKETLERI, type Rol } from '@/lib/hooks/useRol';
@@ -27,6 +28,7 @@ const bos: Partial<Personel> = {
 
 export function PersonelModal({ open, onClose, personel }: PersonelModalProps) {
   const [form, setForm] = useState<Partial<Personel>>({ ...bos });
+  const [initialForm, setInitialForm] = useState<Partial<Personel>>({ ...bos });
   const [hata, setHata] = useState('');
   const [bilgi, setBilgi] = useState('');
   const [yukleniyor, setYukleniyor] = useState(false);
@@ -41,18 +43,26 @@ export function PersonelModal({ open, onClose, personel }: PersonelModalProps) {
   const davetGosterilebilir = (yeniKayit || davetBekliyor) && !!form.email?.trim();
 
   useEffect(() => {
+    let init: Partial<Personel>;
     if (personel) {
-      setForm({ ...personel });
+      init = { ...personel };
       oncekiRef.current = { ...personel }; // Önceki değerleri kaydet (değişiklik tespiti için)
       setDavetGonder(personel.durum === 'davet_gonderildi');
     } else {
-      setForm({ ...bos, id: crypto.randomUUID() });
+      init = { ...bos, id: crypto.randomUUID() };
       oncekiRef.current = null;
       setDavetGonder(true);
     }
+    setInitialForm(init);
+    setForm(init);
     setHata('');
     setBilgi('');
   }, [personel, open]);
+
+  const draftKey = `personel_${form.id || 'yeni'}`;
+  const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(
+    draftKey, form as Record<string, unknown>, initialForm as Record<string, unknown>, open
+  );
 
   function handleChange(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -180,11 +190,13 @@ export function PersonelModal({ open, onClose, personel }: PersonelModalProps) {
           // Başarılı → durum 'davet_gonderildi' olarak kalır
         }
 
+        clearDraft();
         setTimeout(() => onClose(), 2000);
         return;
       }
 
       // Davet gönderilmeden kayıt
+      clearDraft();
       onClose();
     } catch {
       setHata('Kayıt sırasında bir hata oluştu.');
@@ -205,6 +217,10 @@ export function PersonelModal({ open, onClose, personel }: PersonelModalProps) {
       onClose={onClose}
       title={personel ? 'Personel Düzenle' : 'Yeni Personel Ekle'}
       maxWidth="max-w-xl"
+      dirty={isDirty}
+      hasDraft={hasDraft()}
+      onLoadDraft={() => { const d = loadDraft(); if (d) setForm(d as Partial<Personel>); clearDraft(); }}
+      onDiscardDraft={clearDraft}
       footer={
         <>
           <BtnOutline onClick={onClose}>İptal</BtnOutline>

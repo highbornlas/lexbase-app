@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Modal, FormGroup, FormInput, FormSelect, FormTextarea, BtnGold, BtnOutline } from '@/components/ui/Modal';
+import { useModalDraft } from '@/lib/hooks/useModalDraft';
 import { useBuroGiderKaydet, type BuroGider, GIDER_KATEGORILERI, KDV_ORANLARI } from '@/lib/hooks/useBuroGiderleri';
 
 interface BuroGiderModalProps {
@@ -29,17 +30,26 @@ const bos: Partial<BuroGider> = {
 
 export function BuroGiderModal({ open, onClose, gider }: BuroGiderModalProps) {
   const [form, setForm] = useState<Partial<BuroGider>>({ ...bos });
+  const [initialForm, setInitialForm] = useState<Partial<BuroGider>>({ ...bos });
   const [hata, setHata] = useState('');
   const kaydet = useBuroGiderKaydet();
 
   useEffect(() => {
+    let init: Partial<BuroGider>;
     if (gider) {
-      setForm({ ...gider });
+      init = { ...gider };
     } else {
-      setForm({ ...bos, id: crypto.randomUUID() });
+      init = { ...bos, id: crypto.randomUUID() };
     }
+    setInitialForm(init);
+    setForm(init);
     setHata('');
   }, [gider, open]);
+
+  const draftKey = `buroGider_${form.id || 'yeni'}`;
+  const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(
+    draftKey, form as Record<string, unknown>, initialForm as Record<string, unknown>, open
+  );
 
   function handleChange(field: string, value: string | number) {
     setForm((prev) => {
@@ -77,6 +87,7 @@ export function BuroGiderModal({ open, onClose, gider }: BuroGiderModalProps) {
 
     try {
       await kaydet.mutateAsync(form as BuroGider);
+      clearDraft();
       onClose();
     } catch {
       setHata('Kayıt sırasında hata oluştu.');
@@ -86,7 +97,12 @@ export function BuroGiderModal({ open, onClose, gider }: BuroGiderModalProps) {
   const fmtTRY = (n: number) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(n);
 
   return (
-    <Modal open={open} onClose={onClose} title={gider ? 'Gideri Düzenle' : 'Yeni Büro Gideri'} maxWidth="max-w-2xl">
+    <Modal open={open} onClose={onClose} title={gider ? 'Gideri Düzenle' : 'Yeni Büro Gideri'} maxWidth="max-w-2xl"
+      dirty={isDirty}
+      hasDraft={hasDraft()}
+      onLoadDraft={() => { const d = loadDraft(); if (d) setForm(d as Partial<BuroGider>); clearDraft(); }}
+      onDiscardDraft={clearDraft}
+    >
       <div className="space-y-4">
         {hata && (
           <div className="bg-red-dim border border-red/20 rounded-lg px-3 py-2 text-xs text-red">{hata}</div>

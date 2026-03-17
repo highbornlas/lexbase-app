@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Modal, FormGroup, FormInput, FormSelect, FormTextarea, BtnGold, BtnOutline } from '@/components/ui/Modal';
+import { useModalDraft } from '@/lib/hooks/useModalDraft';
 import {
   useDanismanlikKaydet,
   type Danismanlik,
@@ -42,6 +43,7 @@ type TabKey = 'genel' | 'efor';
 
 export function DanismanlikModal({ open, onClose, danismanlik }: DanismanlikModalProps) {
   const [form, setForm] = useState<Partial<Danismanlik>>({ ...bos });
+  const [initialForm, setInitialForm] = useState<Partial<Danismanlik>>({ ...bos });
   const [hata, setHata] = useState('');
   const [aktifTab, setAktifTab] = useState<TabKey>('genel');
   const kaydet = useDanismanlikKaydet();
@@ -51,14 +53,22 @@ export function DanismanlikModal({ open, onClose, danismanlik }: DanismanlikModa
   const [yeniEfor, setYeniEfor] = useState({ aciklama: '', sure: '', kategori: '', tarih: new Date().toISOString().split('T')[0] });
 
   useEffect(() => {
+    let init: Partial<Danismanlik>;
     if (danismanlik) {
-      setForm({ ...danismanlik });
+      init = { ...danismanlik };
     } else {
-      setForm({ ...bos, id: crypto.randomUUID() });
+      init = { ...bos, id: crypto.randomUUID() };
     }
+    setInitialForm(init);
+    setForm(init);
     setHata('');
     setAktifTab('genel');
   }, [danismanlik, open]);
+
+  const draftKey = `danismanlik_${form.id || 'yeni'}`;
+  const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(
+    draftKey, form as Record<string, unknown>, initialForm as Record<string, unknown>, open
+  );
 
   function handleChange(field: string, value: string | number) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -104,6 +114,7 @@ export function DanismanlikModal({ open, onClose, danismanlik }: DanismanlikModa
     setHata('');
     try {
       await kaydet.mutateAsync(form as Danismanlik);
+      clearDraft();
       onClose();
     } catch {
       setHata('Kayıt sırasında bir hata oluştu.');
@@ -123,6 +134,10 @@ export function DanismanlikModal({ open, onClose, danismanlik }: DanismanlikModa
       onClose={onClose}
       title={danismanlik ? 'Danışmanlık Düzenle' : 'Yeni Danışmanlık'}
       maxWidth="max-w-2xl"
+      dirty={isDirty}
+      hasDraft={hasDraft()}
+      onLoadDraft={() => { const d = loadDraft(); if (d) setForm(d as Partial<Danismanlik>); clearDraft(); }}
+      onDiscardDraft={clearDraft}
       footer={
         <>
           <BtnOutline onClick={onClose}>İptal</BtnOutline>

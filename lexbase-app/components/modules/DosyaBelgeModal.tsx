@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Modal, FormGroup, FormInput, FormSelect, BtnGold, BtnOutline } from '@/components/ui/Modal';
+import { useModalDraft } from '@/lib/hooks/useModalDraft';
 import { DAVA_EVRAK_TURLERI, ICRA_EVRAK_TURLERI } from '@/lib/constants/uyap';
 
 /* ══════════════════════════════════════════════════════════════
@@ -37,6 +38,13 @@ export function DosyaBelgeModal({ open, onClose, onKaydet, dosyaTipi, yukleniyor
   const [dragOver, setDragOver] = useState(false);
   const [boyutHata, setBoyutHata] = useState('');
 
+  const dosyaBelgeForm = useMemo(() => ({ ad, evrakTuru, tarih, aciklama, etiketStr }), [ad, evrakTuru, tarih, aciklama, etiketStr]);
+  const dosyaBelgeInitial = useMemo(() => ({ ad: '', evrakTuru: 'diger', tarih: new Date().toISOString().slice(0, 10), aciklama: '', etiketStr: '' }), []);
+  const draftKey = 'dosyaBelge_yeni';
+  const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(
+    draftKey, dosyaBelgeForm as Record<string, unknown>, dosyaBelgeInitial as Record<string, unknown>, open
+  );
+
   const evrakTurleri = dosyaTipi === 'dava' ? DAVA_EVRAK_TURLERI : ICRA_EVRAK_TURLERI;
   const MAX_BOYUT = 10 * 1024 * 1024; // 10MB
 
@@ -62,6 +70,7 @@ export function DosyaBelgeModal({ open, onClose, onKaydet, dosyaTipi, yukleniyor
     if (!dosya || !ad.trim()) return;
 
     const etiketler = etiketStr.split(',').map(s => s.trim()).filter(Boolean);
+    clearDraft();
     onKaydet(
       {
         ad: ad.trim(),
@@ -99,6 +108,21 @@ export function DosyaBelgeModal({ open, onClose, onKaydet, dosyaTipi, yukleniyor
       onClose={handleClose}
       title={dosyaTipi === 'dava' ? 'Dava Evrakı Yükle' : 'İcra Evrakı Yükle'}
       maxWidth="max-w-xl"
+      dirty={isDirty}
+      hasDraft={hasDraft()}
+      onLoadDraft={() => {
+        const d = loadDraft();
+        if (d) {
+          const draft = d as Record<string, unknown>;
+          if (draft.ad) setAd(draft.ad as string);
+          if (draft.evrakTuru) setEvrakTuru(draft.evrakTuru as string);
+          if (draft.tarih) setTarih(draft.tarih as string);
+          if (draft.aciklama) setAciklama(draft.aciklama as string);
+          if (draft.etiketStr) setEtiketStr(draft.etiketStr as string);
+        }
+        clearDraft();
+      }}
+      onDiscardDraft={clearDraft}
       footer={
         <div className="flex justify-end gap-2">
           <BtnOutline onClick={handleClose}>İptal</BtnOutline>
