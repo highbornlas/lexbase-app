@@ -205,6 +205,93 @@ export const ICRA_EVRAK_TURLERI = [
   { key: 'diger', label: 'Diğer', icon: '📄' },
 ] as const;
 
+// ── Evrak Grubu Tipi ──
+export interface EvrakGrup {
+  key: string;
+  label: string;
+  aciklama: string;
+  renk: string; // Tailwind CSS class
+  turler: string[]; // evrak türü key'leri
+}
+
+// ── Dava Evrak Grupları ──
+export const DAVA_EVRAK_GRUPLARI: EvrakGrup[] = [
+  {
+    key: 'dilekceler',
+    label: 'Dilekçeler',
+    aciklama: 'Dava, cevap, istinaf ve temyiz dilekçeleri',
+    renk: 'bg-blue-400/10 text-blue-400',
+    turler: ['dava_dilekce', 'cevap_dilekce', 'replik', 'istinaf_dilekce', 'temyiz_dilekce'],
+  },
+  {
+    key: 'zabitlar_kararlar',
+    label: 'Zabıtlar & Kararlar',
+    aciklama: 'Tensip, duruşma zabıtları ve mahkeme kararları',
+    renk: 'bg-purple-400/10 text-purple-400',
+    turler: ['tensip_zapti', 'durusma_zapti', 'karar'],
+  },
+  {
+    key: 'bilirkisi_delil',
+    label: 'Bilirkişi & Deliller',
+    aciklama: 'Bilirkişi raporları ve delil/ek dosyalar',
+    renk: 'bg-amber-400/10 text-amber-400',
+    turler: ['bilirkisi_raporu', 'delil'],
+  },
+  {
+    key: 'resmi_belgeler',
+    label: 'Resmi Belgeler',
+    aciklama: 'Harç makbuzları, vekaletnameler ve tebligatlar',
+    renk: 'bg-green/10 text-green',
+    turler: ['harc_makbuz', 'vekaletname', 'tebligat'],
+  },
+  {
+    key: 'diger',
+    label: 'Diğer',
+    aciklama: 'Sınıflandırılmamış evraklar',
+    renk: 'bg-surface2 text-text-muted',
+    turler: ['diger'],
+  },
+];
+
+// ── İcra Evrak Grupları ──
+export const ICRA_EVRAK_GRUPLARI: EvrakGrup[] = [
+  {
+    key: 'takip_belgeleri',
+    label: 'Takip Belgeleri',
+    aciklama: 'Takip talebi, ödeme/icra emri ve itiraz dilekçeleri',
+    renk: 'bg-blue-400/10 text-blue-400',
+    turler: ['takip_talebi', 'odeme_emri', 'itiraz_dilekce'],
+  },
+  {
+    key: 'haciz_satis',
+    label: 'Haciz & Satış',
+    aciklama: 'Haciz tutanakları, kıymet takdiri ve satış ilanları',
+    renk: 'bg-red/10 text-red',
+    turler: ['haciz_tutanagi', 'kiymet_takdiri', 'satis_ilani'],
+  },
+  {
+    key: 'resmi_belgeler',
+    label: 'Resmi Belgeler',
+    aciklama: 'Harç makbuzları, vekaletnameler ve tebligatlar',
+    renk: 'bg-green/10 text-green',
+    turler: ['harc_makbuz', 'vekaletname', 'tebligat'],
+  },
+  {
+    key: 'borclu_belgeleri',
+    label: 'Borçlu Belgeleri',
+    aciklama: 'Borçlu mal beyanı ve ilgili belgeler',
+    renk: 'bg-amber-400/10 text-amber-400',
+    turler: ['borclu_mal_beyan'],
+  },
+  {
+    key: 'diger',
+    label: 'Diğer',
+    aciklama: 'Sınıflandırılmamış evraklar',
+    renk: 'bg-surface2 text-text-muted',
+    turler: ['diger'],
+  },
+];
+
 // ── Yargı Türleri ──
 export const YARGI_TURLERI = [
   'Ceza',

@@ -1,13 +1,19 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Modal, FormGroup, FormInput, FormSelect, BtnGold, BtnOutline } from '@/components/ui/Modal';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { Modal, FormGroup, FormInput, BtnGold, BtnOutline } from '@/components/ui/Modal';
 import { useModalDraft } from '@/lib/hooks/useModalDraft';
-import { DAVA_EVRAK_TURLERI, ICRA_EVRAK_TURLERI } from '@/lib/constants/uyap';
+import {
+  DAVA_EVRAK_TURLERI,
+  ICRA_EVRAK_TURLERI,
+  DAVA_EVRAK_GRUPLARI,
+  ICRA_EVRAK_GRUPLARI,
+  type EvrakGrup,
+} from '@/lib/constants/uyap';
 
 /* ══════════════════════════════════════════════════════════════
    Dosya Belge Modal — Dava/İcra evrak yükleme
-   Müvekkil belgelerinden tamamen ayrı!
+   Grup bazlı kategori seçimi, sürükle-bırak, page-level drop
    ══════════════════════════════════════════════════════════════ */
 
 type DosyaTipi = 'dava' | 'icra';
@@ -28,6 +34,17 @@ export interface DosyaBelgeFormData {
   etiketler: string[];
 }
 
+// SVG icons
+const SvgCheck = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+);
+const SvgFolder = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+);
+const SvgUploadCloud = () => (
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M16 16l-4-4-4 4"/><path d="M12 12v9"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>
+);
+
 export function DosyaBelgeModal({ open, onClose, onKaydet, dosyaTipi, yukleniyor }: Props) {
   const [dosya, setDosya] = useState<File | null>(null);
   const [ad, setAd] = useState('');
@@ -37,6 +54,9 @@ export function DosyaBelgeModal({ open, onClose, onKaydet, dosyaTipi, yukleniyor
   const [etiketStr, setEtiketStr] = useState('');
   const [dragOver, setDragOver] = useState(false);
   const [boyutHata, setBoyutHata] = useState('');
+  const [turArama, setTurArama] = useState('');
+  const [acikGrup, setAcikGrup] = useState<string | null>(null);
+  const turAramaRef = useRef<HTMLInputElement>(null);
 
   const dosyaBelgeForm = useMemo(() => ({ ad, evrakTuru, tarih, aciklama, etiketStr }), [ad, evrakTuru, tarih, aciklama, etiketStr]);
   const dosyaBelgeInitial = useMemo(() => ({ ad: '', evrakTuru: 'diger', tarih: new Date().toISOString().slice(0, 10), aciklama: '', etiketStr: '' }), []);
@@ -46,7 +66,19 @@ export function DosyaBelgeModal({ open, onClose, onKaydet, dosyaTipi, yukleniyor
   );
 
   const evrakTurleri = dosyaTipi === 'dava' ? DAVA_EVRAK_TURLERI : ICRA_EVRAK_TURLERI;
+  const evrakGruplari: EvrakGrup[] = dosyaTipi === 'dava' ? DAVA_EVRAK_GRUPLARI : ICRA_EVRAK_GRUPLARI;
   const MAX_BOYUT = 10 * 1024 * 1024; // 10MB
+
+  // Page-level drop event listener
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: Event) => {
+      const file = (e as CustomEvent<File>).detail;
+      if (file) handleDosyaSec(file);
+    };
+    window.addEventListener('dosya-evrak-drop', handler);
+    return () => window.removeEventListener('dosya-evrak-drop', handler);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDosyaSec = (file: File | null) => {
     if (!file) return;
@@ -91,6 +123,8 @@ export function DosyaBelgeModal({ open, onClose, onKaydet, dosyaTipi, yukleniyor
     setAciklama('');
     setEtiketStr('');
     setBoyutHata('');
+    setTurArama('');
+    setAcikGrup(null);
     onClose();
   };
 
@@ -101,6 +135,24 @@ export function DosyaBelgeModal({ open, onClose, onKaydet, dosyaTipi, yukleniyor
   };
 
   const selectedTur = evrakTurleri.find(t => t.key === evrakTuru);
+
+  // Filtrelenmiş evrak türleri (arama desteği)
+  const filtrelenmisGruplar = useMemo(() => {
+    if (!turArama.trim()) return evrakGruplari;
+    const q = turArama.toLowerCase();
+    return evrakGruplari
+      .map(g => ({
+        ...g,
+        turler: g.turler.filter(turKey => {
+          const tur = evrakTurleri.find(t => t.key === turKey);
+          return tur && tur.label.toLowerCase().includes(q);
+        }),
+      }))
+      .filter(g => g.turler.length > 0);
+  }, [turArama, evrakGruplari, evrakTurleri]);
+
+  // Seçilen türün hangi grupta olduğunu bul
+  const secilenGrup = evrakGruplari.find(g => g.turler.includes(evrakTuru));
 
   return (
     <Modal
@@ -134,8 +186,8 @@ export function DosyaBelgeModal({ open, onClose, onKaydet, dosyaTipi, yukleniyor
     >
       {/* Dosya Seçim / Sürükle-Bırak */}
       <div
-        className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer mb-4 ${
-          dragOver ? 'border-gold bg-gold-dim' : dosya ? 'border-green/40 bg-green-dim' : 'border-border hover:border-gold/40'
+        className={`border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer mb-4 ${
+          dragOver ? 'border-gold bg-gold/5 scale-[1.01]' : dosya ? 'border-green/40 bg-green/5' : 'border-border hover:border-gold/40'
         }`}
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
@@ -144,23 +196,29 @@ export function DosyaBelgeModal({ open, onClose, onKaydet, dosyaTipi, yukleniyor
       >
         {dosya ? (
           <div>
-            <div className="text-green text-2xl mb-1">✓</div>
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <div className="w-8 h-8 rounded-lg bg-green/10 flex items-center justify-center text-green">
+                <SvgCheck />
+              </div>
+            </div>
             <div className="text-sm font-medium text-text">{dosya.name}</div>
-            <div className="text-xs text-text-muted mt-1">{fmtBoyut(dosya.size)}</div>
+            <div className="text-xs text-text-muted mt-0.5">{fmtBoyut(dosya.size)}</div>
             <button
               onClick={(e) => { e.stopPropagation(); setDosya(null); setAd(''); }}
-              className="text-xs text-text-dim hover:text-red mt-2 transition-colors"
+              className="text-[10px] text-text-dim hover:text-red mt-2 transition-colors"
             >
               Dosyayı Kaldır
             </button>
           </div>
         ) : (
           <div>
-            <div className="text-3xl mb-2">📎</div>
-            <div className="text-sm text-text-muted">
+            <div className="flex justify-center mb-2 text-text-dim">
+              <SvgUploadCloud />
+            </div>
+            <div className="text-xs text-text-muted">
               {dosyaTipi === 'dava' ? 'Dava evrakını' : 'İcra evrakını'} sürükleyip bırakın
             </div>
-            <div className="text-xs text-text-dim mt-1">
+            <div className="text-[10px] text-text-dim mt-1">
               PDF, Word, resim, taranmış belge (maks. 10MB)
             </div>
           </div>
@@ -175,33 +233,111 @@ export function DosyaBelgeModal({ open, onClose, onKaydet, dosyaTipi, yukleniyor
       </div>
 
       {boyutHata && (
-        <div className="text-xs text-red mb-3 bg-red-dim px-3 py-2 rounded-lg border border-red/20">
+        <div className="text-xs text-red mb-3 bg-red/5 px-3 py-2 rounded-lg border border-red/20">
           {boyutHata}
         </div>
       )}
 
-      {/* Evrak Türü Chips */}
+      {/* Evrak Türü — Grup bazlı seçim */}
       <div className="mb-4">
-        <div className="text-xs font-medium text-text-muted mb-2">Evrak Türü</div>
-        <div className="flex flex-wrap gap-1.5">
-          {evrakTurleri.map(t => (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => setEvrakTuru(t.key)}
-              className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${
-                evrakTuru === t.key
-                  ? 'bg-gold/15 text-gold border-gold/30 font-bold'
-                  : 'bg-surface2 text-text-muted border-border hover:border-gold/20'
-              }`}
-            >
-              {t.icon} {t.label}
-            </button>
-          ))}
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-xs font-medium text-text-muted">Evrak Türü</div>
+          {selectedTur && (
+            <div className="text-[10px] text-gold font-semibold flex items-center gap-1">
+              <SvgCheck /> {selectedTur.label}
+            </div>
+          )}
         </div>
-        {selectedTur && (
-          <div className="text-[10px] text-gold mt-1.5">{selectedTur.icon} {selectedTur.label} seçildi</div>
-        )}
+
+        {/* Arama */}
+        <div className="relative mb-2">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-dim">
+            <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+          </svg>
+          <input
+            ref={turAramaRef}
+            type="text"
+            value={turArama}
+            onChange={(e) => setTurArama(e.target.value)}
+            placeholder="Evrak türü ara..."
+            className="w-full pl-7 pr-3 py-1.5 text-[11px] bg-surface2/50 border border-border rounded-lg text-text placeholder:text-text-dim focus:outline-none focus:border-gold transition-colors"
+          />
+        </div>
+
+        {/* Grup bazlı grid */}
+        <div className="border border-border rounded-xl overflow-hidden max-h-52 overflow-y-auto">
+          {filtrelenmisGruplar.map((grup, gi) => {
+            const grupTurleri = grup.turler.map(k => evrakTurleri.find(t => t.key === k)).filter(Boolean);
+            const isAcik = acikGrup === grup.key || turArama.trim() !== '';
+            const hasSelected = grup.turler.includes(evrakTuru);
+
+            return (
+              <div key={grup.key} className={gi > 0 ? 'border-t border-border/40' : ''}>
+                {/* Grup başlığı */}
+                <button
+                  type="button"
+                  onClick={() => setAcikGrup(acikGrup === grup.key ? null : grup.key)}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-surface2/30 transition-colors ${
+                    hasSelected ? 'bg-gold/5' : ''
+                  }`}
+                >
+                  <div className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 ${grup.renk}`}>
+                    <SvgFolder />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] font-semibold text-text">{grup.label}</div>
+                    <div className="text-[9px] text-text-dim truncate">{grup.aciklama}</div>
+                  </div>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`text-text-dim transition-transform ${isAcik ? 'rotate-90' : ''}`}>
+                    <path d="M9 18l6-6-6-6"/>
+                  </svg>
+                </button>
+
+                {/* Grup içindeki türler */}
+                {isAcik && (
+                  <div className="bg-bg/30 border-t border-border/20">
+                    {grupTurleri.map(tur => {
+                      if (!tur) return null;
+                      const isSelected = evrakTuru === tur.key;
+                      return (
+                        <button
+                          key={tur.key}
+                          type="button"
+                          onClick={() => {
+                            setEvrakTuru(tur.key);
+                            setTurArama('');
+                          }}
+                          className={`w-full flex items-center gap-2 px-3 py-1.5 pl-11 text-left transition-colors ${
+                            isSelected
+                              ? 'bg-gold/10 text-gold'
+                              : 'hover:bg-surface2/30 text-text-muted hover:text-text'
+                          }`}
+                        >
+                          {isSelected ? (
+                            <div className="w-4 h-4 rounded-full bg-gold flex items-center justify-center flex-shrink-0">
+                              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3"><path d="M20 6L9 17l-5-5"/></svg>
+                            </div>
+                          ) : (
+                            <div className="w-4 h-4 rounded-full border border-border/60 flex-shrink-0" />
+                          )}
+                          <span className={`text-[11px] ${isSelected ? 'font-semibold' : ''}`}>
+                            {tur.label}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {filtrelenmisGruplar.length === 0 && (
+            <div className="px-4 py-6 text-center text-[11px] text-text-dim">
+              Arama sonucu bulunamadı
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Form Alanları */}
