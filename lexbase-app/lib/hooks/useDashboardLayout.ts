@@ -31,7 +31,7 @@ export const WIDGET_TANIMLARI: WidgetTanim[] = [
   { id: 'personel-ozet', label: 'Personel Özeti', icon: '👥', varsayilanGorunur: false },
   { id: 'menfaat', label: 'Menfaat Çakışması', icon: '🔍', varsayilanGorunur: false },
   { id: 'hizmetler', label: 'Devam Eden Hizmetler', icon: '⚖️', varsayilanGorunur: false },
-  { id: 'hizli-erisim', label: 'Hızlı Erişim', icon: '⭐', varsayilanGorunur: false },
+  { id: 'hizli-erisim', label: 'Hızlı Erişim', icon: '⭐', varsayilanGorunur: true },
   { id: 'vekaletname-sure', label: 'Vekaletname Süreleri', icon: '📜', varsayilanGorunur: false },
 ];
 
@@ -50,11 +50,11 @@ const VARSAYILAN_LAYOUTS: ResponsiveLayouts = {
     { i: 'muvekkil-bakiye', x: 2, y: 5, w: 1, h: 3, minW: 1, minH: 2 },
     { i: 'beklenen-gelir', x: 0, y: 8, w: 1, h: 3, minW: 1, minH: 2 },
     { i: 'aktivite', x: 1, y: 8, w: 1, h: 3, minW: 1, minH: 2 },
+    { i: 'hizli-erisim', x: 2, y: 8, w: 1, h: 3, minW: 1, minH: 2 },
     // Gizli widget'lar — kullanıcı eklediğinde yerleşecek
-    { i: 'personel-ozet', x: 2, y: 8, w: 1, h: 3, minW: 1, minH: 2 },
-    { i: 'menfaat', x: 0, y: 11, w: 1, h: 2, minW: 1, minH: 1 },
-    { i: 'hizmetler', x: 1, y: 11, w: 1, h: 3, minW: 1, minH: 2 },
-    { i: 'hizli-erisim', x: 2, y: 11, w: 1, h: 3, minW: 1, minH: 2 },
+    { i: 'personel-ozet', x: 0, y: 11, w: 1, h: 3, minW: 1, minH: 2 },
+    { i: 'menfaat', x: 1, y: 11, w: 1, h: 2, minW: 1, minH: 1 },
+    { i: 'hizmetler', x: 2, y: 11, w: 1, h: 3, minW: 1, minH: 2 },
     { i: 'vekaletname-sure', x: 0, y: 14, w: 1, h: 3, minW: 1, minH: 2 },
   ],
   md: [

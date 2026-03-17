@@ -108,11 +108,11 @@ export default function DavaDetayPage({ params }: { params: Promise<{ id: string
     return <div className="text-center py-12 text-text-muted">Yükleniyor...</div>;
   }
 
-  if (!dava) {
+  if (!dava || (dava as Record<string, unknown>)._silindi) {
     return (
       <div className="text-center py-16">
         <div className="text-4xl mb-3">❌</div>
-        <div className="text-sm text-text-muted">Dava bulunamadı</div>
+        <div className="text-sm text-text-muted">{(dava as Record<string, unknown> | null)?._silindi ? 'Bu dava silinmiş' : 'Dava bulunamadı'}</div>
         <Link href="/davalar" className="text-xs text-gold mt-3 inline-block hover:underline">← Davalara dön</Link>
       </div>
     );

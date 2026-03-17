@@ -63,7 +63,7 @@ export default function ArabuluculukDetayPage() {
   }, [arb, davalar, icralar]);
 
   if (isLoading) return <div className="text-center py-16 text-text-muted text-sm">Yükleniyor...</div>;
-  if (!arb) return <div className="text-center py-16 text-text-muted text-sm">Arabuluculuk dosyası bulunamadı</div>;
+  if (!arb || (arb as Record<string, unknown>)._silindi) return <div className="text-center py-16 text-text-muted text-sm">{(arb as Record<string, unknown> | null)?._silindi ? 'Bu arabuluculuk dosyası silinmiş' : 'Arabuluculuk dosyası bulunamadı'}</div>;
 
   const oturumlar = arb.oturumlar || [];
   const notlar = arb.notlar || [];

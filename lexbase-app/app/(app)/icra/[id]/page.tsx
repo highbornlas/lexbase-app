@@ -114,11 +114,11 @@ export default function IcraDetayPage({ params }: { params: Promise<{ id: string
     return <div className="text-center py-12 text-text-muted">Yükleniyor...</div>;
   }
 
-  if (!icra) {
+  if (!icra || (icra as Record<string, unknown>)._silindi) {
     return (
       <div className="text-center py-16">
         <div className="text-4xl mb-3">❌</div>
-        <div className="text-sm text-text-muted">İcra dosyası bulunamadı</div>
+        <div className="text-sm text-text-muted">{(icra as Record<string, unknown> | null)?._silindi ? 'Bu icra dosyası silinmiş' : 'İcra dosyası bulunamadı'}</div>
         <Link href="/icra" className="text-xs text-gold mt-3 inline-block hover:underline">← İcra dosyalarına dön</Link>
       </div>
     );

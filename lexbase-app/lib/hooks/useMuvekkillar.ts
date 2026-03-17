@@ -125,7 +125,7 @@ export function useMuvDavalar(muvId: string | null) {
       if (error) throw error;
       return (data || [])
         .map((r) => ({ id: r.id, ...(r.data as object) }))
-        .filter((d: Record<string, unknown>) => d.muvId === muvId);
+        .filter((d: Record<string, unknown>) => d.muvId === muvId && !d._silindi);
     },
     enabled: !!buroId && !!muvId,
   });
@@ -148,7 +148,7 @@ export function useMuvIcralar(muvId: string | null) {
       if (error) throw error;
       return (data || [])
         .map((r) => ({ id: r.id, ...(r.data as object) }))
-        .filter((i: Record<string, unknown>) => i.muvId === muvId);
+        .filter((i: Record<string, unknown>) => i.muvId === muvId && !i._silindi);
     },
     enabled: !!buroId && !!muvId,
   });
@@ -171,7 +171,7 @@ export function useMuvArabuluculuklar(muvId: string | null) {
       if (error) throw error;
       return (data || [])
         .map((r) => ({ id: r.id, ...(r.data as object) }))
-        .filter((a: Record<string, unknown>) => a.muvId === muvId);
+        .filter((a: Record<string, unknown>) => a.muvId === muvId && !a._silindi);
     },
     enabled: !!buroId && !!muvId,
   });
@@ -194,7 +194,7 @@ export function useMuvIhtarnameler(muvId: string | null) {
       if (error) throw error;
       return (data || [])
         .map((r) => ({ id: r.id, ...(r.data as object) }))
-        .filter((h: Record<string, unknown>) => h.muvId === muvId);
+        .filter((h: Record<string, unknown>) => h.muvId === muvId && !h._silindi);
     },
     enabled: !!buroId && !!muvId,
   });
@@ -243,6 +243,80 @@ export function useMuvekkilKaydet() {
   });
 }
 
+// ── Cascade Helper — İlişkili dosyaları toplu işle ──────────
+const ILISKILI_TABLOLAR = ['davalar', 'icra', 'arabuluculuk', 'danismanlik', 'ihtarnameler'] as const;
+
+async function cascadeSoftDelete(supabase: ReturnType<typeof createClient>, buroId: string, muvId: string) {
+  const silindi = new Date().toISOString();
+  for (const tablo of ILISKILI_TABLOLAR) {
+    const { data: kayitlar } = await supabase
+      .from(tablo)
+      .select('id, data')
+      .eq('buro_id', buroId);
+    if (!kayitlar) continue;
+    for (const k of kayitlar) {
+      const d = k.data as Record<string, unknown>;
+      if (d.muvId === muvId && !d._silindi) {
+        await supabase.from(tablo).update({
+          data: { ...d, _silindi: silindi, _silindiByMuvekkil: muvId },
+        }).eq('id', k.id).eq('buro_id', buroId);
+      }
+    }
+  }
+}
+
+async function cascadeHardDelete(supabase: ReturnType<typeof createClient>, buroId: string, muvId: string) {
+  for (const tablo of ILISKILI_TABLOLAR) {
+    const { data: kayitlar } = await supabase
+      .from(tablo)
+      .select('id, data')
+      .eq('buro_id', buroId);
+    if (!kayitlar) continue;
+    for (const k of kayitlar) {
+      const d = k.data as Record<string, unknown>;
+      if (d.muvId === muvId) {
+        await supabase.from(tablo).delete().eq('id', k.id).eq('buro_id', buroId);
+      }
+    }
+  }
+  // Belgeler de sil
+  const { data: belgeler } = await supabase
+    .from('belgeler')
+    .select('id, data')
+    .eq('buro_id', buroId);
+  if (belgeler) {
+    for (const b of belgeler) {
+      const d = b.data as Record<string, unknown>;
+      if (d.muvId === muvId) {
+        if (d.storagePath) {
+          await supabase.storage.from('belgeler').remove([d.storagePath as string]);
+        }
+        await supabase.from('belgeler').delete().eq('id', b.id).eq('buro_id', buroId);
+      }
+    }
+  }
+}
+
+async function cascadeRestore(supabase: ReturnType<typeof createClient>, buroId: string, muvId: string) {
+  for (const tablo of ILISKILI_TABLOLAR) {
+    const { data: kayitlar } = await supabase
+      .from(tablo)
+      .select('id, data')
+      .eq('buro_id', buroId);
+    if (!kayitlar) continue;
+    for (const k of kayitlar) {
+      const d = k.data as Record<string, unknown>;
+      if (d._silindiByMuvekkil === muvId) {
+        const { _silindi, _silindiByMuvekkil, ...temiz } = d;
+        void _silindi; void _silindiByMuvekkil;
+        await supabase.from(tablo).update({ data: temiz }).eq('id', k.id).eq('buro_id', buroId);
+      }
+    }
+  }
+}
+
+const CASCADE_INVALIDATE_KEYS = ['davalar', 'icra', 'arabuluculuk', 'danismanlik', 'ihtarnameler', 'belgeler'];
+
 // ── Soft Delete (çöp kutusuna taşı) ──────────────────────────
 export function useMuvekkilSil() {
   const buroId = useBuroId();
@@ -265,10 +339,13 @@ export function useMuvekkilSil() {
         .eq('id', id)
         .eq('buro_id', buroId);
       if (error) throw error;
+      // Cascade: İlişkili dosyaları da soft-delete et
+      await cascadeSoftDelete(supabase, buroId, id);
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['muvekkillar'] });
       queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
+      CASCADE_INVALIDATE_KEYS.forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }));
     },
   });
 }
@@ -282,6 +359,8 @@ export function useMuvekkilKaliciSil() {
     mutationFn: async (id: string) => {
       if (!buroId) throw new Error('Büro bulunamadı');
       const supabase = createClient();
+      // Cascade: İlişkili dosyaları da kalıcı sil
+      await cascadeHardDelete(supabase, buroId, id);
       const { error } = await supabase
         .from('muvekkillar')
         .delete()
@@ -292,6 +371,7 @@ export function useMuvekkilKaliciSil() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['muvekkillar'] });
       queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
+      CASCADE_INVALIDATE_KEYS.forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }));
     },
   });
 }
@@ -320,10 +400,13 @@ export function useMuvekkilGeriYukle() {
         .eq('id', id)
         .eq('buro_id', buroId);
       if (error) throw error;
+      // Cascade: İlişkili dosyaları da geri yükle
+      await cascadeRestore(supabase, buroId, id);
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['muvekkillar'] });
       queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
+      CASCADE_INVALIDATE_KEYS.forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }));
     },
   });
 }

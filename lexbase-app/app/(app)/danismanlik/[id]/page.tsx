@@ -44,7 +44,7 @@ export default function DanismanlikDetayPage() {
   }, [dan, muvekkillar]);
 
   if (isLoading) return <div className="text-center py-16 text-text-muted text-sm">Yükleniyor...</div>;
-  if (!dan) return <div className="text-center py-16 text-text-muted text-sm">Danışmanlık bulunamadı</div>;
+  if (!dan || (dan as Record<string, unknown>)._silindi) return <div className="text-center py-16 text-text-muted text-sm">{(dan as Record<string, unknown> | null)?._silindi ? 'Bu danışmanlık kaydı silinmiş' : 'Danışmanlık bulunamadı'}</div>;
 
   const isSureklii = dan.sozlesmeModeli === 'sureklii';
   const eforlar = dan.eforlar || [];

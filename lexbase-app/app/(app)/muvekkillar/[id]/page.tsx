@@ -102,11 +102,13 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  if (!muv) {
+  if (!muv || (muv as Record<string, unknown>)._silindi) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
         <div className="text-4xl">🔍</div>
-        <div className="text-text-muted text-sm">Müvekkil bulunamadı</div>
+        <div className="text-text-muted text-sm">
+          {(muv as Record<string, unknown> | null)?._silindi ? 'Bu müvekkil silinmiş' : 'Müvekkil bulunamadı'}
+        </div>
         <Link href="/muvekkillar" className="text-gold text-sm hover:text-gold-light">
           ← Müvekkil Listesine Dön
         </Link>
