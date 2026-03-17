@@ -4,13 +4,22 @@ import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import {
   useDavaBelgeler,
   useIcraBelgeler,
+  useArabuluculukBelgeler,
+  useIhtarnameBelgeler,
+  useDanismanlikBelgeler,
   useBelgeYukle,
   useBelgeSil,
   belgeIndir,
   fmtBoyut,
   type Belge,
 } from '@/lib/hooks/useBelgeler';
-import { DAVA_EVRAK_TURLERI, ICRA_EVRAK_TURLERI, DAVA_EVRAK_GRUPLARI, ICRA_EVRAK_GRUPLARI, type EvrakGrup } from '@/lib/constants/uyap';
+import {
+  DAVA_EVRAK_TURLERI, ICRA_EVRAK_TURLERI,
+  ARABULUCULUK_EVRAK_TURLERI, IHTARNAME_EVRAK_TURLERI, DANISMANLIK_EVRAK_TURLERI,
+  DAVA_EVRAK_GRUPLARI, ICRA_EVRAK_GRUPLARI,
+  ARABULUCULUK_EVRAK_GRUPLARI, IHTARNAME_EVRAK_GRUPLARI, DANISMANLIK_EVRAK_GRUPLARI,
+  type EvrakGrup,
+} from '@/lib/constants/uyap';
 import { DosyaBelgeModal, type DosyaBelgeFormData } from './DosyaBelgeModal';
 import { fmtTarih } from '@/lib/utils';
 
@@ -20,9 +29,11 @@ import { fmtTarih } from '@/lib/utils';
    Gelişmiş filtreleme, Versiyonlama
    ══════════════════════════════════════════════════════════════ */
 
+type DosyaTipi = 'dava' | 'icra' | 'arabuluculuk' | 'ihtarname' | 'danismanlik';
+
 interface Props {
   dosyaId: string;
-  dosyaTipi: 'dava' | 'icra';
+  dosyaTipi: DosyaTipi;
   muvId?: string;
 }
 
@@ -70,9 +81,20 @@ function dosyaUzanti(dosyaAd: string): string {
 }
 
 export function DosyaEvrakTab({ dosyaId, dosyaTipi, muvId }: Props) {
-  const { data: belgeler, isLoading } = dosyaTipi === 'dava'
-    ? useDavaBelgeler(dosyaId)
-    : useIcraBelgeler(dosyaId);
+  // Hook'ları koşullu çağıramayız, hepsini çağırıp sonucu seçiyoruz
+  const davaQ = useDavaBelgeler(dosyaTipi === 'dava' ? dosyaId : null);
+  const icraQ = useIcraBelgeler(dosyaTipi === 'icra' ? dosyaId : null);
+  const arbQ = useArabuluculukBelgeler(dosyaTipi === 'arabuluculuk' ? dosyaId : null);
+  const ihtQ = useIhtarnameBelgeler(dosyaTipi === 'ihtarname' ? dosyaId : null);
+  const danQ = useDanismanlikBelgeler(dosyaTipi === 'danismanlik' ? dosyaId : null);
+
+  const aktifQ = dosyaTipi === 'dava' ? davaQ :
+                 dosyaTipi === 'icra' ? icraQ :
+                 dosyaTipi === 'arabuluculuk' ? arbQ :
+                 dosyaTipi === 'ihtarname' ? ihtQ : danQ;
+
+  const belgeler = aktifQ.data;
+  const isLoading = aktifQ.isLoading;
 
   const yukle = useBelgeYukle();
   const sil = useBelgeSil();
@@ -87,8 +109,17 @@ export function DosyaEvrakTab({ dosyaId, dosyaTipi, muvId }: Props) {
   const [drawerAcik, setDrawerAcik] = useState(false);
   const [pageDragOver, setPageDragOver] = useState(false);
 
-  const evrakTurleri = dosyaTipi === 'dava' ? DAVA_EVRAK_TURLERI : ICRA_EVRAK_TURLERI;
-  const evrakGruplari: EvrakGrup[] = dosyaTipi === 'dava' ? DAVA_EVRAK_GRUPLARI : ICRA_EVRAK_GRUPLARI;
+  const evrakTurleri = dosyaTipi === 'dava' ? DAVA_EVRAK_TURLERI :
+                       dosyaTipi === 'icra' ? ICRA_EVRAK_TURLERI :
+                       dosyaTipi === 'arabuluculuk' ? ARABULUCULUK_EVRAK_TURLERI :
+                       dosyaTipi === 'ihtarname' ? IHTARNAME_EVRAK_TURLERI :
+                       DANISMANLIK_EVRAK_TURLERI;
+
+  const evrakGruplari: EvrakGrup[] = dosyaTipi === 'dava' ? DAVA_EVRAK_GRUPLARI :
+                                     dosyaTipi === 'icra' ? ICRA_EVRAK_GRUPLARI :
+                                     dosyaTipi === 'arabuluculuk' ? ARABULUCULUK_EVRAK_GRUPLARI :
+                                     dosyaTipi === 'ihtarname' ? IHTARNAME_EVRAK_GRUPLARI :
+                                     DANISMANLIK_EVRAK_GRUPLARI;
 
   // Filtreleme
   const filtreliBelgeler = useMemo(() => {
@@ -154,8 +185,10 @@ export function DosyaEvrakTab({ dosyaId, dosyaTipi, muvId }: Props) {
   }, []);
 
   // Evrak bilgi
-  const evrakBilgi = (key: string) => {
-    return evrakTurleri.find(t => t.key === key) || { key: 'diger', label: 'Diğer', icon: '📄' };
+  const evrakBilgi = (key: string): { key: string; label: string; icon: string } => {
+    const found = evrakTurleri.find(t => t.key === key);
+    if (found) return { key: found.key, label: found.label, icon: (found as { icon?: string }).icon || '📄' };
+    return { key: 'diger', label: 'Diğer', icon: '📄' };
   };
 
   // Evrak yükleme
@@ -171,7 +204,11 @@ export function DosyaEvrakTab({ dosyaId, dosyaTipi, muvId }: Props) {
           tur: 'diger',
           tarih: form.tarih,
           etiketler: form.etiketler,
-          ...(dosyaTipi === 'dava' ? { davaId: dosyaId } : { icraId: dosyaId }),
+          ...(dosyaTipi === 'dava' ? { davaId: dosyaId } :
+              dosyaTipi === 'icra' ? { icraId: dosyaId } :
+              dosyaTipi === 'arabuluculuk' ? { arabuluculukId: dosyaId } :
+              dosyaTipi === 'ihtarname' ? { ihtarnameId: dosyaId } :
+              { danismanlikId: dosyaId }),
           evrakTuru: form.evrakTuru,
           aciklama: form.aciklama,
         },
@@ -360,7 +397,7 @@ export function DosyaEvrakTab({ dosyaId, dosyaTipi, muvId }: Props) {
                 </div>
               </div>
               <h3 className="text-sm font-bold text-text mb-1.5">
-                {dosyaTipi === 'dava' ? 'Dava evrakları burada görünecek' : 'İcra evrakları burada görünecek'}
+                {{ dava: 'Dava evrakları', icra: 'İcra evrakları', arabuluculuk: 'Arabuluculuk evrakları', ihtarname: 'İhtarname evrakları', danismanlik: 'Danışmanlık evrakları' }[dosyaTipi]} burada görünecek
               </h3>
               <p className="text-xs text-text-muted mb-5 max-w-sm mx-auto">
                 Dilekçeleri, zabıtları, bilirkişi raporlarını ve diğer tüm evrakları buraya yükleyerek dosya gömleği gibi düzenleyin.

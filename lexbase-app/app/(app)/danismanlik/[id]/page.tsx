@@ -8,6 +8,7 @@ import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
 import { fmt, fmtTarih } from '@/lib/utils';
 import { DanismanlikModal } from '@/components/modules/DanismanlikModal';
 import { useSonErisim } from '@/lib/hooks/useSonErisim';
+import { DosyaEvrakTab } from '@/components/modules/DosyaEvrakTab';
 
 const DURUM_RENK: Record<string, string> = {
   'Taslak': 'bg-surface2 text-text-dim border-border',
@@ -20,7 +21,7 @@ const DURUM_RENK: Record<string, string> = {
   'İptal': 'bg-surface2 text-text-dim border-border',
 };
 
-type TabKey = 'ozet' | 'efor' | 'notlar';
+type TabKey = 'ozet' | 'evrak' | 'efor' | 'notlar';
 
 export default function DanismanlikDetayPage() {
   const params = useParams();
@@ -189,6 +190,7 @@ export default function DanismanlikDetayPage() {
       <div className="flex border-b border-border mb-5">
         {([
           { key: 'ozet' as TabKey, label: '📋 Özet' },
+          { key: 'evrak' as TabKey, label: '📎 Evraklar' },
           { key: 'efor' as TabKey, label: `⏱️ Efor Kayıtları (${eforlar.length})` },
           { key: 'notlar' as TabKey, label: `📝 Notlar (${notlar.length})` },
         ]).map((tab) => (
@@ -198,6 +200,11 @@ export default function DanismanlikDetayPage() {
           </button>
         ))}
       </div>
+
+      {/* ── TAB: Evraklar ────────────────────────────── */}
+      {aktifTab === 'evrak' && (
+        <DosyaEvrakTab dosyaId={id} dosyaTipi="danismanlik" muvId={dan.muvId} />
+      )}
 
       {/* ── TAB: Özet ──────────────────────────────────── */}
       {aktifTab === 'ozet' && (

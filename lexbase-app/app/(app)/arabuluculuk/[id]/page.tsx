@@ -14,6 +14,7 @@ import { useIcralar } from '@/lib/hooks/useIcra';
 import { fmt, fmtTarih } from '@/lib/utils';
 import { ArabuluculukModal } from '@/components/modules/ArabuluculukModal';
 import { useSonErisim } from '@/lib/hooks/useSonErisim';
+import { DosyaEvrakTab } from '@/components/modules/DosyaEvrakTab';
 
 const DURUM_RENK: Record<string, string> = {
   'Başvuru': 'bg-blue-400/10 text-blue-400 border-blue-400/20',
@@ -24,7 +25,7 @@ const DURUM_RENK: Record<string, string> = {
   'İptal': 'bg-surface2 text-text-dim border-border',
 };
 
-type TabKey = 'ozet' | 'oturumlar' | 'notlar';
+type TabKey = 'ozet' | 'evrak' | 'oturumlar' | 'notlar';
 
 export default function ArabuluculukDetayPage() {
   const params = useParams();
@@ -227,6 +228,7 @@ export default function ArabuluculukDetayPage() {
       <div className="flex border-b border-border mb-5">
         {([
           { key: 'ozet' as TabKey, label: '📋 Özet' },
+          { key: 'evrak' as TabKey, label: '📎 Evraklar' },
           { key: 'oturumlar' as TabKey, label: `🗓️ Oturumlar (${oturumlar.length})` },
           { key: 'notlar' as TabKey, label: `📝 Notlar (${notlar.length})` },
         ]).map((tab) => (
@@ -275,6 +277,11 @@ export default function ArabuluculukDetayPage() {
             )}
           </div>
         </div>
+      )}
+
+      {/* ── TAB: Evraklar ────────────────────────────── */}
+      {aktifTab === 'evrak' && (
+        <DosyaEvrakTab dosyaId={id} dosyaTipi="arabuluculuk" muvId={arb.muvId} />
       )}
 
       {/* ── TAB: Oturumlar ───────────────────────────── */}

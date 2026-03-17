@@ -292,6 +292,155 @@ export const ICRA_EVRAK_GRUPLARI: EvrakGrup[] = [
   },
 ];
 
+// ── Arabuluculuk Evrak Türleri ──
+export const ARABULUCULUK_EVRAK_TURLERI = [
+  { key: 'bilgilendirme_tutanagi', label: 'Bilgilendirme Tutanağı' },
+  { key: 'davet_mektubu', label: 'Davet Mektubu / Tebliğ Belgesi' },
+  { key: 'yetki_belgesi', label: 'Yetki Belgesi / Vekaletname' },
+  { key: 'oturum_tutanagi', label: 'Oturum Tutanağı' },
+  { key: 'son_tutanak', label: 'Son Tutanak (Anlaşma/Anlaşmazlık)' },
+  { key: 'anlasma_belgesi', label: 'Anlaşma Belgesi (İlam Niteliğinde)' },
+  { key: 'gizlilik_sozlesmesi', label: 'Gizlilik Sözleşmesi / Taahhütname' },
+  { key: 'uzman_raporu', label: 'Uzman Görüşü / Teknik Rapor' },
+  { key: 'ucret_sozlesmesi', label: 'Ücret Sözleşmesi / SMM' },
+  { key: 'diger', label: 'Diğer' },
+] as const;
+
+// ── Arabuluculuk Evrak Grupları ──
+export const ARABULUCULUK_EVRAK_GRUPLARI: EvrakGrup[] = [
+  {
+    key: 'tutanaklar',
+    label: 'Tutanaklar',
+    aciklama: 'Bilgilendirme, oturum ve son tutanaklar',
+    renk: 'bg-blue-400/10 text-blue-400',
+    turler: ['bilgilendirme_tutanagi', 'oturum_tutanagi', 'son_tutanak'],
+  },
+  {
+    key: 'anlasma_belgeler',
+    label: 'Anlaşma & Sonuç',
+    aciklama: 'Anlaşma belgeleri ve ilam niteliğinde belgeler',
+    renk: 'bg-green/10 text-green',
+    turler: ['anlasma_belgesi'],
+  },
+  {
+    key: 'resmi_belgeler',
+    label: 'Resmi Belgeler & Vekaletname',
+    aciklama: 'Yetki belgeleri, davet mektupları ve tebliğ belgeleri',
+    renk: 'bg-purple-400/10 text-purple-400',
+    turler: ['davet_mektubu', 'yetki_belgesi', 'gizlilik_sozlesmesi'],
+  },
+  {
+    key: 'raporlar_ucret',
+    label: 'Raporlar & Ücret',
+    aciklama: 'Uzman raporları, ücret sözleşmeleri ve makbuzlar',
+    renk: 'bg-amber-400/10 text-amber-400',
+    turler: ['uzman_raporu', 'ucret_sozlesmesi'],
+  },
+  {
+    key: 'diger',
+    label: 'Diğer',
+    aciklama: 'Sınıflandırılmamış evraklar',
+    renk: 'bg-surface2 text-text-muted',
+    turler: ['diger'],
+  },
+];
+
+// ── İhtarname Evrak Türleri ──
+export const IHTARNAME_EVRAK_TURLERI = [
+  { key: 'ihtarname_metni', label: 'İhtarname Metni' },
+  { key: 'noter_onayi', label: 'Noter Onayı / Yevmiye' },
+  { key: 'gonderim_belgesi', label: 'Gönderim Belgesi / PTT Makbuzu' },
+  { key: 'tebligat_mazbatasi', label: 'Tebligat Mazbatası' },
+  { key: 'cevap_ihtarname', label: 'Cevap İhtarnamesi' },
+  { key: 'iade_belgesi', label: 'İade Belgesi' },
+  { key: 'vekaletname', label: 'Vekaletname' },
+  { key: 'diger', label: 'Diğer' },
+] as const;
+
+// ── İhtarname Evrak Grupları ──
+export const IHTARNAME_EVRAK_GRUPLARI: EvrakGrup[] = [
+  {
+    key: 'ihtarname_belgeleri',
+    label: 'İhtarname Belgeleri',
+    aciklama: 'İhtarname metni ve noter onayı',
+    renk: 'bg-red/10 text-red',
+    turler: ['ihtarname_metni', 'noter_onayi'],
+  },
+  {
+    key: 'tebligat_gonderim',
+    label: 'Tebligat & Gönderim',
+    aciklama: 'PTT makbuzu, tebligat mazbatası, iade belgeleri',
+    renk: 'bg-blue-400/10 text-blue-400',
+    turler: ['gonderim_belgesi', 'tebligat_mazbatasi', 'iade_belgesi'],
+  },
+  {
+    key: 'cevap_resmi',
+    label: 'Cevap & Resmi Belgeler',
+    aciklama: 'Cevap ihtarnameleri ve vekaletnameler',
+    renk: 'bg-green/10 text-green',
+    turler: ['cevap_ihtarname', 'vekaletname'],
+  },
+  {
+    key: 'diger',
+    label: 'Diğer',
+    aciklama: 'Sınıflandırılmamış evraklar',
+    renk: 'bg-surface2 text-text-muted',
+    turler: ['diger'],
+  },
+];
+
+// ── Danışmanlık Evrak Türleri ──
+export const DANISMANLIK_EVRAK_TURLERI = [
+  { key: 'sozlesme', label: 'Danışmanlık Sözleşmesi' },
+  { key: 'gorus_raporu', label: 'Hukuki Görüş / Rapor' },
+  { key: 'mutalaa', label: 'Mütalaa' },
+  { key: 'mevzuat_analizi', label: 'Mevzuat Analizi' },
+  { key: 'toplanti_notu', label: 'Toplantı Notu' },
+  { key: 'yazisma', label: 'Yazışma / E-posta' },
+  { key: 'fatura_makbuz', label: 'Fatura / Makbuz' },
+  { key: 'vekaletname', label: 'Vekaletname' },
+  { key: 'diger', label: 'Diğer' },
+] as const;
+
+// ── Danışmanlık Evrak Grupları ──
+export const DANISMANLIK_EVRAK_GRUPLARI: EvrakGrup[] = [
+  {
+    key: 'gorusler_raporlar',
+    label: 'Görüşler & Raporlar',
+    aciklama: 'Hukuki görüş, mütalaa ve mevzuat analizi',
+    renk: 'bg-blue-400/10 text-blue-400',
+    turler: ['gorus_raporu', 'mutalaa', 'mevzuat_analizi'],
+  },
+  {
+    key: 'sozlesme_belgeler',
+    label: 'Sözleşme & Belgeler',
+    aciklama: 'Danışmanlık sözleşmeleri ve vekaletnameler',
+    renk: 'bg-purple-400/10 text-purple-400',
+    turler: ['sozlesme', 'vekaletname'],
+  },
+  {
+    key: 'yazisma_notlar',
+    label: 'Yazışmalar & Notlar',
+    aciklama: 'Toplantı notları ve yazışmalar',
+    renk: 'bg-green/10 text-green',
+    turler: ['toplanti_notu', 'yazisma'],
+  },
+  {
+    key: 'mali_belgeler',
+    label: 'Mali Belgeler',
+    aciklama: 'Fatura ve makbuzlar',
+    renk: 'bg-amber-400/10 text-amber-400',
+    turler: ['fatura_makbuz'],
+  },
+  {
+    key: 'diger',
+    label: 'Diğer',
+    aciklama: 'Sınıflandırılmamış evraklar',
+    renk: 'bg-surface2 text-text-muted',
+    turler: ['diger'],
+  },
+];
+
 // ── Yargı Türleri ──
 export const YARGI_TURLERI = [
   'Ceza',

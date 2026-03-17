@@ -4,19 +4,19 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { Modal, FormGroup, FormInput, BtnGold, BtnOutline } from '@/components/ui/Modal';
 import { useModalDraft } from '@/lib/hooks/useModalDraft';
 import {
-  DAVA_EVRAK_TURLERI,
-  ICRA_EVRAK_TURLERI,
-  DAVA_EVRAK_GRUPLARI,
-  ICRA_EVRAK_GRUPLARI,
+  DAVA_EVRAK_TURLERI, ICRA_EVRAK_TURLERI,
+  ARABULUCULUK_EVRAK_TURLERI, IHTARNAME_EVRAK_TURLERI, DANISMANLIK_EVRAK_TURLERI,
+  DAVA_EVRAK_GRUPLARI, ICRA_EVRAK_GRUPLARI,
+  ARABULUCULUK_EVRAK_GRUPLARI, IHTARNAME_EVRAK_GRUPLARI, DANISMANLIK_EVRAK_GRUPLARI,
   type EvrakGrup,
 } from '@/lib/constants/uyap';
 
 /* ══════════════════════════════════════════════════════════════
-   Dosya Belge Modal — Dava/İcra evrak yükleme
+   Dosya Belge Modal — Tüm modüller için evrak yükleme
    Grup bazlı kategori seçimi, sürükle-bırak, page-level drop
    ══════════════════════════════════════════════════════════════ */
 
-type DosyaTipi = 'dava' | 'icra';
+type DosyaTipi = 'dava' | 'icra' | 'arabuluculuk' | 'ihtarname' | 'danismanlik';
 
 interface Props {
   open: boolean;
@@ -65,8 +65,17 @@ export function DosyaBelgeModal({ open, onClose, onKaydet, dosyaTipi, yukleniyor
     draftKey, dosyaBelgeForm as Record<string, unknown>, dosyaBelgeInitial as Record<string, unknown>, open
   );
 
-  const evrakTurleri = dosyaTipi === 'dava' ? DAVA_EVRAK_TURLERI : ICRA_EVRAK_TURLERI;
-  const evrakGruplari: EvrakGrup[] = dosyaTipi === 'dava' ? DAVA_EVRAK_GRUPLARI : ICRA_EVRAK_GRUPLARI;
+  const evrakTurleri = dosyaTipi === 'dava' ? DAVA_EVRAK_TURLERI :
+                       dosyaTipi === 'icra' ? ICRA_EVRAK_TURLERI :
+                       dosyaTipi === 'arabuluculuk' ? ARABULUCULUK_EVRAK_TURLERI :
+                       dosyaTipi === 'ihtarname' ? IHTARNAME_EVRAK_TURLERI :
+                       DANISMANLIK_EVRAK_TURLERI;
+
+  const evrakGruplari: EvrakGrup[] = dosyaTipi === 'dava' ? DAVA_EVRAK_GRUPLARI :
+                                     dosyaTipi === 'icra' ? ICRA_EVRAK_GRUPLARI :
+                                     dosyaTipi === 'arabuluculuk' ? ARABULUCULUK_EVRAK_GRUPLARI :
+                                     dosyaTipi === 'ihtarname' ? IHTARNAME_EVRAK_GRUPLARI :
+                                     DANISMANLIK_EVRAK_GRUPLARI;
   const MAX_BOYUT = 10 * 1024 * 1024; // 10MB
 
   // Page-level drop event listener
@@ -158,7 +167,7 @@ export function DosyaBelgeModal({ open, onClose, onKaydet, dosyaTipi, yukleniyor
     <Modal
       open={open}
       onClose={handleClose}
-      title={dosyaTipi === 'dava' ? 'Dava Evrakı Yükle' : 'İcra Evrakı Yükle'}
+      title={{ dava: 'Dava Evrakı Yükle', icra: 'İcra Evrakı Yükle', arabuluculuk: 'Arabuluculuk Evrakı Yükle', ihtarname: 'İhtarname Evrakı Yükle', danismanlik: 'Danışmanlık Evrakı Yükle' }[dosyaTipi]}
       maxWidth="max-w-xl"
       dirty={isDirty}
       hasDraft={hasDraft()}
@@ -216,7 +225,7 @@ export function DosyaBelgeModal({ open, onClose, onKaydet, dosyaTipi, yukleniyor
               <SvgUploadCloud />
             </div>
             <div className="text-xs text-text-muted">
-              {dosyaTipi === 'dava' ? 'Dava evrakını' : 'İcra evrakını'} sürükleyip bırakın
+              Evrakı sürükleyip bırakın
             </div>
             <div className="text-[10px] text-text-dim mt-1">
               PDF, Word, resim, taranmış belge (maks. 10MB)

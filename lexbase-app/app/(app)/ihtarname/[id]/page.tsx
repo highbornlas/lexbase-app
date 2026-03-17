@@ -9,9 +9,11 @@ import { useIcralar } from '@/lib/hooks/useIcra';
 import { IhtarnameModal } from '@/components/modules/IhtarnameModal';
 import { fmt, fmtTarih } from '@/lib/utils';
 import { useSonErisim } from '@/lib/hooks/useSonErisim';
+import { DosyaEvrakTab } from '@/components/modules/DosyaEvrakTab';
 
 const TABS = [
   { key: 'ozet', label: 'Özet', icon: '📋' },
+  { key: 'evrak', label: 'Evraklar', icon: '📎' },
   { key: 'icerik', label: 'İçerik', icon: '📝' },
   { key: 'teblig', label: 'Tebliğ & Süre', icon: '📬' },
   { key: 'ptt', label: 'PTT Takip', icon: '📦' },
@@ -267,7 +269,13 @@ export default function IhtarnameDetayPage({ params }: { params: Promise<{ id: s
         ))}
       </div>
 
+      {/* Evrak sekmesi — kendi düzeni var, dışarıda render */}
+      {aktifTab === 'evrak' && (
+        <DosyaEvrakTab dosyaId={id} dosyaTipi="ihtarname" muvId={ihtarname.muvId} />
+      )}
+
       {/* Tab İçerikleri */}
+      {aktifTab !== 'evrak' && (
       <div className="bg-surface border border-border rounded-lg p-5">
         {aktifTab === 'ozet' && <OzetTab ihtarname={ihtarname} muvAd={muvAd} sureBilgi={sureBilgi} davalar={davalar} icralar={icralar} />}
         {aktifTab === 'icerik' && <IcerikTab ihtarname={ihtarname} />}
@@ -276,6 +284,7 @@ export default function IhtarnameDetayPage({ params }: { params: Promise<{ id: s
         {aktifTab === 'cevap' && <CevapTab ihtarname={ihtarname} />}
         {aktifTab === 'notlar' && <NotlarTab ihtarname={ihtarname} yeniNot={yeniNot} setYeniNot={setYeniNot} onNotEkle={handleNotEkle} onNotSil={handleNotSil} />}
       </div>
+      )}
 
       {/* Düzenleme Modal */}
       {duzenleModu && (

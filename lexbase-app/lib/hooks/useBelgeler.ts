@@ -17,10 +17,13 @@ export interface Belge {
   storagePath: string;
   etiketler?: string[];
   meta?: VekaletnameMeta;
-  // Dosya bağlantıları (opsiyonel — dava/icra evrakları için)
+  // Dosya bağlantıları (opsiyonel — modül evrakları için)
   davaId?: string;
   icraId?: string;
-  evrakTuru?: string; // DavaEvrakTuru | IcraEvrakTuru
+  arabuluculukId?: string;
+  ihtarnameId?: string;
+  danismanlikId?: string;
+  evrakTuru?: string; // Evrak türü key
   [key: string]: unknown;
 }
 
@@ -90,7 +93,7 @@ export function useMuvBelgeler(muvId: string | null) {
       if (error) throw error;
       return (data || [])
         .map((r) => ({ id: r.id, ...(r.data as object) }) as Belge)
-        .filter((b) => b.muvId === muvId && !b.davaId && !b.icraId) // dava/icra evrakları müvekkil belgelerine karışmasın
+        .filter((b) => b.muvId === muvId && !b.davaId && !b.icraId && !b.arabuluculukId && !b.ihtarnameId && !b.danismanlikId) // modül evrakları müvekkil belgelerine karışmasın
         .sort((a, b) => (b.tarih || '').localeCompare(a.tarih || ''));
     },
     enabled: !!buroId && !!muvId,
@@ -142,6 +145,78 @@ export function useIcraBelgeler(icraId: string | null) {
         .sort((a, b) => (b.tarih || '').localeCompare(a.tarih || ''));
     },
     enabled: !!buroId && !!icraId,
+  });
+}
+
+// ── Arabuluculuğa bağlı belgeler ──────────────────────────────
+export function useArabuluculukBelgeler(arabuluculukId: string | null) {
+  const buroId = useBuroId();
+
+  return useQuery<Belge[]>({
+    queryKey: ['belgeler', 'arabuluculuk', arabuluculukId, buroId],
+    queryFn: async () => {
+      if (!buroId || !arabuluculukId) return [];
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('belgeler')
+        .select('id, data')
+        .eq('buro_id', buroId);
+
+      if (error) throw error;
+      return (data || [])
+        .map((r) => ({ id: r.id, ...(r.data as object) }) as Belge)
+        .filter((b) => b.arabuluculukId === arabuluculukId)
+        .sort((a, b) => (b.tarih || '').localeCompare(a.tarih || ''));
+    },
+    enabled: !!buroId && !!arabuluculukId,
+  });
+}
+
+// ── İhtarnameye bağlı belgeler ────────────────────────────────
+export function useIhtarnameBelgeler(ihtarnameId: string | null) {
+  const buroId = useBuroId();
+
+  return useQuery<Belge[]>({
+    queryKey: ['belgeler', 'ihtarname', ihtarnameId, buroId],
+    queryFn: async () => {
+      if (!buroId || !ihtarnameId) return [];
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('belgeler')
+        .select('id, data')
+        .eq('buro_id', buroId);
+
+      if (error) throw error;
+      return (data || [])
+        .map((r) => ({ id: r.id, ...(r.data as object) }) as Belge)
+        .filter((b) => b.ihtarnameId === ihtarnameId)
+        .sort((a, b) => (b.tarih || '').localeCompare(a.tarih || ''));
+    },
+    enabled: !!buroId && !!ihtarnameId,
+  });
+}
+
+// ── Danışmanlığa bağlı belgeler ──────────────────────────────
+export function useDanismanlikBelgeler(danismanlikId: string | null) {
+  const buroId = useBuroId();
+
+  return useQuery<Belge[]>({
+    queryKey: ['belgeler', 'danismanlik', danismanlikId, buroId],
+    queryFn: async () => {
+      if (!buroId || !danismanlikId) return [];
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('belgeler')
+        .select('id, data')
+        .eq('buro_id', buroId);
+
+      if (error) throw error;
+      return (data || [])
+        .map((r) => ({ id: r.id, ...(r.data as object) }) as Belge)
+        .filter((b) => b.danismanlikId === danismanlikId)
+        .sort((a, b) => (b.tarih || '').localeCompare(a.tarih || ''));
+    },
+    enabled: !!buroId && !!danismanlikId,
   });
 }
 
@@ -257,7 +332,14 @@ export function useBelgeYukle() {
 
       // Benzersiz path oluştur
       const ext = dosya.name.split('.').pop() || 'bin';
-      const klasor = belge.muvId || (belge.davaId ? `dava-${belge.davaId}` : belge.icraId ? `icra-${belge.icraId}` : 'genel');
+      const klasor = belge.muvId || (
+        belge.davaId ? `dava-${belge.davaId}` :
+        belge.icraId ? `icra-${belge.icraId}` :
+        belge.arabuluculukId ? `arabuluculuk-${belge.arabuluculukId}` :
+        belge.ihtarnameId ? `ihtarname-${belge.ihtarnameId}` :
+        belge.danismanlikId ? `danismanlik-${belge.danismanlikId}` :
+        'genel'
+      );
       const storagePath = `${buroId}/${klasor}/${belge.id}.${ext}`;
 
       // Storage'a yükle
