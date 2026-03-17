@@ -41,18 +41,19 @@ type SortDir = 'asc' | 'desc';
 
 // ── Sütun tanımları ──────────────────────────────────────────
 
-type DavaColKey = 'sira' | 'esasNo' | 'mahkeme' | 'davaci' | 'davali' | 'acilis' | 'asama' | 'durum' | 'durusma' | 'aksiyon';
+type DavaColKey = 'sira' | 'mahkeme' | 'esasNo' | 'davaci' | 'davali' | 'konu' | 'acilis' | 'durum' | 'asama' | 'durusma' | 'aksiyon';
 
 const DAVA_SUTUNLAR: { key: DavaColKey; label: string; sortKey?: SortKey; varsayilan: boolean }[] = [
   { key: 'sira', label: '#', sortKey: 'kayitNo', varsayilan: true },
-  { key: 'esasNo', label: 'Esas No', sortKey: 'esasNo', varsayilan: true },
   { key: 'mahkeme', label: 'Mahkeme', sortKey: 'mahkeme', varsayilan: true },
+  { key: 'esasNo', label: 'Esas No', sortKey: 'esasNo', varsayilan: true },
   { key: 'davaci', label: 'Davacı', sortKey: 'davaci', varsayilan: true },
   { key: 'davali', label: 'Davalı', sortKey: 'davali', varsayilan: true },
-  { key: 'acilis', label: 'Açılış', sortKey: 'acilisTarihi', varsayilan: true },
-  { key: 'asama', label: 'Aşama', sortKey: 'asama', varsayilan: true },
+  { key: 'konu', label: 'Dava Konusu', varsayilan: true },
+  { key: 'acilis', label: 'Dava Açılış Tarihi', sortKey: 'acilisTarihi', varsayilan: true },
   { key: 'durum', label: 'Durum', sortKey: 'durum', varsayilan: true },
-  { key: 'durusma', label: 'Duruşma', sortKey: 'durusmaTarihi', varsayilan: true },
+  { key: 'asama', label: 'Aşama', sortKey: 'asama', varsayilan: true },
+  { key: 'durusma', label: 'Sonraki Duruşma', sortKey: 'durusmaTarihi', varsayilan: true },
   { key: 'aksiyon', label: '', varsayilan: true },
 ];
 
@@ -252,7 +253,7 @@ export default function DavalarPage() {
         const q = arama.toLocaleLowerCase('tr');
         const muvAd = muvAdMap[d.muvId || ''] || '';
         const esasStr = esasNoGoster(d.esasYil, d.esasNo);
-        const mahkemeStr = tamMahkemeAdi(d.il, d.mno, d.mtur);
+        const mahkemeStr = tamMahkemeAdi(d.il, d.mno, d.mtur, d.adliye);
         return (
           esasStr.toLocaleLowerCase('tr').includes(q) ||
           mahkemeStr.toLocaleLowerCase('tr').includes(q) ||
@@ -275,7 +276,7 @@ export default function DavalarPage() {
       switch (sortKey) {
         case 'kayitNo': cmp = (a.kayitNo ?? a.sira ?? 0) - (b.kayitNo ?? b.sira ?? 0); break;
         case 'esasNo': cmp = esasNoGoster(a.esasYil, a.esasNo).localeCompare(esasNoGoster(b.esasYil, b.esasNo), 'tr'); break;
-        case 'mahkeme': cmp = tamMahkemeAdi(a.il, a.mno, a.mtur).localeCompare(tamMahkemeAdi(b.il, b.mno, b.mtur), 'tr'); break;
+        case 'mahkeme': cmp = tamMahkemeAdi(a.il, a.mno, a.mtur, a.adliye).localeCompare(tamMahkemeAdi(b.il, b.mno, b.mtur, b.adliye), 'tr'); break;
         case 'davaci': cmp = davaciBelirle(a.taraf, muvAdMap[a.muvId || ''] || '', a.karsi || '').davaci.localeCompare(davaciBelirle(b.taraf, muvAdMap[b.muvId || ''] || '', b.karsi || '').davaci, 'tr'); break;
         case 'davali': cmp = davaciBelirle(a.taraf, muvAdMap[a.muvId || ''] || '', a.karsi || '').davali.localeCompare(davaciBelirle(b.taraf, muvAdMap[b.muvId || ''] || '', b.karsi || '').davali, 'tr'); break;
         case 'acilisTarihi': cmp = (a.tarih || '9999').localeCompare(b.tarih || '9999'); break;
@@ -382,14 +383,15 @@ export default function DavalarPage() {
   // ── Grid template — dinamik sütunlara göre ─────────────────
   const COL_WIDTHS: Record<DavaColKey, string> = {
     sira: '36px',
-    esasNo: 'minmax(200px,3fr)',
-    mahkeme: 'minmax(140px,2fr)',
+    mahkeme: 'minmax(160px,2fr)',
+    esasNo: 'minmax(80px,1fr)',
     davaci: 'minmax(100px,1fr)',
     davali: 'minmax(100px,1fr)',
-    acilis: '90px',
-    asama: '80px',
+    konu: 'minmax(120px,1.5fr)',
+    acilis: '100px',
     durum: '75px',
-    durusma: '100px',
+    asama: '80px',
+    durusma: '110px',
     aksiyon: '40px',
   };
 
@@ -634,7 +636,7 @@ export default function DavalarPage() {
             const muvAd = muvAdMap[d.muvId || ''] || '';
             const karsiAd = d.karsi || '';
             const { davaci, davali } = davaciBelirle(d.taraf, muvAd, karsiAd);
-            const mahkeme = tamMahkemeAdi(d.il, d.mno, d.mtur);
+            const mahkeme = tamMahkemeAdi(d.il, d.mno, d.mtur, d.adliye);
             const esasStr = esasNoGoster(d.esasYil, d.esasNo);
             const vurgu = satirVurgu(d);
             const secili = seciliIdler.has(d.id);
@@ -649,16 +651,19 @@ export default function DavalarPage() {
                 {gorunenSutunlar.map((colKey) => {
                   switch (colKey) {
                     case 'sira': return <span key={colKey} className="text-[11px] text-text-dim">{globalIdx + 1}</span>;
-                    case 'esasNo': return (
-                      <Link key={colKey} href={`/davalar/${d.id}`} className="min-w-0 hover:underline">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-[var(--font-playfair)] text-sm font-bold text-gold truncate">{davaDosyaBaslik(d)}</span>
-                          {d.davaTuru && <span className="text-[9px] px-1 py-0.5 rounded bg-surface2 text-text-dim border border-border/50 whitespace-nowrap flex-shrink-0">{d.davaTuru}</span>}
-                        </div>
-                        {d.konu && <div className="text-[10px] text-text-dim truncate mt-0.5">{d.konu}</div>}
+                    case 'mahkeme': return (
+                      <Link key={colKey} href={`/davalar/${d.id}`} className="text-xs text-text truncate hover:underline font-medium" title={mahkeme || ''}>
+                        {mahkeme || <span className="text-text-dim/40">—</span>}
                       </Link>
                     );
-                    case 'mahkeme': return <Link key={colKey} href={`/davalar/${d.id}`} className="text-xs text-text truncate hover:underline" title={mahkeme || d.konu || ''}>{mahkeme || d.konu || <span className="text-text-dim/40">—</span>}</Link>;
+                    case 'esasNo': return (
+                      <Link key={colKey} href={`/davalar/${d.id}`} className="min-w-0 hover:underline">
+                        <span className="font-[var(--font-playfair)] text-sm font-bold text-gold truncate">
+                          {esasStr || <span className="text-text-dim/40">—</span>}
+                        </span>
+                      </Link>
+                    );
+                    case 'konu': return <span key={colKey} className="text-xs text-text truncate" title={d.konu || ''}>{d.konu || <span className="text-text-dim/40">—</span>}</span>;
                     case 'davaci': return (
                       <span key={colKey} className="text-xs text-text truncate flex items-center gap-1" title={davaci}>
                         {d.taraf === 'davacı' && <span className="text-[8px] font-black w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border text-green bg-green-dim border-green/30" title="Müvekkil">M</span>}

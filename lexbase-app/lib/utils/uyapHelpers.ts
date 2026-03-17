@@ -4,14 +4,16 @@
 
 /**
  * Tam mahkeme adı oluştur
- * Ör: "İstanbul 3. Asliye Hukuk Mahkemesi"
+ * Adliye varsa il yerine adliye kullanılır
+ * Ör: "Büyükçekmece 3. ASLİYE HUKUK MAHKEMESİ"
  */
-export function tamMahkemeAdi(il?: string, mno?: string, mtur?: string): string {
+export function tamMahkemeAdi(il?: string, mno?: string, mtur?: string, adliye?: string): string {
   const parcalar: string[] = [];
-  if (il) parcalar.push(il);
+  // Adliye varsa onu kullan, yoksa il
+  const yer = adliye || il;
+  if (yer) parcalar.push(yer);
   if (mno) parcalar.push(`${mno}.`);
   if (mtur) parcalar.push(mtur);
-  if (parcalar.length > 0) parcalar.push('Mahkemesi');
   return parcalar.join(' ') || '';
 }
 
@@ -168,12 +170,13 @@ export function durusmayaKalanGun(tarih?: string): number | null {
  * Ör: "İstanbul 14.Sulh Hukuk 2023/3654 E."
  */
 export function davaDosyaBaslik(dava: {
-  il?: string; mno?: string; mtur?: string;
+  il?: string; adliye?: string; mno?: string; mtur?: string;
   esasYil?: string; esasNo?: string;
   konu?: string; no?: string;
 }): string {
   const parcalar: string[] = [];
-  if (dava.il) parcalar.push(dava.il);
+  const yer = dava.adliye || dava.il;
+  if (yer) parcalar.push(yer);
   if (dava.mno) parcalar.push(`${dava.mno}.`);
   if (dava.mtur) parcalar.push(dava.mtur);
   const esas = esasNoGoster(dava.esasYil, dava.esasNo);

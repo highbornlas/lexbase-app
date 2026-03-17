@@ -554,7 +554,7 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
                   if (davaId) {
                     const dava = davalar.find((d) => d.id === davaId);
                     if (dava) {
-                      const mAd = tamMahkemeAdi(dava.il, dava.mno, dava.mtur);
+                      const mAd = tamMahkemeAdi(dava.il, dava.mno, dava.mtur, dava.adliye);
                       const esas = esasNoGoster(dava.esasYil, dava.esasNo);
                       const dayanak = [mAd, esas ? `E. ${esas}` : ''].filter(Boolean).join(' ');
                       if (dayanak) setForm((prev) => ({ ...prev, dayanak }));

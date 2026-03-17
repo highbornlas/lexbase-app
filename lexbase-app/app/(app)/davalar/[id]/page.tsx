@@ -77,7 +77,7 @@ export default function DavaDetayPage({ params }: { params: Promise<{ id: string
   // Tam mahkeme adı
   const mahkemeAdi = useMemo(() => {
     if (!dava) return '';
-    return tamMahkemeAdi(dava.il, dava.mno, dava.mtur);
+    return tamMahkemeAdi(dava.il, dava.mno, dava.mtur, dava.adliye);
   }, [dava]);
 
   // Esas no

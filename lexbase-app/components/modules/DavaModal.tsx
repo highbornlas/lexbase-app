@@ -168,8 +168,8 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
 
   // Mahkeme tam adı önizleme
   const mahkemeTamAd = useMemo(() =>
-    tamMahkemeAdi(form.il, form.mno, form.mtur),
-    [form.il, form.mno, form.mtur]
+    tamMahkemeAdi(form.il, form.mno, form.mtur, form.adliye),
+    [form.il, form.mno, form.mtur, form.adliye]
   );
 
   // Esas no önizleme
@@ -577,8 +577,8 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
                   <FormSelect value={form.adliye || ''} onChange={(e) => handleChange('adliye', e.target.value)} disabled={!form.il}>
                     <option value="">Seçiniz</option>
                     {ilAdliyeleri.map((a) => (
-                      <option key={a.ad} value={a.ad}>
-                        {a.ad}{a.mulhakat ? ` (${a.mulhakat} mülhakatı)` : ''}
+                      <option key={a.ad} value={a.ad} title={a.mulhakat ? `${a.mulhakat} mülhakatı` : ''}>
+                        {a.ad}{a.mulhakat ? ` (${a.mulhakat})` : ''}
                       </option>
                     ))}
                   </FormSelect>
