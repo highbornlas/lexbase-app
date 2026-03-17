@@ -309,8 +309,10 @@ export function MuvNotlar({ muv, onKaydet }: Props) {
                     </div>
                   ) : (
                     <>
-                      {/* İçerik — Kısaltılmış veya tam */}
-                      <div className="text-[13px] text-text whitespace-pre-wrap leading-relaxed">
+                      {/* İçerik — Kısaltılmış veya tam (max yükseklik + scroll) */}
+                      <div className={`text-[13px] text-text whitespace-pre-wrap leading-relaxed ${
+                        isAcik ? 'max-h-[200px] overflow-y-auto pr-1 scrollbar-thin' : ''
+                      }`}>
                         {isAcik ? n.icerik : kisaltilmis}
                         {!tamMi && !isAcik && (
                           <span className="text-text-dim">…</span>
