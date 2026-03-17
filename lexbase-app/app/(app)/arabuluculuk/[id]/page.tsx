@@ -393,17 +393,20 @@ export default function ArabuluculukDetayPage() {
           ) : (
             <div className="space-y-2">
               {[...notlar].sort((a, b) => (b.tarih || '').localeCompare(a.tarih || '')).map((n) => (
-                <div key={n.id} className="flex items-start gap-3 bg-surface border border-border rounded-lg p-3 group">
-                  <div className="flex-1">
-                    <div className="text-xs text-text">{n.icerik}</div>
-                    <div className="text-[10px] text-text-dim mt-1">
-                      {new Date(n.tarih).toLocaleString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                <div key={n.id} className="bg-gold-dim/30 border border-gold/20 rounded-lg p-3 relative group">
+                  <div className="absolute top-0 left-4 w-6 h-1.5 bg-gold/30 rounded-b-sm" />
+                  <div className="flex items-start gap-3 mt-1">
+                    <div className="flex-1">
+                      <div className="text-xs text-text whitespace-pre-wrap">{n.icerik}</div>
+                      <div className="text-[10px] text-text-dim mt-2">
+                        {new Date(n.tarih).toLocaleString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </div>
                     </div>
+                    <button onClick={() => handleNotSil(n.id)}
+                      className="text-text-dim hover:text-red transition-colors opacity-0 group-hover:opacity-100 text-xs p-1">
+                      ✕
+                    </button>
                   </div>
-                  <button onClick={() => handleNotSil(n.id)}
-                    className="text-text-dim hover:text-red transition-colors opacity-0 group-hover:opacity-100 text-xs p-1">
-                    ✕
-                  </button>
                 </div>
               ))}
             </div>

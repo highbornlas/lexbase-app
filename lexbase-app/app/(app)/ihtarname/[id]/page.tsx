@@ -699,17 +699,20 @@ function NotlarTab({ ihtarname, yeniNot, setYeniNot, onNotEkle, onNotSil }: {
       ) : (
         <div className="space-y-2">
           {[...notlar].reverse().map((n) => (
-            <div key={(n.id as string) || Math.random()} className="p-3 bg-surface2 rounded-lg group">
-              <div className="flex items-center justify-between mb-1">
-                <div className="text-[11px] text-text-dim">{n.tarih ? new Date(n.tarih as string).toLocaleString('tr-TR') : '—'}</div>
-                <button
-                  onClick={() => onNotSil(n.id as string)}
-                  className="text-[10px] text-red opacity-0 group-hover:opacity-100 transition-opacity hover:text-red/70"
-                >
-                  ✕ Sil
-                </button>
+            <div key={(n.id as string) || Math.random()} className="bg-gold-dim/30 border border-gold/20 rounded-lg p-3 relative group">
+              <div className="absolute top-0 left-4 w-6 h-1.5 bg-gold/30 rounded-b-sm" />
+              <div className="mt-1">
+                <div className="text-xs text-text whitespace-pre-wrap">{(n.icerik as string) || '—'}</div>
+                <div className="flex items-center justify-between mt-2">
+                  <div className="text-[10px] text-text-dim">{n.tarih ? new Date(n.tarih as string).toLocaleString('tr-TR') : '—'}</div>
+                  <button
+                    onClick={() => onNotSil(n.id as string)}
+                    className="text-[10px] text-red opacity-0 group-hover:opacity-100 transition-opacity hover:text-red/70"
+                  >
+                    ✕ Sil
+                  </button>
+                </div>
               </div>
-              <div className="text-xs text-text whitespace-pre-wrap">{(n.icerik as string) || '—'}</div>
             </div>
           ))}
         </div>

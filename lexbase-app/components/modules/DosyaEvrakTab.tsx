@@ -108,6 +108,7 @@ export function DosyaEvrakTab({ dosyaId, dosyaTipi, muvId }: Props) {
   const [secilenBelge, setSecilenBelge] = useState<Belge | null>(null);
   const [drawerAcik, setDrawerAcik] = useState(false);
   const [pageDragOver, setPageDragOver] = useState(false);
+  const [gorunum, setGorunum] = useState<'klasor' | 'liste'>('klasor');
 
   const evrakTurleri = dosyaTipi === 'dava' ? DAVA_EVRAK_TURLERI :
                        dosyaTipi === 'icra' ? ICRA_EVRAK_TURLERI :
@@ -375,13 +376,29 @@ export function DosyaEvrakTab({ dosyaId, dosyaTipi, muvId }: Props) {
           </div>
         </div>
 
-        <button
-          onClick={() => setModalAcik(true)}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gold text-bg font-semibold text-xs hover:bg-gold-light transition-colors shadow-[0_2px_8px_rgba(201,168,76,0.2)]"
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
-          Evrak Yükle
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Görünüm Toggle */}
+          <div className="flex border border-border rounded-lg overflow-hidden">
+            <button type="button" onClick={() => setGorunum('klasor')}
+              className={`px-2.5 py-1.5 text-xs transition-colors ${gorunum === 'klasor' ? 'bg-gold text-bg' : 'bg-surface text-text-muted hover:text-text'}`}
+              title="Klasör Görünümü">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4l2-2h3l1 1h5a1 1 0 011 1v8a1 1 0 01-1 1H3a1 1 0 01-1-1V4z"/></svg>
+            </button>
+            <button type="button" onClick={() => setGorunum('liste')}
+              className={`px-2.5 py-1.5 text-xs transition-colors ${gorunum === 'liste' ? 'bg-gold text-bg' : 'bg-surface text-text-muted hover:text-text'}`}
+              title="Liste Görünümü">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 4h10M3 8h10M3 12h10"/></svg>
+            </button>
+          </div>
+
+          <button
+            onClick={() => setModalAcik(true)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gold text-bg font-semibold text-xs hover:bg-gold-light transition-colors shadow-[0_2px_8px_rgba(201,168,76,0.2)]"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
+            Evrak Yükle
+          </button>
+        </div>
       </div>
 
       {/* ── ANA İÇERİK ── */}
@@ -421,6 +438,75 @@ export function DosyaEvrakTab({ dosyaId, dosyaTipi, muvId }: Props) {
               <button onClick={() => { setArama(''); setTarihFiltre('hepsi'); }} className="text-[10px] text-gold hover:underline mt-2">
                 Filtreleri temizle
               </button>
+            </div>
+          ) : gorunum === 'liste' ? (
+            /* Liste Görünümü */
+            <div className="border border-border/60 rounded-xl overflow-hidden bg-surface/50">
+              {/* Tablo Başlık */}
+              <div className="flex items-center gap-3 px-4 py-2 bg-surface2/30 border-b border-border/40 text-[10px] font-bold text-text-dim uppercase tracking-wider">
+                <div className="w-8" />
+                <div className="flex-1">Evrak Adı</div>
+                <div className="w-28 text-center hidden sm:block">Tür</div>
+                <div className="w-20 text-center hidden md:block">Tarih</div>
+                <div className="w-16 text-right hidden md:block">Boyut</div>
+                <div className="w-16" />
+              </div>
+              {filtreliBelgeler.map((belge, i) => {
+                const tur = evrakBilgi(belge.evrakTuru || 'diger');
+                const versiyon = getVersiyon(belge);
+                const isSelected = secilenBelge?.id === belge.id;
+                return (
+                  <div
+                    key={belge.id}
+                    onClick={() => handleBelgeSec(belge)}
+                    className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors group ${
+                      i < filtreliBelgeler.length - 1 ? 'border-b border-border/20' : ''
+                    } ${isSelected ? 'bg-gold/5 border-l-2 border-l-gold' : 'hover:bg-surface2/40 border-l-2 border-l-transparent'}`}
+                  >
+                    <div className={`w-8 h-8 rounded-lg bg-surface2/80 flex items-center justify-center flex-shrink-0 ${dosyaIkonRenk(belge.tip || '')}`}>
+                      <SvgFile className="text-current" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-text truncate">{belge.ad}</span>
+                        {versiyon && (
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-400/10 text-blue-400 border border-blue-400/20 flex-shrink-0">
+                            v{versiyon}
+                          </span>
+                        )}
+                      </div>
+                      {belge.dosyaAd && (
+                        <div className="text-[10px] text-text-dim font-mono truncate mt-0.5">
+                          {belge.dosyaAd}
+                        </div>
+                      )}
+                    </div>
+                    <div className="w-28 text-center hidden sm:block">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface2/60 text-text-dim">
+                        {tur.label}
+                      </span>
+                    </div>
+                    <div className="w-20 text-center hidden md:block text-[10px] text-text-dim">
+                      {belge.tarih ? fmtTarih(belge.tarih) : '—'}
+                    </div>
+                    <div className="w-16 text-right hidden md:block text-[10px] text-text-dim">
+                      {belge.boyut > 0 ? fmtBoyut(belge.boyut) : '—'}
+                    </div>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleIndir(belge); }}
+                        disabled={indiriliyor === belge.id}
+                        className="p-1.5 rounded hover:bg-surface2 text-text-dim hover:text-gold transition-colors"
+                        title="İndir"
+                      >
+                        {indiriliyor === belge.id ? (
+                          <div className="w-3 h-3 border border-gold border-t-transparent rounded-full animate-spin" />
+                        ) : <SvgDownload />}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             /* Akordeon Gruplar */

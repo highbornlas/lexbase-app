@@ -328,6 +328,9 @@ export function EtkinlikModal({ open, onClose, etkinlik, prefillTarih, prefillMu
                   <option key={m.id} value={m.id}>{m.ad}</option>
                 ))}
               </FormSelect>
+              {!form.muvId && (
+                <p className="text-[10px] text-text-dim mt-0.5">Müvekkile baglanmayan etkinlikler de olusturulabilir</p>
+              )}
             </FormGroup>
 
             {/* Dosya Bağlantısı (cascade) */}

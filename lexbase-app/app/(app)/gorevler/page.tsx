@@ -379,6 +379,16 @@ export default function GorevlerPage() {
       {/* Gruplandırılmış Görevler */}
       {isLoading ? (
         <SkeletonTable rows={8} cols={3} />
+      ) : Array.from(gruplar.values()).every((g) => g.length === 0) ? (
+        <div className="text-center py-16">
+          <div className="text-4xl mb-3">✅</div>
+          <div className="text-sm text-text-dim mb-1">
+            {arama || filtre !== 'aktif' || (tarihBaslangic && tarihBitis) ? 'Filtreye uygun görev bulunamadı' : 'Henüz görev eklenmemiş'}
+          </div>
+          <div className="text-xs text-text-dim/60">
+            {arama || filtre !== 'aktif' || (tarihBaslangic && tarihBitis) ? 'Farklı filtreler deneyebilirsiniz' : 'Yeni bir görev ekleyerek başlayın'}
+          </div>
+        </div>
       ) : (
         <div className="space-y-4 flex-1">
           {Array.from(gruplar.entries()).map(([grupAd, gorevler]) => {

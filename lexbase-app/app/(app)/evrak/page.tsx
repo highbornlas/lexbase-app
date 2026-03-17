@@ -142,6 +142,7 @@ export default function EvrakPage() {
   const [secilenKategori, setSecilenKategori] = useState('Tümü');
   const [arama, setArama] = useState('');
   const [secilenSablon, setSecilenSablon] = useState<string | null>(null);
+  const [gorunum, setGorunum] = useState<'klasor' | 'liste'>('klasor');
 
   // Sablon filtreleme
   const filtrelenmis = useMemo(() => {
@@ -213,7 +214,7 @@ export default function EvrakPage() {
         </div>
       </div>
 
-      {/* Arama */}
+      {/* Arama + Görünüm Toggle */}
       <div className="flex items-center gap-3 mb-5">
         <div className="flex-1 relative">
           <input
@@ -225,89 +226,145 @@ export default function EvrakPage() {
           />
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-dim text-sm">🔍</span>
         </div>
+        <div className="flex border border-border rounded-lg overflow-hidden">
+          <button type="button" onClick={() => setGorunum('klasor')}
+            className={`px-2.5 py-1.5 text-xs transition-colors ${gorunum === 'klasor' ? 'bg-gold text-bg' : 'bg-surface text-text-muted hover:text-text'}`}
+            title="Klasör Görünümü">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4l2-2h3l1 1h5a1 1 0 011 1v8a1 1 0 01-1 1H3a1 1 0 01-1-1V4z"/></svg>
+          </button>
+          <button type="button" onClick={() => setGorunum('liste')}
+            className={`px-2.5 py-1.5 text-xs transition-colors ${gorunum === 'liste' ? 'bg-gold text-bg' : 'bg-surface text-text-muted hover:text-text'}`}
+            title="Liste Görünümü">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 4h10M3 8h10M3 12h10"/></svg>
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-[200px_1fr] gap-4 flex-1">
-        {/* Sidebar: Kategoriler */}
-        <div className="bg-surface border border-border rounded-lg p-3">
-          <h3 className="text-xs font-semibold text-text mb-3 uppercase tracking-wider">Kategoriler</h3>
-          <div className="space-y-1">
-            {KATEGORILER.map((kat) => {
-              const sayi = kat === 'Tümü' ? SABLONLAR.length : (kategoriSayilari[kat] || 0);
-              return (
-                <button
-                  key={kat}
-                  onClick={() => setSecilenKategori(kat)}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-                    secilenKategori === kat
-                      ? 'bg-gold-dim text-gold'
-                      : 'text-text-muted hover:bg-surface2 hover:text-text'
-                  }`}
-                >
-                  <span>{kat}</span>
-                  <span className="text-[10px] text-text-dim">{sayi}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Şablon Grid */}
-        <div>
+      {gorunum === 'liste' ? (
+        /* Liste Görünümü */
+        <div className="flex-1">
           {filtrelenmis.length === 0 ? (
             <div className="text-center py-16 bg-surface border border-border rounded-lg">
               <div className="text-4xl mb-3">📄</div>
               <div className="text-sm text-text-muted">Bu kategoride şablon bulunamadı</div>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-3">
-              {filtrelenmis.map((s) => (
+            <div className="border border-border/60 rounded-xl overflow-hidden bg-surface/50">
+              {/* Tablo Başlık */}
+              <div className="flex items-center gap-3 px-4 py-2 bg-surface2/30 border-b border-border/40 text-[10px] font-bold text-text-dim uppercase tracking-wider">
+                <div className="w-8" />
+                <div className="flex-1">Şablon Adı</div>
+                <div className="w-28 text-center">Kategori</div>
+                <div className="w-48">Açıklama</div>
+              </div>
+              {filtrelenmis.map((s, i) => (
                 <button
                   key={s.id}
                   onClick={() => setSecilenSablon(secilenSablon === s.id ? null : s.id)}
-                  className={`bg-surface border rounded-lg p-4 text-left transition-all hover:border-gold group ${
-                    secilenSablon === s.id ? 'border-gold bg-gold-dim' : 'border-border'
-                  }`}
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors group ${
+                    i < filtrelenmis.length - 1 ? 'border-b border-border/20' : ''
+                  } ${secilenSablon === s.id ? 'bg-gold/5 border-l-2 border-l-gold' : 'hover:bg-surface2/40 border-l-2 border-l-transparent'}`}
                 >
-                  <div className="flex items-start justify-between mb-2">
-                    <span className="text-2xl">{s.icon}</span>
+                  <div className="w-8 h-8 rounded-lg bg-surface2/80 flex items-center justify-center flex-shrink-0 text-lg">
+                    {s.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs font-medium text-text group-hover:text-gold transition-colors">{s.baslik}</span>
+                  </div>
+                  <div className="w-28 text-center">
                     <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${KATEGORI_RENK[s.kategori] || 'bg-surface2 text-text-dim border-border'}`}>
                       {s.kategori}
                     </span>
                   </div>
-                  <h4 className="text-sm font-semibold text-text mb-1 group-hover:text-gold transition-colors">
-                    {s.baslik}
-                  </h4>
-                  <p className="text-[11px] text-text-muted leading-relaxed">{s.aciklama}</p>
-
-                  {secilenSablon === s.id && (
-                    <div className="mt-3 pt-3 border-t border-border">
-                      <div className="text-[11px] text-gold font-medium mb-2">Evrak oluşturmak için:</div>
-                      <div className="space-y-1.5 text-[11px] text-text-muted">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[9px]">1️⃣</span>
-                          <span>Müvekkil seçin</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[9px]">2️⃣</span>
-                          <span>İlgili dosyayı seçin</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[9px]">3️⃣</span>
-                          <span>Bilgileri doldurun</span>
-                        </div>
-                      </div>
-                      <button className="w-full mt-3 py-2 bg-gold text-bg font-semibold rounded-lg text-xs hover:bg-gold-light transition-colors">
-                        Oluşturmaya Başla
-                      </button>
-                    </div>
-                  )}
+                  <div className="w-48 text-[11px] text-text-muted truncate">{s.aciklama}</div>
                 </button>
               ))}
             </div>
           )}
         </div>
-      </div>
+      ) : (
+        <div className="grid grid-cols-[200px_1fr] gap-4 flex-1">
+          {/* Sidebar: Kategoriler */}
+          <div className="bg-surface border border-border rounded-lg p-3">
+            <h3 className="text-xs font-semibold text-text mb-3 uppercase tracking-wider">Kategoriler</h3>
+            <div className="space-y-1">
+              {KATEGORILER.map((kat) => {
+                const sayi = kat === 'Tümü' ? SABLONLAR.length : (kategoriSayilari[kat] || 0);
+                return (
+                  <button
+                    key={kat}
+                    onClick={() => setSecilenKategori(kat)}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                      secilenKategori === kat
+                        ? 'bg-gold-dim text-gold'
+                        : 'text-text-muted hover:bg-surface2 hover:text-text'
+                    }`}
+                  >
+                    <span>{kat}</span>
+                    <span className="text-[10px] text-text-dim">{sayi}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Sablon Grid */}
+          <div>
+            {filtrelenmis.length === 0 ? (
+              <div className="text-center py-16 bg-surface border border-border rounded-lg">
+                <div className="text-4xl mb-3">📄</div>
+                <div className="text-sm text-text-muted">Bu kategoride şablon bulunamadı</div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-3">
+                {filtrelenmis.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => setSecilenSablon(secilenSablon === s.id ? null : s.id)}
+                    className={`bg-surface border rounded-lg p-4 text-left transition-all hover:border-gold group ${
+                      secilenSablon === s.id ? 'border-gold bg-gold-dim' : 'border-border'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <span className="text-2xl">{s.icon}</span>
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${KATEGORI_RENK[s.kategori] || 'bg-surface2 text-text-dim border-border'}`}>
+                        {s.kategori}
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-semibold text-text mb-1 group-hover:text-gold transition-colors">
+                      {s.baslik}
+                    </h4>
+                    <p className="text-[11px] text-text-muted leading-relaxed">{s.aciklama}</p>
+
+                    {secilenSablon === s.id && (
+                      <div className="mt-3 pt-3 border-t border-border">
+                        <div className="text-[11px] text-gold font-medium mb-2">Evrak oluşturmak için:</div>
+                        <div className="space-y-1.5 text-[11px] text-text-muted">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[9px]">1️⃣</span>
+                            <span>Müvekkil seçin</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[9px]">2️⃣</span>
+                            <span>İlgili dosyayı seçin</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[9px]">3️⃣</span>
+                            <span>Bilgileri doldurun</span>
+                          </div>
+                        </div>
+                        <button className="w-full mt-3 py-2 bg-gold text-bg font-semibold rounded-lg text-xs hover:bg-gold-light transition-colors">
+                          Oluşturmaya Başla
+                        </button>
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Bilgi Notu */}
       <div className="mt-5 bg-surface border border-border rounded-lg p-4">

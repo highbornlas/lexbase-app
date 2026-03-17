@@ -15,6 +15,7 @@ interface Props {
 export interface BelgeFormData {
   ad: string;
   tur: BelgeTur;
+  kategori: string;
   tarih: string;
   etiketler: string[];
   meta?: {
@@ -27,17 +28,73 @@ export interface BelgeFormData {
   };
 }
 
+const VARSAYILAN_BELGE_KATEGORILERI = [
+  'Mahkeme Evrakı',
+  'Sözleşme',
+  'Dilekçe',
+  'Resmi Yazışma',
+  'Mali Belge',
+  'Kimlik/Vekaletname',
+  'Diğer',
+];
+
+const LS_BELGE_KAT_KEY = 'lb_belge_kategorileri';
+
+function getBelgeKategorileri(): string[] {
+  const varsayilan = [...VARSAYILAN_BELGE_KATEGORILERI];
+  try {
+    const raw = localStorage.getItem(LS_BELGE_KAT_KEY);
+    if (raw) {
+      const eklenen: string[] = JSON.parse(raw);
+      const hepsi = [...varsayilan];
+      for (const k of eklenen) {
+        if (!hepsi.includes(k)) hepsi.push(k);
+      }
+      return hepsi;
+    }
+  } catch { /* ignore */ }
+  return varsayilan;
+}
+
+function addBelgeKategori(ad: string): string[] {
+  const mevcut = getBelgeKategorileri();
+  if (!mevcut.includes(ad)) {
+    const eklenen = mevcut.filter(k => !VARSAYILAN_BELGE_KATEGORILERI.includes(k));
+    eklenen.push(ad);
+    localStorage.setItem(LS_BELGE_KAT_KEY, JSON.stringify(eklenen));
+  }
+  return getBelgeKategorileri();
+}
+
 export function BelgeModal({ open, onClose, onKaydet, yukleniyor }: Props) {
   const [dosya, setDosya] = useState<File | null>(null);
   const [ad, setAd] = useState('');
   const [tur, setTur] = useState<BelgeTur>('diger');
+  const [kategori, setKategori] = useState('');
+  const [kategoriler, setKategoriler] = useState<string[]>(VARSAYILAN_BELGE_KATEGORILERI);
+  const [yeniKatAcik, setYeniKatAcik] = useState(false);
+  const [yeniKat, setYeniKat] = useState('');
   const [tarih, setTarih] = useState(new Date().toISOString().slice(0, 10));
   const [etiketStr, setEtiketStr] = useState('');
   const [dragOver, setDragOver] = useState(false);
   const [boyutHata, setBoyutHata] = useState('');
 
-  const belgeForm = useMemo(() => ({ ad, tur, tarih, etiketStr }), [ad, tur, tarih, etiketStr]);
-  const belgeInitial = useMemo(() => ({ ad: '', tur: 'diger' as BelgeTur, tarih: new Date().toISOString().slice(0, 10), etiketStr: '' }), []);
+  // Kategorileri localStorage'dan yükle
+  useState(() => { setKategoriler(getBelgeKategorileri()); });
+
+  const handleYeniKatEkle = () => {
+    const ad2 = yeniKat.trim();
+    if (ad2) {
+      const guncel = addBelgeKategori(ad2);
+      setKategoriler(guncel);
+      setKategori(ad2);
+      setYeniKat('');
+      setYeniKatAcik(false);
+    }
+  };
+
+  const belgeForm = useMemo(() => ({ ad, tur, kategori, tarih, etiketStr }), [ad, tur, kategori, tarih, etiketStr]);
+  const belgeInitial = useMemo(() => ({ ad: '', tur: 'diger' as BelgeTur, kategori: '', tarih: new Date().toISOString().slice(0, 10), etiketStr: '' }), []);
   const draftKey = 'belge_yeni';
   const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(
     draftKey, belgeForm as Record<string, unknown>, belgeInitial as Record<string, unknown>, open
@@ -78,6 +135,7 @@ export function BelgeModal({ open, onClose, onKaydet, yukleniyor }: Props) {
     const formData: BelgeFormData = {
       ad: ad.trim(),
       tur,
+      kategori,
       tarih,
       etiketler,
     };
@@ -101,6 +159,9 @@ export function BelgeModal({ open, onClose, onKaydet, yukleniyor }: Props) {
     setDosya(null);
     setAd('');
     setTur('diger');
+    setKategori('');
+    setYeniKatAcik(false);
+    setYeniKat('');
     setTarih(new Date().toISOString().slice(0, 10));
     setEtiketStr('');
     setBoyutHata('');
@@ -129,6 +190,7 @@ export function BelgeModal({ open, onClose, onKaydet, yukleniyor }: Props) {
           const draft = d as Record<string, unknown>;
           if (draft.ad) setAd(draft.ad as string);
           if (draft.tur) setTur(draft.tur as BelgeTur);
+          if (draft.kategori) setKategori(draft.kategori as string);
           if (draft.tarih) setTarih(draft.tarih as string);
           if (draft.etiketStr) setEtiketStr(draft.etiketStr as string);
         }
@@ -205,6 +267,34 @@ export function BelgeModal({ open, onClose, onKaydet, yukleniyor }: Props) {
             <FormInput type="date" value={tarih} onChange={(e) => setTarih(e.target.value)} />
           </FormGroup>
         </div>
+
+        <FormGroup label="Kategori">
+          <FormSelect value={kategori} onChange={(e) => setKategori(e.target.value)}>
+            <option value="">Seçiniz (Opsiyonel)</option>
+            {kategoriler.map((k) => (
+              <option key={k} value={k}>{k}</option>
+            ))}
+          </FormSelect>
+          {yeniKatAcik ? (
+            <div className="flex gap-2 mt-1">
+              <input
+                type="text"
+                value={yeniKat}
+                onChange={(e) => setYeniKat(e.target.value)}
+                placeholder="Kategori adı"
+                className="flex-1 px-2 py-1 text-xs bg-surface border border-border rounded text-text placeholder:text-text-dim focus:outline-none focus:border-gold transition-colors"
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleYeniKatEkle(); } }}
+              />
+              <button type="button" onClick={handleYeniKatEkle}
+                className="px-2 py-1 text-xs bg-gold text-bg rounded font-medium">Ekle</button>
+              <button type="button" onClick={() => { setYeniKatAcik(false); setYeniKat(''); }}
+                className="px-2 py-1 text-xs text-text-dim">Vazgeç</button>
+            </div>
+          ) : (
+            <button type="button" onClick={() => setYeniKatAcik(true)}
+              className="text-[11px] text-gold hover:text-gold-light font-medium mt-1 transition-colors">+ Yeni Kategori</button>
+          )}
+        </FormGroup>
 
         <FormGroup label="Etiketler">
           <FormInput

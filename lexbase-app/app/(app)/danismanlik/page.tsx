@@ -44,6 +44,9 @@ export default function DanismanlikPage() {
   const [seciliIdler, setSeciliIdler] = useState<Set<string>>(new Set());
   const [sortKey, setSortKey] = useState<SortKey>('tarih');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [tarihChip, setTarihChip] = useState('tumzaman');
+  const [tarihBaslangic, setTarihBaslangic] = useState('');
+  const [tarihBitis, setTarihBitis] = useState('');
   const kebabRef = useRef<HTMLDivElement>(null);
 
   const muvAdMap = useMemo(() => {
@@ -102,6 +105,10 @@ export default function DanismanlikPage() {
     const filtered = danismanliklar.filter((d) => {
       if (durumFiltre !== 'hepsi' && d.durum !== durumFiltre) return false;
       if (modelFiltre !== 'hepsi' && (d.sozlesmeModeli || 'tek_seferlik') !== modelFiltre) return false;
+      if (tarihBaslangic && tarihBitis) {
+        if (!d.tarih) return false;
+        if (d.tarih < tarihBaslangic || d.tarih > tarihBitis) return false;
+      }
       if (arama) {
         const q = arama.toLocaleLowerCase('tr');
         return (
@@ -130,9 +137,9 @@ export default function DanismanlikPage() {
       return dir * va.localeCompare(vb, 'tr');
     });
     return filtered;
-  }, [danismanliklar, arama, durumFiltre, modelFiltre, muvAdMap, sortKey, sortDir]);
+  }, [danismanliklar, arama, durumFiltre, modelFiltre, muvAdMap, sortKey, sortDir, tarihBaslangic, tarihBitis]);
 
-  useEffect(() => { setSayfa(1); }, [arama, durumFiltre, modelFiltre]);
+  useEffect(() => { setSayfa(1); }, [arama, durumFiltre, modelFiltre, tarihBaslangic, tarihBitis]);
 
   const toplamSayfa = Math.max(1, Math.ceil(filtrelenmis.length / sayfaBoyutu));
   const sayfadakiler = useMemo(() => {
@@ -209,6 +216,7 @@ export default function DanismanlikPage() {
             <option key={d} value={d}>{d}</option>
           ))}
         </select>
+        <QuickDateChips value={tarihChip} onChange={(key, b, bt) => { setTarihChip(key); setTarihBaslangic(b); setTarihBitis(bt); }} />
       </div>
 
       {/* Toplu İşlem Barı */}
@@ -225,16 +233,19 @@ export default function DanismanlikPage() {
       {isLoading ? (
         <SkeletonTable rows={6} cols={9} />
       ) : filtrelenmis.length === 0 ? (
-        <div className="text-center py-16 bg-surface border border-border rounded-lg">
+        <div className="text-center py-16">
           <div className="text-4xl mb-3">📋</div>
-          <div className="text-sm text-text-muted">
+          <div className="text-sm text-text-dim mb-1">
             {arama || durumFiltre !== 'hepsi' || modelFiltre !== 'hepsi' ? 'Filtreye uygun kayıt bulunamadı' : 'Henüz danışmanlık kaydı eklenmemiş'}
+          </div>
+          <div className="text-xs text-text-dim/60">
+            {arama || durumFiltre !== 'hepsi' || modelFiltre !== 'hepsi' ? 'Farklı filtreler deneyebilirsiniz' : 'Yeni bir danışmanlık ekleyerek başlayın'}
           </div>
         </div>
       ) : (
         <div className="bg-surface border border-border rounded-lg overflow-hidden flex-1 overflow-x-auto">
           {/* Tablo Başlık — Sıralanabilir */}
-          <div className={`grid ${GRID} gap-2 px-4 py-2.5 border-b border-border text-[11px] text-text-muted font-medium uppercase tracking-wider min-w-[930px]`}>
+          <div className={`grid ${GRID} gap-2 px-4 py-2.5 border-b border-border text-[11px] text-text-muted font-medium uppercase tracking-wider min-w-[930px] sticky top-0 z-10 bg-surface`}>
             <label className="flex items-center justify-center cursor-pointer">
               <input type="checkbox" checked={seciliIdler.size === sayfadakiler.length && sayfadakiler.length > 0} onChange={tumunuSec} className="accent-[var(--gold)]" />
             </label>

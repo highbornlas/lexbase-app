@@ -189,6 +189,7 @@ export function MuvBelgeler({ muvId }: Props) {
         muvId,
         ad: formData.ad,
         tur: formData.tur,
+        kategori: formData.kategori,
         tarih: formData.tarih,
         etiketler: formData.etiketler,
         meta: formData.meta,
