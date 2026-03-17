@@ -892,16 +892,17 @@ const SvgMinimize = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 14h6v6m10-10h-6V4m0 6l7-7M3 21l7-7"/></svg>
 );
 
-// ── UDF (UYAP) Parser v5 — Range-based formatting ────
+// ── UDF (UYAP) Parser v6 — Character-based range formatting ────
 // UYAP UDF yapısı:
 //   ZIP → content.xml + sign.sgn
 //   <template>
 //     <content>  → CDATA düz metin (tüm belge)
-//     <elements> → <paragraph> (formatlama), <header>, <footer>
-//       <paragraph Alignment="1" bold="true" size="12" ...>
-//         <content startOffset="X" length="Y" bold="true" .../>  ← inline run
+//     <elements> → <paragraph>, <header>, <footer>
+//       <paragraph Alignment="1" size="12" startOffset="X" length="Y">
+//         <content startOffset="A" length="B" bold="true" .../>  ← inline run (karakter bazlı)
 //       </paragraph>
 //     <styles>   → <style> tanımları
+//   startOffset/length = KARAKTER POZİSYONU (CDATA text üzerinde)
 //   </template>
 
 function escHtml(s: string): string {
@@ -923,11 +924,11 @@ function attr(el: Element, name: string): string | null {
   return null;
 }
 
-// ── UYAP Range-Based Parser ──
+// ── UYAP Character-Based Parser ──
 
 interface UyapRun {
-  startOffset: number;
-  length: number;
+  charOffset: number;  // CDATA text'teki karakter pozisyonu
+  charLength: number;  // kaç karakter
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
@@ -937,6 +938,9 @@ interface UyapRun {
 }
 
 interface UyapParagraph {
+  // Paragrafın kapsadığı karakter aralığı (tüm run'ların birleşimi)
+  startChar: number;
+  endChar: number;
   runs: UyapRun[];
   alignment?: string;
   bold?: boolean;
@@ -961,12 +965,13 @@ function parseUyapParagraphs(doc: Document): UyapParagraph[] {
     const el = allEls[i];
     if (ln(el) !== 'paragraph') continue;
 
-    // Parent kontrol — header/footer mu?
     const parentName = el.parentElement ? ln(el.parentElement) : '';
     const isHeader = parentName === 'header';
     const isFooter = parentName === 'footer';
 
     const para: UyapParagraph = {
+      startChar: Infinity,
+      endChar: 0,
       runs: [],
       alignment: attr(el, 'Alignment') || attr(el, 'alignment') || undefined,
       bold: parseBool(attr(el, 'bold')),
@@ -983,15 +988,19 @@ function parseUyapParagraphs(doc: Document): UyapParagraph[] {
     const pOffset = attr(el, 'startOffset');
     const pLength = attr(el, 'length');
     if (pOffset !== null && pLength !== null) {
+      const off = parseInt(pOffset, 10);
+      const len = parseInt(pLength, 10);
       para.runs.push({
-        startOffset: parseInt(pOffset, 10),
-        length: parseInt(pLength, 10),
+        charOffset: off,
+        charLength: len,
         bold: para.bold,
         italic: para.italic,
         underline: para.underline,
         fontSize: para.fontSize,
         fontFamily: para.fontFamily,
       });
+      para.startChar = Math.min(para.startChar, off);
+      para.endChar = Math.max(para.endChar, off + len);
     }
 
     // Çocuk <content> elementleri → inline run'lar
@@ -1001,77 +1010,57 @@ function parseUyapParagraphs(doc: Document): UyapParagraph[] {
         const cOffset = attr(child, 'startOffset');
         const cLength = attr(child, 'length');
         if (cOffset !== null && cLength !== null) {
+          const off = parseInt(cOffset, 10);
+          const len = parseInt(cLength, 10);
           para.runs.push({
-            startOffset: parseInt(cOffset, 10),
-            length: parseInt(cLength, 10),
-            bold: parseBool(attr(child, 'bold')) || para.bold,
-            italic: parseBool(attr(child, 'italic')) || para.italic,
-            underline: parseBool(attr(child, 'underline')) || para.underline,
+            charOffset: off,
+            charLength: len,
+            bold: parseBool(attr(child, 'bold')),
+            italic: parseBool(attr(child, 'italic')),
+            underline: parseBool(attr(child, 'underline')),
             fontSize: attr(child, 'size') || attr(child, 'fontSize') || para.fontSize,
             fontFamily: attr(child, 'family') || attr(child, 'fontFamily') || para.fontFamily,
             color: attr(child, 'color') || undefined,
           });
+          para.startChar = Math.min(para.startChar, off);
+          para.endChar = Math.max(para.endChar, off + len);
         }
       }
     }
 
-    paragraphs.push(para);
+    // Run'ları karakter pozisyonuna göre sırala
+    para.runs.sort((a, b) => a.charOffset - b.charOffset);
+
+    if (para.runs.length > 0) paragraphs.push(para);
   }
 
+  // Paragrafları startChar'a göre sırala
+  paragraphs.sort((a, b) => a.startChar - b.startChar);
   return paragraphs;
 }
 
 function extractCdataText(doc: Document): string {
-  // <content> elementinin CDATA/text içeriğini al
   const allEls = doc.getElementsByTagName('*');
   for (let i = 0; i < allEls.length; i++) {
     const el = allEls[i];
     if (ln(el) === 'content' && el.parentElement && ln(el.parentElement) === 'template') {
-      // textContent CDATA dahil tüm metni verir
       return el.textContent || '';
     }
   }
   return '';
 }
 
-function runCss(run: UyapRun, paraBold?: boolean): string {
-  const css: string[] = [];
-  if (run.bold && !paraBold) css.push('font-weight:bold');
-  if (run.italic) css.push('font-style:italic');
-  if (run.underline) css.push('text-decoration:underline');
-  if (run.fontSize) {
-    const pt = parseInt(run.fontSize, 10);
-    if (!isNaN(pt) && pt > 0) css.push(`font-size:${pt}pt`);
-  }
-  if (run.fontFamily) css.push(`font-family:'${run.fontFamily}',serif`);
-  if (run.color && run.color !== '0') {
-    if (run.color.startsWith('#')) css.push(`color:${run.color}`);
-    else { const n = parseInt(run.color, 10); if (n > 0) css.push(`color:#${n.toString(16).padStart(6, '0')}`); }
-  }
-  return css.join(';');
-}
-
 function buildUyapHtml(text: string, paragraphs: UyapParagraph[]): string {
-  // Paragrafları satır bazında metin ile eşleştir
-  // UYAP startOffset satır numarasına karşılık geliyor
-  const lines = text.split('\n');
-
   let html = '';
-  const usedLines = new Set<number>();
+  const coveredChars = new Set<number>();
 
   for (const para of paragraphs) {
-    if (para.runs.length === 0) continue;
-
-    // Paragraf alignment CSS
-    const paraCss: string[] = ['margin:0.3em 0'];
+    // Paragraf CSS
+    const paraCss: string[] = ['margin:0.4em 0'];
     if (para.alignment) {
       const alignMap: Record<string, string> = { '0': 'left', '1': 'center', '2': 'right', '3': 'justify' };
-      const align = alignMap[para.alignment] || para.alignment;
-      paraCss.push(`text-align:${align}`);
+      paraCss.push(`text-align:${alignMap[para.alignment] || para.alignment}`);
     }
-    if (para.bold) paraCss.push('font-weight:bold');
-    if (para.italic) paraCss.push('font-style:italic');
-    if (para.underline) paraCss.push('text-decoration:underline');
     if (para.fontSize) {
       const pt = parseInt(para.fontSize, 10);
       if (!isNaN(pt) && pt > 0) paraCss.push(`font-size:${pt}pt`);
@@ -1081,45 +1070,93 @@ function buildUyapHtml(text: string, paragraphs: UyapParagraph[]): string {
       const fi = parseFloat(para.firstLineIndent);
       if (!isNaN(fi) && fi > 0) paraCss.push(`text-indent:${fi}cm`);
     }
+    // Paragraf seviyesi bold/italic sadece paragrafın kendisinde tanımlıysa
+    // (run'lar kendi bold'larını taşır)
+    if (para.bold && para.runs.length <= 1) paraCss.push('font-weight:bold');
+    if (para.italic && para.runs.length <= 1) paraCss.push('font-style:italic');
+    if (para.underline && para.runs.length <= 1) paraCss.push('text-decoration:underline');
 
-    // Her run'ın metnini al
+    // Her run'ın metnini CDATA'dan karakter pozisyonuyla çek
     let paraContent = '';
+    let prevEnd = para.startChar;
+
     for (const run of para.runs) {
-      // startOffset satır numarası olabilir
-      const startLine = run.startOffset;
-      const lineCount = run.length;
-
-      // Satırları topla
-      const runLines: string[] = [];
-      for (let li = startLine; li < startLine + lineCount && li < lines.length; li++) {
-        runLines.push(lines[li]);
-        usedLines.add(li);
+      // Run'lar arası boşluk varsa (kaplanmamış karakterler)
+      if (run.charOffset > prevEnd) {
+        const gapText = text.substring(prevEnd, run.charOffset);
+        if (gapText) {
+          paraContent += escHtml(gapText).replace(/\n/g, '<br/>').replace(/\t/g, '&emsp;&emsp;');
+        }
       }
-      const runText = runLines.join('\n');
-      if (!runText && runLines.length === 0) continue;
 
-      const css = runCss(run, para.bold);
-      const htmlText = escHtml(runText).replace(/\n/g, '<br/>');
-      if (css) {
-        paraContent += `<span style="${css}">${htmlText}</span>`;
+      const runText = text.substring(run.charOffset, run.charOffset + run.charLength);
+      if (!runText) { prevEnd = run.charOffset + run.charLength; continue; }
+
+      // Karakter aralığını işaretle
+      for (let ci = run.charOffset; ci < run.charOffset + run.charLength; ci++) coveredChars.add(ci);
+
+      const htmlText = escHtml(runText).replace(/\n/g, '<br/>').replace(/\t/g, '&emsp;&emsp;');
+
+      // Run CSS
+      const css: string[] = [];
+      if (run.bold) css.push('font-weight:bold');
+      if (run.italic) css.push('font-style:italic');
+      if (run.underline) css.push('text-decoration:underline');
+      if (run.fontSize) {
+        const pt = parseInt(run.fontSize, 10);
+        if (!isNaN(pt) && pt > 0 && run.fontSize !== para.fontSize) css.push(`font-size:${pt}pt`);
+      }
+      if (run.fontFamily && run.fontFamily !== para.fontFamily) css.push(`font-family:'${run.fontFamily}',serif`);
+      if (run.color && run.color !== '0') {
+        if (run.color.startsWith('#')) css.push(`color:${run.color}`);
+        else { const n = parseInt(run.color, 10); if (n > 0) css.push(`color:#${n.toString(16).padStart(6, '0')}`); }
+      }
+
+      if (css.length > 0) {
+        paraContent += `<span style="${css.join(';')}">${htmlText}</span>`;
       } else {
         paraContent += htmlText;
       }
+
+      prevEnd = run.charOffset + run.charLength;
     }
+
+    // Paragraf sonundaki kaplanmamış metin
+    if (prevEnd < para.endChar) {
+      const tailText = text.substring(prevEnd, para.endChar);
+      if (tailText) paraContent += escHtml(tailText).replace(/\n/g, '<br/>').replace(/\t/g, '&emsp;&emsp;');
+    }
+
+    // Boş paragraf kontrolü — sadece whitespace/newline ise &nbsp;
+    const cleanContent = paraContent.replace(/<br\/?>/g, '').replace(/&nbsp;/g, '').replace(/&emsp;/g, '').trim();
 
     if (para.isHeader) {
       html += `<div style="border-bottom:1px solid #3a3832;padding-bottom:0.5em;margin-bottom:0.8em"><p style="${paraCss.join(';')}">${paraContent || '&nbsp;'}</p></div>`;
     } else if (para.isFooter) {
       html += `<div style="border-top:1px solid #3a3832;padding-top:0.5em;margin-top:0.8em"><p style="${paraCss.join(';')}">${paraContent || '&nbsp;'}</p></div>`;
+    } else if (cleanContent || paraContent.includes('<br')) {
+      html += `<p style="${paraCss.join(';')}">${paraContent}</p>`;
     } else {
-      html += `<p style="${paraCss.join(';')}">${paraContent || '&nbsp;'}</p>`;
+      html += `<p style="${paraCss.join(';')}">&nbsp;</p>`;
     }
   }
 
-  // Kullanılmamış satırlar varsa (paragraf tanımı olmayan) ekle
-  for (let i = 0; i < lines.length; i++) {
-    if (!usedLines.has(i) && lines[i].trim()) {
-      html += `<p style="margin:0.3em 0">${escHtml(lines[i])}</p>`;
+  // Kaplanmamış karakter aralıkları (paragraf tanımı olmayan metin)
+  let uncoveredStart = -1;
+  for (let i = 0; i <= text.length; i++) {
+    if (i < text.length && !coveredChars.has(i)) {
+      if (uncoveredStart === -1) uncoveredStart = i;
+    } else {
+      if (uncoveredStart !== -1) {
+        const chunk = text.substring(uncoveredStart, i).trim();
+        if (chunk) {
+          const lines = chunk.split('\n');
+          for (const line of lines) {
+            if (line.trim()) html += `<p style="margin:0.3em 0">${escHtml(line)}</p>`;
+          }
+        }
+        uncoveredStart = -1;
+      }
     }
   }
 
