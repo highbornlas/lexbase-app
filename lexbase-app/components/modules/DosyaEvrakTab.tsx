@@ -1090,6 +1090,8 @@ async function parseUdfFile(signedUrl: string): Promise<string> {
   const buf = await res.arrayBuffer();
   const files = unzipSync(new Uint8Array(buf));
 
+  console.log('[UDF Parser v3] ZIP dosyaları:', Object.keys(files));
+
   const decoder = new TextDecoder('utf-8');
   const parser = new DOMParser();
 
@@ -1101,11 +1103,15 @@ async function parseUdfFile(signedUrl: string): Promise<string> {
     const stylesDoc = parser.parseFromString(decoder.decode(files['styles.xml']), 'text/xml');
     const baseStyles = extractStyles(stylesDoc);
     baseStyles.forEach((v, k) => allStyles.set(k, v));
+    console.log('[UDF Parser v3] styles.xml stilleri:', baseStyles.size);
+  } else {
+    console.log('[UDF Parser v3] styles.xml BULUNAMADI');
   }
 
   // 2) content.xml
   const contentEntry = files['content.xml'];
   if (!contentEntry) {
+    console.log('[UDF Parser v3] content.xml BULUNAMADI, alternatif arıyorum...');
     const xmlKey = Object.keys(files).find(k => k.endsWith('.xml') || k.endsWith('.html') || k.endsWith('.htm'));
     if (xmlKey) return decoder.decode(files[xmlKey]);
     throw new Error('UDF içinde okunabilir içerik bulunamadı');
@@ -1114,9 +1120,23 @@ async function parseUdfFile(signedUrl: string): Promise<string> {
   const xmlStr = decoder.decode(contentEntry);
   const doc = parser.parseFromString(xmlStr, 'text/xml');
 
+  // Parse hatası var mı kontrol et
+  const parseErr = doc.querySelector('parsererror');
+  if (parseErr) {
+    console.error('[UDF Parser v3] XML parse hatası:', parseErr.textContent);
+  }
+
   // content.xml'deki automatic-styles — base'i override eder
   const autoStyles = extractStyles(doc);
   autoStyles.forEach((v, k) => allStyles.set(k, v));
+  console.log('[UDF Parser v3] content.xml stilleri:', autoStyles.size, '| Toplam stil:', allStyles.size);
+
+  // Stiller log
+  allStyles.forEach((v, k) => {
+    if (v.textCss || v.paraCss) {
+      console.log(`[UDF Style] ${k}: text="${v.textCss}" para="${v.paraCss}" parent=${v.parent || 'yok'}`);
+    }
+  });
 
   // office:body altındaki içerik alanını bul
   const allEls = doc.getElementsByTagName('*');
@@ -1130,8 +1150,11 @@ async function parseUdfFile(signedUrl: string): Promise<string> {
   }
 
   if (!bodyEl) {
+    console.warn('[UDF Parser v3] office:body/text bulunamadı, düz metin döndürülüyor');
     return `<pre style="white-space:pre-wrap;word-break:break-word;font-family:inherit">${escHtml(doc.documentElement?.textContent || xmlStr)}</pre>`;
   }
+
+  console.log('[UDF Parser v3] Body bulundu, çocuk sayısı:', bodyEl.childNodes.length);
 
   let html = '';
   for (let i = 0; i < bodyEl.childNodes.length; i++) {
@@ -1139,8 +1162,11 @@ async function parseUdfFile(signedUrl: string): Promise<string> {
   }
 
   if (!html.trim()) {
+    console.warn('[UDF Parser v3] odfToHtml boş sonuç, düz metin döndürülüyor');
     return `<pre style="white-space:pre-wrap;word-break:break-word;font-family:inherit">${escHtml(bodyEl.textContent || '')}</pre>`;
   }
+
+  console.log('[UDF Parser v3] HTML üretildi, uzunluk:', html.length, 'ilk 500 karakter:', html.substring(0, 500));
 
   return `<div style="font-family:'DM Sans',system-ui,sans-serif;line-height:1.8;color:#e0ddd4;padding:2.5rem;max-width:900px;margin:0 auto;font-size:14px">${html}</div>`;
 }
