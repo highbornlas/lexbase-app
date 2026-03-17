@@ -23,6 +23,10 @@ import { MuvPlanlama } from '@/components/modules/muvekkil/MuvPlanlama';
 import { MuvDanismanlik } from '@/components/modules/muvekkil/MuvDanismanlik';
 import { MuvBelgeler } from '@/components/modules/muvekkil/MuvBelgeler';
 import { useMuvekkilKaydet, useMuvekkilSil } from '@/lib/hooks/useMuvekkillar';
+import { useDavaKaydet } from '@/lib/hooks/useDavalar';
+import { useIcraKaydet } from '@/lib/hooks/useIcra';
+import { useArabuluculukKaydet } from '@/lib/hooks/useArabuluculuk';
+import { useIhtarnameKaydet } from '@/lib/hooks/useIhtarname';
 import { useSonErisim } from '@/lib/hooks/useSonErisim';
 
 /* ══════════════════════════════════════════════════════════════
@@ -62,6 +66,10 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
   /* ── Mutation ── */
   const kaydetMutation = useMuvekkilKaydet();
   const silMut = useMuvekkilSil();
+  const davaKaydet = useDavaKaydet();
+  const icraKaydet = useIcraKaydet();
+  const arabKaydet = useArabuluculukKaydet();
+  const ihtKaydet = useIhtarnameKaydet();
 
   /* ── UI State ── */
   const [aktifTab, setAktifTab] = useState<TabKey>('dosyalar');
@@ -242,7 +250,21 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
             arabuluculuklar={arabArr}
             ihtarnameler={ihtArr}
             finansOzet={finansOzet}
-            onMasrafEkle={() => { alert('Masraf eklemek için ilgili dosyanın (Dava/İcra) detay sayfasındaki Harcamalar sekmesini kullanabilirsiniz.'); }}
+            onMasrafKaydet={(dosyaId, dosyaTur, harcama) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const turMap: Record<string, { arr: Record<string, unknown>[]; kaydet: { mutate: (v: any) => void } }> = {
+                'Dava': { arr: davaArr, kaydet: davaKaydet },
+                'İcra': { arr: icraArr, kaydet: icraKaydet },
+                'Arabuluculuk': { arr: arabArr, kaydet: arabKaydet },
+                'İhtarname': { arr: ihtArr, kaydet: ihtKaydet },
+              };
+              const hedef = turMap[dosyaTur];
+              if (!hedef) return;
+              const dosya = hedef.arr.find((d) => d.id === dosyaId);
+              if (!dosya) return;
+              const mevcutHarcamalar = (dosya.harcamalar || []) as Array<Record<string, unknown>>;
+              hedef.kaydet.mutate({ ...dosya, harcamalar: [...mevcutHarcamalar, harcama] } as never);
+            }}
           />
         )}
         {aktifTab === 'alacak' && (
@@ -252,6 +274,21 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
             arabuluculuklar={arabArr}
             ihtarnameler={ihtArr}
             finansOzet={finansOzet}
+            onTahsilatKaydet={(dosyaId, dosyaTur, tahsilat) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const turMap: Record<string, { arr: Record<string, unknown>[]; kaydet: { mutate: (v: any) => void } }> = {
+                'Dava': { arr: davaArr, kaydet: davaKaydet },
+                'İcra': { arr: icraArr, kaydet: icraKaydet },
+                'Arabuluculuk': { arr: arabArr, kaydet: arabKaydet },
+                'İhtarname': { arr: ihtArr, kaydet: ihtKaydet },
+              };
+              const hedef = turMap[dosyaTur];
+              if (!hedef) return;
+              const dosya = hedef.arr.find((d) => d.id === dosyaId);
+              if (!dosya) return;
+              const mevcutTahsilatlar = (dosya.tahsilatlar || []) as Array<Record<string, unknown>>;
+              hedef.kaydet.mutate({ ...dosya, tahsilatlar: [...mevcutTahsilatlar, tahsilat] } as never);
+            }}
           />
         )}
         {aktifTab === 'iletisim' && <MuvIletisimGecmisi muvId={id} />}

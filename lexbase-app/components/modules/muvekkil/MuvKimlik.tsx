@@ -7,6 +7,16 @@ export function MuvKimlik({ muv }: { muv: Muvekkil }) {
 
   /* ── Adres metnini oluştur ── */
   const adresText = (() => {
+    // Önce yeni çoklu adres formatını kontrol et
+    if (muv.adresler && muv.adresler.length > 0) {
+      return muv.adresler.map((a) => {
+        const baslik = a.baslik ? `${a.baslik}: ` : '';
+        const acik = a.acik;
+        const parcalar = [a.mahalle, a.sokak, a.sayi, a.ilce, a.il].filter(Boolean).join(', ');
+        return baslik + (acik || parcalar || '');
+      }).filter(Boolean).join(' | ') || null;
+    }
+    // Eski tek adres formatı
     if (!muv.adres) return null;
     const acik = muv.adres.acik;
     const parcalar = [muv.adres.mahalle, muv.adres.sokak, muv.adres.sayi, muv.adres.ilce, muv.adres.il]

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { fmt } from '@/lib/utils';
 
@@ -17,15 +17,50 @@ interface AlacakSatir {
   taksitOdenen?: number;
 }
 
+interface DosyaSecenegi {
+  id: string;
+  no: string;
+  tur: string;
+  label: string;
+}
+
 interface Props {
   davalar: Record<string, unknown>[];
   icralar: Record<string, unknown>[];
   arabuluculuklar: Record<string, unknown>[];
   ihtarnameler: Record<string, unknown>[];
   finansOzet: Record<string, unknown> | null | undefined;
+  onTahsilatKaydet: (dosyaId: string, dosyaTur: string, tahsilat: { id: string; tarih: string; tutar: number; aciklama: string }) => void;
 }
 
-export function MuvAlacak({ davalar, icralar, arabuluculuklar, ihtarnameler, finansOzet }: Props) {
+const TAHSILAT_TURLERI = ['Nakit', 'Havale/EFT', 'Kredi Kartı', 'Çek', 'Senet', 'Diğer'] as const;
+
+export function MuvAlacak({ davalar, icralar, arabuluculuklar, ihtarnameler, finansOzet, onTahsilatKaydet }: Props) {
+  const [formAcik, setFormAcik] = useState(false);
+  const [yeni, setYeni] = useState({ dosyaKey: '', tarih: new Date().toISOString().slice(0, 10), tutar: '', aciklama: '', tur: 'Havale/EFT' });
+
+  /* ── Müvekkile ait tüm dosyalar ── */
+  const dosyaSecenekleri = useMemo(() => {
+    const result: DosyaSecenegi[] = [];
+    davalar.forEach((d) => {
+      const no = (d.no as string) || (d.esasNo as string) || '';
+      result.push({ id: d.id as string, no, tur: 'Dava', label: `📂 Dava — ${no || (d.id as string).slice(0, 8)}` });
+    });
+    icralar.forEach((d) => {
+      const no = (d.no as string) || (d.dosyaNo as string) || '';
+      result.push({ id: d.id as string, no, tur: 'İcra', label: `⚖️ İcra — ${no || (d.id as string).slice(0, 8)}` });
+    });
+    arabuluculuklar.forEach((d) => {
+      const no = (d.no as string) || (d.dosyaNo as string) || '';
+      result.push({ id: d.id as string, no, tur: 'Arabuluculuk', label: `🤝 Arabuluculuk — ${no || (d.id as string).slice(0, 8)}` });
+    });
+    ihtarnameler.forEach((d) => {
+      const no = (d.no as string) || (d.konu as string) || '';
+      result.push({ id: d.id as string, no, tur: 'İhtarname', label: `📨 İhtarname — ${no || (d.id as string).slice(0, 8)}` });
+    });
+    return result;
+  }, [davalar, icralar, arabuluculuklar, ihtarnameler]);
+
   /* ── Dosya bazlı alacak bilgilerini topla ── */
   const alacaklar = useMemo(() => {
     const result: AlacakSatir[] = [];
@@ -36,7 +71,6 @@ export function MuvAlacak({ davalar, icralar, arabuluculuklar, ihtarnameler, fin
         const tahsilatlar = (d.tahsilatlar || []) as Array<Record<string, string>>;
         const ucret = d.ucret as number | string | undefined;
 
-        // Anlaşılan toplam
         let anlasmaToplam = 0;
         if (anlasma) {
           anlasmaToplam = parseFloat(String(anlasma.toplam || anlasma.ucret || 0)) || 0;
@@ -44,11 +78,9 @@ export function MuvAlacak({ davalar, icralar, arabuluculuklar, ihtarnameler, fin
           anlasmaToplam = parseFloat(String(ucret)) || 0;
         }
 
-        // Tahsil edilen
         const tahsilEdilen = tahsilatlar.reduce((s, t) => s + (parseFloat(t.tutar) || 0), 0)
           + (parseFloat(String(d.tahsilEdildi || 0)) || 0);
 
-        // Sadece alacağı olan dosyaları göster
         if (anlasmaToplam > 0 || tahsilEdilen > 0) {
           result.push({
             dosyaId: d.id as string,
@@ -86,6 +118,22 @@ export function MuvAlacak({ davalar, icralar, arabuluculuklar, ihtarnameler, fin
     'İhtarname': 'text-purple-400 bg-purple-400/10',
   };
 
+  /* ── Kaydet ── */
+  function handleKaydet() {
+    const secilenDosya = dosyaSecenekleri.find((d) => `${d.tur}::${d.id}` === yeni.dosyaKey);
+    if (!secilenDosya || !yeni.tutar) return;
+
+    onTahsilatKaydet(secilenDosya.id, secilenDosya.tur, {
+      id: crypto.randomUUID(),
+      tarih: yeni.tarih,
+      tutar: Number(yeni.tutar),
+      aciklama: `${yeni.tur}${yeni.aciklama ? ' — ' + yeni.aciklama : ''}`,
+    });
+
+    setYeni({ dosyaKey: '', tarih: new Date().toISOString().slice(0, 10), tutar: '', aciklama: '', tur: 'Havale/EFT' });
+    setFormAcik(false);
+  }
+
   return (
     <div className="space-y-5">
       {/* Özet Kartları */}
@@ -104,6 +152,123 @@ export function MuvAlacak({ davalar, icralar, arabuluculuklar, ihtarnameler, fin
             {fmt(toplamKalan)}
           </div>
         </div>
+      </div>
+
+      {/* Tahsilat Ekleme Formu */}
+      {formAcik && (
+        <div className="bg-surface2/50 border border-gold/20 rounded-lg p-5 space-y-4">
+          <h4 className="text-sm font-semibold text-gold">Yeni Tahsilat Ekle</h4>
+
+          {dosyaSecenekleri.length === 0 ? (
+            <div className="text-xs text-text-muted py-3">
+              Bu müvekkile ait henüz dosya bulunmuyor. Önce bir dosya (dava, icra vb.) oluşturun.
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Dosya Seçimi */}
+                <div>
+                  <label className="text-[11px] text-text-muted block mb-1">Dosya *</label>
+                  <select
+                    value={yeni.dosyaKey}
+                    onChange={(e) => setYeni({ ...yeni, dosyaKey: e.target.value })}
+                    className="w-full text-xs px-3 py-2 bg-surface border border-border rounded-lg text-text focus:border-gold focus:outline-none"
+                  >
+                    <option value="">Dosya seçin...</option>
+                    {dosyaSecenekleri.map((d) => (
+                      <option key={`${d.tur}::${d.id}`} value={`${d.tur}::${d.id}`}>
+                        {d.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Ödeme Türü */}
+                <div>
+                  <label className="text-[11px] text-text-muted block mb-1">Ödeme Türü</label>
+                  <select
+                    value={yeni.tur}
+                    onChange={(e) => setYeni({ ...yeni, tur: e.target.value })}
+                    className="w-full text-xs px-3 py-2 bg-surface border border-border rounded-lg text-text focus:border-gold focus:outline-none"
+                  >
+                    {TAHSILAT_TURLERI.map((k) => (
+                      <option key={k} value={k}>{k}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Tarih */}
+                <div>
+                  <label className="text-[11px] text-text-muted block mb-1">Tarih</label>
+                  <input
+                    type="date"
+                    value={yeni.tarih}
+                    onChange={(e) => setYeni({ ...yeni, tarih: e.target.value })}
+                    className="w-full text-xs px-3 py-2 bg-surface border border-border rounded-lg text-text focus:border-gold focus:outline-none"
+                  />
+                </div>
+
+                {/* Tutar */}
+                <div>
+                  <label className="text-[11px] text-text-muted block mb-1">Tutar (₺) *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={yeni.tutar}
+                    onChange={(e) => setYeni({ ...yeni, tutar: e.target.value })}
+                    placeholder="0.00"
+                    className="w-full text-xs px-3 py-2 bg-surface border border-border rounded-lg text-text focus:border-gold focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Açıklama */}
+              <div>
+                <label className="text-[11px] text-text-muted block mb-1">Açıklama</label>
+                <input
+                  type="text"
+                  value={yeni.aciklama}
+                  onChange={(e) => setYeni({ ...yeni, aciklama: e.target.value })}
+                  placeholder="Tahsilat açıklaması..."
+                  className="w-full text-xs px-3 py-2 bg-surface border border-border rounded-lg text-text focus:border-gold focus:outline-none"
+                />
+              </div>
+
+              {/* Butonlar */}
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  onClick={handleKaydet}
+                  disabled={!yeni.dosyaKey || !yeni.tutar}
+                  className="px-4 py-2 text-xs font-semibold bg-gold text-bg rounded-lg hover:bg-gold-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Kaydet
+                </button>
+                <button
+                  onClick={() => { setFormAcik(false); setYeni({ dosyaKey: '', tarih: new Date().toISOString().slice(0, 10), tutar: '', aciklama: '', tur: 'Havale/EFT' }); }}
+                  className="px-4 py-2 text-xs font-medium text-text-muted hover:text-text transition-colors"
+                >
+                  İptal
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Başlık + Buton */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h3 className="text-sm font-semibold text-text">Alacak Detayları ({alacaklar.length})</h3>
+        <button
+          onClick={() => setFormAcik(!formAcik)}
+          className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+            formAcik
+              ? 'bg-gold/10 text-gold border border-gold/30'
+              : 'text-gold border border-gold/30 hover:bg-gold-dim'
+          }`}
+        >
+          {formAcik ? '✕ Formu Kapat' : '+ Tahsilat Ekle'}
+        </button>
       </div>
 
       {/* Alacak Tablosu */}
