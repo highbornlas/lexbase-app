@@ -892,79 +892,325 @@ const SvgMinimize = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 14h6v6m10-10h-6V4m0 6l7-7M3 21l7-7"/></svg>
 );
 
-// ── UDF (UYAP) ODF Parser v3 — Tam biçimlendirme desteği ────
+// ── UDF (UYAP) Parser v4 — UYAP özel XML formatı desteği ────
+// UYAP UDF yapısı (ODF DEĞİL):
+//   ZIP → content.xml + sign.sgn
+//   <template>
+//     <content> → <paragraph> → <run> → <text>
+//     <properties> → sayfa/doküman özellikleri
+//     <elements> → özel elementler
+//     <styles> → <style> tanımları
+//   </template>
+// Ayrıca standart ODF de desteklenir (fallback)
 
 function escHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-// Element local name (namespace-aware)
 function ln(el: Element): string {
   return el.localName || el.nodeName.split(':').pop() || '';
 }
 
-// Namespace-safe attribute getter — getAttribute('fo:font-weight') XML parse'da
-// güvenilir çalışmaz, attributes listesinden localName ile aramamız lazım
-function attr(el: Element, localName: string): string | null {
-  // Önce direkt dene (bazen çalışır)
+function attr(el: Element, name: string): string | null {
+  // Direkt getAttribute
+  const direct = el.getAttribute(name);
+  if (direct !== null) return direct;
+  // Namespace-aware fallback
   for (let i = 0; i < el.attributes.length; i++) {
     const a = el.attributes[i];
     const aLocal = a.localName || a.name.split(':').pop() || '';
-    if (aLocal === localName) return a.value;
+    if (aLocal === name) return a.value;
   }
   return null;
 }
 
-// Style bilgisi
-interface OdfStyle {
-  textCss: string;
-  paraCss: string;
-  parent?: string; // parent-style-name
+// ── UYAP Format Stilleri ──
+
+interface UyapStyle {
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  strikethrough?: boolean;
+  fontSize?: string;
+  fontFamily?: string;
+  color?: string;
+  bgColor?: string;
+  align?: string;
+  marginLeft?: string;
+  marginTop?: string;
+  marginBottom?: string;
+  textIndent?: string;
+  lineHeight?: string;
 }
 
-// style:text-properties → inline CSS
-function textPropsCss(el: Element): string {
-  const css: string[] = [];
-  if (attr(el, 'font-weight') === 'bold') css.push('font-weight:bold');
-  if (attr(el, 'font-style') === 'italic') css.push('font-style:italic');
-  const ul = attr(el, 'text-underline-style');
-  if (ul && ul !== 'none') css.push('text-decoration:underline');
-  const lt = attr(el, 'text-line-through-style');
-  if (lt && lt !== 'none') css.push('text-decoration:line-through');
-  const fs = attr(el, 'font-size');
-  if (fs) css.push(`font-size:${fs}`);
-  const color = attr(el, 'color');
-  if (color) css.push(`color:${color}`);
-  const bg = attr(el, 'background-color');
-  if (bg && bg !== 'transparent') css.push(`background-color:${bg}`);
-  const fontName = attr(el, 'font-name');
-  if (fontName) css.push(`font-family:'${fontName}',serif`);
-  return css.join(';');
-}
-
-// style:paragraph-properties → inline CSS
-function paraPropsCss(el: Element): string {
-  const css: string[] = [];
-  const align = attr(el, 'text-align');
-  if (align) {
-    const map: Record<string, string> = { start: 'left', end: 'right', center: 'center', justify: 'justify' };
-    css.push(`text-align:${map[align] || align}`);
+function parseUyapStyles(doc: Document): Map<string, UyapStyle> {
+  const map = new Map<string, UyapStyle>();
+  const allEls = doc.getElementsByTagName('*');
+  for (let i = 0; i < allEls.length; i++) {
+    const el = allEls[i];
+    if (ln(el) !== 'style') continue;
+    const id = attr(el, 'id') || attr(el, 'name') || attr(el, 'styleId');
+    if (!id) continue;
+    map.set(id, extractUyapStyleProps(el));
   }
-  const mt = attr(el, 'margin-top');
-  if (mt) css.push(`margin-top:${mt}`);
-  const mb = attr(el, 'margin-bottom');
-  if (mb) css.push(`margin-bottom:${mb}`);
-  const ml = attr(el, 'margin-left');
-  if (ml) css.push(`padding-left:${ml}`);
-  const ti = attr(el, 'text-indent');
-  if (ti) css.push(`text-indent:${ti}`);
-  const lh = attr(el, 'line-height');
-  if (lh) css.push(`line-height:${lh}`);
+  return map;
+}
+
+function extractUyapStyleProps(el: Element): UyapStyle {
+  const s: UyapStyle = {};
+  // Tüm attributeleri tara
+  for (let i = 0; i < el.attributes.length; i++) {
+    const a = el.attributes[i];
+    const name = a.localName || a.name;
+    const val = a.value;
+    if (name === 'bold' && (val === 'true' || val === '1' || val === 'True')) s.bold = true;
+    if (name === 'italic' && (val === 'true' || val === '1' || val === 'True')) s.italic = true;
+    if (name === 'underline' && (val === 'true' || val === '1' || val === 'True')) s.underline = true;
+    if ((name === 'strikethrough' || name === 'strike') && (val === 'true' || val === '1')) s.strikethrough = true;
+    if (name === 'fontSize' || name === 'font-size' || name === 'size') s.fontSize = val;
+    if (name === 'fontFamily' || name === 'font-family' || name === 'fontName' || name === 'font') s.fontFamily = val;
+    if (name === 'color' || name === 'foreColor' || name === 'foreground') s.color = val;
+    if (name === 'bgColor' || name === 'backColor' || name === 'background' || name === 'backgroundColor') s.bgColor = val;
+    if (name === 'align' || name === 'alignment' || name === 'textAlign' || name === 'justification') s.align = val;
+    if (name === 'leftIndent' || name === 'marginLeft' || name === 'indent') s.marginLeft = val;
+    if (name === 'spaceBefore' || name === 'marginTop') s.marginTop = val;
+    if (name === 'spaceAfter' || name === 'marginBottom') s.marginBottom = val;
+    if (name === 'firstLineIndent' || name === 'textIndent') s.textIndent = val;
+    if (name === 'lineSpacing' || name === 'lineHeight') s.lineHeight = val;
+  }
+  // Çocuk elementlerden de al
+  for (let c = 0; c < el.children.length; c++) {
+    const child = el.children[c];
+    const childProps = extractUyapStyleProps(child);
+    Object.assign(s, childProps);
+  }
+  return s;
+}
+
+function uyapStyleToCss(s: UyapStyle, type: 'inline' | 'block' = 'inline'): string {
+  const css: string[] = [];
+  if (s.bold) css.push('font-weight:bold');
+  if (s.italic) css.push('font-style:italic');
+  if (s.underline) css.push('text-decoration:underline');
+  if (s.strikethrough) css.push('text-decoration:line-through');
+  if (s.fontSize) {
+    // Font size twips/points/px dönüşüm
+    const fs = s.fontSize;
+    if (fs.match(/^\d+$/)) {
+      const pt = parseInt(fs, 10);
+      // Twips ise (büyük sayılar) → pt'ye çevir
+      if (pt > 100) css.push(`font-size:${Math.round(pt / 20)}pt`);
+      else css.push(`font-size:${pt}pt`);
+    } else {
+      css.push(`font-size:${fs}`);
+    }
+  }
+  if (s.fontFamily) css.push(`font-family:'${s.fontFamily}',serif`);
+  if (s.color && s.color !== '0' && s.color !== '#000000') {
+    // UYAP renkleri int olabilir
+    const c = s.color;
+    if (c.startsWith('#')) css.push(`color:${c}`);
+    else if (c.match(/^\d+$/)) {
+      const num = parseInt(c, 10);
+      if (num > 0) css.push(`color:#${num.toString(16).padStart(6, '0')}`);
+    }
+  }
+  if (s.bgColor && s.bgColor !== 'transparent' && s.bgColor !== '0' && s.bgColor !== '#FFFFFF' && s.bgColor !== '#ffffff') {
+    css.push(`background-color:${s.bgColor.startsWith('#') ? s.bgColor : '#' + parseInt(s.bgColor, 10).toString(16).padStart(6, '0')}`);
+  }
+  if (type === 'block') {
+    if (s.align) {
+      const alignMap: Record<string, string> = {
+        left: 'left', Left: 'left', '0': 'left',
+        center: 'center', Center: 'center', '1': 'center',
+        right: 'right', Right: 'right', '2': 'right',
+        justify: 'justify', Justify: 'justify', both: 'justify', '3': 'justify',
+      };
+      css.push(`text-align:${alignMap[s.align] || s.align}`);
+    }
+    if (s.marginLeft) {
+      const ml = s.marginLeft;
+      if (ml.match(/^\d+$/)) css.push(`padding-left:${Math.round(parseInt(ml, 10) / 20)}pt`);
+      else css.push(`padding-left:${ml}`);
+    }
+    if (s.textIndent) {
+      const ti = s.textIndent;
+      if (ti.match(/^\d+$/)) css.push(`text-indent:${Math.round(parseInt(ti, 10) / 20)}pt`);
+      else css.push(`text-indent:${ti}`);
+    }
+    if (s.marginTop) {
+      const mt = s.marginTop;
+      if (mt.match(/^\d+$/)) css.push(`margin-top:${Math.round(parseInt(mt, 10) / 20)}pt`);
+      else css.push(`margin-top:${mt}`);
+    }
+    if (s.marginBottom) {
+      const mb = s.marginBottom;
+      if (mb.match(/^\d+$/)) css.push(`margin-bottom:${Math.round(parseInt(mb, 10) / 20)}pt`);
+      else css.push(`margin-bottom:${mb}`);
+    }
+    if (s.lineHeight) {
+      const lh = s.lineHeight;
+      if (lh.match(/^\d+$/)) {
+        const val = parseInt(lh, 10);
+        if (val > 100) css.push(`line-height:${(val / 240).toFixed(2)}`); // twips → line-height ratio
+        else css.push(`line-height:${val}%`);
+      } else {
+        css.push(`line-height:${lh}`);
+      }
+    }
+  }
   return css.join(';');
 }
 
-// Tek bir XML document'tan stiller oku
-function extractStyles(doc: Document): Map<string, OdfStyle> {
+// ── UYAP Element → HTML Dönüştürücü ──
+
+function uyapRunToHtml(runEl: Element, styles: Map<string, UyapStyle>): string {
+  // <run> elementinden stil bilgisi al
+  const runStyle = extractUyapStyleProps(runEl);
+  const styleId = attr(runEl, 'styleId') || attr(runEl, 'style');
+  const baseStyle = styleId ? styles.get(styleId) : undefined;
+  const mergedStyle: UyapStyle = { ...baseStyle, ...runStyle };
+
+  // <text> çocuklarını topla
+  let text = '';
+  for (let i = 0; i < runEl.childNodes.length; i++) {
+    const child = runEl.childNodes[i];
+    if (child.nodeType === Node.TEXT_NODE) {
+      text += child.textContent || '';
+    } else if (child.nodeType === Node.ELEMENT_NODE) {
+      const childEl = child as Element;
+      const childName = ln(childEl);
+      if (childName === 'text') {
+        text += childEl.textContent || '';
+      } else if (childName === 'tab') {
+        text += '\t';
+      } else if (childName === 'br' || childName === 'line-break') {
+        text += '\n';
+      }
+    }
+  }
+
+  if (!text) return '';
+
+  const css = uyapStyleToCss(mergedStyle, 'inline');
+  const htmlText = escHtml(text).replace(/\t/g, '&emsp;&emsp;').replace(/\n/g, '<br/>');
+  return css ? `<span style="${css}">${htmlText}</span>` : htmlText;
+}
+
+function uyapParagraphToHtml(paraEl: Element, styles: Map<string, UyapStyle>): string {
+  // Paragraf stil bilgisi
+  const paraStyle = extractUyapStyleProps(paraEl);
+  const styleId = attr(paraEl, 'styleId') || attr(paraEl, 'style');
+  const baseStyle = styleId ? styles.get(styleId) : undefined;
+  const mergedStyle: UyapStyle = { ...baseStyle, ...paraStyle };
+
+  // Çocuk elementleri işle
+  let inner = '';
+  for (let i = 0; i < paraEl.childNodes.length; i++) {
+    const child = paraEl.childNodes[i];
+    if (child.nodeType === Node.TEXT_NODE) {
+      const t = child.textContent || '';
+      if (t.trim()) inner += escHtml(t);
+    } else if (child.nodeType === Node.ELEMENT_NODE) {
+      const childEl = child as Element;
+      const childName = ln(childEl);
+      if (childName === 'run') {
+        inner += uyapRunToHtml(childEl, styles);
+      } else if (childName === 'tab') {
+        inner += '&emsp;&emsp;';
+      } else if (childName === 'spacer') {
+        const count = parseInt(attr(childEl, 'count') || attr(childEl, 'length') || '1', 10);
+        inner += '&nbsp;'.repeat(count || 1);
+      } else if (childName === 'br' || childName === 'line-break') {
+        inner += '<br/>';
+      }
+    }
+  }
+
+  const blockCss = uyapStyleToCss(mergedStyle, 'block');
+  const inlineCss = uyapStyleToCss(mergedStyle, 'inline');
+  const cssArr: string[] = ['margin:0.35em 0'];
+  if (blockCss) cssArr.push(blockCss);
+  if (inlineCss) cssArr.push(inlineCss);
+
+  return `<p style="${cssArr.join(';')}">${inner || '&nbsp;'}</p>`;
+}
+
+function uyapContentToHtml(contentEl: Element, styles: Map<string, UyapStyle>): string {
+  let html = '';
+  for (let i = 0; i < contentEl.childNodes.length; i++) {
+    const child = contentEl.childNodes[i];
+    if (child.nodeType !== Node.ELEMENT_NODE) continue;
+    const childEl = child as Element;
+    const name = ln(childEl);
+
+    if (name === 'paragraph') {
+      html += uyapParagraphToHtml(childEl, styles);
+    } else if (name === 'header') {
+      // Header bölümü — içindeki paragrafları render et
+      let headerHtml = '';
+      for (let j = 0; j < childEl.childNodes.length; j++) {
+        if (childEl.childNodes[j].nodeType === Node.ELEMENT_NODE) {
+          const hChild = childEl.childNodes[j] as Element;
+          if (ln(hChild) === 'paragraph') {
+            headerHtml += uyapParagraphToHtml(hChild, styles);
+          }
+        }
+      }
+      if (headerHtml) {
+        html += `<div style="border-bottom:1px solid #3a3832;padding-bottom:0.8em;margin-bottom:1em">${headerHtml}</div>`;
+      }
+    } else if (name === 'footer') {
+      let footerHtml = '';
+      for (let j = 0; j < childEl.childNodes.length; j++) {
+        if (childEl.childNodes[j].nodeType === Node.ELEMENT_NODE) {
+          const fChild = childEl.childNodes[j] as Element;
+          if (ln(fChild) === 'paragraph') {
+            footerHtml += uyapParagraphToHtml(fChild, styles);
+          }
+        }
+      }
+      if (footerHtml) {
+        html += `<div style="border-top:1px solid #3a3832;padding-top:0.8em;margin-top:1em">${footerHtml}</div>`;
+      }
+    } else if (name === 'table') {
+      html += uyapTableToHtml(childEl, styles);
+    }
+  }
+  return html;
+}
+
+function uyapTableToHtml(tableEl: Element, styles: Map<string, UyapStyle>): string {
+  let rows = '';
+  for (let i = 0; i < tableEl.children.length; i++) {
+    const rowEl = tableEl.children[i];
+    if (ln(rowEl) === 'row' || ln(rowEl) === 'table-row' || ln(rowEl) === 'tr') {
+      let cells = '';
+      for (let j = 0; j < rowEl.children.length; j++) {
+        const cellEl = rowEl.children[j];
+        const cellName = ln(cellEl);
+        if (cellName === 'cell' || cellName === 'table-cell' || cellName === 'td') {
+          let cellContent = '';
+          for (let k = 0; k < cellEl.children.length; k++) {
+            if (ln(cellEl.children[k]) === 'paragraph') {
+              cellContent += uyapParagraphToHtml(cellEl.children[k], styles);
+            }
+          }
+          if (!cellContent) cellContent = escHtml(cellEl.textContent || '');
+          cells += `<td style="border:1px solid #3a3832;padding:6px 10px;vertical-align:top">${cellContent}</td>`;
+        }
+      }
+      rows += `<tr>${cells}</tr>`;
+    }
+  }
+  return rows ? `<table style="border-collapse:collapse;width:100%;margin:0.8em 0">${rows}</table>` : '';
+}
+
+// ── ODF Fallback (standart ODF dosyaları için) ──
+
+interface OdfStyle { textCss: string; paraCss: string; parent?: string; }
+
+function odfExtractStyles(doc: Document): Map<string, OdfStyle> {
   const map = new Map<string, OdfStyle>();
   const allEls = doc.getElementsByTagName('*');
   for (let i = 0; i < allEls.length; i++) {
@@ -972,14 +1218,32 @@ function extractStyles(doc: Document): Map<string, OdfStyle> {
     if (ln(el) !== 'style') continue;
     const name = attr(el, 'name');
     if (!name) continue;
-
-    let textCss = '';
-    let paraCss = '';
+    let textCss = '', paraCss = '';
     for (let c = 0; c < el.children.length; c++) {
       const child = el.children[c];
-      const childName = ln(child);
-      if (childName === 'text-properties') textCss = textPropsCss(child);
-      if (childName === 'paragraph-properties') paraCss = paraPropsCss(child);
+      const cn = ln(child);
+      if (cn === 'text-properties') {
+        const css: string[] = [];
+        if (attr(child, 'font-weight') === 'bold') css.push('font-weight:bold');
+        if (attr(child, 'font-style') === 'italic') css.push('font-style:italic');
+        const ul = attr(child, 'text-underline-style');
+        if (ul && ul !== 'none') css.push('text-decoration:underline');
+        const fs = attr(child, 'font-size');
+        if (fs) css.push(`font-size:${fs}`);
+        const color = attr(child, 'color');
+        if (color) css.push(`color:${color}`);
+        textCss = css.join(';');
+      }
+      if (cn === 'paragraph-properties') {
+        const css: string[] = [];
+        const align = attr(child, 'text-align');
+        if (align) css.push(`text-align:${align}`);
+        const ml = attr(child, 'margin-left');
+        if (ml) css.push(`padding-left:${ml}`);
+        const ti = attr(child, 'text-indent');
+        if (ti) css.push(`text-indent:${ti}`);
+        paraCss = css.join(';');
+      }
     }
     const parent = attr(el, 'parent-style-name') || undefined;
     map.set(name, { textCss, paraCss, parent });
@@ -987,102 +1251,43 @@ function extractStyles(doc: Document): Map<string, OdfStyle> {
   return map;
 }
 
-// Style inheritance: parent zincirini takip et, birleştir
-function resolveStyle(name: string, styles: Map<string, OdfStyle>): { text: string; para: string } {
+function odfResolveStyle(name: string, styles: Map<string, OdfStyle>): string {
   const visited = new Set<string>();
-  let textParts: string[] = [];
-  let paraParts: string[] = [];
+  const parts: string[] = [];
   let current: string | undefined = name;
-
   while (current && !visited.has(current)) {
     visited.add(current);
     const s = styles.get(current);
     if (!s) break;
-    // Parent önce, child sonra (child override eder)
-    if (s.textCss) textParts.unshift(s.textCss);
-    if (s.paraCss) paraParts.unshift(s.paraCss);
+    if (s.textCss) parts.unshift(s.textCss);
+    if (s.paraCss) parts.unshift(s.paraCss);
     current = s.parent;
   }
-  return { text: textParts.join(';'), para: paraParts.join(';') };
+  return parts.join(';');
 }
 
-// ODF element → HTML (recursive)
 function odfToHtml(node: Node, styles: Map<string, OdfStyle>): string {
-  if (node.nodeType === Node.TEXT_NODE) {
-    return escHtml(node.textContent || '');
-  }
+  if (node.nodeType === Node.TEXT_NODE) return escHtml(node.textContent || '');
   if (node.nodeType !== Node.ELEMENT_NODE) return '';
-
   const el = node as Element;
   const name = ln(el);
-
-  // text:s → boşluk
-  if (name === 's') {
-    const count = parseInt(attr(el, 'c') || '1', 10);
-    return '&nbsp;'.repeat(count);
-  }
+  if (name === 's') return '&nbsp;'.repeat(parseInt(attr(el, 'c') || '1', 10));
   if (name === 'tab') return '&emsp;&emsp;';
   if (name === 'line-break') return '<br/>';
-
-  // Çocukları recursive
   let inner = '';
-  for (let i = 0; i < el.childNodes.length; i++) {
-    inner += odfToHtml(el.childNodes[i], styles);
-  }
-
-  // text:span → inline
-  if (name === 'span') {
-    const sn = attr(el, 'style-name') || '';
-    const resolved = sn ? resolveStyle(sn, styles) : null;
-    const css = resolved?.text || '';
-    return css ? `<span style="${css}">${inner}</span>` : inner;
-  }
-
-  // text:a → link
-  if (name === 'a') {
-    const href = attr(el, 'href') || '#';
-    return `<a href="${escHtml(href)}" target="_blank" rel="noopener" style="color:#c9a84c;text-decoration:underline">${inner}</a>`;
-  }
-
-  // Listeler
-  if (name === 'list-item') return `<li style="margin:0.2em 0">${inner}</li>`;
-  if (name === 'list') return `<ul style="margin:0.4em 0 0.4em 1.5em;padding:0">${inner}</ul>`;
-
-  // Tablolar
+  for (let i = 0; i < el.childNodes.length; i++) inner += odfToHtml(el.childNodes[i], styles);
+  if (name === 'span') { const css = odfResolveStyle(attr(el, 'style-name') || '', styles); return css ? `<span style="${css}">${inner}</span>` : inner; }
+  if (name === 'p') { const css = odfResolveStyle(attr(el, 'style-name') || '', styles); return `<p style="margin:0.35em 0;${css}">${inner || '&nbsp;'}</p>`; }
+  if (name === 'h') { const fs = ({ 1: '1.5em', 2: '1.3em', 3: '1.15em' } as Record<number, string>)[parseInt(attr(el, 'outline-level') || '1', 10)] || '1em'; return `<div style="font-weight:bold;font-size:${fs};margin:1em 0 0.4em">${inner}</div>`; }
   if (name === 'table') return `<table style="border-collapse:collapse;width:100%;margin:0.8em 0">${inner}</table>`;
   if (name === 'table-row') return `<tr>${inner}</tr>`;
-  if (name === 'table-cell') {
-    const cs = attr(el, 'number-columns-spanned');
-    const csAttr = cs ? ` colspan="${cs}"` : '';
-    return `<td${csAttr} style="border:1px solid #3a3832;padding:6px 10px;vertical-align:top">${inner}</td>`;
-  }
-
-  // text:p → paragraf
-  if (name === 'p') {
-    const sn = attr(el, 'style-name') || '';
-    const resolved = sn ? resolveStyle(sn, styles) : null;
-    const cssArr: string[] = ['margin:0.35em 0'];
-    if (resolved?.para) cssArr.push(resolved.para);
-    if (resolved?.text) cssArr.push(resolved.text);
-    return `<p style="${cssArr.join(';')}">${inner || '&nbsp;'}</p>`;
-  }
-
-  // text:h → başlık
-  if (name === 'h') {
-    const level = parseInt(attr(el, 'outline-level') || '1', 10);
-    const sizes: Record<number, string> = { 1: '1.5em', 2: '1.3em', 3: '1.15em' };
-    const fs = sizes[level] || '1em';
-    const sn = attr(el, 'style-name') || '';
-    const resolved = sn ? resolveStyle(sn, styles) : null;
-    const cssArr = [`font-weight:bold`, `font-size:${fs}`, 'margin:1em 0 0.4em'];
-    if (resolved?.para) cssArr.push(resolved.para);
-    if (resolved?.text) cssArr.push(resolved.text);
-    return `<div style="${cssArr.join(';')}">${inner}</div>`;
-  }
-
-  // section, sequence-decls vb. → çocukları döndür
+  if (name === 'table-cell') return `<td style="border:1px solid #3a3832;padding:6px 10px">${inner}</td>`;
+  if (name === 'list') return `<ul style="margin:0.4em 0 0.4em 1.5em">${inner}</ul>`;
+  if (name === 'list-item') return `<li>${inner}</li>`;
   return inner;
 }
+
+// ── Ana Parser ──
 
 async function parseUdfFile(signedUrl: string): Promise<string> {
   const { unzipSync } = await import('fflate');
@@ -1090,84 +1295,81 @@ async function parseUdfFile(signedUrl: string): Promise<string> {
   const buf = await res.arrayBuffer();
   const files = unzipSync(new Uint8Array(buf));
 
-  console.log('[UDF Parser v3] ZIP dosyaları:', Object.keys(files));
-
   const decoder = new TextDecoder('utf-8');
   const parser = new DOMParser();
 
-  // Hem styles.xml hem content.xml'den stiller oku (merge)
-  const allStyles = new Map<string, OdfStyle>();
-
-  // 1) styles.xml — temel stiller (Heading, Standard, vs.)
-  if (files['styles.xml']) {
-    const stylesDoc = parser.parseFromString(decoder.decode(files['styles.xml']), 'text/xml');
-    const baseStyles = extractStyles(stylesDoc);
-    baseStyles.forEach((v, k) => allStyles.set(k, v));
-    console.log('[UDF Parser v3] styles.xml stilleri:', baseStyles.size);
-  } else {
-    console.log('[UDF Parser v3] styles.xml BULUNAMADI');
-  }
-
-  // 2) content.xml
   const contentEntry = files['content.xml'];
   if (!contentEntry) {
-    console.log('[UDF Parser v3] content.xml BULUNAMADI, alternatif arıyorum...');
     const xmlKey = Object.keys(files).find(k => k.endsWith('.xml') || k.endsWith('.html') || k.endsWith('.htm'));
-    if (xmlKey) return decoder.decode(files[xmlKey]);
+    if (xmlKey) return `<pre style="white-space:pre-wrap;word-break:break-word;font-family:inherit">${escHtml(decoder.decode(files[xmlKey]))}</pre>`;
     throw new Error('UDF içinde okunabilir içerik bulunamadı');
   }
 
   const xmlStr = decoder.decode(contentEntry);
   const doc = parser.parseFromString(xmlStr, 'text/xml');
+  const rootName = ln(doc.documentElement);
 
-  // Parse hatası var mı kontrol et
-  const parseErr = doc.querySelector('parsererror');
-  if (parseErr) {
-    console.error('[UDF Parser v3] XML parse hatası:', parseErr.textContent);
+  // ── UYAP Formatı: <template> root ──
+  if (rootName === 'template' || rootName === 'document') {
+    const uyapStyles = parseUyapStyles(doc);
+
+    // <content> elementini bul
+    const allEls = doc.getElementsByTagName('*');
+    let contentEl: Element | null = null;
+    for (let i = 0; i < allEls.length; i++) {
+      if (ln(allEls[i]) === 'content') {
+        contentEl = allEls[i];
+        break;
+      }
+    }
+
+    if (contentEl) {
+      const html = uyapContentToHtml(contentEl, uyapStyles);
+      if (html.trim()) {
+        return `<div style="font-family:'DM Sans',system-ui,sans-serif;line-height:1.8;color:#e0ddd4;padding:2.5rem;max-width:900px;margin:0 auto;font-size:14px">${html}</div>`;
+      }
+    }
+
+    // Fallback: tüm <paragraph> elementlerini bul
+    let html = '';
+    for (let i = 0; i < allEls.length; i++) {
+      if (ln(allEls[i]) === 'paragraph') {
+        html += uyapParagraphToHtml(allEls[i], uyapStyles);
+      }
+    }
+    if (html.trim()) {
+      return `<div style="font-family:'DM Sans',system-ui,sans-serif;line-height:1.8;color:#e0ddd4;padding:2.5rem;max-width:900px;margin:0 auto;font-size:14px">${html}</div>`;
+    }
+
+    // Son fallback: düz metin
+    return `<pre style="white-space:pre-wrap;word-break:break-word;font-family:'DM Sans',system-ui,sans-serif;line-height:1.8;color:#e0ddd4;padding:2.5rem;font-size:14px">${escHtml(doc.documentElement?.textContent || '')}</pre>`;
   }
 
-  // content.xml'deki automatic-styles — base'i override eder
-  const autoStyles = extractStyles(doc);
-  autoStyles.forEach((v, k) => allStyles.set(k, v));
-  console.log('[UDF Parser v3] content.xml stilleri:', autoStyles.size, '| Toplam stil:', allStyles.size);
+  // ── Standart ODF Formatı: office:document-content root ──
+  const odfStyles = new Map<string, OdfStyle>();
+  if (files['styles.xml']) {
+    const stylesDoc = parser.parseFromString(decoder.decode(files['styles.xml']), 'text/xml');
+    odfExtractStyles(stylesDoc).forEach((v, k) => odfStyles.set(k, v));
+  }
+  odfExtractStyles(doc).forEach((v, k) => odfStyles.set(k, v));
 
-  // Stiller log
-  allStyles.forEach((v, k) => {
-    if (v.textCss || v.paraCss) {
-      console.log(`[UDF Style] ${k}: text="${v.textCss}" para="${v.paraCss}" parent=${v.parent || 'yok'}`);
-    }
-  });
-
-  // office:body altındaki içerik alanını bul
+  // office:body > office:text bul
   const allEls = doc.getElementsByTagName('*');
   let bodyEl: Element | null = null;
   for (let i = 0; i < allEls.length; i++) {
     const n = ln(allEls[i]);
-    if (n === 'text' || n === 'spreadsheet' || n === 'presentation') {
-      bodyEl = allEls[i];
-      break;
-    }
+    if (n === 'text' || n === 'spreadsheet' || n === 'presentation') { bodyEl = allEls[i]; break; }
   }
 
   if (!bodyEl) {
-    console.warn('[UDF Parser v3] office:body/text bulunamadı, düz metin döndürülüyor');
-    return `<pre style="white-space:pre-wrap;word-break:break-word;font-family:inherit">${escHtml(doc.documentElement?.textContent || xmlStr)}</pre>`;
+    return `<pre style="white-space:pre-wrap;word-break:break-word;font-family:inherit">${escHtml(doc.documentElement?.textContent || '')}</pre>`;
   }
-
-  console.log('[UDF Parser v3] Body bulundu, çocuk sayısı:', bodyEl.childNodes.length);
 
   let html = '';
-  for (let i = 0; i < bodyEl.childNodes.length; i++) {
-    html += odfToHtml(bodyEl.childNodes[i], allStyles);
-  }
-
+  for (let i = 0; i < bodyEl.childNodes.length; i++) html += odfToHtml(bodyEl.childNodes[i], odfStyles);
   if (!html.trim()) {
-    console.warn('[UDF Parser v3] odfToHtml boş sonuç, düz metin döndürülüyor');
     return `<pre style="white-space:pre-wrap;word-break:break-word;font-family:inherit">${escHtml(bodyEl.textContent || '')}</pre>`;
   }
-
-  console.log('[UDF Parser v3] HTML üretildi, uzunluk:', html.length, 'ilk 500 karakter:', html.substring(0, 500));
-
   return `<div style="font-family:'DM Sans',system-ui,sans-serif;line-height:1.8;color:#e0ddd4;padding:2.5rem;max-width:900px;margin:0 auto;font-size:14px">${html}</div>`;
 }
 
