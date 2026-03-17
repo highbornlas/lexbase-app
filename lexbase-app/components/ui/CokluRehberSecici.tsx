@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { useKarsiTaraflar, type KarsiTaraf } from '@/lib/hooks/useKarsiTaraflar';
 import { useVekillar, type Vekil } from '@/lib/hooks/useVekillar';
 import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
+import { usePersoneller } from '@/lib/hooks/usePersonel';
 import { KarsiTarafModal } from '@/components/modules/KarsiTarafModal';
 import { VekilModal } from '@/components/modules/VekilModal';
 import { MuvekkilModal } from '@/components/modules/MuvekkilModal';
@@ -205,6 +206,7 @@ function KisiAramaEkle({
   const { data: karsiTaraflar } = useKarsiTaraflar();
   const { data: vekillar } = useVekillar();
   const { data: muvekkillar } = useMuvekkillar();
+  const { data: personeller } = usePersoneller();
 
   const [acik, setAcik] = useState(false);
   const [arama, setArama] = useState('');
@@ -226,7 +228,20 @@ function KisiAramaEkle({
       }));
     }
     if (tip === 'avukat') {
-      return (vekillar || []).map((v) => ({
+      // Büro personelindeki avukatlar (önce gösterilir)
+      const buroAvukatlari: SecenekItem[] = (personeller || [])
+        .filter((p) => (p.rol === 'avukat' || p.rol === 'yonetici' || p.rol === 'sahip') && p.durum === 'aktif')
+        .map((p) => ({
+          id: p.id,
+          ad: p.ad || '',
+          meta: [(p as Record<string,unknown>).baro && `${(p as Record<string,unknown>).baro} Barosu`, p.baroSicil && `Sicil: ${p.baroSicil}`, p.tel]
+            .filter(Boolean)
+            .join(' · '),
+          badge: 'BÜRO',
+          badgeClass: 'text-blue-400 bg-blue-400/10',
+        }));
+      // Dış avukatlar (vekillar tablosundan)
+      const disAvukatlar: SecenekItem[] = (vekillar || []).map((v) => ({
         id: v.id,
         ad: [v.ad, v.soyad].filter(Boolean).join(' '),
         meta: [v.baro && `${v.baro} Barosu`, v.baroSicil && `Sicil: ${v.baroSicil}`, v.tel]
@@ -235,6 +250,7 @@ function KisiAramaEkle({
         badge: v.baro ? `${v.baro}` : undefined,
         badgeClass: 'text-gold bg-gold/10',
       }));
+      return [...buroAvukatlari, ...disAvukatlar];
     }
     // muvekkil
     return (muvekkillar || []).map((m) => ({
@@ -246,7 +262,7 @@ function KisiAramaEkle({
       badge: m.tip === 'tuzel' ? 'TÜZEL' : 'GERÇEK',
       badgeClass: m.tip === 'tuzel' ? 'text-blue-400 bg-blue-400/10' : 'text-green bg-green-dim',
     }));
-  }, [tip, karsiTaraflar, vekillar, muvekkillar]);
+  }, [tip, karsiTaraflar, vekillar, muvekkillar, personeller]);
 
   /* ── Filtreleme — arama yapılmadan listeleme yok ── */
   const filtrelenmis = useMemo(() => {

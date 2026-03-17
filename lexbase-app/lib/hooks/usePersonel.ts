@@ -11,6 +11,7 @@ export interface Personel {
   email?: string;
   tel?: string;
   tc?: string;
+  baro?: string;
   baroSicil?: string;
   baslama?: string;
   durum?: 'aktif' | 'davet_gonderildi' | 'pasif';

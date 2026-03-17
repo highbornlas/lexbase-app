@@ -307,10 +307,23 @@ export function PersonelModal({ open, onClose, personel }: PersonelModalProps) {
           <FormGroup label="TC Kimlik No">
             <FormInput value={form.tc || ''} onChange={(e) => handleChange('tc', e.target.value)} placeholder="11 haneli TC" maxLength={11} />
           </FormGroup>
-          <FormGroup label="Baro Sicil No">
-            <FormInput value={form.baroSicil || ''} onChange={(e) => handleChange('baroSicil', e.target.value)} placeholder="Baro sicil numarası" />
-          </FormGroup>
+          {(form.rol === 'avukat' || form.rol === 'yonetici' || form.rol === 'sahip') && (
+            <FormGroup label="Baro">
+              <FormInput value={(form as Record<string, unknown>).baro as string || ''} onChange={(e) => handleChange('baro', e.target.value)} placeholder="ör. İstanbul" />
+            </FormGroup>
+          )}
         </div>
+
+        {(form.rol === 'avukat' || form.rol === 'yonetici' || form.rol === 'sahip') && (
+          <div className="grid grid-cols-2 gap-4">
+            <FormGroup label="Baro Sicil No">
+              <FormInput value={form.baroSicil || ''} onChange={(e) => handleChange('baroSicil', e.target.value)} placeholder="Baro sicil numarası" />
+            </FormGroup>
+            <FormGroup label="TBB Sicil No">
+              <FormInput value={(form as Record<string, unknown>).tbbSicil as string || ''} onChange={(e) => handleChange('tbbSicil', e.target.value)} placeholder="TBB sicil numarası" />
+            </FormGroup>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           <FormGroup label="Başlama Tarihi">
