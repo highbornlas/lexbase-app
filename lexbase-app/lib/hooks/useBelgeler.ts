@@ -65,7 +65,9 @@ export function useBelgeler() {
         .eq('buro_id', buroId);
 
       if (error) throw error;
-      return (data || []).map((r) => ({ id: r.id, ...(r.data as object) }) as Belge);
+      return (data || [])
+        .map((r) => ({ id: r.id, ...(r.data as object) }) as Belge)
+        .filter((b) => !(b as Record<string, unknown>)._silindi);
     },
     enabled: !!buroId,
   });

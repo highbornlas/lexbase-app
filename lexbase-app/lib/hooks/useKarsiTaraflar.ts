@@ -151,6 +151,56 @@ export function useKarsiTarafKaydet() {
   });
 }
 
+// ── Cascade Helper — Karşı taraf bağlantısını kes ──────────
+const KARSI_DOSYA_TABLOLAR = ['davalar', 'icra'] as const;
+const KARSI_INVALIDATE = ['davalar', 'icra'];
+
+async function cascadeUnlinkKarsiTaraf(supabase: ReturnType<typeof createClient>, buroId: string, karsiId: string) {
+  for (const tablo of KARSI_DOSYA_TABLOLAR) {
+    const { data: kayitlar } = await supabase.from(tablo).select('id, data').eq('buro_id', buroId);
+    if (!kayitlar) continue;
+    for (const k of kayitlar) {
+      const d = k.data as Record<string, unknown>;
+      let degisti = false;
+      const yeni = { ...d };
+      if (d.karsiId === karsiId) { yeni.karsiId = ''; yeni._eskiKarsiId = karsiId; degisti = true; }
+      if (d.karsavId === karsiId) { yeni.karsavId = ''; yeni._eskiKarsavId = karsiId; degisti = true; }
+      // karsiIds dizisi kontrolü
+      if (Array.isArray(d.karsiIds) && (d.karsiIds as string[]).includes(karsiId)) {
+        yeni.karsiIds = (d.karsiIds as string[]).filter((x) => x !== karsiId);
+        yeni._eskiKarsiIds = [...(yeni._eskiKarsiIds as string[] || []), karsiId];
+        degisti = true;
+      }
+      if (degisti) {
+        await supabase.from(tablo).update({ data: yeni }).eq('id', k.id).eq('buro_id', buroId);
+      }
+    }
+  }
+}
+
+async function cascadeRelinkKarsiTaraf(supabase: ReturnType<typeof createClient>, buroId: string, karsiId: string) {
+  for (const tablo of KARSI_DOSYA_TABLOLAR) {
+    const { data: kayitlar } = await supabase.from(tablo).select('id, data').eq('buro_id', buroId);
+    if (!kayitlar) continue;
+    for (const k of kayitlar) {
+      const d = k.data as Record<string, unknown>;
+      let degisti = false;
+      const yeni = { ...d };
+      if (d._eskiKarsiId === karsiId) { yeni.karsiId = karsiId; delete yeni._eskiKarsiId; degisti = true; }
+      if (d._eskiKarsavId === karsiId) { yeni.karsavId = karsiId; delete yeni._eskiKarsavId; degisti = true; }
+      if (Array.isArray(d._eskiKarsiIds) && (d._eskiKarsiIds as string[]).includes(karsiId)) {
+        yeni.karsiIds = [...(yeni.karsiIds as string[] || []), karsiId];
+        yeni._eskiKarsiIds = (d._eskiKarsiIds as string[]).filter((x) => x !== karsiId);
+        if ((yeni._eskiKarsiIds as string[]).length === 0) delete yeni._eskiKarsiIds;
+        degisti = true;
+      }
+      if (degisti) {
+        await supabase.from(tablo).update({ data: yeni }).eq('id', k.id).eq('buro_id', buroId);
+      }
+    }
+  }
+}
+
 // ── Soft Delete ──────────────────────────────────────────────
 export function useKarsiTarafSil() {
   const buroId = useBuroId();
@@ -173,10 +223,12 @@ export function useKarsiTarafSil() {
         .eq('id', id)
         .eq('buro_id', buroId);
       if (error) throw error;
+      await cascadeUnlinkKarsiTaraf(supabase, buroId, id);
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['karsi-taraflar'] });
       queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
+      KARSI_INVALIDATE.forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }));
     },
   });
 }
@@ -189,6 +241,7 @@ export function useKarsiTarafKaliciSil() {
     mutationFn: async (id: string) => {
       if (!buroId) throw new Error('Büro bulunamadı');
       const supabase = createClient();
+      await cascadeUnlinkKarsiTaraf(supabase, buroId, id);
       const { error } = await supabase
         .from('karsi_taraflar')
         .delete()
@@ -199,6 +252,7 @@ export function useKarsiTarafKaliciSil() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['karsi-taraflar'] });
       queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
+      KARSI_INVALIDATE.forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }));
     },
   });
 }
@@ -226,10 +280,12 @@ export function useKarsiTarafGeriYukle() {
         .eq('id', id)
         .eq('buro_id', buroId);
       if (error) throw error;
+      await cascadeRelinkKarsiTaraf(supabase, buroId, id);
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['karsi-taraflar'] });
       queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
+      KARSI_INVALIDATE.forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }));
     },
   });
 }

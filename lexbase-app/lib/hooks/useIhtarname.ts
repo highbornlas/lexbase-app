@@ -65,7 +65,9 @@ export function useIhtarnameler() {
         .select('id, data')
         .eq('buro_id', buroId);
       if (error) throw error;
-      return (data || []).map((r) => ({ id: r.id, ...(r.data as object) })) as Ihtarname[];
+      return (data || [])
+        .map((r) => ({ id: r.id, ...(r.data as object) }) as Ihtarname)
+        .filter((i) => !i._silindi && !i._arsivlendi);
     },
     enabled: !!buroId,
   });

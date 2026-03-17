@@ -90,7 +90,9 @@ export function useEtkinlikler() {
         .select('id, data')
         .eq('buro_id', buroId);
       if (error) throw error;
-      return (data || []).map((r) => ({ id: r.id, ...(r.data as object) })) as Etkinlik[];
+      return (data || [])
+        .map((r) => ({ id: r.id, ...(r.data as object) }) as Etkinlik)
+        .filter((e) => !(e as Record<string, unknown>)._silindi);
     },
     enabled: !!buroId,
   });

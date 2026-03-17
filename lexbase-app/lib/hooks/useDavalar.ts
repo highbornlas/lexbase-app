@@ -128,7 +128,9 @@ export function useDava(id: string | null) {
 
       if (error) throw error;
       if (!data) return null;
-      return { id: data.id, ...(data.data as object) } as Dava;
+      const kayit = { id: data.id, ...(data.data as object) } as Dava;
+      if (kayit._silindi) return null;
+      return kayit;
     },
     enabled: !!buroId && !!id,
   });

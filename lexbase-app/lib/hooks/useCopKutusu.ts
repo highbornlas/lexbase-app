@@ -14,7 +14,9 @@ export type CopTabloTipi =
   | 'vekillar'
   | 'davalar'
   | 'icra'
-  | 'ihtarnameler';
+  | 'ihtarnameler'
+  | 'arabuluculuk'
+  | 'danismanlik';
 
 export interface SilinenKayit {
   id: string;
@@ -33,6 +35,8 @@ const TABLO_LABELS: Record<CopTabloTipi, string> = {
   davalar: 'Dava',
   icra: 'İcra',
   ihtarnameler: 'İhtarname',
+  arabuluculuk: 'Arabuluculuk',
+  danismanlik: 'Danışmanlık',
 };
 
 // Varsayılan saklama süresi: 24 saat (ms)
@@ -84,6 +88,17 @@ function buildAd(tablo: CopTabloTipi, d: Record<string, unknown>): string {
     return '(isimsiz ihtarname)';
   }
 
+  if (tablo === 'arabuluculuk') {
+    if (d.konu) return d.konu as string;
+    if (d.no) return `Arabuluculuk #${d.no}`;
+    return '(isimsiz arabuluculuk)';
+  }
+
+  if (tablo === 'danismanlik') {
+    if (d.konu) return d.konu as string;
+    return '(isimsiz danışmanlık)';
+  }
+
   // Rehber tabloları (müvekkil, karşı taraf, vekil)
   return ((d.ad as string) || '') + ((d.soyad as string) ? ' ' + (d.soyad as string) : '');
 }
@@ -106,6 +121,8 @@ export function useCopKutusu() {
         'davalar',
         'icra',
         'ihtarnameler',
+        'arabuluculuk',
+        'danismanlik',
       ];
 
       for (const tablo of tablolar) {
@@ -133,8 +150,8 @@ export function useCopKutusu() {
                   .delete()
                   .eq('id', row.id)
                   .eq('buro_id', buroId);
-              } catch {
-                // silme başarısız olsa da devam et
+              } catch (e) {
+                console.warn(`[CöpKutusu] ${tablo}/${row.id} kalıcı silme başarısız:`, e);
               }
               continue;
             }

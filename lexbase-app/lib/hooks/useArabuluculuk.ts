@@ -150,7 +150,9 @@ export function useArabuluculuk(id: string | null) {
         .single();
       if (error) throw error;
       if (!data) return null;
-      return { id: data.id, ...(data.data as object) } as Arabuluculuk;
+      const kayit = { id: data.id, ...(data.data as object) } as Arabuluculuk;
+      if (kayit._silindi) return null;
+      return kayit;
     },
     enabled: !!buroId && !!id,
   });
