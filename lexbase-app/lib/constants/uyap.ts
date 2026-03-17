@@ -257,10 +257,9 @@ export const YARGI_BIRIMLERI: Record<string, string[]> = {
 };
 
 // ── İcra Yargı Birimleri (İcra modülüne özel) ──
+// Not: İCRA HUKUK MAHKEMESİ ve İCRA CEZA MAHKEMESİ artık Dava modülündedir (YARGI_BIRIMLERI)
 export const ICRA_YARGI_BIRIMLERI = [
   'İCRA DAİRESİ',
-  'İCRA HUKUK MAHKEMESİ',
-  'İCRA CEZA MAHKEMESİ',
   'SATIŞ MEMURLUĞU',
 ] as const;
 

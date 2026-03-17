@@ -47,6 +47,11 @@ export interface Icra {
   karsi?: string;
   karsavId?: string;
   karsav?: string;
+  // Çoklu taraf desteği
+  muvekkilTaraflar?: Array<{ id: string; ad: string }>;
+  karsiTaraflar?: Array<{ id: string; ad: string }>;
+  vekiller?: Array<{ id: string; ad: string }>;
+  borclular?: Array<{ id: string; ad: string }>;
   // İlişkiler
   davno?: string; // ilişkili dava numarası
   iliskiliDavaId?: string;

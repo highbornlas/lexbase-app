@@ -40,13 +40,17 @@ export interface Dava {
   // Kapanış
   kapanisSebebi?: string;
   kapanisTarih?: string;
-  // İlişkiler
+  // İlişkiler (legacy tekli alanlar — geriye uyumluluk)
   karsiId?: string;
   karsi?: string;
   karsavId?: string;
   karsav?: string;
   icrano?: string;
   iliskiliIcraId?: string;
+  // Çoklu taraf desteği
+  muvekkilTaraflar?: Array<{ id: string; ad: string }>;
+  karsiTaraflar?: Array<{ id: string; ad: string }>;
+  vekiller?: Array<{ id: string; ad: string }>;
   // Finansal
   deger?: number;
   // Süreler

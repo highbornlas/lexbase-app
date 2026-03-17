@@ -19,6 +19,7 @@ interface MuvekkilModalProps {
   open: boolean;
   onClose: () => void;
   muvekkil?: Muvekkil | null;
+  onCreated?: (m: Muvekkil) => void;
 }
 
 const SIRKET_TURLERI = ['A.Ş.', 'Ltd. Şti.', 'Şahıs Firması', 'Kooperatif', 'Dernek', 'Vakıf', 'Kamu Kurumu', 'Diğer'];
@@ -62,7 +63,7 @@ const ADIM_BASLIKLAR: Record<Adim, string> = {
   3: 'Finans & Diğer',
 };
 
-export function MuvekkilModal({ open, onClose, muvekkil }: MuvekkilModalProps) {
+export function MuvekkilModal({ open, onClose, muvekkil, onCreated }: MuvekkilModalProps) {
   const [form, setForm] = useState<Partial<Muvekkil>>({ ...bos });
   const [initialForm, setInitialForm] = useState<Partial<Muvekkil>>({ ...bos });
   const [hata, setHata] = useState('');
@@ -200,6 +201,7 @@ export function MuvekkilModal({ open, onClose, muvekkil }: MuvekkilModalProps) {
       await kaydet.mutateAsync(form as Muvekkil);
       clearDraft();
       onClose();
+      onCreated?.(form as Muvekkil);
     } catch {
       setHata('Kayıt sırasında bir hata oluştu.');
     }

@@ -7,7 +7,8 @@ import { useIcralar, useIcraKaydet, type Icra } from '@/lib/hooks/useIcra';
 import { useDavalar } from '@/lib/hooks/useDavalar';
 import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
 import { useMahkemeHafizasi } from '@/lib/hooks/useMahkemeHafizasi';
-import { RehberSecici } from '@/components/ui/RehberSecici';
+import { CokluRehberSecici, type SeciliKisi } from '@/components/ui/CokluRehberSecici';
+import { useOzelAlacakTurleri, useOzelAlacakTuruKaydet } from '@/lib/hooks/useOzelAlacakTurleri';
 import {
   ICRA_TURLERI, ALACAK_TURLERI, ICRA_DURUMLARI,
   ICRA_MUVEKKIL_ROL, KAPANIS_SEBEPLERI_ICRA, ILLER,
@@ -49,6 +50,10 @@ const bos: Partial<Icra> = {
   karsiId: '',
   karsav: '',
   karsavId: '',
+  muvekkilTaraflar: [],
+  borclular: [],
+  karsiTaraflar: [],
+  vekiller: [],
   iliskiliDavaId: '',
   dayanak: '',
   kapanisSebebi: '',
@@ -73,6 +78,18 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
   const kaydet = useIcraKaydet();
   const { data: muvekkillar } = useMuvekkillar();
   const { daireler, adliyeler, kullanılanIller } = useMahkemeHafizasi();
+  const { data: ozelAlacakTurleri } = useOzelAlacakTurleri();
+  const ozelAlacakKaydet = useOzelAlacakTuruKaydet();
+  const [yeniAlacakTuru, setYeniAlacakTuru] = useState('');
+  const [alacakTuruEkleAcik, setAlacakTuruEkleAcik] = useState(false);
+
+  // Tüm alacak türleri (sabit + özel)
+  const tumAlacakTurleri = useMemo(() => {
+    const sabitler = [...ALACAK_TURLERI];
+    const ozelSet = new Set(sabitler.map((t) => t.toLocaleLowerCase('tr')));
+    const ozeller = (ozelAlacakTurleri || []).filter((t) => !ozelSet.has(t.toLocaleLowerCase('tr')));
+    return [...sabitler, ...ozeller];
+  }, [ozelAlacakTurleri]);
 
   useEffect(() => {
     let init: Partial<Icra>;
@@ -86,6 +103,24 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
           init.esasNo = parts[1].trim();
         }
       }
+      // Legacy → çoklu taraf migrasyonu
+      if (!init.muvekkilTaraflar?.length && init.muvId) {
+        const muv = muvekkillar?.find((m) => m.id === init.muvId);
+        if (muv) init.muvekkilTaraflar = [{ id: muv.id, ad: [muv.ad, muv.soyad].filter(Boolean).join(' ') }];
+      }
+      if (!init.borclular?.length && init.borclu) {
+        init.borclular = [{ id: init.karsiId || '', ad: init.borclu }];
+      }
+      if (!init.karsiTaraflar?.length && (init.karsiId || init.karsi)) {
+        init.karsiTaraflar = [{ id: init.karsiId || '', ad: (init.karsi as string) || '' }];
+      }
+      if (!init.vekiller?.length && (init.karsavId || init.karsav)) {
+        init.vekiller = [{ id: init.karsavId || '', ad: (init.karsav as string) || '' }];
+      }
+      if (!init.muvekkilTaraflar) init.muvekkilTaraflar = [];
+      if (!init.borclular) init.borclular = [];
+      if (!init.karsiTaraflar) init.karsiTaraflar = [];
+      if (!init.vekiller) init.vekiller = [];
     } else {
       const maxNo = Math.max(0, ...(mevcutlar || []).map((i) => i.kayitNo || 0));
       init = { ...bos, id: crypto.randomUUID(), sira: Date.now(), kayitNo: maxNo + 1 };
@@ -173,15 +208,49 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
     else if (adim === 3) setAdim(2);
   }
 
+  // Özel alacak türü ekleme
+  async function handleYeniAlacakTuruEkle() {
+    if (!yeniAlacakTuru.trim()) return;
+    try {
+      await ozelAlacakKaydet.mutateAsync(yeniAlacakTuru.trim());
+      handleChange('atur', yeniAlacakTuru.trim());
+      setYeniAlacakTuru('');
+      setAlacakTuruEkleAcik(false);
+    } catch { /* */ }
+  }
+
   async function handleSubmit() {
     // Esas alanını birleştir (geriye uyumluluk)
-    if (form.esasYil && form.esasNo) {
-      form.esas = `${form.esasYil}/${form.esasNo}`;
+    const syncForm = { ...form };
+    if (syncForm.esasYil && syncForm.esasNo) {
+      syncForm.esas = `${syncForm.esasYil}/${syncForm.esasNo}`;
+    }
+    // Çoklu taraflardan legacy alanlara sync
+    if (syncForm.muvekkilTaraflar?.length) {
+      syncForm.muvId = syncForm.muvekkilTaraflar[0].id;
+    }
+    if (syncForm.borclular?.length) {
+      syncForm.borclu = syncForm.borclular[0].ad;
+      syncForm.btc = ''; // legacy TC alanı
+    }
+    if (syncForm.karsiTaraflar?.length) {
+      syncForm.karsiId = syncForm.karsiTaraflar[0].id;
+      syncForm.karsi = syncForm.karsiTaraflar[0].ad;
+    } else {
+      syncForm.karsiId = '';
+      syncForm.karsi = '';
+    }
+    if (syncForm.vekiller?.length) {
+      syncForm.karsavId = syncForm.vekiller[0].id;
+      syncForm.karsav = syncForm.vekiller[0].ad;
+    } else {
+      syncForm.karsavId = '';
+      syncForm.karsav = '';
     }
 
     setHata('');
     try {
-      await kaydet.mutateAsync(form as Icra);
+      await kaydet.mutateAsync(syncForm as Icra);
       onCreated?.(form as Icra);
       clearDraft();
       onClose();
@@ -249,30 +318,29 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
         {/* ═══ ADIM 1: TEMEL BİLGİLER ═══ */}
         {adim === 1 && (
           <>
-            <div className="grid grid-cols-2 gap-4">
-              <FormGroup label="Müvekkil">
-                <FormSelect value={form.muvId || ''} onChange={(e) => handleChange('muvId', e.target.value)}>
-                  <option value="">Seçiniz</option>
-                  {muvekkillar?.map((m) => (
-                    <option key={m.id} value={m.id}>{[m.ad, m.soyad].filter(Boolean).join(' ')}</option>
-                  ))}
-                </FormSelect>
-              </FormGroup>
-              <FormGroup label="Müvekkil Rolü">
-                <FormSelect value={form.muvRol || ''} onChange={(e) => handleChange('muvRol', e.target.value)}>
-                  {ICRA_MUVEKKIL_ROL.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-                </FormSelect>
-              </FormGroup>
-            </div>
+            <FormGroup label="Müvekkil Rolü">
+              <FormSelect value={form.muvRol || ''} onChange={(e) => handleChange('muvRol', e.target.value)}>
+                {ICRA_MUVEKKIL_ROL.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+              </FormSelect>
+            </FormGroup>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormGroup label="Borçlu Ad/Unvan">
-                <FormInput value={form.borclu || ''} onChange={(e) => handleChange('borclu', e.target.value)} placeholder="Borçlu adı veya unvanı" />
-              </FormGroup>
-              <FormGroup label="Borçlu TC/VKN">
-                <FormInput value={form.btc || ''} onChange={(e) => handleChange('btc', e.target.value)} placeholder="TC Kimlik No veya Vergi No" maxLength={11} />
-              </FormGroup>
-            </div>
+            {/* Müvekkiller — çoklu seçim */}
+            <CokluRehberSecici
+              tip="muvekkil"
+              label="Müvekkiller"
+              ekleMetni="Müvekkil Ekle"
+              value={(form.muvekkilTaraflar as SeciliKisi[]) || []}
+              onChange={(v) => setForm((prev) => ({ ...prev, muvekkilTaraflar: v }))}
+            />
+
+            {/* Borçlular — karşı taraf rehberinden çoklu seçim */}
+            <CokluRehberSecici
+              tip="karsiTaraf"
+              label="Borçlular"
+              ekleMetni="Borçlu Ekle"
+              value={(form.borclular as SeciliKisi[]) || []}
+              onChange={(v) => setForm((prev) => ({ ...prev, borclular: v }))}
+            />
 
             <div className="grid grid-cols-3 gap-4">
               <FormGroup label="Takip Türü" required>
@@ -282,10 +350,39 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
                 </FormSelect>
               </FormGroup>
               <FormGroup label="Alacak Türü">
-                <FormSelect value={form.atur || ''} onChange={(e) => handleChange('atur', e.target.value)}>
-                  <option value="">Seçiniz</option>
-                  {ALACAK_TURLERI.map((t) => <option key={t} value={t}>{t}</option>)}
-                </FormSelect>
+                <div className="flex gap-1">
+                  <FormSelect value={form.atur || ''} onChange={(e) => handleChange('atur', e.target.value)} className="flex-1">
+                    <option value="">Seçiniz</option>
+                    {tumAlacakTurleri.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </FormSelect>
+                  <button
+                    type="button"
+                    onClick={() => setAlacakTuruEkleAcik(!alacakTuruEkleAcik)}
+                    className="flex-shrink-0 w-9 h-10 flex items-center justify-center rounded-lg border border-gold/30 text-gold hover:bg-gold-dim transition-colors text-sm"
+                    title="Yeni alacak türü ekle"
+                  >
+                    +
+                  </button>
+                </div>
+                {alacakTuruEkleAcik && (
+                  <div className="mt-2 flex gap-2">
+                    <FormInput
+                      value={yeniAlacakTuru}
+                      onChange={(e) => setYeniAlacakTuru(e.target.value)}
+                      placeholder="Yeni alacak türü..."
+                      className="flex-1 !h-8 !text-xs"
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleYeniAlacakTuruEkle(); } }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleYeniAlacakTuruEkle}
+                      disabled={!yeniAlacakTuru.trim() || ozelAlacakKaydet.isPending}
+                      className="px-3 h-8 rounded-lg text-[11px] font-semibold bg-gold text-bg disabled:opacity-50 transition-colors"
+                    >
+                      {ozelAlacakKaydet.isPending ? '...' : 'Ekle'}
+                    </button>
+                  </div>
+                )}
               </FormGroup>
               <FormGroup label="Durum">
                 <FormSelect value={form.durum || ''} onChange={(e) => handleChange('durum', e.target.value)}>
@@ -420,30 +517,23 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
               </div>
             </div>
 
-            {/* Karşı Taraf */}
-            <div className="border-t border-border/50 pt-4">
-              <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-3">Karşı Taraf Bilgileri</div>
-              <div className="grid grid-cols-2 gap-4">
-                <FormGroup label="Karşı Taraf">
-                  <RehberSecici
-                    tip="karsiTaraf"
-                    value={(form.karsi as string) || ''}
-                    selectedId={(form.karsiId as string) || null}
-                    onChange={(id, ad) => setForm((prev) => ({ ...prev, karsi: ad, karsiId: id || '' }))}
-                    placeholder="Karşı taraf seçin veya yazın..."
-                  />
-                </FormGroup>
-                <FormGroup label="Karşı Avukat">
-                  <RehberSecici
-                    tip="avukat"
-                    value={(form.karsav as string) || ''}
-                    selectedId={(form.karsavId as string) || null}
-                    onChange={(id, ad) => setForm((prev) => ({ ...prev, karsav: ad, karsavId: id || '' }))}
-                    placeholder="Karşı avukat seçin veya yazın..."
-                  />
-                </FormGroup>
-              </div>
-            </div>
+            {/* Karşı Taraflar — çoklu seçim */}
+            <CokluRehberSecici
+              tip="karsiTaraf"
+              label="Karşı Taraflar"
+              ekleMetni="Karşı Taraf Ekle"
+              value={(form.karsiTaraflar as SeciliKisi[]) || []}
+              onChange={(v) => setForm((prev) => ({ ...prev, karsiTaraflar: v }))}
+            />
+
+            {/* Vekiller — çoklu seçim */}
+            <CokluRehberSecici
+              tip="avukat"
+              label="Karşı Vekiller"
+              ekleMetni="Vekil Ekle"
+              value={(form.vekiller as SeciliKisi[]) || []}
+              onChange={(v) => setForm((prev) => ({ ...prev, vekiller: v }))}
+            />
           </>
         )}
 

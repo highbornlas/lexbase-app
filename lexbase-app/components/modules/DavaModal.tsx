@@ -7,7 +7,7 @@ import { useDavalar, useDavaKaydet, type Dava } from '@/lib/hooks/useDavalar';
 import { useIcralar } from '@/lib/hooks/useIcra';
 import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
 import { useMahkemeHafizasi } from '@/lib/hooks/useMahkemeHafizasi';
-import { RehberSecici } from '@/components/ui/RehberSecici';
+import { CokluRehberSecici, type SeciliKisi } from '@/components/ui/CokluRehberSecici';
 import {
   DAVA_TURLERI, DAVA_DURUMLARI, DAVA_ASAMALARI,
   DAVA_TARAF, KAPANIS_SEBEPLERI_DAVA, DURUSMA_SAATLERI, ILLER,
@@ -43,6 +43,9 @@ const bos: Partial<Dava> = {
   karsiId: '',
   karsav: '',
   karsavId: '',
+  muvekkilTaraflar: [],
+  karsiTaraflar: [],
+  vekiller: [],
   iliskiliIcraId: '',
   kapanisSebebi: '',
   kapanisTarih: '',
@@ -72,6 +75,20 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
     let init: Partial<Dava>;
     if (dava) {
       init = { ...dava };
+      // Legacy → çoklu taraf migrasyonu
+      if (!init.muvekkilTaraflar?.length && init.muvId) {
+        const muv = muvekkillar?.find((m) => m.id === init.muvId);
+        if (muv) init.muvekkilTaraflar = [{ id: muv.id, ad: [muv.ad, muv.soyad].filter(Boolean).join(' ') }];
+      }
+      if (!init.karsiTaraflar?.length && (init.karsiId || init.karsi)) {
+        init.karsiTaraflar = [{ id: init.karsiId || '', ad: (init.karsi as string) || '' }];
+      }
+      if (!init.vekiller?.length && (init.karsavId || init.karsav)) {
+        init.vekiller = [{ id: init.karsavId || '', ad: (init.karsav as string) || '' }];
+      }
+      if (!init.muvekkilTaraflar) init.muvekkilTaraflar = [];
+      if (!init.karsiTaraflar) init.karsiTaraflar = [];
+      if (!init.vekiller) init.vekiller = [];
       // Yargı türünü mtur'dan türet
       const bulunanTur = Object.entries(YARGI_BIRIMLERI).find(([, birimler]) =>
         birimler.some((b) => b === dava.mtur)
@@ -169,8 +186,27 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
 
   async function handleSubmit() {
     setHata('');
+    // Çoklu taraflardan legacy alanlara sync (geriye uyumluluk)
+    const syncForm = { ...form };
+    if (syncForm.muvekkilTaraflar?.length) {
+      syncForm.muvId = syncForm.muvekkilTaraflar[0].id;
+    }
+    if (syncForm.karsiTaraflar?.length) {
+      syncForm.karsiId = syncForm.karsiTaraflar[0].id;
+      syncForm.karsi = syncForm.karsiTaraflar[0].ad;
+    } else {
+      syncForm.karsiId = '';
+      syncForm.karsi = '';
+    }
+    if (syncForm.vekiller?.length) {
+      syncForm.karsavId = syncForm.vekiller[0].id;
+      syncForm.karsav = syncForm.vekiller[0].ad;
+    } else {
+      syncForm.karsavId = '';
+      syncForm.karsav = '';
+    }
     try {
-      await kaydet.mutateAsync(form as Dava);
+      await kaydet.mutateAsync(syncForm as Dava);
       onCreated?.(form as Dava);
       clearDraft();
       onClose();
@@ -252,21 +288,19 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
               </FormGroup>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormGroup label="Müvekkil">
-                <FormSelect value={form.muvId || ''} onChange={(e) => handleChange('muvId', e.target.value)}>
-                  <option value="">Seçiniz</option>
-                  {muvekkillar?.map((m) => (
-                    <option key={m.id} value={m.id}>{[m.ad, m.soyad].filter(Boolean).join(' ')}</option>
-                  ))}
-                </FormSelect>
-              </FormGroup>
-              <FormGroup label="Müvekkilin Tarafı">
-                <FormSelect value={form.taraf || ''} onChange={(e) => handleChange('taraf', e.target.value)}>
-                  {DAVA_TARAF.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-                </FormSelect>
-              </FormGroup>
-            </div>
+            <FormGroup label="Müvekkilin Tarafı">
+              <FormSelect value={form.taraf || ''} onChange={(e) => handleChange('taraf', e.target.value)}>
+                {DAVA_TARAF.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </FormSelect>
+            </FormGroup>
+
+            <CokluRehberSecici
+              tip="muvekkil"
+              label="Müvekkiller"
+              ekleMetni="Müvekkil Ekle"
+              value={(form.muvekkilTaraflar as SeciliKisi[]) || []}
+              onChange={(v) => setForm((prev) => ({ ...prev, muvekkilTaraflar: v }))}
+            />
 
             <div className="grid grid-cols-2 gap-4">
               <FormGroup label="Aşama">
@@ -415,30 +449,23 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
               </div>
             </div>
 
-            {/* Karşı Taraf */}
-            <div className="border-t border-border/50 pt-4">
-              <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-3">Karşı Taraf Bilgileri</div>
-              <div className="grid grid-cols-2 gap-4">
-                <FormGroup label="Karşı Taraf">
-                  <RehberSecici
-                    tip="karsiTaraf"
-                    value={(form.karsi as string) || ''}
-                    selectedId={(form.karsiId as string) || null}
-                    onChange={(id, ad) => setForm((prev) => ({ ...prev, karsi: ad, karsiId: id || '' }))}
-                    placeholder="Karşı taraf seçin veya yazın..."
-                  />
-                </FormGroup>
-                <FormGroup label="Karşı Avukat">
-                  <RehberSecici
-                    tip="avukat"
-                    value={(form.karsav as string) || ''}
-                    selectedId={(form.karsavId as string) || null}
-                    onChange={(id, ad) => setForm((prev) => ({ ...prev, karsav: ad, karsavId: id || '' }))}
-                    placeholder="Karşı avukat seçin veya yazın..."
-                  />
-                </FormGroup>
-              </div>
-            </div>
+            {/* Karşı Taraflar */}
+            <CokluRehberSecici
+              tip="karsiTaraf"
+              label="Karşı Taraflar"
+              ekleMetni="Karşı Taraf Ekle"
+              value={(form.karsiTaraflar as SeciliKisi[]) || []}
+              onChange={(v) => setForm((prev) => ({ ...prev, karsiTaraflar: v }))}
+            />
+
+            {/* Karşı Vekiller */}
+            <CokluRehberSecici
+              tip="avukat"
+              label="Karşı Vekiller"
+              ekleMetni="Vekil Ekle"
+              value={(form.vekiller as SeciliKisi[]) || []}
+              onChange={(v) => setForm((prev) => ({ ...prev, vekiller: v }))}
+            />
           </>
         )}
 
