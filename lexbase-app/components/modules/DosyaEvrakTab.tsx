@@ -72,7 +72,14 @@ function dosyaIkonRenk(tip: string): string {
   if (tip.includes('word') || tip.includes('doc')) return 'text-blue-400';
   if (tip.includes('image') || tip.includes('jpg') || tip.includes('png')) return 'text-green';
   if (tip.includes('excel') || tip.includes('sheet')) return 'text-green';
+  if (isUdf(tip)) return 'text-orange-400';
   return 'text-text-dim';
+}
+
+function isUdf(tip: string, dosyaAd?: string): boolean {
+  if (tip.includes('udf')) return true;
+  if (dosyaAd && dosyaAd.toLowerCase().endsWith('.udf')) return true;
+  return false;
 }
 
 function dosyaUzanti(dosyaAd: string): string {
@@ -109,6 +116,7 @@ export function DosyaEvrakTab({ dosyaId, dosyaTipi, muvId }: Props) {
   const [drawerAcik, setDrawerAcik] = useState(false);
   const [pageDragOver, setPageDragOver] = useState(false);
   const [gorunum, setGorunum] = useState<'klasor' | 'liste'>('klasor');
+  const [onizlemeBelge, setOnizlemeBelge] = useState<Belge | null>(null);
 
   const evrakTurleri = dosyaTipi === 'dava' ? DAVA_EVRAK_TURLERI :
                        dosyaTipi === 'icra' ? ICRA_EVRAK_TURLERI :
@@ -331,7 +339,7 @@ export function DosyaEvrakTab({ dosyaId, dosyaTipi, muvId }: Props) {
           <div className="text-center">
             <SvgUpload className="text-gold mx-auto mb-2" />
             <div className="text-sm font-semibold text-gold">Evrakı buraya bırakın</div>
-            <div className="text-[10px] text-text-muted mt-1">PDF, Word, resim, taranmış belge</div>
+            <div className="text-[10px] text-text-muted mt-1">.pdf .doc .docx .jpg .png .xls .xlsx .tiff .bmp .udf</div>
           </div>
         </div>
       )}
@@ -634,6 +642,7 @@ export function DosyaEvrakTab({ dosyaId, dosyaTipi, muvId }: Props) {
               onKapat={() => { setDrawerAcik(false); setSecilenBelge(null); }}
               onIndir={() => handleIndir(secilenBelge)}
               onSil={() => setSilOnay(secilenBelge.id)}
+              onOnizleme={() => setOnizlemeBelge(secilenBelge)}
               indiriliyor={indiriliyor === secilenBelge.id}
             />
           </div>
@@ -671,6 +680,14 @@ export function DosyaEvrakTab({ dosyaId, dosyaTipi, muvId }: Props) {
         </div>
       )}
 
+      {/* Önizleme Modal */}
+      {onizlemeBelge && (
+        <OnizlemeModal
+          belge={onizlemeBelge}
+          onKapat={() => setOnizlemeBelge(null)}
+        />
+      )}
+
       {/* Yükleme Modal */}
       <DosyaBelgeModal
         open={modalAcik}
@@ -688,7 +705,7 @@ export function DosyaEvrakTab({ dosyaId, dosyaTipi, muvId }: Props) {
 // ══════════════════════════════════════════════════════════════
 
 function InspectorDrawer({
-  belge, evrakBilgi, versiyon, onKapat, onIndir, onSil, indiriliyor,
+  belge, evrakBilgi, versiyon, onKapat, onIndir, onSil, onOnizleme, indiriliyor,
 }: {
   belge: Belge;
   evrakBilgi: (key: string) => { key: string; label: string; icon: string };
@@ -696,17 +713,20 @@ function InspectorDrawer({
   onKapat: () => void;
   onIndir: () => void;
   onSil: () => void;
+  onOnizleme: () => void;
   indiriliyor: boolean;
 }) {
   const tur = evrakBilgi(belge.evrakTuru || 'diger');
   const isPdf = belge.tip?.includes('pdf');
   const isImage = belge.tip?.includes('image');
+  const isUdfFile = isUdf(belge.tip || '', belge.dosyaAd);
+  const canPreview = isPdf || isImage || isUdfFile;
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
 
-  // Önizleme URL'si oluştur (PDF ve resim için)
+  // Önizleme URL'si oluştur (PDF, resim ve UDF için)
   useEffect(() => {
-    if (isPdf || isImage) {
+    if (canPreview) {
       setPreviewLoading(true);
       belgeIndir(belge.storagePath)
         .then(url => setPreviewUrl(url))
@@ -736,15 +756,26 @@ function InspectorDrawer({
               <div className="w-5 h-5 border-2 border-gold border-t-transparent rounded-full animate-spin" />
             </div>
           ) : previewUrl && isImage ? (
-            <img src={previewUrl} alt={belge.ad} className="w-full h-40 object-contain bg-bg" />
+            <button type="button" onClick={onOnizleme} className="w-full cursor-pointer hover:opacity-80 transition-opacity">
+              <img src={previewUrl} alt={belge.ad} className="w-full h-40 object-contain bg-bg" />
+            </button>
           ) : previewUrl && isPdf ? (
             <div className="h-40 flex flex-col items-center justify-center gap-2">
               <div className="w-12 h-12 rounded-lg bg-red/10 flex items-center justify-center">
                 <span className="text-red font-bold text-xs">PDF</span>
               </div>
-              <a href={previewUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] text-gold hover:underline">
-                Tam önizleme aç →
-              </a>
+              <button type="button" onClick={onOnizleme} className="text-[10px] text-gold hover:underline">
+                Önizleme aç →
+              </button>
+            </div>
+          ) : previewUrl && isUdfFile ? (
+            <div className="h-40 flex flex-col items-center justify-center gap-2">
+              <div className="w-12 h-12 rounded-lg bg-orange-400/10 flex items-center justify-center">
+                <span className="text-orange-400 font-bold text-xs">UDF</span>
+              </div>
+              <button type="button" onClick={onOnizleme} className="text-[10px] text-gold hover:underline">
+                Önizleme aç →
+              </button>
             </div>
           ) : (
             <div className="h-32 flex flex-col items-center justify-center gap-2">
@@ -846,6 +877,189 @@ function MetaRow({ label, value, mono }: { label: string; value: string; mono?: 
     <div className="flex justify-between text-[11px]">
       <span className="text-text-dim">{label}</span>
       <span className={`text-text font-medium text-right max-w-[60%] truncate ${mono ? 'font-mono text-[10px]' : ''}`} title={value}>{value}</span>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+//  Önizleme Modal — PDF, Resim ve UDF görüntüleyici
+// ══════════════════════════════════════════════════════════════
+
+const SvgMaximize = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/></svg>
+);
+const SvgMinimize = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 14h6v6m10-10h-6V4m0 6l7-7M3 21l7-7"/></svg>
+);
+
+function OnizlemeModal({ belge, onKapat }: { belge: Belge; onKapat: () => void }) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [tamEkran, setTamEkran] = useState(false);
+  const [udfIcerik, setUdfIcerik] = useState<string | null>(null);
+
+  const isPdf = belge.tip?.includes('pdf');
+  const isImage = belge.tip?.includes('image');
+  const isUdfFile = isUdf(belge.tip || '', belge.dosyaAd);
+
+  useEffect(() => {
+    setLoading(true);
+    belgeIndir(belge.storagePath)
+      .then(async (signedUrl) => {
+        setUrl(signedUrl);
+        // UDF dosyasıysa içeriğini text olarak oku
+        if (isUdfFile) {
+          try {
+            const res = await fetch(signedUrl);
+            const text = await res.text();
+            setUdfIcerik(text);
+          } catch {
+            setUdfIcerik(null);
+          }
+        }
+      })
+      .catch(() => setUrl(null))
+      .finally(() => setLoading(false));
+  }, [belge.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ESC tuşu ile kapatma
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (tamEkran) setTamEkran(false);
+        else onKapat();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [tamEkran, onKapat]);
+
+  // UDF içeriğini HTML olarak render etmeyi dene (UYAP belgeleri genellikle XML/HTML tabanlıdır)
+  const udfIsHtml = udfIcerik && (
+    udfIcerik.trim().startsWith('<') ||
+    udfIcerik.includes('<html') ||
+    udfIcerik.includes('<body') ||
+    udfIcerik.includes('<?xml')
+  );
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-bg/70 backdrop-blur-sm" onClick={onKapat}>
+      <div
+        className={`bg-surface border border-border shadow-2xl flex flex-col animate-in fade-in zoom-in-95 duration-200 transition-all ${
+          tamEkran
+            ? 'fixed inset-0 rounded-none'
+            : 'rounded-2xl w-[90vw] max-w-5xl h-[85vh]'
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-3 border-b border-border flex-shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+              isPdf ? 'bg-red/10 text-red' :
+              isImage ? 'bg-green/10 text-green' :
+              isUdfFile ? 'bg-orange-400/10 text-orange-400' :
+              'bg-surface2 text-text-dim'
+            }`}>
+              <span className="text-[10px] font-bold uppercase">
+                {isPdf ? 'PDF' : isUdfFile ? 'UDF' : dosyaUzanti(belge.dosyaAd || '')}
+              </span>
+            </div>
+            <div className="min-w-0">
+              <div className="text-sm font-semibold text-text truncate">{belge.ad}</div>
+              {belge.dosyaAd && (
+                <div className="text-[10px] text-text-dim font-mono truncate">{belge.dosyaAd}</div>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {url && !isUdfFile && (
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 rounded-lg hover:bg-surface2 text-text-dim hover:text-gold transition-colors"
+                title="Yeni sekmede aç"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><path d="M15 3h6v6"/><path d="M10 14L21 3"/></svg>
+              </a>
+            )}
+            <button
+              onClick={() => setTamEkran(!tamEkran)}
+              className="p-2 rounded-lg hover:bg-surface2 text-text-dim hover:text-text transition-colors"
+              title={tamEkran ? 'Normal boyut' : 'Tam ekran'}
+            >
+              {tamEkran ? <SvgMinimize /> : <SvgMaximize />}
+            </button>
+            <button
+              onClick={onKapat}
+              className="p-2 rounded-lg hover:bg-surface2 text-text-dim hover:text-text transition-colors"
+              title="Kapat (ESC)"
+            >
+              <SvgX />
+            </button>
+          </div>
+        </div>
+
+        {/* İçerik */}
+        <div className="flex-1 min-h-0 bg-bg/50 overflow-hidden">
+          {loading ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-8 h-8 border-2 border-gold border-t-transparent rounded-full animate-spin" />
+                <span className="text-xs text-text-muted">Yükleniyor...</span>
+              </div>
+            </div>
+          ) : !url ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center">
+                <div className="text-3xl mb-3">⚠️</div>
+                <div className="text-sm text-text-muted">Önizleme yüklenemedi</div>
+              </div>
+            </div>
+          ) : isPdf ? (
+            <iframe
+              src={`${url}#toolbar=1&navpanes=0`}
+              className="w-full h-full border-0"
+              title={belge.ad}
+            />
+          ) : isImage ? (
+            <div className="h-full flex items-center justify-center p-4 overflow-auto">
+              <img
+                src={url}
+                alt={belge.ad}
+                className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
+              />
+            </div>
+          ) : isUdfFile && udfIcerik ? (
+            /* UDF Görüntüleyici */
+            <div className="h-full overflow-auto">
+              {udfIsHtml ? (
+                <iframe
+                  srcDoc={udfIcerik}
+                  className="w-full h-full border-0 bg-white"
+                  title={belge.ad}
+                  sandbox="allow-same-origin"
+                />
+              ) : (
+                <pre className="p-6 text-xs text-text font-mono whitespace-pre-wrap break-words leading-relaxed">
+                  {udfIcerik}
+                </pre>
+              )}
+            </div>
+          ) : (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center">
+                <div className={`w-16 h-16 rounded-xl bg-surface2 flex items-center justify-center mx-auto mb-3 ${dosyaIkonRenk(belge.tip || '')}`}>
+                  <SvgFile className="text-current w-8 h-8" />
+                </div>
+                <div className="text-sm text-text-muted mb-1">Bu dosya türü önizlenemez</div>
+                <div className="text-[10px] text-text-dim">{belge.tip || dosyaUzanti(belge.dosyaAd || '')}</div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

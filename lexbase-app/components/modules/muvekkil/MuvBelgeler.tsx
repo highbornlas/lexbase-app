@@ -284,7 +284,7 @@ export function MuvBelgeler({ muvId }: Props) {
           <div className="text-center">
             <SvgUpload className="text-gold mx-auto mb-2" />
             <div className="text-sm font-semibold text-gold">Belgeyi buraya bırakın</div>
-            <div className="text-[10px] text-text-muted mt-1">PDF, Word, resim, taranmış belge</div>
+            <div className="text-[10px] text-text-muted mt-1">.pdf .doc .docx .jpg .png .xls .xlsx .tiff .bmp .udf</div>
           </div>
         </div>
       )}

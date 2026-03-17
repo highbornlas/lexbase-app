@@ -231,13 +231,14 @@ export function BelgeModal({ open, onClose, onKaydet, yukleniyor }: Props) {
           <div>
             <div className="text-3xl mb-2">📎</div>
             <div className="text-sm text-text-muted">Dosyayı sürükleyip bırakın</div>
-            <div className="text-xs text-text-dim mt-1">veya tıklayarak seçin (maks. 5MB)</div>
+            <div className="text-xs text-text-dim mt-1">.pdf .doc .docx .jpg .png .xls .xlsx .tiff .bmp .udf (maks. 5MB)</div>
           </div>
         )}
         <input
           id="belge-file-input"
           type="file"
           className="hidden"
+          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.tiff,.bmp,.xls,.xlsx,.udf"
           onChange={(e) => handleDosyaSec(e.target.files?.[0] || null)}
         />
       </div>

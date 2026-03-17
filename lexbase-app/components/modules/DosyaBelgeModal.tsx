@@ -228,7 +228,7 @@ export function DosyaBelgeModal({ open, onClose, onKaydet, dosyaTipi, yukleniyor
               Evrakı sürükleyip bırakın
             </div>
             <div className="text-[10px] text-text-dim mt-1">
-              PDF, Word, resim, taranmış belge (maks. 10MB)
+              .pdf .doc .docx .jpg .png .xls .xlsx .tiff .bmp .udf (maks. 10MB)
             </div>
           </div>
         )}
@@ -236,7 +236,7 @@ export function DosyaBelgeModal({ open, onClose, onKaydet, dosyaTipi, yukleniyor
           id="dosya-belge-input"
           type="file"
           className="hidden"
-          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.tiff,.bmp,.xls,.xlsx"
+          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.tiff,.bmp,.xls,.xlsx,.udf"
           onChange={(e) => handleDosyaSec(e.target.files?.[0] || null)}
         />
       </div>
