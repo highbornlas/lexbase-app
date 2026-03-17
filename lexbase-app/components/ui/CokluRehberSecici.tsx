@@ -217,7 +217,7 @@ function KisiAramaEkle({
     if (tip === 'karsiTaraf') {
       return (karsiTaraflar || []).map((kt) => ({
         id: kt.id,
-        ad: kt.ad,
+        ad: [kt.ad, kt.soyad].filter(Boolean).join(' '),
         meta: [kt.tc && `TC: ${kt.tc}`, kt.vergiNo && `VKN: ${kt.vergiNo}`, kt.tel]
           .filter(Boolean)
           .join(' · '),
@@ -228,7 +228,7 @@ function KisiAramaEkle({
     if (tip === 'avukat') {
       return (vekillar || []).map((v) => ({
         id: v.id,
-        ad: v.ad,
+        ad: [v.ad, v.soyad].filter(Boolean).join(' '),
         meta: [v.baro && `${v.baro} Barosu`, v.baroSicil && `Sicil: ${v.baroSicil}`, v.tel]
           .filter(Boolean)
           .join(' · '),
@@ -311,8 +311,8 @@ function KisiAramaEkle({
             ref={inputRef}
             type="text"
             value={arama}
-            onChange={(e) => { setArama(e.target.value); if (e.target.value.trim()) setAcik(true); else setAcik(false); }}
-            onFocus={() => { if (arama.trim()) setAcik(true); }}
+            onChange={(e) => { setArama(e.target.value); setAcik(true); }}
+            onFocus={() => setAcik(true)}
             placeholder={placeholder}
             className="flex-1 h-9 px-3 rounded-lg bg-surface2 border border-border text-xs text-text
               focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/50
@@ -331,8 +331,12 @@ function KisiAramaEkle({
         {/* Dropdown */}
         {acik && (
           <div className="absolute z-50 w-full mt-1 bg-surface border border-border rounded-xl shadow-xl max-h-60 overflow-y-auto">
-            {/* Sonuçlar */}
-            {filtrelenmis.length > 0 ? (
+            {/* Yönlendirme veya sonuçlar */}
+            {!arama.trim() ? (
+              <div className="px-3 py-3 text-xs text-text-muted text-center">
+                Aramak istediğiniz kişinin adını yazın
+              </div>
+            ) : filtrelenmis.length > 0 ? (
               filtrelenmis.map((item) => (
                 <button
                   key={item.id}
@@ -353,13 +357,9 @@ function KisiAramaEkle({
                   )}
                 </button>
               ))
-            ) : arama.trim() ? (
-              <div className="px-3 py-3 text-xs text-text-muted text-center">
-                Eşleşen kayıt bulunamadı
-              </div>
             ) : (
               <div className="px-3 py-3 text-xs text-text-muted text-center">
-                Aramaya başlayın...
+                Eşleşen kayıt bulunamadı
               </div>
             )}
 
