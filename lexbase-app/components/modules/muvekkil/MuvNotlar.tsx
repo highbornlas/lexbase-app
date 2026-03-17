@@ -20,8 +20,15 @@ const RENK_SECENEKLERI = [
   { key: 'kirmizi', label: '🔴', bg: 'bg-red/8 border-red/25', tape: 'bg-red/30', dot: 'bg-red' },
 ];
 
-const MAX_SATIRLAR = 4; // Kısaltılmış gösterimde max satır
-const MAX_KARAKTER = 200; // Kısaltılmış gösterimde max karakter
+const MAX_SATIRLAR = 4;
+const MAX_KARAKTER = 200;
+const MAX_BASLIK = 50; // Başlık karakter sınırı
+
+const SUTUN_SECENEKLERI = [
+  { key: 1, label: '▬', cls: 'grid-cols-1' },
+  { key: 2, label: '▬▬', cls: 'grid-cols-1 sm:grid-cols-2' },
+  { key: 3, label: '▬▬▬', cls: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' },
+] as const;
 
 interface Props {
   muv: Muvekkil;
@@ -47,6 +54,8 @@ export function MuvNotlar({ muv, onKaydet }: Props) {
   const [duzenleIcerik, setDuzenleIcerik] = useState('');
   const [aramaQ, setAramaQ] = useState('');
   const [siralama, setSiralama] = useState<SiralamaKey>('yeni');
+  const [sutunSayisi, setSutunSayisi] = useState<1 | 2 | 3>(2);
+  const [duzenleRenk, setDuzenleRenk] = useState('sari');
 
   /* ── Notları al (eski string + yeni array uyumluluğu) ── */
   const notlar: Not[] = useMemo(() => {
@@ -131,12 +140,13 @@ export function MuvNotlar({ muv, onKaydet }: Props) {
     setDuzenleId(n.id);
     setDuzenleBaslik(n.baslik || '');
     setDuzenleIcerik(n.icerik);
+    setDuzenleRenk(n.renk || 'sari');
   };
 
   const handleDuzenleKaydet = () => {
     if (!duzenleId || !duzenleIcerik.trim()) return;
     const guncel = notlar.map((n) =>
-      n.id === duzenleId ? { ...n, baslik: duzenleBaslik.trim() || undefined, icerik: duzenleIcerik.trim() } : n
+      n.id === duzenleId ? { ...n, baslik: duzenleBaslik.trim() || undefined, icerik: duzenleIcerik.trim(), renk: duzenleRenk } : n
     );
     kaydetNotlar(guncel);
     setDuzenleId(null);
@@ -155,6 +165,25 @@ export function MuvNotlar({ muv, onKaydet }: Props) {
         <h3 className="text-sm font-semibold text-text shrink-0">📝 Notlar ({notlar.length})</h3>
 
         <div className="flex items-center gap-2 flex-1 justify-end">
+          {/* Sütun sayısı toggle */}
+          {notlar.length > 1 && (
+            <div className="flex border border-border rounded-lg overflow-hidden">
+              {SUTUN_SECENEKLERI.map((s) => (
+                <button
+                  key={s.key}
+                  type="button"
+                  onClick={() => setSutunSayisi(s.key as 1 | 2 | 3)}
+                  className={`px-1.5 py-1 text-[9px] font-mono tracking-widest transition-colors ${
+                    sutunSayisi === s.key ? 'bg-gold text-bg' : 'bg-surface text-text-dim hover:text-text'
+                  }`}
+                  title={`${s.key} sütun`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          )}
+
           {notlar.length > 1 && (
             <select
               value={siralama}
@@ -196,6 +225,7 @@ export function MuvNotlar({ muv, onKaydet }: Props) {
               value={yeniBaslik}
               onChange={(e) => setYeniBaslik(e.target.value)}
               placeholder="Başlık (opsiyonel)"
+              maxLength={MAX_BASLIK}
               className="flex-1 px-3 py-2 text-sm font-semibold bg-bg border border-border rounded-lg text-text placeholder:text-text-dim focus:border-gold focus:outline-none"
               autoFocus
             />
@@ -264,7 +294,7 @@ export function MuvNotlar({ muv, onKaydet }: Props) {
       ) : filtrelenmis.length === 0 ? (
         <div className="text-center py-6 text-text-dim text-xs">Arama sonucu bulunamadı</div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className={`grid gap-3 ${SUTUN_SECENEKLERI.find((s) => s.key === sutunSayisi)?.cls || 'grid-cols-1 sm:grid-cols-2'}`}>
           {filtrelenmis.map((n) => {
             const renk = getRenk(n.renk);
             const isAcik = acikNotId === n.id;
@@ -300,14 +330,32 @@ export function MuvNotlar({ muv, onKaydet }: Props) {
                   {/* İçerik — Düzenleme modu */}
                   {isDuzenle ? (
                     <div className="space-y-2 mt-2">
-                      <input
-                        type="text"
-                        value={duzenleBaslik}
-                        onChange={(e) => setDuzenleBaslik(e.target.value)}
-                        placeholder="Başlık (opsiyonel)"
-                        className="w-full px-2 py-1 text-xs font-semibold bg-bg border border-border rounded text-text placeholder:text-text-dim focus:border-gold focus:outline-none"
-                        autoFocus
-                      />
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="text"
+                          value={duzenleBaslik}
+                          onChange={(e) => setDuzenleBaslik(e.target.value)}
+                          placeholder="Başlık (opsiyonel)"
+                          maxLength={MAX_BASLIK}
+                          className="flex-1 px-2 py-1 text-xs font-semibold bg-bg border border-border rounded text-text placeholder:text-text-dim focus:border-gold focus:outline-none"
+                          autoFocus
+                        />
+                        {/* Renk değiştir */}
+                        <div className="flex gap-0.5">
+                          {RENK_SECENEKLERI.map((r) => (
+                            <button
+                              key={r.key}
+                              type="button"
+                              onClick={() => setDuzenleRenk(r.key)}
+                              className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] transition-all ${
+                                duzenleRenk === r.key ? 'ring-2 ring-gold ring-offset-1 ring-offset-bg scale-110' : 'opacity-40 hover:opacity-80'
+                              }`}
+                            >
+                              {r.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                       <textarea
                         value={duzenleIcerik}
                         onChange={(e) => setDuzenleIcerik(e.target.value)}
