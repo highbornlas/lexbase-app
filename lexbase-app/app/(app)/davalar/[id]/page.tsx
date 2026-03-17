@@ -151,7 +151,7 @@ export default function DavaDetay({ params }: { params: Promise<{ id: string }> 
   }
 
   return (
-    <div className="max-w-[1400px] mx-auto">
+    <div>
       {/* ═══════════════════════════════════════════════════════════
          STICKY HEADER — Tüm temel bilgiler burada, tekrar yok
          ═══════════════════════════════════════════════════════════ */}
