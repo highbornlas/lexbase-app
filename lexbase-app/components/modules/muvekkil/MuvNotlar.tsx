@@ -26,8 +26,8 @@ const MAX_BASLIK = 50; // Başlık karakter sınırı
 
 const SUTUN_SECENEKLERI = [
   { key: 1, label: '▬', cls: 'grid-cols-1' },
-  { key: 2, label: '▬▬', cls: 'grid-cols-1 sm:grid-cols-2' },
   { key: 3, label: '▬▬▬', cls: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' },
+  { key: 5, label: '▬▬▬▬▬', cls: 'grid-cols-1 sm:grid-cols-3 lg:grid-cols-5' },
 ] as const;
 
 interface Props {
@@ -54,7 +54,7 @@ export function MuvNotlar({ muv, onKaydet }: Props) {
   const [duzenleIcerik, setDuzenleIcerik] = useState('');
   const [aramaQ, setAramaQ] = useState('');
   const [siralama, setSiralama] = useState<SiralamaKey>('yeni');
-  const [sutunSayisi, setSutunSayisi] = useState<1 | 2 | 3>(2);
+  const [sutunSayisi, setSutunSayisi] = useState<1 | 3 | 5>(3);
   const [duzenleRenk, setDuzenleRenk] = useState('sari');
 
   /* ── Notları al (eski string + yeni array uyumluluğu) ── */
@@ -172,7 +172,7 @@ export function MuvNotlar({ muv, onKaydet }: Props) {
                 <button
                   key={s.key}
                   type="button"
-                  onClick={() => setSutunSayisi(s.key as 1 | 2 | 3)}
+                  onClick={() => setSutunSayisi(s.key as 1 | 3 | 5)}
                   className={`px-1.5 py-1 text-[9px] font-mono tracking-widest transition-colors ${
                     sutunSayisi === s.key ? 'bg-gold text-bg' : 'bg-surface text-text-dim hover:text-text'
                   }`}
