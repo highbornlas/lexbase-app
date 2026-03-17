@@ -14,6 +14,7 @@ import {
   ICRA_MUVEKKIL_ROL, KAPANIS_SEBEPLERI_ICRA, ILLER,
   ICRA_YARGI_BIRIMLERI,
 } from '@/lib/constants/uyap';
+import { ADLIYELER } from '@/lib/constants/adliyeler';
 import { tamIcraDairesiAdi, esasNoGoster, tamMahkemeAdi } from '@/lib/utils/uyapHelpers';
 
 interface IcraModalProps {
@@ -164,6 +165,12 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
     const set = new Set(kullanılanIller);
     return { oncelikli: kullanılanIller, digerleri: ILLER.filter((il) => !set.has(il)) };
   }, [kullanılanIller]);
+
+  // Seçilen ile göre adliyeler (ADLIYELER veritabanından)
+  const ilAdliyeleri = useMemo(() => {
+    if (!form.il) return [];
+    return ADLIYELER[form.il] || [];
+  }, [form.il]);
 
   // Daire hafızasından otomatik doldur
   function daireSecFromHafiza(oneri: typeof daireler[0]) {
@@ -447,7 +454,7 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
               </div>
               <div className="grid grid-cols-4 gap-4">
                 <FormGroup label="İl">
-                  <FormSelect value={form.il || ''} onChange={(e) => handleChange('il', e.target.value)}>
+                  <FormSelect value={form.il || ''} onChange={(e) => { handleChange('il', e.target.value); handleChange('adliye', ''); }}>
                     <option value="">Seçiniz</option>
                     {ilListesi.oncelikli.length > 0 && (
                       <optgroup label="Son Kullanılan">
@@ -460,17 +467,14 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
                   </FormSelect>
                 </FormGroup>
                 <FormGroup label="Adliye">
-                  <FormInput
-                    value={form.adliye || ''}
-                    onChange={(e) => handleChange('adliye', e.target.value)}
-                    placeholder="Adliye"
-                    list="icra-adliye-onerileri"
-                  />
-                  {adliyeler.length > 0 && (
-                    <datalist id="icra-adliye-onerileri">
-                      {adliyeler.map((a) => <option key={a} value={a} />)}
-                    </datalist>
-                  )}
+                  <FormSelect value={form.adliye || ''} onChange={(e) => handleChange('adliye', e.target.value)} disabled={!form.il}>
+                    <option value="">Seçiniz</option>
+                    {ilAdliyeleri.map((a) => (
+                      <option key={a.ad} value={a.ad}>
+                        {a.ad}{a.mulhakat ? ` (${a.mulhakat} mülhakatı)` : ''}
+                      </option>
+                    ))}
+                  </FormSelect>
                 </FormGroup>
                 <FormGroup label="Daire">
                   <FormInput value={form.daire || ''} onChange={(e) => handleChange('daire', e.target.value)} placeholder="Ör: 5. İcra" />
