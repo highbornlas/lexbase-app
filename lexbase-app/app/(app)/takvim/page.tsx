@@ -467,6 +467,9 @@ export default function TakvimPage() {
                       {hucre.tatiller.filter((t) => t.tip === 'resmi' || t.tip === 'dini').slice(0, 1).map((t, ti) => (
                         <div key={ti} className="text-[8px] text-red/80 truncate mb-0.5 leading-tight">{t.ad}</div>
                       ))}
+                      {hasAdli && !hasResmi && (
+                        <div className="text-[8px] text-blue-400/80 truncate mb-0.5 leading-tight">⚖️ Adli Tatil</div>
+                      )}
                       {hucre.etkinlikler.slice(0, 3).map((e) => renderChip(e))}
                       {hucre.etkinlikler.length > 3 && <div className="text-[9px] text-text-dim text-center font-medium">+{hucre.etkinlikler.length - 3} daha</div>}
                     </>)}

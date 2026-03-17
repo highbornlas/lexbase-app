@@ -110,10 +110,50 @@ export function useDashboardLayout() {
   const [editMode, setEditMode] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  // localStorage'dan oku (SSR-safe)
+  // localStorage'dan oku (SSR-safe) + yeni widget migrasyon
   useEffect(() => {
-    setResponsiveLayouts(okuLS<ResponsiveLayouts>(LS_LAYOUT, VARSAYILAN_LAYOUTS));
-    setGizliWidgetler(okuLS<string[]>(LS_HIDDEN, VARSAYILAN_GIZLI));
+    const kayitliLayout = okuLS<ResponsiveLayouts>(LS_LAYOUT, VARSAYILAN_LAYOUTS);
+    const kayitliGizli = okuLS<string[]>(LS_HIDDEN, VARSAYILAN_GIZLI);
+
+    // Migrasyon: localStorage'daki eski kayıtta olmayan yeni widget'ları tespit et
+    const tumKayitliIds = new Set<string>();
+    // Layout'taki widget ID'leri
+    if (kayitliLayout.lg) {
+      kayitliLayout.lg.forEach((l: Layout) => tumKayitliIds.add(l.i));
+    }
+    // Gizli listedeki ID'ler
+    kayitliGizli.forEach((id: string) => tumKayitliIds.add(id));
+
+    let gizliSonuc = [...kayitliGizli];
+    let layoutSonuc = { ...kayitliLayout };
+    let degisti = false;
+
+    for (const w of WIDGET_TANIMLARI) {
+      if (!tumKayitliIds.has(w.id)) {
+        // Yeni widget — varsayılan tercihine göre ekle
+        if (!w.varsayilanGorunur) {
+          gizliSonuc.push(w.id);
+        }
+        // Layout'a da ekle (her breakpoint'e)
+        for (const bp of ['lg', 'md', 'sm'] as const) {
+          const varsayilanItem = VARSAYILAN_LAYOUTS[bp]?.find((l: Layout) => l.i === w.id);
+          if (varsayilanItem && layoutSonuc[bp]) {
+            (layoutSonuc[bp] as Layout[]).push(varsayilanItem);
+          }
+        }
+        degisti = true;
+      }
+    }
+
+    if (degisti) {
+      try {
+        localStorage.setItem(LS_HIDDEN, JSON.stringify(gizliSonuc));
+        localStorage.setItem(LS_LAYOUT, JSON.stringify(layoutSonuc));
+      } catch { /* */ }
+    }
+
+    setResponsiveLayouts(layoutSonuc);
+    setGizliWidgetler(gizliSonuc);
     setMounted(true);
   }, []);
 
