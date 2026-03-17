@@ -120,12 +120,24 @@ export default function DavalarPage() {
   const [sayfaBoyutu, setSayfaBoyutu] = useState(DEFAULT_PAGE_SIZE);
 
   // Sütun görünürlük
+  const varsayilanSutunlar = DAVA_SUTUNLAR.map((s) => s.key);
   const [gorunenSutunlar, setGorunenSutunlar] = useState<DavaColKey[]>(() => {
-    if (typeof window === 'undefined') return DAVA_SUTUNLAR.map((s) => s.key);
+    if (typeof window === 'undefined') return varsayilanSutunlar;
     try {
       const saved = localStorage.getItem(LS_KEY_COLS);
-      return saved ? JSON.parse(saved) : DAVA_SUTUNLAR.map((s) => s.key);
-    } catch { return DAVA_SUTUNLAR.map((s) => s.key); }
+      if (!saved) return varsayilanSutunlar;
+      const parsed: DavaColKey[] = JSON.parse(saved);
+      // Sütun tanımları değiştiyse (yeni sütun eklendi/kaldırıldı) varsayılana dön
+      const gecerliAnahtarlar = new Set(varsayilanSutunlar);
+      const kaydedilenSet = new Set(parsed);
+      const eksik = varsayilanSutunlar.some((k) => !kaydedilenSet.has(k));
+      const fazla = parsed.some((k) => !gecerliAnahtarlar.has(k));
+      if (eksik || fazla) {
+        localStorage.removeItem(LS_KEY_COLS);
+        return varsayilanSutunlar;
+      }
+      return parsed;
+    } catch { return varsayilanSutunlar; }
   });
   const [sutunMenuAcik, setSutunMenuAcik] = useState(false);
   const sutunMenuRef = useRef<HTMLDivElement>(null);
