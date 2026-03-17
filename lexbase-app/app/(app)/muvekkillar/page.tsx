@@ -22,6 +22,8 @@ import { useKarsiTarafKaydet } from '@/lib/hooks/useKarsiTaraflar';
 import { useVekilKaydet } from '@/lib/hooks/useVekillar';
 import { createClient } from '@/lib/supabase/client';
 import { SkeletonTable } from '@/components/ui/SkeletonTable';
+import { useDavalar } from '@/lib/hooks/useDavalar';
+import { useIcralar } from '@/lib/hooks/useIcra';
 
 type TabKey = 'muvekkillar' | 'karsitaraflar' | 'avukatlar';
 
@@ -160,6 +162,20 @@ export default function RehberPage() {
   const mKaydet = useMuvekkilKaydet();
   const ktKaydet = useKarsiTarafKaydet();
   const vKaydet = useVekilKaydet();
+  const { data: davalar } = useDavalar();
+  const { data: icralar } = useIcralar();
+
+  const aktifDosyaSayisi = useCallback((muvId: string) => {
+    const davaSayi = (davalar || []).filter(d => d.muvId === muvId && d.durum !== 'kapandi' && d.durum !== 'Kapandı').length;
+    const icraSayi = (icralar || []).filter(i => i.muvId === muvId && i.durum !== 'kapandi' && i.durum !== 'Kapandı').length;
+    return davaSayi + icraSayi;
+  }, [davalar, icralar]);
+
+  const aktifDosyaSayisiKT = useCallback((ktId: string) => {
+    const davaSayi = (davalar || []).filter(d => d.karsiTaraflar?.some(kt => kt.id === ktId) && d.durum !== 'kapandi' && d.durum !== 'Kapandı').length;
+    const icraSayi = (icralar || []).filter(i => i.karsiTaraflar?.some(kt => kt.id === ktId) && i.durum !== 'kapandi' && i.durum !== 'Kapandı').length;
+    return davaSayi + icraSayi;
+  }, [davalar, icralar]);
 
   /* ── Eski kayıtlara kayitNo ataması (bir kez çalışır) ── */
   const migrationDone = useRef(false);
@@ -641,6 +657,14 @@ export default function RehberPage() {
                           {m.vergiNo && <span>VKN: {m.vergiNo}</span>}
                           {m.tel && <span>📞 {m.tel}</span>}
                           {m.mail && <span>✉️ {m.mail}</span>}
+                          {(() => {
+                            const sayi = aktifDosyaSayisi(m.id);
+                            return sayi > 0 ? (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-400/10 text-blue-400 border border-blue-400/20">
+                                📂 {sayi} dosya
+                              </span>
+                            ) : null;
+                          })()}
                         </div>
                         {m.etiketler && m.etiketler.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1">
@@ -738,6 +762,14 @@ export default function RehberPage() {
                         {kt.tel && <span>📞 {kt.tel}</span>}
                         {kt.mail && <span>✉️ {kt.mail}</span>}
                         {kt.uets && <span>📨 UETS</span>}
+                        {(() => {
+                          const sayi = aktifDosyaSayisiKT(kt.id);
+                          return sayi > 0 ? (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-400/10 text-blue-400 border border-blue-400/20">
+                              📂 {sayi} dosya
+                            </span>
+                          ) : null;
+                        })()}
                       </div>
                       {kt.etiketler && kt.etiketler.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-1">

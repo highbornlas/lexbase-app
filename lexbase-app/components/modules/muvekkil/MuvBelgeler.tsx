@@ -105,6 +105,7 @@ export function MuvBelgeler({ muvId }: Props) {
   const [secilenBelge, setSecilenBelge] = useState<Belge | null>(null);
   const [drawerAcik, setDrawerAcik] = useState(false);
   const [pageDragOver, setPageDragOver] = useState(false);
+  const [gorunum, setGorunum] = useState<'klasor' | 'liste'>('klasor');
   const [silOnay, setSilOnay] = useState<string | null>(null);
   const [indiriliyor, setIndiriliyor] = useState<string | null>(null);
 
@@ -325,19 +326,39 @@ export function MuvBelgeler({ muvId }: Props) {
           )}
         </div>
 
-        <button
-          onClick={() => setModalOpen(true)}
-          disabled={limitDolu}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-semibold text-xs transition-colors shadow-[0_2px_8px_rgba(201,168,76,0.2)] ${
-            limitDolu
-              ? 'bg-surface2 text-text-dim cursor-not-allowed'
-              : 'bg-gold text-bg hover:bg-gold-light'
-          }`}
-          title={limitDolu ? 'Depolama limiti dolmuştur' : undefined}
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
-          Belge Yükle
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Görünüm Toggle */}
+          <div className="flex rounded-lg border border-border overflow-hidden">
+            <button
+              onClick={() => setGorunum('klasor')}
+              className={`px-2 py-1.5 transition-colors ${gorunum === 'klasor' ? 'bg-gold text-bg' : 'bg-surface text-text-dim hover:text-text'}`}
+              title="Klasör görünümü"
+            >
+              <SvgFolder className="text-current" />
+            </button>
+            <button
+              onClick={() => setGorunum('liste')}
+              className={`px-2 py-1.5 transition-colors ${gorunum === 'liste' ? 'bg-gold text-bg' : 'bg-surface text-text-dim hover:text-text'}`}
+              title="Liste görünümü"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+            </button>
+          </div>
+
+          <button
+            onClick={() => setModalOpen(true)}
+            disabled={limitDolu}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-semibold text-xs transition-colors shadow-[0_2px_8px_rgba(201,168,76,0.2)] ${
+              limitDolu
+                ? 'bg-surface2 text-text-dim cursor-not-allowed'
+                : 'bg-gold text-bg hover:bg-gold-light'
+            }`}
+            title={limitDolu ? 'Depolama limiti dolmuştur' : undefined}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
+            Belge Yükle
+          </button>
+        </div>
       </div>
 
       {/* ── ANA İÇERİK ── */}
@@ -377,8 +398,82 @@ export function MuvBelgeler({ muvId }: Props) {
                 Aramayı temizle
               </button>
             </div>
+          ) : gorunum === 'liste' ? (
+            /* Düz Liste Görünümü */
+            <div className="border border-border/60 rounded-xl overflow-hidden bg-surface/50">
+              {/* Tablo Başlık */}
+              <div className="flex items-center gap-3 px-4 py-2 bg-surface2/30 border-b border-border/40 text-[10px] font-bold text-text-dim uppercase tracking-wider">
+                <div className="w-8" />
+                <div className="flex-1">Belge Adı</div>
+                <div className="w-24 text-center hidden sm:block">Tür</div>
+                <div className="w-20 text-center hidden md:block">Tarih</div>
+                <div className="w-16 text-right hidden md:block">Boyut</div>
+                <div className="w-16" />
+              </div>
+              {filtreliBelgeler.map((belge, i) => {
+                const isSelected = secilenBelge?.id === belge.id;
+                const kalan = belge.tur === 'vekaletname' ? kalanGun(belge.meta?.bitis) : null;
+                const turLabel = BELGE_TURLERI.find(t => t.key === belge.tur);
+                return (
+                  <div
+                    key={belge.id}
+                    onClick={() => handleBelgeSec(belge)}
+                    className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors group ${
+                      i < filtreliBelgeler.length - 1 ? 'border-b border-border/20' : ''
+                    } ${isSelected ? 'bg-gold/5 border-l-2 border-l-gold' : 'hover:bg-surface2/40 border-l-2 border-l-transparent'}`}
+                  >
+                    <div className={`w-8 h-8 rounded-lg bg-surface2/80 flex items-center justify-center flex-shrink-0 ${dosyaIkonRenk(belge.tip || '')}`}>
+                      <SvgFile className="text-current" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-text truncate">{belge.ad}</span>
+                        {kalan !== null && (
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 flex-shrink-0 ${
+                            kalan <= 0 ? 'bg-red/10 text-red border border-red/20' :
+                            kalan <= 15 ? 'bg-gold/10 text-gold border border-gold/20' :
+                            'bg-green/10 text-green border border-green/20'
+                          }`}>
+                            <SvgClock />
+                            {kalan <= 0 ? 'Dolmuş' : `${kalan}g`}
+                          </span>
+                        )}
+                      </div>
+                      {belge.dosyaAd && (
+                        <div className="text-[10px] text-text-dim font-mono truncate mt-0.5">
+                          {belge.dosyaAd}
+                        </div>
+                      )}
+                    </div>
+                    <div className="w-24 text-center hidden sm:block">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface2/60 text-text-dim">
+                        {turLabel?.label || belge.tur}
+                      </span>
+                    </div>
+                    <div className="w-20 text-center hidden md:block text-[10px] text-text-dim">
+                      {belge.tarih ? fmtTarih(belge.tarih) : '—'}
+                    </div>
+                    <div className="w-16 text-right hidden md:block text-[10px] text-text-dim">
+                      {belge.boyut > 0 ? fmtBoyut(belge.boyut) : '—'}
+                    </div>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleIndir(belge); }}
+                        disabled={indiriliyor === belge.id}
+                        className="p-1.5 rounded hover:bg-surface2 text-text-dim hover:text-gold transition-colors"
+                        title="İndir"
+                      >
+                        {indiriliyor === belge.id ? (
+                          <div className="w-3 h-3 border border-gold border-t-transparent rounded-full animate-spin" />
+                        ) : <SvgDownload />}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           ) : (
-            /* Akordeon Gruplar */
+            /* Akordeon Gruplar (Klasör Görünümü) */
             <div className="space-y-2">
               {BELGE_GRUPLARI.map(grup => {
                 const belgeSayisi = (grupluBelgeler[grup.key] || []).length;

@@ -1,18 +1,46 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
+import { useState, useMemo } from 'react';
+import { DosyaDrawer } from './DosyaDrawer';
 
-/* ── Filtre tipleri ── */
-type DosyaFiltre = 'tumu' | 'dava' | 'icra' | 'arabuluculuk' | 'ihtarname';
+/* ── Dosya türü ayarları ── */
+const DOSYA_TURLERI = [
+  { key: 'dava', label: 'Davalar', icon: '⚖️', color: 'text-blue-400', bgColor: 'bg-blue-400/10', linkPrefix: '/davalar' },
+  { key: 'icra', label: 'İcra Dosyaları', icon: '📋', color: 'text-orange-400', bgColor: 'bg-orange-400/10', linkPrefix: '/icra' },
+  { key: 'arabuluculuk', label: 'Arabuluculuk', icon: '🤝', color: 'text-emerald-400', bgColor: 'bg-emerald-400/10', linkPrefix: '/arabuluculuk' },
+  { key: 'ihtarname', label: 'İhtarnameler', icon: '📨', color: 'text-purple-400', bgColor: 'bg-purple-400/10', linkPrefix: '/ihtarname' },
+] as const;
 
-const FILTRELER: { key: DosyaFiltre; label: string; icon: string }[] = [
-  { key: 'tumu', label: 'Tümü', icon: '📂' },
-  { key: 'dava', label: 'Davalar', icon: '⚖️' },
-  { key: 'icra', label: 'İcra', icon: '📋' },
-  { key: 'arabuluculuk', label: 'Arabuluculuk', icon: '🤝' },
-  { key: 'ihtarname', label: 'İhtarname', icon: '📨' },
-];
+const DURUM_RENK: Record<string, string> = {
+  'Derdest': 'text-green bg-green-dim border-green/20',
+  'Aktif': 'text-green bg-green-dim border-green/20',
+  'derdest': 'text-green bg-green-dim border-green/20',
+  'Devam Ediyor': 'text-green bg-green-dim border-green/20',
+  'Başvuru': 'text-blue-400 bg-blue-400/10 border-blue-400/20',
+  'Görüşme': 'text-gold bg-gold-dim border-gold/20',
+  'Hazırlandı': 'text-blue-400 bg-blue-400/10 border-blue-400/20',
+  'Gönderildi': 'text-gold bg-gold-dim border-gold/20',
+  'Tebliğ Edildi': 'text-green bg-green-dim border-green/20',
+  'Kapandı': 'text-text-dim bg-surface2 border-border',
+  'kapandi': 'text-text-dim bg-surface2 border-border',
+  'Tamamlandı': 'text-text-dim bg-surface2 border-border',
+  'Anlaşma': 'text-green bg-green-dim border-green/20',
+  'Anlaşamama': 'text-red bg-red-dim border-red/20',
+  'Kazanıldı': 'text-green bg-green-dim border-green/20',
+  'Kaybedildi': 'text-red bg-red-dim border-red/20',
+  'Taslak': 'text-text-dim bg-surface2 border-border',
+};
+
+interface DosyaInfo {
+  id: string;
+  tur: 'dava' | 'icra' | 'arabuluculuk' | 'ihtarname';
+  no: string;
+  konu: string;
+  durum: string;
+  alt: string;
+  tarih: string;
+  raw: Record<string, unknown>;
+}
 
 interface Props {
   davalar: Record<string, unknown>[];
@@ -24,27 +52,24 @@ interface Props {
 }
 
 export function MuvDosyalar({ davalar, icralar, arabuluculuklar, ihtarnameler, onYeniEkle, onIhtarnameClick }: Props) {
-  const [filtre, setFiltre] = useState<DosyaFiltre>('tumu');
   const [arama, setArama] = useState('');
+  const [drawerDosya, setDrawerDosya] = useState<DosyaInfo | null>(null);
 
-  const durumRenk: Record<string, string> = {
-    'Derdest': 'text-green bg-green-dim border-green/20',
-    'Aktif': 'text-green bg-green-dim border-green/20',
-    'derdest': 'text-green bg-green-dim border-green/20',
-    'Devam Ediyor': 'text-green bg-green-dim border-green/20',
-    'Başvuru': 'text-blue-400 bg-blue-400/10 border-blue-400/20',
-    'Görüşme': 'text-gold bg-gold-dim border-gold/20',
-    'Hazırlandı': 'text-blue-400 bg-blue-400/10 border-blue-400/20',
-    'Gönderildi': 'text-gold bg-gold-dim border-gold/20',
-    'Tebliğ Edildi': 'text-green bg-green-dim border-green/20',
-    'Kapandı': 'text-text-dim bg-surface2 border-border',
-    'kapandi': 'text-text-dim bg-surface2 border-border',
-    'Tamamlandı': 'text-text-dim bg-surface2 border-border',
-    'Anlaşma': 'text-green bg-green-dim border-green/20',
-    'Anlaşamama': 'text-red bg-red-dim border-red/20',
-    'Kazanıldı': 'text-green bg-green-dim border-green/20',
-    'Kaybedildi': 'text-red bg-red-dim border-red/20',
-  };
+  const dosyaGruplari = useMemo(() => ({
+    dava: davalar,
+    icra: icralar,
+    arabuluculuk: arabuluculuklar,
+    ihtarname: ihtarnameler,
+  }), [davalar, icralar, arabuluculuklar, ihtarnameler]);
+
+  /* ── İlk dolu kategoriyi aç ── */
+  const [acikAccordion, setAcikAccordion] = useState<string | null>(() => {
+    if (davalar.length > 0) return 'dava';
+    if (icralar.length > 0) return 'icra';
+    if (arabuluculuklar.length > 0) return 'arabuluculuk';
+    if (ihtarnameler.length > 0) return 'ihtarname';
+    return null;
+  });
 
   /* ── Arama filtresi ── */
   const araFiltre = (items: Record<string, unknown>[]) => {
@@ -57,294 +82,162 @@ export function MuvDosyalar({ davalar, icralar, arabuluculuklar, ihtarnameler, o
     );
   };
 
-  const filtreliDavalar = araFiltre(davalar);
-  const filtreliIcralar = araFiltre(icralar);
-  const filtreliArabuluculuklar = araFiltre(arabuluculuklar);
-  const filtreliIhtarnameler = araFiltre(ihtarnameler);
-
-  const toplamSayi = davalar.length + icralar.length + arabuluculuklar.length + ihtarnameler.length;
+  const kartBilgi = (d: Record<string, unknown>, tur: string): DosyaInfo => {
+    switch (tur) {
+      case 'dava':
+        return {
+          id: d.id as string, tur: 'dava', no: d.no as string || '', konu: d.konu as string || '',
+          alt: d.mahkeme as string || '', durum: d.durum as string || '',
+          tarih: (d.tarihler as Record<string, string>)?.baslangic || '', raw: d,
+        };
+      case 'icra':
+        return {
+          id: d.id as string, tur: 'icra', no: d.no as string || '', konu: (d.borclu as string) || (d.konu as string) || '',
+          alt: d.daire as string || '', durum: d.durum as string || '',
+          tarih: (d.tarihler as Record<string, string>)?.baslangic || '', raw: d,
+        };
+      case 'arabuluculuk':
+        return {
+          id: d.id as string, tur: 'arabuluculuk', no: d.no as string || '', konu: d.konu as string || '',
+          alt: d.arabulucu as string || '', durum: d.durum as string || '',
+          tarih: (d.tarihler as Record<string, string>)?.baslangic || (d.basvuruTarih as string) || '', raw: d,
+        };
+      default: // ihtarname
+        return {
+          id: d.id as string, tur: 'ihtarname', no: d.no as string || '', konu: d.konu as string || '',
+          alt: d.noterAd as string || '', durum: d.durum as string || '',
+          tarih: (d.tarihler as Record<string, string>)?.tarih || '', raw: d,
+        };
+    }
+  };
 
   return (
     <div className="space-y-4">
-      {/* Filtre Butonları + Arama */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex gap-1.5">
-          {FILTRELER.map((f) => {
-            const sayi = f.key === 'tumu' ? toplamSayi
-              : f.key === 'dava' ? davalar.length
-              : f.key === 'icra' ? icralar.length
-              : f.key === 'arabuluculuk' ? arabuluculuklar.length
-              : ihtarnameler.length;
+      {/* Arama */}
+      <input
+        type="text"
+        value={arama}
+        onChange={(e) => setArama(e.target.value)}
+        placeholder="Dosya ara..."
+        className="w-full px-3 py-2 text-xs bg-surface border border-border rounded-lg text-text placeholder:text-text-dim focus:border-gold focus:outline-none"
+      />
 
-            return (
+      {/* Accordion Kartları */}
+      <div className="space-y-2">
+        {DOSYA_TURLERI.map((dt) => {
+          const rawItems = dosyaGruplari[dt.key] || [];
+          const items = araFiltre(rawItems);
+          const isOpen = acikAccordion === dt.key;
+          const isEmpty = rawItems.length === 0;
+          const noResults = rawItems.length > 0 && items.length === 0;
+
+          return (
+            <div key={dt.key} className={`border rounded-xl transition-all ${isOpen ? 'border-gold/30 bg-surface' : 'border-border'}`}>
+              {/* Accordion Header */}
               <button
-                key={f.key}
-                onClick={() => setFiltre(f.key)}
-                className={`
-                  px-3 py-1.5 text-xs font-medium rounded-lg border transition-all
-                  ${filtre === f.key
-                    ? 'bg-gold text-bg border-gold'
-                    : 'bg-surface border-border text-text-muted hover:border-gold/40 hover:text-text'
-                  }
-                `}
+                onClick={() => setAcikAccordion(isOpen ? null : dt.key)}
+                className={`w-full flex items-center justify-between px-4 transition-all ${isEmpty ? 'py-2.5' : 'py-3'}`}
               >
-                {f.icon} {f.label} ({sayi})
-              </button>
-            );
-          })}
-        </div>
-
-        <input
-          type="text"
-          value={arama}
-          onChange={(e) => setArama(e.target.value)}
-          placeholder="Dosya ara..."
-          className="px-3 py-1.5 text-xs bg-surface border border-border rounded-lg text-text placeholder:text-text-dim focus:border-gold focus:outline-none w-48"
-        />
-      </div>
-
-      {/* Dosya Listeleri */}
-      {toplamSayi === 0 ? (
-        <EmptyState
-          icon="📂"
-          message="Henüz dosya kaydı yok"
-          altMesaj="Bu müvekkile ait dava, icra, arabuluculuk veya ihtarname dosyası bulunmuyor."
-          butonlar={[
-            { label: '+ Yeni Dava', onClick: () => onYeniEkle('dava') },
-            { label: '+ Yeni İcra', onClick: () => onYeniEkle('icra') },
-            { label: '+ Arabuluculuk', onClick: () => onYeniEkle('arabuluculuk') },
-            { label: '+ İhtarname', onClick: () => onYeniEkle('ihtarname') },
-          ]}
-        />
-      ) : (
-        <div className="space-y-5">
-          {/* Davalar */}
-          {(filtre === 'tumu' || filtre === 'dava') && (
-            <DosyaBolumu
-              baslik="⚖️ Davalar"
-              sayi={filtreliDavalar.length}
-              toplam={davalar.length}
-              items={filtreliDavalar}
-              tur="dava"
-              linkPrefix="/davalar"
-              durumRenk={durumRenk}
-              kartBilgi={(d) => ({
-                no: d.no as string,
-                konu: d.konu as string,
-                alt: d.mahkeme as string,
-                durum: d.durum as string,
-                tarih: (d.tarihler as Record<string, string>)?.baslangic || '',
-              })}
-              onYeniEkle={() => onYeniEkle('dava')}
-            />
-          )}
-
-          {/* İcra */}
-          {(filtre === 'tumu' || filtre === 'icra') && (
-            <DosyaBolumu
-              baslik="📋 İcra Dosyaları"
-              sayi={filtreliIcralar.length}
-              toplam={icralar.length}
-              items={filtreliIcralar}
-              tur="icra"
-              linkPrefix="/icra"
-              durumRenk={durumRenk}
-              kartBilgi={(i) => ({
-                no: i.no as string,
-                konu: (i.borclu as string) || (i.konu as string),
-                alt: i.daire as string,
-                durum: i.durum as string,
-                tarih: (i.tarihler as Record<string, string>)?.baslangic || '',
-              })}
-              onYeniEkle={() => onYeniEkle('icra')}
-            />
-          )}
-
-          {/* Arabuluculuk */}
-          {(filtre === 'tumu' || filtre === 'arabuluculuk') && (
-            <DosyaBolumu
-              baslik="🤝 Arabuluculuk"
-              sayi={filtreliArabuluculuklar.length}
-              toplam={arabuluculuklar.length}
-              items={filtreliArabuluculuklar}
-              tur="arabuluculuk"
-              linkPrefix="/arabuluculuk"
-              durumRenk={durumRenk}
-              kartBilgi={(a) => ({
-                no: a.no as string,
-                konu: a.konu as string,
-                alt: a.arabulucu as string,
-                durum: a.durum as string,
-                tarih: (a.tarihler as Record<string, string>)?.baslangic || (a.basvuruTarih as string) || '',
-              })}
-              onYeniEkle={() => onYeniEkle('arabuluculuk')}
-            />
-          )}
-
-          {/* İhtarname */}
-          {(filtre === 'tumu' || filtre === 'ihtarname') && (
-            <DosyaBolumu
-              baslik="📨 İhtarnameler"
-              sayi={filtreliIhtarnameler.length}
-              toplam={ihtarnameler.length}
-              items={filtreliIhtarnameler}
-              tur="ihtarname"
-              linkPrefix="/ihtarname"
-              durumRenk={durumRenk}
-              kartBilgi={(h) => ({
-                no: h.no as string,
-                konu: h.konu as string,
-                alt: h.noterAd as string,
-                durum: h.durum as string,
-                tarih: (h.tarihler as Record<string, string>)?.tarih || '',
-              })}
-              onYeniEkle={() => onYeniEkle('ihtarname')}
-              onItemClick={onIhtarnameClick}
-            />
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════════════════════ */
-/* Alt Bileşenler                                                */
-/* ══════════════════════════════════════════════════════════════ */
-
-function DosyaBolumu({
-  baslik,
-  sayi,
-  toplam,
-  items,
-  tur,
-  linkPrefix,
-  durumRenk,
-  kartBilgi,
-  onYeniEkle,
-  onItemClick,
-}: {
-  baslik: string;
-  sayi: number;
-  toplam: number;
-  items: Record<string, unknown>[];
-  tur: string;
-  linkPrefix: string;
-  durumRenk: Record<string, string>;
-  kartBilgi: (d: Record<string, unknown>) => { no: string; konu: string; alt: string; durum: string; tarih: string };
-  onYeniEkle: () => void;
-  onItemClick?: (item: Record<string, unknown>) => void;
-}) {
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-text">{baslik} ({sayi})</h3>
-        <button
-          onClick={onYeniEkle}
-          className="text-[11px] text-gold hover:text-gold-light font-medium transition-colors"
-        >
-          + Yeni {tur === 'dava' ? 'Dava' : tur === 'icra' ? 'İcra' : tur === 'arabuluculuk' ? 'Arabuluculuk' : 'İhtarname'}
-        </button>
-      </div>
-
-      {toplam === 0 ? (
-        <EmptyState
-          icon={baslik.split(' ')[0]}
-          message={`Henüz ${tur} kaydı yok`}
-          butonlar={[{ label: '+ Yeni Ekle', onClick: onYeniEkle }]}
-        />
-      ) : sayi === 0 ? (
-        <div className="text-center py-4 text-text-dim text-xs bg-surface border border-border rounded-lg">
-          Arama sonucu bulunamadı
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {items.map((d) => {
-            const bilgi = kartBilgi(d);
-            if (onItemClick) {
-              return (
-                <div key={d.id as string} onClick={() => onItemClick(d)}>
-                  <DosyaCard {...bilgi} durumRenk={durumRenk} />
+                <div className="flex items-center gap-2.5">
+                  <span className="text-base">{dt.icon}</span>
+                  <span className={`text-xs font-semibold ${isEmpty ? 'text-text-dim' : 'text-text'}`}>
+                    {dt.label}
+                  </span>
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${isEmpty ? 'bg-surface2 text-text-dim' : `${dt.bgColor} ${dt.color}`}`}>
+                    {rawItems.length}
+                  </span>
                 </div>
-              );
-            }
-            return (
-              <Link key={d.id as string} href={`${linkPrefix}/${d.id}`}>
-                <DosyaCard {...bilgi} durumRenk={durumRenk} />
-              </Link>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
 
-function DosyaCard({
-  no,
-  konu,
-  alt,
-  durum,
-  tarih,
-  durumRenk,
-}: {
-  no: string;
-  konu: string;
-  alt: string;
-  durum: string;
-  tarih: string;
-  durumRenk: Record<string, string>;
-}) {
-  const renkClass = durumRenk[durum] || 'text-text-muted bg-surface2 border-border';
+                <div className="flex items-center gap-2">
+                  {isEmpty && (
+                    <span
+                      onClick={(e) => { e.stopPropagation(); onYeniEkle(dt.key); }}
+                      className="text-[11px] text-gold hover:text-gold-light font-medium cursor-pointer"
+                    >
+                      + Yeni Ekle
+                    </span>
+                  )}
+                  {!isEmpty && (
+                    <svg
+                      width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+                      className={`text-text-dim transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                    >
+                      <path d="M4 6l4 4 4-4"/>
+                    </svg>
+                  )}
+                </div>
+              </button>
 
-  return (
-    <div className="bg-surface border border-border rounded-lg p-4 hover:border-gold hover:bg-gold-dim transition-all cursor-pointer">
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="text-sm font-bold text-gold">{no || '—'}</div>
-          <div className="text-xs text-text mt-1">{konu || '—'}</div>
-          {alt && <div className="text-[11px] text-text-muted mt-1">{alt}</div>}
-        </div>
-        <div className="flex flex-col items-end gap-1.5">
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${renkClass}`}>
-            {durum || 'Belirsiz'}
-          </span>
-          {tarih && <span className="text-[10px] text-text-dim">{tarih}</span>}
-        </div>
+              {/* Accordion Body */}
+              {isOpen && !isEmpty && (
+                <div className="px-3 pb-3 space-y-1.5">
+                  {/* Ekle Butonu */}
+                  <div className="flex justify-end mb-1">
+                    <button
+                      onClick={() => onYeniEkle(dt.key)}
+                      className="text-[11px] text-gold hover:text-gold-light font-medium transition-colors"
+                    >
+                      + Yeni Ekle
+                    </button>
+                  </div>
+
+                  {noResults ? (
+                    <div className="text-center py-4 text-text-dim text-xs">
+                      Arama sonucu bulunamadı
+                    </div>
+                  ) : (
+                    items.map((item) => {
+                      const info = kartBilgi(item, dt.key);
+                      const renkClass = DURUM_RENK[info.durum] || 'text-text-muted bg-surface2 border-border';
+
+                      return (
+                        <div
+                          key={info.id}
+                          onClick={() => {
+                            if (dt.key === 'ihtarname' && onIhtarnameClick) {
+                              onIhtarnameClick(item);
+                            } else {
+                              setDrawerDosya(info);
+                            }
+                          }}
+                          className="flex items-center gap-3 px-3 py-2.5 bg-bg border border-border rounded-lg cursor-pointer hover:border-gold/40 hover:bg-gold-dim/30 transition-all group"
+                        >
+                          {/* Sol: No + Konu */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className="text-xs font-bold text-gold truncate">{info.no || '—'}</span>
+                              {info.alt && (
+                                <span className="text-[10px] text-text-dim truncate hidden sm:inline">{info.alt}</span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-text-muted truncate">{info.konu || '—'}</div>
+                          </div>
+
+                          {/* Sag: Durum + Tarih */}
+                          <div className="flex flex-col items-end gap-1 shrink-0">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${renkClass}`}>
+                              {info.durum || 'Belirsiz'}
+                            </span>
+                            {info.tarih && <span className="text-[9px] text-text-dim">{info.tarih}</span>}
+                          </div>
+
+                          {/* Arrow */}
+                          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-text-dim/40 group-hover:text-gold transition-colors shrink-0" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M6 4l4 4-4 4"/>
+                          </svg>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
-    </div>
-  );
-}
 
-function EmptyState({
-  icon,
-  message,
-  altMesaj,
-  butonlar,
-}: {
-  icon: string;
-  message: string;
-  altMesaj?: string;
-  butonlar?: Array<{ label: string; onClick: () => void }>;
-}) {
-  return (
-    <div className="text-center py-10 text-text-muted bg-surface border border-border rounded-lg">
-      <div className="text-3xl mb-2">{icon}</div>
-      <div className="text-sm font-medium mb-1">{message}</div>
-      {altMesaj && <div className="text-xs text-text-dim mb-4">{altMesaj}</div>}
-      {butonlar && butonlar.length > 0 && (
-        <div className="flex justify-center gap-2 mt-3">
-          {butonlar.map((b) => (
-            <button
-              key={b.label}
-              onClick={b.onClick}
-              className="px-3 py-1.5 text-xs font-medium text-gold border border-gold/30 rounded-lg hover:bg-gold-dim transition-colors"
-            >
-              {b.label}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Dosya Drawer */}
+      <DosyaDrawer dosya={drawerDosya} onClose={() => setDrawerDosya(null)} durumRenk={DURUM_RENK} />
     </div>
   );
 }

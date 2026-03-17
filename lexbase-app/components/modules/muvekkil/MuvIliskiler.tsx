@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import type { Muvekkil } from '@/lib/hooks/useMuvekkillar';
 import { useMuvekkillar, useMuvekkilKaydet } from '@/lib/hooks/useMuvekkillar';
-import { useKarsiTaraflar } from '@/lib/hooks/useKarsiTaraflar';
+import { useKarsiTaraflar, useKarsiTarafKaydet } from '@/lib/hooks/useKarsiTaraflar';
 import { useVekillar } from '@/lib/hooks/useVekillar';
 import { Modal, FormGroup, FormSelect, FormInput, BtnGold, BtnOutline } from '@/components/ui/Modal';
 
@@ -239,6 +239,12 @@ function IliskiEkleModal({
   const [arama, setArama] = useState('');
   const [kaynakFiltre, setKaynakFiltre] = useState<string>('');
 
+  /* ── Yeni kişi inline form state ── */
+  const [yeniKisiAcik, setYeniKisiAcik] = useState(false);
+  const [yeniKisiForm, setYeniKisiForm] = useState({ ad: '', soyad: '', tcVkn: '', kaynak: 'muvekkil' as 'muvekkil' | 'karsiTaraf' });
+  const muvekkilKaydetMut = useMuvekkilKaydet();
+  const karsiTarafKaydetMut = useKarsiTarafKaydet();
+
   const filtreli = useMemo(() => {
     let sonuc = kisiler;
     if (kaynakFiltre) {
@@ -259,7 +265,39 @@ function IliskiEkleModal({
     setAcik('');
     setArama('');
     setKaynakFiltre('');
+    setYeniKisiAcik(false);
+    setYeniKisiForm({ ad: '', soyad: '', tcVkn: '', kaynak: 'muvekkil' });
   };
+
+  const handleYeniKisiOlustur = async () => {
+    if (!yeniKisiForm.ad.trim()) return;
+    const yeniId = crypto.randomUUID();
+    const tamAd = [yeniKisiForm.ad.trim(), yeniKisiForm.soyad.trim()].filter(Boolean).join(' ');
+
+    if (yeniKisiForm.kaynak === 'muvekkil') {
+      await muvekkilKaydetMut.mutateAsync({
+        id: yeniId,
+        ad: tamAd,
+        tip: 'gercek',
+        tc: yeniKisiForm.tcVkn || undefined,
+      });
+    } else {
+      await karsiTarafKaydetMut.mutateAsync({
+        id: yeniId,
+        ad: yeniKisiForm.ad.trim(),
+        soyad: yeniKisiForm.soyad.trim() || undefined,
+        tip: 'gercek',
+        tc: yeniKisiForm.tcVkn || undefined,
+      });
+    }
+
+    setHedefId(yeniId);
+    setArama(tamAd);
+    setYeniKisiAcik(false);
+    setYeniKisiForm({ ad: '', soyad: '', tcVkn: '', kaynak: 'muvekkil' });
+  };
+
+  const yeniKisiYukleniyor = muvekkilKaydetMut.isPending || karsiTarafKaydetMut.isPending;
 
   return (
     <Modal open={open} onClose={onClose} title="İlişki Ekle">
@@ -305,6 +343,104 @@ function IliskiEkleModal({
         {hedefId && (
           <div className="mt-1 text-xs text-green flex items-center gap-1">
             ✓ {arama} seçildi
+          </div>
+        )}
+
+        {/* Yeni Kişi Oluştur link — always visible when no person selected */}
+        {!hedefId && !yeniKisiAcik && (
+          <button
+            type="button"
+            onClick={() => {
+              setYeniKisiAcik(true);
+              // Pre-fill ad from search text
+              if (arama.trim()) {
+                const parcalar = arama.trim().split(/\s+/);
+                if (parcalar.length >= 2) {
+                  setYeniKisiForm(f => ({ ...f, ad: parcalar[0], soyad: parcalar.slice(1).join(' ') }));
+                } else {
+                  setYeniKisiForm(f => ({ ...f, ad: arama.trim() }));
+                }
+              }
+            }}
+            className="mt-2 text-xs font-medium text-gold hover:text-gold-light transition-colors"
+          >
+            + Yeni Kişi Oluştur
+          </button>
+        )}
+
+        {/* Inline yeni kişi formu */}
+        {yeniKisiAcik && !hedefId && (
+          <div className="mt-2 p-3 border border-dashed border-gold/30 rounded-lg bg-surface2/50 space-y-3">
+            <div className="text-xs font-semibold text-text mb-1">Yeni Kişi Oluştur</div>
+
+            {/* Kaynak tipi segmented buttons */}
+            <div className="flex rounded-lg overflow-hidden border border-border w-fit">
+              <button
+                type="button"
+                onClick={() => setYeniKisiForm(f => ({ ...f, kaynak: 'muvekkil' }))}
+                className={`px-3 py-1.5 text-[11px] font-medium transition-colors ${
+                  yeniKisiForm.kaynak === 'muvekkil'
+                    ? 'bg-gold text-bg'
+                    : 'bg-surface text-text-muted hover:bg-surface2'
+                }`}
+              >
+                Müvekkil
+              </button>
+              <button
+                type="button"
+                onClick={() => setYeniKisiForm(f => ({ ...f, kaynak: 'karsiTaraf' }))}
+                className={`px-3 py-1.5 text-[11px] font-medium transition-colors border-l border-border ${
+                  yeniKisiForm.kaynak === 'karsiTaraf'
+                    ? 'bg-gold text-bg'
+                    : 'bg-surface text-text-muted hover:bg-surface2'
+                }`}
+              >
+                Karşı Taraf
+              </button>
+            </div>
+
+            {/* Ad / Soyad */}
+            <div className="grid grid-cols-2 gap-2">
+              <FormInput
+                value={yeniKisiForm.ad}
+                onChange={(e) => setYeniKisiForm(f => ({ ...f, ad: e.target.value }))}
+                placeholder="Ad *"
+              />
+              <FormInput
+                value={yeniKisiForm.soyad}
+                onChange={(e) => setYeniKisiForm(f => ({ ...f, soyad: e.target.value }))}
+                placeholder="Soyad"
+              />
+            </div>
+
+            {/* TC / VKN */}
+            <FormInput
+              value={yeniKisiForm.tcVkn}
+              onChange={(e) => setYeniKisiForm(f => ({ ...f, tcVkn: e.target.value }))}
+              placeholder="TC / VKN (opsiyonel)"
+            />
+
+            {/* Butonlar */}
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setYeniKisiAcik(false);
+                  setYeniKisiForm({ ad: '', soyad: '', tcVkn: '', kaynak: 'muvekkil' });
+                }}
+                className="px-3 py-1.5 text-[11px] font-medium text-text-muted hover:text-text transition-colors"
+              >
+                Vazgeç
+              </button>
+              <button
+                type="button"
+                onClick={handleYeniKisiOlustur}
+                disabled={!yeniKisiForm.ad.trim() || yeniKisiYukleniyor}
+                className="px-3 py-1.5 text-[11px] font-medium bg-gold text-bg rounded-lg hover:bg-gold-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {yeniKisiYukleniyor ? 'Oluşturuluyor...' : 'Oluştur & Seç'}
+              </button>
+            </div>
           </div>
         )}
       </FormGroup>
