@@ -184,7 +184,9 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
 
   // ── Adım 1 doğrulama ──
   function adim1Dogrula(): boolean {
-    if (!form.borclu?.trim() && !form.muvId) {
+    const hasMuvekkil = (form.muvekkilTaraflar as SeciliKisi[])?.length > 0 || !!form.muvId;
+    const hasBorclu = (form.borclular as SeciliKisi[])?.length > 0 || !!form.borclu?.trim();
+    if (!hasBorclu && !hasMuvekkil) {
       setHata('Borçlu adı veya müvekkil seçimi zorunludur.');
       return false;
     }
