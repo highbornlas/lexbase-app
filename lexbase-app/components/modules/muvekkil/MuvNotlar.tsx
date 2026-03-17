@@ -28,6 +28,14 @@ interface Props {
   onKaydet: (guncellenen: Muvekkil) => void;
 }
 
+type SiralamaKey = 'yeni' | 'eski' | 'baslik' | 'renk';
+const SIRALAMA_SECENEKLERI: { key: SiralamaKey; label: string }[] = [
+  { key: 'yeni', label: 'En Yeni' },
+  { key: 'eski', label: 'En Eski' },
+  { key: 'baslik', label: 'Başlık (A-Z)' },
+  { key: 'renk', label: 'Renge Göre' },
+];
+
 export function MuvNotlar({ muv, onKaydet }: Props) {
   const [ekleOpen, setEkleOpen] = useState(false);
   const [yeniBaslik, setYeniBaslik] = useState('');
@@ -38,6 +46,7 @@ export function MuvNotlar({ muv, onKaydet }: Props) {
   const [duzenleBaslik, setDuzenleBaslik] = useState('');
   const [duzenleIcerik, setDuzenleIcerik] = useState('');
   const [aramaQ, setAramaQ] = useState('');
+  const [siralama, setSiralama] = useState<SiralamaKey>('yeni');
 
   /* ── Notları al (eski string + yeni array uyumluluğu) ── */
   const notlar: Not[] = useMemo(() => {
@@ -49,16 +58,34 @@ export function MuvNotlar({ muv, onKaydet }: Props) {
     return [];
   }, [muv]);
 
-  /* ── Arama filtresi ── */
+  /* ── Arama filtresi + sıralama ── */
   const filtrelenmis = useMemo(() => {
-    if (!aramaQ.trim()) return notlar;
-    const q = aramaQ.toLocaleLowerCase('tr');
-    return notlar.filter(
-      (n) =>
-        (n.baslik || '').toLocaleLowerCase('tr').includes(q) ||
-        n.icerik.toLocaleLowerCase('tr').includes(q)
-    );
-  }, [notlar, aramaQ]);
+    let sonuc = [...notlar];
+    // Arama
+    if (aramaQ.trim()) {
+      const q = aramaQ.toLocaleLowerCase('tr');
+      sonuc = sonuc.filter(
+        (n) =>
+          (n.baslik || '').toLocaleLowerCase('tr').includes(q) ||
+          n.icerik.toLocaleLowerCase('tr').includes(q)
+      );
+    }
+    // Sıralama
+    const renkSira = RENK_SECENEKLERI.map((r) => r.key);
+    sonuc.sort((a, b) => {
+      switch (siralama) {
+        case 'eski':
+          return (a.tarih || '').localeCompare(b.tarih || '');
+        case 'baslik':
+          return (a.baslik || 'zzz').toLocaleLowerCase('tr').localeCompare((b.baslik || 'zzz').toLocaleLowerCase('tr'), 'tr');
+        case 'renk':
+          return renkSira.indexOf(a.renk || 'sari') - renkSira.indexOf(b.renk || 'sari');
+        default: // yeni
+          return (b.tarih || '').localeCompare(a.tarih || '');
+      }
+    });
+    return sonuc;
+  }, [notlar, aramaQ, siralama]);
 
   /* ── Renk helper ── */
   const getRenk = (key?: string) => RENK_SECENEKLERI.find((r) => r.key === key) || RENK_SECENEKLERI[0];
@@ -123,26 +150,40 @@ export function MuvNotlar({ muv, onKaydet }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Başlık + Arama + Ekle */}
-      <div className="flex items-center justify-between gap-3">
+      {/* Başlık + Arama + Sıralama + Ekle */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <h3 className="text-sm font-semibold text-text shrink-0">📝 Notlar ({notlar.length})</h3>
 
-        {notlar.length > 3 && (
-          <input
-            type="text"
-            value={aramaQ}
-            onChange={(e) => setAramaQ(e.target.value)}
-            placeholder="Notlarda ara..."
-            className="flex-1 max-w-[200px] px-2.5 py-1 text-[11px] bg-surface border border-border rounded-lg text-text placeholder:text-text-dim focus:border-gold focus:outline-none"
-          />
-        )}
+        <div className="flex items-center gap-2 flex-1 justify-end">
+          {notlar.length > 1 && (
+            <select
+              value={siralama}
+              onChange={(e) => setSiralama(e.target.value as SiralamaKey)}
+              className="px-2 py-1 text-[11px] bg-surface border border-border rounded-lg text-text-muted focus:border-gold focus:outline-none"
+            >
+              {SIRALAMA_SECENEKLERI.map((s) => (
+                <option key={s.key} value={s.key}>{s.label}</option>
+              ))}
+            </select>
+          )}
 
-        <button
-          onClick={() => setEkleOpen(!ekleOpen)}
-          className="text-xs font-medium text-gold hover:text-gold-light transition-colors shrink-0"
-        >
-          {ekleOpen ? '✕ İptal' : '+ Not Ekle'}
-        </button>
+          {notlar.length > 3 && (
+            <input
+              type="text"
+              value={aramaQ}
+              onChange={(e) => setAramaQ(e.target.value)}
+              placeholder="Ara..."
+              className="max-w-[140px] px-2.5 py-1 text-[11px] bg-surface border border-border rounded-lg text-text placeholder:text-text-dim focus:border-gold focus:outline-none"
+            />
+          )}
+
+          <button
+            onClick={() => setEkleOpen(!ekleOpen)}
+            className="text-xs font-medium text-gold hover:text-gold-light transition-colors shrink-0"
+          >
+            {ekleOpen ? '✕ İptal' : '+ Not Ekle'}
+          </button>
+        </div>
       </div>
 
       {/* ── Not Ekleme Formu ── */}
@@ -223,7 +264,7 @@ export function MuvNotlar({ muv, onKaydet }: Props) {
       ) : filtrelenmis.length === 0 ? (
         <div className="text-center py-6 text-text-dim text-xs">Arama sonucu bulunamadı</div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {filtrelenmis.map((n) => {
             const renk = getRenk(n.renk);
             const isAcik = acikNotId === n.id;
@@ -233,46 +274,27 @@ export function MuvNotlar({ muv, onKaydet }: Props) {
             return (
               <div
                 key={n.id}
-                className={`border rounded-xl relative group transition-all hover:shadow-md ${renk.bg}`}
+                className={`border rounded-xl relative group transition-all hover:shadow-md ${renk.bg} overflow-hidden`}
               >
                 {/* Bant şeridi */}
                 <div className={`absolute top-0 left-5 w-8 h-1.5 ${renk.tape} rounded-b-sm`} />
 
-                <div className="p-4 pt-3">
-                  {/* Üst satır: Başlık + Tarih + Aksiyon */}
-                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                <div className="p-3 pt-2.5">
+                  {/* Üst satır: Başlık + Tarih */}
+                  <div className="flex items-start justify-between gap-2 mb-1">
                     <div className="flex items-center gap-1.5 min-w-0 flex-1">
                       <div className={`w-2 h-2 rounded-full shrink-0 ${renk.dot}`} />
                       {n.baslik ? (
-                        <span className="text-sm font-bold text-text truncate">{n.baslik}</span>
+                        <span className="text-[13px] font-bold text-text truncate">{n.baslik}</span>
                       ) : (
                         <span className="text-[11px] text-text-dim italic truncate">Başlıksız not</span>
                       )}
                     </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {n.tarih && (
-                        <span className="text-[9px] text-text-dim font-mono bg-bg/60 px-1.5 py-0.5 rounded">
-                          {n.tarih}
-                        </span>
-                      )}
-                      {/* Düzenle + Sil */}
-                      <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => handleDuzenleBaslat(n)}
-                          className="text-text-dim hover:text-gold text-[10px] p-0.5"
-                          title="Düzenle"
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          onClick={() => handleSil(n.id)}
-                          className="text-text-dim hover:text-red text-[10px] p-0.5"
-                          title="Sil"
-                        >
-                          🗑
-                        </button>
-                      </div>
-                    </div>
+                    {n.tarih && (
+                      <span className="text-[9px] text-text-dim font-mono bg-bg/60 px-1.5 py-0.5 rounded shrink-0">
+                        {n.tarih}
+                      </span>
+                    )}
                   </div>
 
                   {/* İçerik — Düzenleme modu */}
@@ -309,10 +331,13 @@ export function MuvNotlar({ muv, onKaydet }: Props) {
                     </div>
                   ) : (
                     <>
-                      {/* İçerik — Kısaltılmış veya tam (max yükseklik + scroll) */}
-                      <div className={`text-[13px] text-text whitespace-pre-wrap leading-relaxed ${
-                        isAcik ? 'max-h-[200px] overflow-y-auto pr-1 scrollbar-thin' : ''
-                      }`}>
+                      {/* İçerik — Kısaltılmış veya tam (max yükseklik + scroll + kelime kırılma) */}
+                      <div
+                        className={`text-xs text-text whitespace-pre-wrap leading-relaxed break-all ${
+                          isAcik ? 'max-h-[200px] overflow-y-auto pr-1' : ''
+                        }`}
+                        style={{ overflowWrap: 'anywhere' }}
+                      >
                         {isAcik ? n.icerik : kisaltilmis}
                         {!tamMi && !isAcik && (
                           <span className="text-text-dim">…</span>
@@ -329,6 +354,36 @@ export function MuvNotlar({ muv, onKaydet }: Props) {
                         </button>
                       )}
                     </>
+                  )}
+
+                  {/* Alt aksiyon çubuğu — Kopyala, Düzenle, Sil */}
+                  {!isDuzenle && (
+                    <div className="flex items-center gap-1 mt-2 pt-2 border-t border-border/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => {
+                          const text = n.baslik ? `${n.baslik}\n\n${n.icerik}` : n.icerik;
+                          navigator.clipboard.writeText(text);
+                        }}
+                        className="flex items-center gap-1 px-2 py-1 text-[11px] text-text-dim hover:text-blue-400 rounded hover:bg-blue-400/10 transition-colors"
+                        title="Kopyala"
+                      >
+                        📋 Kopyala
+                      </button>
+                      <button
+                        onClick={() => handleDuzenleBaslat(n)}
+                        className="flex items-center gap-1 px-2 py-1 text-[11px] text-text-dim hover:text-gold rounded hover:bg-gold-dim transition-colors"
+                        title="Düzenle"
+                      >
+                        ✏️ Düzenle
+                      </button>
+                      <button
+                        onClick={() => handleSil(n.id)}
+                        className="flex items-center gap-1 px-2 py-1 text-[11px] text-text-dim hover:text-red rounded hover:bg-red/10 transition-colors ml-auto"
+                        title="Sil"
+                      >
+                        🗑 Sil
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
