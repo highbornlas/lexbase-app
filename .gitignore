@@ -4,3 +4,10 @@
 lexbase-app/node_modules/
 lexbase-app/.next/
 lexbase-app/.env.local
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
