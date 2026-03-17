@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import type { Muvekkil } from '@/lib/hooks/useMuvekkillar';
 import { useMuvekkillar, useMuvekkilKaydet } from '@/lib/hooks/useMuvekkillar';
+import { useKarsiTaraflar } from '@/lib/hooks/useKarsiTaraflar';
+import { useVekillar } from '@/lib/hooks/useVekillar';
 import { Modal, FormGroup, FormSelect, FormInput, BtnGold, BtnOutline } from '@/components/ui/Modal';
 
 /* ── İlişki türleri ve renkleri ── */
@@ -39,18 +41,53 @@ const TERS_ILISKI: Record<string, string> = {
   'Diğer': 'Diğer',
 };
 
+/* ── Birleşik kişi arayüzü ── */
+interface BirlesikKisi {
+  id: string;
+  ad: string;
+  kaynak: 'muvekkil' | 'karsiTaraf' | 'avukat';
+  kaynakLabel: string;
+  tip?: string; // gercek/tuzel
+}
+
+const KAYNAK_RENK: Record<string, string> = {
+  muvekkil: 'text-green bg-green-dim',
+  karsiTaraf: 'text-orange-400 bg-orange-400/10',
+  avukat: 'text-blue-400 bg-blue-400/10',
+};
+
 interface Props {
   muv: Muvekkil;
 }
 
 export function MuvIliskiler({ muv }: Props) {
   const { data: tumMuvekkillar = [] } = useMuvekkillar();
+  const { data: tumKarsiTaraflar = [] } = useKarsiTaraflar();
+  const { data: tumVekillar = [] } = useVekillar();
   const kaydetMut = useMuvekkilKaydet();
   const [modalOpen, setModalOpen] = useState(false);
 
   const iliskiler = muv.iliskiler || [];
 
-  /* ── İlişki ekle (çift yönlü) ── */
+  /* ── Tüm kişileri birleştir (rehber) ── */
+  const tumKisiler = useMemo<BirlesikKisi[]>(() => {
+    const result: BirlesikKisi[] = [];
+    tumMuvekkillar.forEach((m) => {
+      if (m.id !== muv.id) {
+        result.push({ id: m.id, ad: m.ad, kaynak: 'muvekkil', kaynakLabel: 'Müvekkil', tip: m.tip });
+      }
+    });
+    tumKarsiTaraflar.forEach((k) => {
+      result.push({ id: k.id, ad: (k as Record<string, unknown>).ad as string || '', kaynak: 'karsiTaraf', kaynakLabel: 'Karşı Taraf', tip: (k as Record<string, unknown>).tip as string });
+    });
+    tumVekillar.forEach((v) => {
+      const ad = [v.ad, v.soyad].filter(Boolean).join(' ');
+      result.push({ id: v.id, ad: ad || '', kaynak: 'avukat', kaynakLabel: 'Avukat', tip: undefined });
+    });
+    return result;
+  }, [tumMuvekkillar, tumKarsiTaraflar, tumVekillar, muv.id]);
+
+  /* ── İlişki ekle (çift yönlü — sadece müvekkil-müvekkil arası) ── */
   const handleEkle = async (hedefId: string, tur: string, acik: string) => {
     const yeniId = crypto.randomUUID();
 
@@ -58,7 +95,7 @@ export function MuvIliskiler({ muv }: Props) {
     const guncelIliskiler = [...iliskiler, { id: yeniId, hedefId, tur, acik }];
     await kaydetMut.mutateAsync({ ...muv, iliskiler: guncelIliskiler });
 
-    // Karşı tarafa da ekle (ters ilişki)
+    // Karşı tarafa da ekle (sadece müvekkil ise — çift yönlü)
     const hedef = tumMuvekkillar.find((m) => m.id === hedefId);
     if (hedef) {
       const hedefIliskiler = hedef.iliskiler || [];
@@ -79,7 +116,7 @@ export function MuvIliskiler({ muv }: Props) {
     const guncel = iliskiler.filter((i) => i.id !== iliski.id);
     await kaydetMut.mutateAsync({ ...muv, iliskiler: guncel });
 
-    // Karşı taraftan da kaldır
+    // Karşı taraftan da kaldır (sadece müvekkil ise)
     const hedef = tumMuvekkillar.find((m) => m.id === iliski.hedefId);
     if (hedef) {
       const hedefIliskiler = (hedef.iliskiler || []).filter((i) => i.hedefId !== muv.id);
@@ -87,8 +124,30 @@ export function MuvIliskiler({ muv }: Props) {
     }
   };
 
-  /* ── Müvekkil adı çözücü ── */
-  const muvAd = (id: string) => tumMuvekkillar.find((m) => m.id === id)?.ad || 'Bilinmeyen';
+  /* ── Kişi adı çözücü ── */
+  const kisiAd = (id: string) => {
+    return tumKisiler.find((k) => k.id === id)?.ad || tumMuvekkillar.find((m) => m.id === id)?.ad || 'Bilinmeyen';
+  };
+
+  /* ── Kişi link'i ── */
+  const kisiLink = (id: string) => {
+    const kisi = tumKisiler.find((k) => k.id === id);
+    if (!kisi) return `/muvekkillar/${id}`;
+    if (kisi.kaynak === 'muvekkil') return `/muvekkillar/${id}`;
+    if (kisi.kaynak === 'karsiTaraf') return `/muvekkillar/${id}`; // Karşı taraf sayfası varsa güncellenebilir
+    return `/muvekkillar/${id}`;
+  };
+
+  /* ── Kişi kaynak badge ── */
+  const kisiBadge = (id: string) => {
+    const kisi = tumKisiler.find((k) => k.id === id);
+    if (!kisi) return null;
+    return (
+      <span className={`text-[9px] px-1.5 py-0.5 rounded ml-1 ${KAYNAK_RENK[kisi.kaynak] || ''}`}>
+        {kisi.kaynakLabel}
+      </span>
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -108,7 +167,7 @@ export function MuvIliskiler({ muv }: Props) {
         <div className="text-center py-10 text-text-muted bg-surface border border-border rounded-lg">
           <div className="text-3xl mb-2">🔗</div>
           <div className="text-sm font-medium">Henüz ilişki tanımlanmamış</div>
-          <div className="text-xs text-text-dim mt-1">Müvekkilin diğer müvekkillerle ilişkilerini tanımlayın</div>
+          <div className="text-xs text-text-dim mt-1">Müvekkilin diğer kişilerle ilişkilerini tanımlayın</div>
           <button
             onClick={() => setModalOpen(true)}
             className="mt-3 px-4 py-1.5 text-xs font-medium text-gold border border-gold/30 rounded-lg hover:bg-gold-dim transition-colors"
@@ -127,12 +186,15 @@ export function MuvIliskiler({ muv }: Props) {
                       {i.tur}
                     </span>
                   </div>
-                  <Link
-                    href={`/muvekkillar/${i.hedefId}`}
-                    className="text-sm font-semibold text-gold hover:text-gold-light transition-colors"
-                  >
-                    {muvAd(i.hedefId)}
-                  </Link>
+                  <div className="flex items-center">
+                    <Link
+                      href={kisiLink(i.hedefId)}
+                      className="text-sm font-semibold text-gold hover:text-gold-light transition-colors"
+                    >
+                      {kisiAd(i.hedefId)}
+                    </Link>
+                    {kisiBadge(i.hedefId)}
+                  </div>
                   {i.acik && <div className="text-xs text-text-muted mt-1">{i.acik}</div>}
                 </div>
                 <button
@@ -153,7 +215,7 @@ export function MuvIliskiler({ muv }: Props) {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onKaydet={handleEkle}
-        muvekkillar={tumMuvekkillar.filter((m) => m.id !== muv.id)}
+        kisiler={tumKisiler}
       />
     </div>
   );
@@ -164,21 +226,30 @@ function IliskiEkleModal({
   open,
   onClose,
   onKaydet,
-  muvekkillar,
+  kisiler,
 }: {
   open: boolean;
   onClose: () => void;
   onKaydet: (hedefId: string, tur: string, acik: string) => void;
-  muvekkillar: Muvekkil[];
+  kisiler: BirlesikKisi[];
 }) {
   const [hedefId, setHedefId] = useState('');
   const [tur, setTur] = useState('Eş');
   const [acik, setAcik] = useState('');
   const [arama, setArama] = useState('');
+  const [kaynakFiltre, setKaynakFiltre] = useState<string>('');
 
-  const filtreli = arama
-    ? muvekkillar.filter((m) => m.ad.toLocaleLowerCase('tr').includes(arama.toLocaleLowerCase('tr')))
-    : muvekkillar;
+  const filtreli = useMemo(() => {
+    let sonuc = kisiler;
+    if (kaynakFiltre) {
+      sonuc = sonuc.filter((k) => k.kaynak === kaynakFiltre);
+    }
+    if (arama) {
+      const q = arama.toLocaleLowerCase('tr');
+      sonuc = sonuc.filter((k) => k.ad.toLocaleLowerCase('tr').includes(q));
+    }
+    return sonuc;
+  }, [kisiler, arama, kaynakFiltre]);
 
   const handleSubmit = () => {
     if (!hedefId) return;
@@ -187,30 +258,53 @@ function IliskiEkleModal({
     setTur('Eş');
     setAcik('');
     setArama('');
+    setKaynakFiltre('');
   };
 
   return (
     <Modal open={open} onClose={onClose} title="İlişki Ekle">
-      <FormGroup label="Müvekkil *">
-        <FormInput
-          value={arama}
-          onChange={(e) => { setArama(e.target.value); setHedefId(''); }}
-          placeholder="Müvekkil ara..."
-        />
+      <FormGroup label="Kişi *">
+        <div className="flex gap-2 mb-1">
+          <FormInput
+            value={arama}
+            onChange={(e) => { setArama(e.target.value); setHedefId(''); }}
+            placeholder="Kişi ara..."
+          />
+          <select
+            value={kaynakFiltre}
+            onChange={(e) => setKaynakFiltre(e.target.value)}
+            className="text-[11px] px-2 py-1.5 bg-surface border border-border rounded-lg text-text-muted focus:border-gold focus:outline-none min-w-[100px]"
+          >
+            <option value="">Tümü</option>
+            <option value="muvekkil">Müvekkil</option>
+            <option value="karsiTaraf">Karşı Taraf</option>
+            <option value="avukat">Avukat</option>
+          </select>
+        </div>
         {arama && filtreli.length > 0 && !hedefId && (
           <div className="mt-1 max-h-40 overflow-y-auto bg-bg border border-border rounded-lg">
-            {filtreli.slice(0, 10).map((m) => (
+            {filtreli.slice(0, 15).map((k) => (
               <button
-                key={m.id}
-                onClick={() => { setHedefId(m.id); setArama(m.ad); }}
-                className="w-full text-left px-3 py-2 text-xs text-text hover:bg-surface2 transition-colors"
+                key={k.id}
+                onClick={() => { setHedefId(k.id); setArama(k.ad); }}
+                className="w-full text-left px-3 py-2 text-xs text-text hover:bg-surface2 transition-colors flex items-center justify-between"
               >
-                {m.ad}
-                <span className="text-text-dim ml-2">
-                  {m.tip === 'tuzel' ? '(Tüzel)' : '(Gerçek)'}
+                <span>{k.ad}</span>
+                <span className={`text-[9px] px-1.5 py-0.5 rounded ${KAYNAK_RENK[k.kaynak] || ''}`}>
+                  {k.kaynakLabel}
                 </span>
               </button>
             ))}
+          </div>
+        )}
+        {arama && filtreli.length === 0 && !hedefId && (
+          <div className="mt-1 text-xs text-text-dim px-3 py-2 bg-surface2 rounded-lg">
+            Eşleşen kişi bulunamadı
+          </div>
+        )}
+        {hedefId && (
+          <div className="mt-1 text-xs text-green flex items-center gap-1">
+            ✓ {arama} seçildi
           </div>
         )}
       </FormGroup>

@@ -153,8 +153,12 @@ export function GorevModal({ open, onClose, gorev, muvId }: GorevModalProps) {
       }
       // Store atananAd when atananId changes
       if (field === 'atananId') {
-        const kisi = personeller?.find((p) => p.id === value);
-        next.atananAd = kisi?.ad || '';
+        if (value === authIdRef.current) {
+          next.atananAd = currentUserAd || 'Kendim';
+        } else {
+          const kisi = personeller?.find((p) => p.id === value);
+          next.atananAd = kisi?.ad || '';
+        }
       }
       return next;
     });
@@ -417,7 +421,10 @@ export function GorevModal({ open, onClose, gorev, muvId }: GorevModalProps) {
           <FormGroup label="Atanan Kişi">
           <FormSelect value={(form.atananId as string) || ''} onChange={(e) => handleChange('atananId', e.target.value)}>
             <option value="">Seçiniz</option>
-            {personeller?.map((p) => (
+            {authIdRef.current && (
+              <option value={authIdRef.current}>👤 Kendim{currentUserAd ? ` (${currentUserAd})` : ''}</option>
+            )}
+            {personeller?.filter((p) => p.id !== authIdRef.current).map((p) => (
               <option key={p.id} value={p.id}>{p.ad}{p.rol ? ` (${p.rol})` : ''}</option>
             ))}
           </FormSelect>
