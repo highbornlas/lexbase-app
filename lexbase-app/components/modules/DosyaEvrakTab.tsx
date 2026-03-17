@@ -892,11 +892,64 @@ const SvgMinimize = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 14h6v6m10-10h-6V4m0 6l7-7M3 21l7-7"/></svg>
 );
 
+// UDF (UYAP) dosyasını parse et — ZIP tabanlı ODF, içinde content.xml var
+async function parseUdfFile(signedUrl: string): Promise<string> {
+  const { unzipSync } = await import('fflate');
+  const res = await fetch(signedUrl);
+  const buf = await res.arrayBuffer();
+  const files = unzipSync(new Uint8Array(buf));
+
+  // content.xml'i bul
+  const contentEntry = files['content.xml'];
+  if (!contentEntry) {
+    // content.xml yoksa, herhangi bir XML/HTML dosyasını dene
+    const xmlKey = Object.keys(files).find(k => k.endsWith('.xml') || k.endsWith('.html') || k.endsWith('.htm'));
+    if (xmlKey) {
+      return new TextDecoder('utf-8').decode(files[xmlKey]);
+    }
+    throw new Error('UDF içinde okunabilir içerik bulunamadı');
+  }
+
+  const xmlStr = new TextDecoder('utf-8').decode(contentEntry);
+
+  // ODF XML'den düz metin + temel HTML'e dönüştür
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xmlStr, 'text/xml');
+
+  // text:p elementlerini bul (ODF paragraf)
+  const paragraphs: string[] = [];
+  const allElements = doc.getElementsByTagName('*');
+  for (let i = 0; i < allElements.length; i++) {
+    const el = allElements[i];
+    const localName = el.localName || el.nodeName.split(':').pop();
+    if (localName === 'p' || localName === 'h') {
+      const text = el.textContent?.trim();
+      if (text !== undefined) {
+        const isHeader = localName === 'h';
+        paragraphs.push(isHeader ? `<h3 style="font-weight:bold;font-size:1.1em;margin:0.8em 0 0.3em">${escHtml(text)}</h3>` : `<p style="margin:0.3em 0">${escHtml(text)}</p>`);
+      }
+    }
+  }
+
+  if (paragraphs.length === 0) {
+    // Fallback: tüm text content'i göster
+    const body = doc.body || doc.documentElement;
+    return `<pre style="white-space:pre-wrap;word-break:break-word;font-family:inherit">${escHtml(body?.textContent || xmlStr)}</pre>`;
+  }
+
+  return `<div style="font-family:'DM Sans',system-ui,sans-serif;line-height:1.7;color:#e0ddd4;padding:2rem;max-width:800px;margin:0 auto">${paragraphs.join('\n')}</div>`;
+}
+
+function escHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 function OnizlemeModal({ belge, onKapat }: { belge: Belge; onKapat: () => void }) {
   const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [tamEkran, setTamEkran] = useState(false);
-  const [udfIcerik, setUdfIcerik] = useState<string | null>(null);
+  const [udfHtml, setUdfHtml] = useState<string | null>(null);
+  const [udfHata, setUdfHata] = useState<string | null>(null);
 
   const isPdf = belge.tip?.includes('pdf');
   const isImage = belge.tip?.includes('image');
@@ -904,17 +957,18 @@ function OnizlemeModal({ belge, onKapat }: { belge: Belge; onKapat: () => void }
 
   useEffect(() => {
     setLoading(true);
+    setUdfHtml(null);
+    setUdfHata(null);
     belgeIndir(belge.storagePath)
       .then(async (signedUrl) => {
         setUrl(signedUrl);
-        // UDF dosyasıysa içeriğini text olarak oku
+        // UDF dosyasıysa ZIP'i aç ve content.xml'i parse et
         if (isUdfFile) {
           try {
-            const res = await fetch(signedUrl);
-            const text = await res.text();
-            setUdfIcerik(text);
-          } catch {
-            setUdfIcerik(null);
+            const html = await parseUdfFile(signedUrl);
+            setUdfHtml(html);
+          } catch (err) {
+            setUdfHata((err as Error).message || 'UDF dosyası okunamadı');
           }
         }
       })
@@ -933,14 +987,6 @@ function OnizlemeModal({ belge, onKapat }: { belge: Belge; onKapat: () => void }
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [tamEkran, onKapat]);
-
-  // UDF içeriğini HTML olarak render etmeyi dene (UYAP belgeleri genellikle XML/HTML tabanlıdır)
-  const udfIsHtml = udfIcerik && (
-    udfIcerik.trim().startsWith('<') ||
-    udfIcerik.includes('<html') ||
-    udfIcerik.includes('<body') ||
-    udfIcerik.includes('<?xml')
-  );
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-bg/70 backdrop-blur-sm" onClick={onKapat}>
@@ -1031,21 +1077,23 @@ function OnizlemeModal({ belge, onKapat }: { belge: Belge; onKapat: () => void }
                 className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
               />
             </div>
-          ) : isUdfFile && udfIcerik ? (
-            /* UDF Görüntüleyici */
+          ) : isUdfFile && udfHtml ? (
+            /* UDF Görüntüleyici — ZIP'ten çıkarılmış content.xml render */
             <div className="h-full overflow-auto">
-              {udfIsHtml ? (
-                <iframe
-                  srcDoc={udfIcerik}
-                  className="w-full h-full border-0 bg-white"
-                  title={belge.ad}
-                  sandbox="allow-same-origin"
-                />
-              ) : (
-                <pre className="p-6 text-xs text-text font-mono whitespace-pre-wrap break-words leading-relaxed">
-                  {udfIcerik}
-                </pre>
-              )}
+              <iframe
+                srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{background:#1a1916;color:#e0ddd4;margin:0;padding:0;font-family:'DM Sans',system-ui,sans-serif}h3{color:#c9a84c}pre{font-size:12px}</style></head><body>${udfHtml}</body></html>`}
+                className="w-full h-full border-0"
+                title={belge.ad}
+                sandbox="allow-same-origin"
+              />
+            </div>
+          ) : isUdfFile && udfHata ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center">
+                <div className="text-3xl mb-3">⚠️</div>
+                <div className="text-sm text-text-muted mb-1">UDF dosyası okunamadı</div>
+                <div className="text-[10px] text-text-dim">{udfHata}</div>
+              </div>
             </div>
           ) : (
             <div className="h-full flex items-center justify-center">
