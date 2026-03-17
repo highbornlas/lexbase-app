@@ -287,7 +287,7 @@ export function GorevModal({ open, onClose, gorev, muvId }: GorevModalProps) {
       open={open}
       onClose={onClose}
       title={gorev ? 'Görev Düzenle' : 'Yeni Görev'}
-      maxWidth="max-w-xl"
+      maxWidth="max-w-3xl"
       dirty={isDirty}
       hasDraft={hasDraft()}
       onLoadDraft={() => { const d = loadDraft(); if (d) setForm(d as Partial<Todo>); clearDraft(); }}
@@ -362,101 +362,137 @@ export function GorevModal({ open, onClose, gorev, muvId }: GorevModalProps) {
           </FormGroup>
         )}
 
-        <FormGroup label="Görev Başlığı" required>
-          <FormInput value={form.baslik || ''} onChange={(e) => handleChange('baslik', e.target.value)} placeholder="Ne yapılması gerekiyor?" />
-        </FormGroup>
+        {/* ═══ 2 SÜTUNLU LAYOUT ═══ */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+          {/* ── SOL SÜTUN: Görev Bilgileri ── */}
+          <div className="space-y-4">
+            <FormGroup label="Görev Başlığı" required>
+              <FormInput value={form.baslik || ''} onChange={(e) => handleChange('baslik', e.target.value)} placeholder="Ne yapılması gerekiyor?" />
+            </FormGroup>
 
-        <FormGroup label="Açıklama">
-          <FormTextarea value={form.aciklama || ''} onChange={(e) => handleChange('aciklama', e.target.value)} rows={3} placeholder="Detaylı açıklama..." />
-        </FormGroup>
+            <FormGroup label="Açıklama">
+              <FormTextarea value={form.aciklama || ''} onChange={(e) => handleChange('aciklama', e.target.value)} rows={3} placeholder="Detaylı açıklama..." />
+            </FormGroup>
 
-        <div className="grid grid-cols-2 gap-4">
-          <FormGroup label="Öncelik">
-            <FormSelect value={form.oncelik || ''} onChange={(e) => handleChange('oncelik', e.target.value)}>
-              <option value="Yüksek">🔴 Yüksek</option>
-              <option value="Orta">🟡 Orta</option>
-              <option value="Düşük">🟢 Düşük</option>
-            </FormSelect>
-          </FormGroup>
-          <FormGroup label="Durum">
-            <FormSelect value={form.durum || ''} onChange={(e) => handleChange('durum', e.target.value)}>
-              <option value="Bekliyor">Bekliyor</option>
-              <option value="Devam Ediyor">Devam Ediyor</option>
-              <option value="Tamamlandı">Tamamlandı</option>
-              <option value="İptal">İptal</option>
-            </FormSelect>
-          </FormGroup>
-        </div>
+            {/* Öncelik — Renkli Segmented Control */}
+            <FormGroup label="Öncelik">
+              <div className="flex gap-2">
+                {([
+                  { value: 'Yüksek', label: 'Yüksek', color: 'bg-red-500/15 text-red-400 border-red-500/30', active: 'bg-red-500 text-white border-red-500' },
+                  { value: 'Orta', label: 'Orta', color: 'bg-amber-500/15 text-amber-400 border-amber-500/30', active: 'bg-amber-500 text-white border-amber-500' },
+                  { value: 'Düşük', label: 'Düşük', color: 'bg-green-500/15 text-green-400 border-green-500/30', active: 'bg-green-500 text-white border-green-500' },
+                ] as const).map((o) => (
+                  <button
+                    key={o.value}
+                    type="button"
+                    onClick={() => handleChange('oncelik', o.value)}
+                    className={`flex-1 px-3 py-2 text-xs font-semibold rounded-lg border transition-all ${
+                      form.oncelik === o.value ? o.active : o.color + ' hover:opacity-80'
+                    }`}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            </FormGroup>
 
-        <div className="grid grid-cols-2 gap-4">
-          <FormGroup label="Son Tarih">
-            <FormInput type="date" value={form.sonTarih || ''} onChange={(e) => handleChange('sonTarih', e.target.value)} />
-          </FormGroup>
-          <FormGroup label="Tekrar">
-            <FormSelect value={form.tekrar || 'yok'} onChange={(e) => handleChange('tekrar', e.target.value)}>
-              <option value="yok">Yok</option>
-              <option value="gunluk">Günlük</option>
-              <option value="haftalik">Haftalık</option>
-              <option value="aylik">Aylık</option>
-              <option value="yillik">Yıllık</option>
-            </FormSelect>
-          </FormGroup>
-        </div>
+            {/* Durum — Segmented Control */}
+            <FormGroup label="Durum">
+              <div className="flex rounded-lg border border-border overflow-hidden">
+                {(['Bekliyor', 'Devam Ediyor', 'Tamamlandı', 'İptal'] as const).map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => handleChange('durum', d)}
+                    className={`flex-1 px-2 py-2 text-[11px] font-medium transition-colors ${
+                      form.durum === d
+                        ? 'bg-gold text-bg'
+                        : 'bg-surface text-text-muted hover:text-text hover:bg-surface2'
+                    }`}
+                  >
+                    {d}
+                  </button>
+                ))}
+              </div>
+            </FormGroup>
+          </div>
 
-        {form.tekrar && form.tekrar !== 'yok' && (
-          <FormGroup label="Tekrar Bitiş Tarihi">
-            <FormInput type="date" value={form.tekrarSonTarih || ''} onChange={(e) => handleChange('tekrarSonTarih', e.target.value)} />
-          </FormGroup>
-        )}
+          {/* ── SAĞ SÜTUN: Atama & Zamanlama ── */}
+          <div className="space-y-4">
+            <FormGroup label="Son Tarih">
+              <FormInput type="date" value={form.sonTarih || ''} onChange={(e) => handleChange('sonTarih', e.target.value)} />
+            </FormGroup>
 
-        <div className="grid grid-cols-2 gap-4">
-          <FormGroup label="Müvekkil (Opsiyonel)">
-            <FormSelect value={form.muvId || ''} onChange={(e) => handleChange('muvId', e.target.value)}>
-              <option value="">Seçiniz</option>
-              {muvekkillar?.map((m) => (
-                <option key={m.id} value={m.id}>{m.ad}</option>
-              ))}
-            </FormSelect>
-          </FormGroup>
-          <FormGroup label="Atanan Kişi">
-          <FormSelect value={(form.atananId as string) || ''} onChange={(e) => handleChange('atananId', e.target.value)}>
-            <option value="">Seçiniz</option>
-            {authIdRef.current && (
-              <option value={authIdRef.current}>👤 Kendim{currentUserAd ? ` (${currentUserAd})` : ''}</option>
+            <div className="grid grid-cols-2 gap-3">
+              <FormGroup label="Tekrar">
+                <FormSelect value={form.tekrar || 'yok'} onChange={(e) => handleChange('tekrar', e.target.value)}>
+                  <option value="yok">Yok</option>
+                  <option value="gunluk">Günlük</option>
+                  <option value="haftalik">Haftalık</option>
+                  <option value="aylik">Aylık</option>
+                  <option value="yillik">Yıllık</option>
+                </FormSelect>
+              </FormGroup>
+              {form.tekrar && form.tekrar !== 'yok' ? (
+                <FormGroup label="Bitiş Tarihi">
+                  <FormInput type="date" value={form.tekrarSonTarih || ''} onChange={(e) => handleChange('tekrarSonTarih', e.target.value)} />
+                </FormGroup>
+              ) : (
+                <FormGroup label="Kategori">
+                  <FormSelect value={(form.kategori as string) || ''} onChange={(e) => handleChange('kategori', e.target.value)}>
+                    <option value="">Seçiniz</option>
+                    {kategoriler.map((k) => (
+                      <option key={k} value={k}>{k}</option>
+                    ))}
+                  </FormSelect>
+                </FormGroup>
+              )}
+            </div>
+
+            {form.tekrar && form.tekrar !== 'yok' && (
+              <FormGroup label="Kategori">
+                <FormSelect value={(form.kategori as string) || ''} onChange={(e) => handleChange('kategori', e.target.value)}>
+                  <option value="">Seçiniz</option>
+                  {kategoriler.map((k) => (
+                    <option key={k} value={k}>{k}</option>
+                  ))}
+                </FormSelect>
+              </FormGroup>
             )}
-            {personeller?.filter((p) => p.id !== authIdRef.current).map((p) => (
-              <option key={p.id} value={p.id}>{p.ad}{p.rol ? ` (${p.rol})` : ''}</option>
-            ))}
-          </FormSelect>
-          </FormGroup>
-        </div>
 
-        <FormGroup label="Kategori">
-          <FormSelect value={(form.kategori as string) || ''} onChange={(e) => handleChange('kategori', e.target.value)}>
-            <option value="">Seçiniz</option>
-            {kategoriler.map((k) => (
-              <option key={k} value={k}>{k}</option>
-            ))}
-          </FormSelect>
-          {!yeniKatGoster ? (
-            <button
-              type="button"
-              onClick={() => setYeniKatGoster(true)}
-              className="mt-1.5 text-[11px] text-gold hover:text-gold-light transition-colors"
-            >
-              + Yeni Kategori Ekle
-            </button>
-          ) : (
-            <div className="flex items-center gap-2 mt-1.5">
-              <input
-                type="text"
-                value={yeniKatAd}
-                onChange={(e) => setYeniKatAd(e.target.value)}
-                placeholder="Kategori adı..."
-                className="flex-1 px-2 py-1 bg-surface border border-border rounded text-xs text-text placeholder:text-text-dim focus:outline-none focus:border-gold transition-colors"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
+            {!yeniKatGoster ? (
+              <button
+                type="button"
+                onClick={() => setYeniKatGoster(true)}
+                className="text-[11px] text-gold hover:text-gold-light transition-colors -mt-2"
+              >
+                + Yeni Kategori Ekle
+              </button>
+            ) : (
+              <div className="flex items-center gap-2 -mt-2">
+                <input
+                  type="text"
+                  value={yeniKatAd}
+                  onChange={(e) => setYeniKatAd(e.target.value)}
+                  placeholder="Kategori adı..."
+                  className="flex-1 px-2 py-1 bg-surface border border-border rounded text-xs text-text placeholder:text-text-dim focus:outline-none focus:border-gold transition-colors"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const ad = yeniKatAd.trim();
+                      if (ad) {
+                        const guncel = addKategori(ad);
+                        setKategoriler(guncel);
+                        handleChange('kategori', ad);
+                        setYeniKatAd('');
+                        setYeniKatGoster(false);
+                      }
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
                     const ad = yeniKatAd.trim();
                     if (ad) {
                       const guncel = addKategori(ad);
@@ -465,57 +501,68 @@ export function GorevModal({ open, onClose, gorev, muvId }: GorevModalProps) {
                       setYeniKatAd('');
                       setYeniKatGoster(false);
                     }
-                  }
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  const ad = yeniKatAd.trim();
-                  if (ad) {
-                    const guncel = addKategori(ad);
-                    setKategoriler(guncel);
-                    handleChange('kategori', ad);
-                    setYeniKatAd('');
-                    setYeniKatGoster(false);
-                  }
-                }}
-                className="px-2 py-1 bg-gold text-bg text-[11px] font-semibold rounded hover:bg-gold-light transition-colors"
-              >
-                Ekle
-              </button>
-              <button
-                type="button"
-                onClick={() => { setYeniKatGoster(false); setYeniKatAd(''); }}
-                className="px-2 py-1 bg-surface2 text-text-muted text-[11px] rounded hover:text-text transition-colors"
-              >
-                Vazgeç
-              </button>
+                  }}
+                  className="px-2 py-1 bg-gold text-bg text-[11px] font-semibold rounded hover:bg-gold-light transition-colors"
+                >
+                  Ekle
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setYeniKatGoster(false); setYeniKatAd(''); }}
+                  className="px-2 py-1 bg-surface2 text-text-muted text-[11px] rounded hover:text-text transition-colors"
+                >
+                  Vazgeç
+                </button>
+              </div>
+            )}
+
+            <FormGroup label="Müvekkil">
+              <FormSelect value={form.muvId || ''} onChange={(e) => handleChange('muvId', e.target.value)}>
+                <option value="">Seçiniz</option>
+                {muvekkillar?.map((m) => (
+                  <option key={m.id} value={m.id}>{m.ad}</option>
+                ))}
+              </FormSelect>
+            </FormGroup>
+
+            <FormGroup label="Atanan Kişi">
+              <FormSelect value={(form.atananId as string) || ''} onChange={(e) => handleChange('atananId', e.target.value)}>
+                <option value="">Seçiniz</option>
+                {authIdRef.current && (
+                  <option value={authIdRef.current}>👤 Kendim{currentUserAd ? ` (${currentUserAd})` : ''}</option>
+                )}
+                {personeller?.filter((p) => p.id !== authIdRef.current).map((p) => (
+                  <option key={p.id} value={p.id}>{p.ad}{p.rol ? ` (${p.rol})` : ''}</option>
+                ))}
+              </FormSelect>
+            </FormGroup>
+
+            <div className="grid grid-cols-2 gap-3">
+              <FormGroup label="Dosya Türü">
+                <FormSelect value={form.dosyaTur || ''} onChange={(e) => handleChange('dosyaTur', e.target.value)}>
+                  <option value="">Yok</option>
+                  <option value="Dava">Dava</option>
+                  <option value="İcra">İcra</option>
+                  <option value="Danışmanlık">Danışmanlık</option>
+                  <option value="Arabuluculuk">Arabuluculuk</option>
+                  <option value="İhtarname">İhtarname</option>
+                </FormSelect>
+              </FormGroup>
+              {form.dosyaTur && dosyaOptions.length > 0 && (
+                <FormGroup label="Dosya Seç">
+                  <FormSelect value={form.dosyaId || ''} onChange={(e) => handleChange('dosyaId', e.target.value)}>
+                    <option value="">Seçiniz</option>
+                    {dosyaOptions.map((d) => (
+                      <option key={d.id} value={d.id}>{d.label}</option>
+                    ))}
+                  </FormSelect>
+                </FormGroup>
+              )}
             </div>
-          )}
-        </FormGroup>
+          </div>
+        </div>
 
-        <FormGroup label="İlgili Dosya Türü">
-          <FormSelect value={form.dosyaTur || ''} onChange={(e) => handleChange('dosyaTur', e.target.value)}>
-            <option value="">Yok</option>
-            <option value="Dava">Dava</option>
-            <option value="İcra">İcra</option>
-            <option value="Danışmanlık">Danışmanlık</option>
-            <option value="Arabuluculuk">Arabuluculuk</option>
-            <option value="İhtarname">İhtarname</option>
-          </FormSelect>
-        </FormGroup>
-
-        {form.dosyaTur && dosyaOptions.length > 0 && (
-          <FormGroup label="Dosya Seç">
-            <FormSelect value={form.dosyaId || ''} onChange={(e) => handleChange('dosyaId', e.target.value)}>
-              <option value="">Seçiniz</option>
-              {dosyaOptions.map((d) => (
-                <option key={d.id} value={d.id}>{d.label}</option>
-              ))}
-            </FormSelect>
-          </FormGroup>
-        )}
+        {/* ═══ TAM GENİŞLİK: Kontrol Listesi + Yorumlar ═══ */}
 
         {/* Kontrol Listesi */}
         <div>

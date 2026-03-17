@@ -95,7 +95,7 @@ export function MuvNotlar({ muv, onKaydet }: Props) {
         </div>
       )}
 
-      {/* Not Listesi */}
+      {/* Not Listesi — Post-it Card Tasarımı */}
       {notlar.length === 0 ? (
         <div className="text-center py-10 text-text-muted bg-surface border border-border rounded-lg">
           <div className="text-4xl mb-3">📝</div>
@@ -108,26 +108,39 @@ export function MuvNotlar({ muv, onKaydet }: Props) {
           </button>
         </div>
       ) : (
-        <div className="space-y-3">
-          {notlar.map((n) => (
-            <div key={n.id} className="bg-surface border border-border rounded-lg p-4 group">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1">
-                  <div className="text-sm text-text whitespace-pre-wrap leading-relaxed">{n.icerik}</div>
-                  {n.tarih && (
-                    <div className="text-[10px] text-text-dim mt-2">{n.tarih}</div>
-                  )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {notlar.map((n, i) => {
+            const renkler = [
+              'bg-amber-500/5 border-amber-500/20',
+              'bg-blue-400/5 border-blue-400/20',
+              'bg-emerald-400/5 border-emerald-400/20',
+              'bg-purple-400/5 border-purple-400/20',
+              'bg-orange-400/5 border-orange-400/20',
+            ];
+            const renk = renkler[i % renkler.length];
+            return (
+              <div key={n.id} className={`border rounded-xl p-4 group relative transition-all hover:shadow-md ${renk}`}>
+                {/* Tarih damgası — üst sağ */}
+                {n.tarih && (
+                  <div className="absolute top-2.5 right-3 text-[9px] text-text-dim font-mono bg-bg/60 px-1.5 py-0.5 rounded">
+                    {n.tarih}
+                  </div>
+                )}
+                {/* İçerik */}
+                <div className="text-sm text-text whitespace-pre-wrap leading-relaxed pr-6 min-h-[40px]">
+                  {n.icerik}
                 </div>
+                {/* Sil butonu */}
                 <button
                   onClick={() => handleSil(n.id)}
-                  className="text-text-dim hover:text-red text-xs opacity-0 group-hover:opacity-100 transition-all shrink-0"
+                  className="absolute bottom-2.5 right-3 text-text-dim hover:text-red text-xs opacity-0 group-hover:opacity-100 transition-all"
                   title="Notu sil"
                 >
                   🗑
                 </button>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

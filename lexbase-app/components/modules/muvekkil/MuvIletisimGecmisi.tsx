@@ -182,9 +182,31 @@ function IletisimEkleModal({
         </FormGroup>
       </div>
       <FormGroup label="Kanal">
-        <FormSelect value={form.kanal} onChange={(e) => set('kanal', e.target.value)}>
-          {KANALLAR.map((k) => <option key={k} value={k}>{k}</option>)}
-        </FormSelect>
+        <div className="flex gap-1.5 flex-wrap">
+          {([
+            { value: 'Telefon', icon: '📞' },
+            { value: 'E-posta', icon: '✉️' },
+            { value: 'Yüz Yüze', icon: '🤝' },
+            { value: 'Video', icon: '📹' },
+            { value: 'Faks', icon: '📠' },
+            { value: 'Posta', icon: '📮' },
+            { value: 'Diğer', icon: '💬' },
+          ] as const).map((k) => (
+            <button
+              key={k.value}
+              type="button"
+              onClick={() => set('kanal', k.value)}
+              className={`px-3 py-2 text-xs font-medium rounded-lg border transition-all flex items-center gap-1.5 ${
+                form.kanal === k.value
+                  ? 'bg-gold text-bg border-gold shadow-sm'
+                  : 'bg-surface border-border text-text-muted hover:border-gold/40 hover:text-text'
+              }`}
+            >
+              <span>{k.icon}</span>
+              <span>{k.value}</span>
+            </button>
+          ))}
+        </div>
       </FormGroup>
       <FormGroup label="Konu *">
         <FormInput value={form.konu} onChange={(e) => set('konu', e.target.value)} placeholder="Görüşme konusu" />

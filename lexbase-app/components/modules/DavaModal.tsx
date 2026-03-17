@@ -470,9 +470,22 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
             )}
 
             <FormGroup label="Müvekkilin Tarafı">
-              <FormSelect value={form.taraf || ''} onChange={(e) => handleChange('taraf', e.target.value)}>
-                {DAVA_TARAF.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </FormSelect>
+              <div className="flex rounded-lg border border-border overflow-hidden">
+                {DAVA_TARAF.map((t) => (
+                  <button
+                    key={t.value}
+                    type="button"
+                    onClick={() => handleChange('taraf', t.value)}
+                    className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
+                      form.taraf === t.value
+                        ? 'bg-gold text-bg'
+                        : 'bg-surface text-text-muted hover:text-text hover:bg-surface2'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
             </FormGroup>
 
             {/* Müvekkiller (vekil = bizim tarafın avukatları) */}

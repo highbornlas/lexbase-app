@@ -135,19 +135,19 @@ export function MuvMasrafAvans({ davalar, icralar, arabuluculuklar, ihtarnameler
 
   return (
     <div className="space-y-5">
-      {/* Emanet Kasa Özet Kartları */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-surface border border-border rounded-lg p-5">
-          <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">Alınan Avans</div>
-          <div className="font-[var(--font-playfair)] text-xl text-green font-bold">{fmt(alinanAvans)}</div>
+      {/* Emanet Kasa Özet Kartları — Kompakt */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-surface border border-border rounded-lg px-4 py-3">
+          <div className="text-[10px] text-text-muted uppercase tracking-wider mb-0.5">Alınan Avans</div>
+          <div className="font-[var(--font-playfair)] text-base text-green font-bold">{fmt(alinanAvans)}</div>
         </div>
-        <div className="bg-surface border border-border rounded-lg p-5">
-          <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">Toplam Masraf</div>
-          <div className="font-[var(--font-playfair)] text-xl text-text font-bold">{fmt(toplamMasraf)}</div>
+        <div className="bg-surface border border-border rounded-lg px-4 py-3">
+          <div className="text-[10px] text-text-muted uppercase tracking-wider mb-0.5">Toplam Masraf</div>
+          <div className="font-[var(--font-playfair)] text-base text-text font-bold">{fmt(toplamMasraf)}</div>
         </div>
-        <div className="bg-surface border border-border rounded-lg p-5">
-          <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">Emanet Bakiye</div>
-          <div className={`font-[var(--font-playfair)] text-xl font-bold ${emanetBakiye >= 0 ? 'text-green' : 'text-red'}`}>
+        <div className="bg-surface border border-border rounded-lg px-4 py-3">
+          <div className="text-[10px] text-text-muted uppercase tracking-wider mb-0.5">Emanet Bakiye</div>
+          <div className={`font-[var(--font-playfair)] text-base font-bold ${emanetBakiye >= 0 ? 'text-green' : 'text-red'}`}>
             {fmt(emanetBakiye)}
           </div>
         </div>

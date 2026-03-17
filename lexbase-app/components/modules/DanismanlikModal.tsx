@@ -308,31 +308,38 @@ export function DanismanlikModal({ open, onClose, danismanlik }: DanismanlikModa
                 </FormGroup>
               </div>
             )}
-            {form.makbuzKesildi && (form.kdvOrani || 0) > 0 && (form.ucret || form.aylikUcret || 0) > 0 && (() => {
+            {/* Canlı Vergi Hesaplaması — her zaman göster */}
+            {((form.kdvOrani || 0) > 0 || (form.stopajOrani || 0) > 0) && (form.ucret || form.aylikUcret || 0) > 0 && (() => {
               const brut = isSureklii ? (form.aylikUcret || 0) : (form.ucret || 0);
               const { kdvTutar, stopajTutar, netTutar } = bruttenNete(brut, form.kdvOrani || 0, form.stopajOrani || 0);
               return (
-                <div className="grid grid-cols-3 gap-3 bg-surface2 rounded-lg p-3 mt-3">
-                  <div>
-                    <div className="text-[9px] text-text-dim uppercase tracking-wider">KDV Tutarı</div>
-                    <div className="text-sm font-semibold text-text">{fmt(kdvTutar)}</div>
+                <div className={`rounded-lg p-3 mt-3 ${form.makbuzKesildi ? 'bg-surface2' : 'bg-surface2/50 border border-dashed border-border'}`}>
+                  <div className="grid grid-cols-4 gap-3">
+                    <div>
+                      <div className="text-[9px] text-text-dim uppercase tracking-wider">Brüt Ücret</div>
+                      <div className="text-sm font-semibold text-text">{fmt(brut)}</div>
+                    </div>
+                    <div>
+                      <div className="text-[9px] text-text-dim uppercase tracking-wider">KDV ({form.kdvOrani || 0}%)</div>
+                      <div className="text-sm font-semibold text-text">+{fmt(kdvTutar)}</div>
+                    </div>
+                    <div>
+                      <div className="text-[9px] text-text-dim uppercase tracking-wider">Stopaj ({form.stopajOrani || 0}%)</div>
+                      <div className="text-sm font-semibold text-red">-{fmt(stopajTutar)}</div>
+                    </div>
+                    <div>
+                      <div className="text-[9px] text-gold uppercase tracking-wider font-bold">Net Alınacak</div>
+                      <div className="text-sm font-bold text-gold">{fmt(netTutar)}</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-[9px] text-text-dim uppercase tracking-wider">Stopaj Tutarı</div>
-                    <div className="text-sm font-semibold text-text">{fmt(stopajTutar)}</div>
-                  </div>
-                  <div>
-                    <div className="text-[9px] text-text-dim uppercase tracking-wider">Net Tutar</div>
-                    <div className="text-sm font-bold text-gold">{fmt(netTutar)}</div>
-                  </div>
+                  {!form.makbuzKesildi && (
+                    <div className="text-[10px] text-text-dim mt-2 flex items-center gap-1">
+                      <span>ℹ️</span> Makbuz kesilmediğinde vergi hesabına dahil edilmez (avans/elden tahsilat).
+                    </div>
+                  )}
                 </div>
               );
             })()}
-            {!form.makbuzKesildi && (form.kdvOrani || 0) > 0 && (
-              <div className="text-[10px] text-text-dim mt-1">
-                ℹ️ Makbuz kesilmediğinde KDV/Stopaj vergi hesabına dahil edilmez (avans/elden tahsilat).
-              </div>
-            )}
           </div>
 
           {isSureklii && form.aylikUcret && form.aylikUcret > 0 && (

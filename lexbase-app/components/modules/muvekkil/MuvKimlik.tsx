@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useCallback } from 'react';
 import type { Muvekkil } from '@/lib/hooks/useMuvekkillar';
 
 export function MuvKimlik({ muv }: { muv: Muvekkil }) {
@@ -88,7 +89,7 @@ export function MuvKimlik({ muv }: { muv: Muvekkil }) {
                   <div className="text-xs font-semibold text-text mb-1">
                     {b.banka || '—'} {b.sube && `— ${b.sube}`}
                   </div>
-                  <InfoRow label="IBAN" value={b.iban} mono />
+                  <InfoRow label="IBAN" value={b.iban} mono copyable />
                   <InfoRow label="Hesap No" value={b.hesapNo} />
                   <InfoRow label="Hesap Sahibi" value={b.hesapAd} />
                 </div>
@@ -112,19 +113,51 @@ function InfoRow({
   value,
   fallback,
   mono,
+  copyable,
 }: {
   label: string;
   value?: string | null;
   fallback?: string;
   mono?: boolean;
+  copyable?: boolean;
 }) {
   const display = value || fallback || '—';
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(() => {
+    if (!value) return;
+    navigator.clipboard.writeText(value.replace(/\s/g, ''));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }, [value]);
+
   return (
-    <div className="flex justify-between items-baseline">
+    <div className="flex justify-between items-center group/row">
       <span className="text-[11px] text-text-dim">{label}</span>
-      <span className={`text-xs text-text font-medium text-right max-w-[60%] ${mono ? 'font-mono tracking-wider text-text-muted' : ''}`}>
-        {display}
-      </span>
+      <div className="flex items-center gap-1.5">
+        <span className={`text-xs text-text font-medium text-right max-w-[60%] ${mono ? 'font-mono tracking-wider text-text-muted' : ''}`}>
+          {display}
+        </span>
+        {copyable && value && (
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="w-5 h-5 flex items-center justify-center rounded text-text-dim hover:text-gold hover:bg-gold-dim transition-all opacity-0 group-hover/row:opacity-100"
+            title="Kopyala"
+          >
+            {copied ? (
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-green">
+                <path d="M3 8.5l3 3 7-7"/>
+              </svg>
+            ) : (
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="5" y="5" width="8" height="8" rx="1.5"/>
+                <path d="M3 11V3a1.5 1.5 0 011.5-1.5H11"/>
+              </svg>
+            )}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

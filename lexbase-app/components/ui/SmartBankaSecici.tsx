@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { BANKALAR } from '@/lib/data/bankalar';
 import { FormGroup, FormInput } from '@/components/ui/Modal';
 
@@ -15,6 +15,36 @@ interface BankaHesap {
 interface Props {
   bankalar: BankaHesap[];
   onChange: (bankalar: BankaHesap[]) => void;
+}
+
+/* ── IBAN Kopyala Butonu ── */
+function IbanKopyaBtn({ iban }: { iban: string }) {
+  const [kopyalandi, setKopyalandi] = useState(false);
+  const handleKopyala = useCallback(() => {
+    navigator.clipboard.writeText(iban.replace(/\s/g, ''));
+    setKopyalandi(true);
+    setTimeout(() => setKopyalandi(false), 1500);
+  }, [iban]);
+
+  return (
+    <button
+      type="button"
+      onClick={handleKopyala}
+      className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-md text-text-dim hover:text-gold hover:bg-gold-dim transition-all"
+      title="IBAN Kopyala"
+    >
+      {kopyalandi ? (
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-green">
+          <path d="M3 8.5l3 3 7-7"/>
+        </svg>
+      ) : (
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="5" y="5" width="8" height="8" rx="1.5"/>
+          <path d="M3 11V3a1.5 1.5 0 011.5-1.5H11"/>
+        </svg>
+      )}
+    </button>
+  );
 }
 
 /* ── IBAN Formatlama ── */
@@ -217,13 +247,18 @@ function BankaHesapKarti({
       {/* IBAN */}
       <div className="mb-2">
         <FormGroup label="IBAN">
-          <FormInput
-            value={hesap.iban || ''}
-            onChange={(e) => onChange('iban', e.target.value)}
-            placeholder="TR00 0000 0000 0000 0000 0000 00"
-            className="!h-8 !text-xs !font-mono !tracking-wider"
-            maxLength={32}
-          />
+          <div className="relative">
+            <FormInput
+              value={hesap.iban || ''}
+              onChange={(e) => onChange('iban', e.target.value)}
+              placeholder="TR00 0000 0000 0000 0000 0000 00"
+              className="!h-8 !text-xs !font-mono !tracking-wider !pr-9"
+              maxLength={32}
+            />
+            {hesap.iban && (
+              <IbanKopyaBtn iban={hesap.iban} />
+            )}
+          </div>
         </FormGroup>
       </div>
 

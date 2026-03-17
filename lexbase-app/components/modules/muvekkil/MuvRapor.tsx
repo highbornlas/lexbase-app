@@ -184,7 +184,24 @@ function FaaliyetRaporu({
       <h3 className="text-sm font-semibold text-text mb-1">Faaliyet Raporu</h3>
       <p className="text-[11px] text-text-dim mb-4">Tarih aralığındaki tüm faaliyetler</p>
 
-      {/* Tarih Filtresi */}
+      {/* Hızlı Filtre Chip'leri + Tarih Filtresi */}
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        {([
+          { label: 'Bu Ay', fn: () => { const n = new Date(); onBaslangic(new Date(n.getFullYear(), n.getMonth(), 1).toISOString().slice(0,10)); onBitis(n.toISOString().slice(0,10)); }},
+          { label: 'Geçen Ay', fn: () => { const n = new Date(); const pm = new Date(n.getFullYear(), n.getMonth()-1, 1); onBaslangic(pm.toISOString().slice(0,10)); onBitis(new Date(n.getFullYear(), n.getMonth(), 0).toISOString().slice(0,10)); }},
+          { label: 'Son 3 Ay', fn: () => { const n = new Date(); n.setMonth(n.getMonth()-3); onBaslangic(n.toISOString().slice(0,10)); onBitis(new Date().toISOString().slice(0,10)); }},
+          { label: 'Bu Yıl', fn: () => { const n = new Date(); onBaslangic(new Date(n.getFullYear(), 0, 1).toISOString().slice(0,10)); onBitis(n.toISOString().slice(0,10)); }},
+        ] as const).map((c) => (
+          <button
+            key={c.label}
+            type="button"
+            onClick={c.fn}
+            className="px-2.5 py-1 text-[10px] font-medium rounded-md border border-border text-text-muted hover:border-gold/40 hover:text-gold transition-colors"
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
       <div className="flex items-center gap-3 mb-5">
         <div>
           <label className="block text-[10px] text-text-muted mb-1">Başlangıç</label>
