@@ -85,7 +85,7 @@ function useBadgeCounts(): Record<string, number> {
 
   return {
     muvekkil: muvekkillar?.length ?? 0,
-    dava: davalar?.filter((d) => d.durum === 'Aktif' || d.durum === 'Devam Ediyor').length ?? 0,
+    dava: davalar?.filter((d) => d.durum === 'Derdest' || d.durum === 'Aktif' || d.durum === 'Devam Ediyor').length ?? 0,
     icra: icralar?.filter((i) => i.durum !== 'Kapandı').length ?? 0,
     danismanlik: danismanliklar?.filter((d) => d.durum === 'Aktif' || d.durum === 'Devam Ediyor').length ?? 0,
     gorev: gorevler?.filter((g) => g.durum !== 'Tamamlandı' && g.durum !== 'İptal').length ?? 0,

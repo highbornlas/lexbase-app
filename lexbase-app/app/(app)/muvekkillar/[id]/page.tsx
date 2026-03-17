@@ -95,7 +95,7 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
 
   const dosyaSayisi = davaArr.length + icraArr.length + arabArr.length + ihtArr.length;
   const aktifDosya = useMemo(() => {
-    const aktifDurumlar = ['Aktif', 'derdest', 'Devam Ediyor', 'Başvuru', 'Görüşme', 'Hazırlandı', 'Gönderildi', 'Taslak'];
+    const aktifDurumlar = ['Derdest', 'Aktif', 'derdest', 'Devam Ediyor', 'Başvuru', 'Görüşme', 'Hazırlandı', 'Gönderildi', 'Taslak'];
     const count = (arr: Record<string, unknown>[]) =>
       arr.filter((d) => aktifDurumlar.includes((d.durum as string) || '')).length;
     return count(davaArr) + count(icraArr) + count(arabArr) + count(ihtArr);

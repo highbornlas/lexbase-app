@@ -48,8 +48,8 @@ export interface Dava {
   icrano?: string;
   iliskiliIcraId?: string;
   // Çoklu taraf desteği
-  muvekkilTaraflar?: Array<{ id: string; ad: string }>;
-  karsiTaraflar?: Array<{ id: string; ad: string }>;
+  muvekkilTaraflar?: Array<{ id: string; ad: string; vekiller?: Array<{ id: string; ad: string }> }>;
+  karsiTaraflar?: Array<{ id: string; ad: string; vekiller?: Array<{ id: string; ad: string }> }>;
   vekiller?: Array<{ id: string; ad: string }>;
   // Finansal
   deger?: number;

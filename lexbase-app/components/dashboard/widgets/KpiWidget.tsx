@@ -46,7 +46,7 @@ export function KpiWidget({ muvekkillar, davalar, icralar, danismanliklar, arabu
     const muvSayi = muvekkillar?.length ?? 0;
     const muvGercek = muvekkillar?.filter((m) => m.tip === 'gercek').length ?? 0;
     const muvTuzel = muvekkillar?.filter((m) => m.tip === 'tuzel').length ?? 0;
-    const aktifDava = davalar?.filter((d) => d.durum === 'Aktif' || d.durum === 'Devam Ediyor').length ?? 0;
+    const aktifDava = davalar?.filter((d) => d.durum === 'Derdest' || d.durum === 'Aktif' || d.durum === 'Devam Ediyor').length ?? 0;
     const davaSayi = davalar?.length ?? 0;
     const aktifIcra = icralar?.filter((i) => i.durum !== 'Kapandı').length ?? 0;
     const icraSayi = icralar?.length ?? 0;

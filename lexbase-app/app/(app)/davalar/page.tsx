@@ -26,9 +26,11 @@ const ASAMA_RENK: Record<string, string> = {
 };
 
 const DURUM_RENK: Record<string, string> = {
-  'Aktif': 'text-green bg-green-dim border-green/20',
+  'Derdest': 'text-green bg-green-dim border-green/20',
+  'Aktif': 'text-green bg-green-dim border-green/20', // legacy uyum
   'Devam Ediyor': 'text-green bg-green-dim border-green/20',
-  'Beklemede': 'text-gold bg-gold-dim border-gold/20',
+  'Hazırlık Aşamasında': 'text-gold bg-gold-dim border-gold/20',
+  'Beklemede': 'text-gold bg-gold-dim border-gold/20', // legacy uyum
   'Kapalı': 'text-text-dim bg-surface2 border-border',
 };
 

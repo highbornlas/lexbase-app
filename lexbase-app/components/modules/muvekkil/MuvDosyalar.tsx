@@ -28,6 +28,7 @@ export function MuvDosyalar({ davalar, icralar, arabuluculuklar, ihtarnameler, o
   const [arama, setArama] = useState('');
 
   const durumRenk: Record<string, string> = {
+    'Derdest': 'text-green bg-green-dim border-green/20',
     'Aktif': 'text-green bg-green-dim border-green/20',
     'derdest': 'text-green bg-green-dim border-green/20',
     'Devam Ediyor': 'text-green bg-green-dim border-green/20',

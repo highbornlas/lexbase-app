@@ -16,6 +16,7 @@ import { MuvekkilModal } from '@/components/modules/MuvekkilModal';
 export interface SeciliKisi {
   id: string;   // rehber kaydının ID'si (veya '' ise serbest metin)
   ad: string;   // görünen ad
+  vekiller?: SeciliKisi[];  // bu kişinin vekilleri (UYAP gibi kişi bazlı vekil atama)
 }
 
 interface CokluRehberSeciciProps {
@@ -28,6 +29,8 @@ interface CokluRehberSeciciProps {
   label?: string;
   /** Ekleme butonu metni */
   ekleMetni?: string;
+  /** Her kişiye ayrı vekil atanabilsin mi (UYAP gibi) */
+  vekilEklenebilir?: boolean;
 }
 
 interface SecenekItem {
@@ -44,9 +47,11 @@ export function CokluRehberSecici({
   onChange,
   label,
   ekleMetni,
+  vekilEklenebilir,
 }: CokluRehberSeciciProps) {
   const varsayilanLabel = tip === 'karsiTaraf' ? 'Karşı Taraflar' : tip === 'avukat' ? 'Avukatlar' : 'Müvekkiller';
   const varsayilanEkleMetni = tip === 'karsiTaraf' ? 'Karşı Taraf Ekle' : tip === 'avukat' ? 'Avukat Ekle' : 'Müvekkil Ekle';
+  const [vekilAcikIdx, setVekilAcikIdx] = useState<number | null>(null);
 
   function handleEkle(kisi: SeciliKisi) {
     // Zaten ekliyse ekleme
@@ -56,6 +61,25 @@ export function CokluRehberSecici({
 
   function handleKaldir(index: number) {
     onChange(value.filter((_, i) => i !== index));
+    if (vekilAcikIdx === index) setVekilAcikIdx(null);
+  }
+
+  function handleVekilEkle(kisiIdx: number, vekil: SeciliKisi) {
+    const yeni = [...value];
+    const kisi = { ...yeni[kisiIdx] };
+    if (!kisi.vekiller) kisi.vekiller = [];
+    if (kisi.vekiller.some((v) => v.id && v.id === vekil.id)) return;
+    kisi.vekiller = [...kisi.vekiller, vekil];
+    yeni[kisiIdx] = kisi;
+    onChange(yeni);
+  }
+
+  function handleVekilKaldir(kisiIdx: number, vekilIdx: number) {
+    const yeni = [...value];
+    const kisi = { ...yeni[kisiIdx] };
+    kisi.vekiller = (kisi.vekiller || []).filter((_, i) => i !== vekilIdx);
+    yeni[kisiIdx] = kisi;
+    onChange(yeni);
   }
 
   return (
@@ -79,29 +103,77 @@ export function CokluRehberSecici({
       ) : (
         <div className="space-y-2 mb-3">
           {value.map((kisi, idx) => (
-            <div
-              key={`${kisi.id || kisi.ad}-${idx}`}
-              className="flex items-center gap-2 bg-surface2/50 rounded-lg border border-border/50 px-3 py-2 group"
-            >
-              <span className="text-xs text-text-dim w-5 text-center flex-shrink-0">
-                {idx + 1}.
-              </span>
-              <span className="text-sm font-medium text-text flex-1 truncate">{kisi.ad}</span>
-              {kisi.id && (
-                <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-gold/10 text-gold flex-shrink-0">
-                  REHBER
+            <div key={`${kisi.id || kisi.ad}-${idx}`}>
+              <div className="flex items-center gap-2 bg-surface2/50 rounded-lg border border-border/50 px-3 py-2 group">
+                <span className="text-xs text-text-dim w-5 text-center flex-shrink-0">
+                  {idx + 1}.
                 </span>
+                <span className="text-sm font-medium text-text flex-1 truncate">{kisi.ad}</span>
+                {kisi.id && (
+                  <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-gold/10 text-gold flex-shrink-0">
+                    REHBER
+                  </span>
+                )}
+                {vekilEklenebilir && (
+                  <button
+                    type="button"
+                    onClick={() => setVekilAcikIdx(vekilAcikIdx === idx ? null : idx)}
+                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border transition-all flex-shrink-0 ${
+                      vekilAcikIdx === idx
+                        ? 'bg-gold/20 text-gold border-gold/30'
+                        : 'text-text-muted border-border/50 hover:border-gold/30 hover:text-gold'
+                    }`}
+                    title="Vekil ekle/düzenle"
+                  >
+                    Vekil {kisi.vekiller?.length ? `(${kisi.vekiller.length})` : '+'}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleKaldir(idx)}
+                  className="w-6 h-6 flex items-center justify-center rounded-md
+                             text-text-dim hover:text-red hover:bg-red-dim transition-all text-xs
+                             opacity-0 group-hover:opacity-100 flex-shrink-0"
+                  title="Kaldır"
+                >
+                  ✕
+                </button>
+              </div>
+              {/* Kişiye ait vekiller */}
+              {vekilEklenebilir && kisi.vekiller && kisi.vekiller.length > 0 && (
+                <div className="ml-8 mt-1 space-y-1">
+                  {kisi.vekiller.map((v, vi) => (
+                    <div
+                      key={`v-${v.id || v.ad}-${vi}`}
+                      className="flex items-center gap-2 bg-surface2/30 rounded-md border border-border/30 px-2.5 py-1.5 group/vekil"
+                    >
+                      <span className="text-[10px] text-text-dim flex-shrink-0">Vekil:</span>
+                      <span className="text-xs font-medium text-text flex-1 truncate">{v.ad}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleVekilKaldir(idx, vi)}
+                        className="w-5 h-5 flex items-center justify-center rounded text-text-dim
+                                   hover:text-red hover:bg-red-dim transition-all text-[10px]
+                                   opacity-0 group-hover/vekil:opacity-100 flex-shrink-0"
+                        title="Vekili kaldır"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
               )}
-              <button
-                type="button"
-                onClick={() => handleKaldir(idx)}
-                className="w-6 h-6 flex items-center justify-center rounded-md
-                           text-text-dim hover:text-red hover:bg-red-dim transition-all text-xs
-                           opacity-0 group-hover:opacity-100 flex-shrink-0"
-                title="Kaldır"
-              >
-                ✕
-              </button>
+              {/* Inline vekil ekleme */}
+              {vekilEklenebilir && vekilAcikIdx === idx && (
+                <div className="ml-8 mt-1.5">
+                  <KisiAramaEkle
+                    tip="avukat"
+                    seciliIds={new Set((kisi.vekiller || []).filter((v) => v.id).map((v) => v.id))}
+                    onSec={(vekil) => { handleVekilEkle(idx, vekil); }}
+                    ekleMetni="Vekil Ekle"
+                  />
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -176,10 +248,10 @@ function KisiAramaEkle({
     }));
   }, [tip, karsiTaraflar, vekillar, muvekkillar]);
 
-  /* ── Filtreleme ── */
+  /* ── Filtreleme — arama yapılmadan listeleme yok ── */
   const filtrelenmis = useMemo(() => {
+    if (!arama.trim()) return []; // Arama yapmadan sıralama olmasın
     const base = secenekler.filter((s) => !seciliIds.has(s.id)); // zaten seçilenleri çıkar
-    if (!arama.trim()) return base;
     const q = arama.toLocaleLowerCase('tr');
     return base.filter(
       (s) => s.ad.toLocaleLowerCase('tr').includes(q) || (s.meta || '').toLocaleLowerCase('tr').includes(q)
@@ -239,8 +311,8 @@ function KisiAramaEkle({
             ref={inputRef}
             type="text"
             value={arama}
-            onChange={(e) => { setArama(e.target.value); if (!acik) setAcik(true); }}
-            onFocus={() => setAcik(true)}
+            onChange={(e) => { setArama(e.target.value); if (e.target.value.trim()) setAcik(true); else setAcik(false); }}
+            onFocus={() => { if (arama.trim()) setAcik(true); }}
             placeholder={placeholder}
             className="flex-1 h-9 px-3 rounded-lg bg-surface2 border border-border text-xs text-text
               focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold/50
@@ -248,7 +320,7 @@ function KisiAramaEkle({
           />
           <button
             type="button"
-            onClick={() => { setAcik(!acik); inputRef.current?.focus(); }}
+            onClick={() => { inputRef.current?.focus(); }}
             className="px-3 h-9 rounded-lg text-[11px] font-semibold text-gold border border-gold/30
                        hover:bg-gold-dim transition-colors flex items-center gap-1"
           >
@@ -269,15 +341,15 @@ function KisiAramaEkle({
                   className="w-full text-left px-3 py-2.5 hover:bg-gold-dim transition-colors border-b border-border/30 last:border-b-0"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-text truncate">{item.ad}</span>
+                    <span className="text-sm font-semibold text-text">{item.ad}</span>
                     {item.badge && (
-                      <span className={`text-[8px] font-bold px-1 py-0.5 rounded ${item.badgeClass}`}>
+                      <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${item.badgeClass}`}>
                         {item.badge}
                       </span>
                     )}
                   </div>
                   {item.meta && (
-                    <div className="text-[10px] text-text-muted mt-0.5 truncate">{item.meta}</div>
+                    <div className="text-[10px] text-text-muted mt-0.5">{item.meta}</div>
                   )}
                 </button>
               ))
@@ -287,7 +359,7 @@ function KisiAramaEkle({
               </div>
             ) : (
               <div className="px-3 py-3 text-xs text-text-muted text-center">
-                {seciliIds.size > 0 ? 'Tüm kayıtlar zaten seçili' : 'Kayıt bulunamadı'}
+                Aramaya başlayın...
               </div>
             )}
 

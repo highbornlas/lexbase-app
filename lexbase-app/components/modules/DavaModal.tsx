@@ -37,7 +37,7 @@ const bos: Partial<Dava> = {
   esasNo: '',
   taraf: 'davaci',
   asama: 'İlk Derece',
-  durum: 'Aktif',
+  durum: 'Derdest',
   tarih: new Date().toISOString().split('T')[0],
   durusma: '',
   durusmaSaati: '',
@@ -97,8 +97,20 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
       if (!init.karsiTaraflar?.length && (init.karsiId || init.karsi)) {
         init.karsiTaraflar = [{ id: init.karsiId || '', ad: (init.karsi as string) || '' }];
       }
-      if (!init.vekiller?.length && (init.karsavId || init.karsav)) {
-        init.vekiller = [{ id: init.karsavId || '', ad: (init.karsav as string) || '' }];
+      // Legacy vekiller → karşı tarafların vekil alanına migrate et
+      if (init.karsiTaraflar?.length && !init.karsiTaraflar.some((kt) => kt.vekiller?.length)) {
+        // Eski vekiller dizisi varsa veya legacy karsav alanı varsa
+        const legacyVekiller: SeciliKisi[] = init.vekiller?.length
+          ? (init.vekiller as SeciliKisi[])
+          : (init.karsavId || init.karsav)
+          ? [{ id: init.karsavId || '', ad: (init.karsav as string) || '' }]
+          : [];
+        if (legacyVekiller.length && init.karsiTaraflar.length) {
+          // İlk karşı tarafa ata (legacy'de tek vekil listesi vardı)
+          init.karsiTaraflar = init.karsiTaraflar.map((kt, i) =>
+            i === 0 ? { ...kt, vekiller: legacyVekiller } : kt
+          );
+        }
       }
       if (!init.muvekkilTaraflar) init.muvekkilTaraflar = [];
       if (!init.karsiTaraflar) init.karsiTaraflar = [];
@@ -262,13 +274,17 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
       syncForm.karsiId = '';
       syncForm.karsi = '';
     }
-    if (syncForm.vekiller?.length) {
-      syncForm.karsavId = syncForm.vekiller[0].id;
-      syncForm.karsav = syncForm.vekiller[0].ad;
+    // Karşı taraf vekillerini legacy alana sync (ilk karşı tarafın ilk vekili)
+    const ilkKarsiVekil = syncForm.karsiTaraflar?.find((kt) => kt.vekiller?.length)?.vekiller?.[0];
+    if (ilkKarsiVekil) {
+      syncForm.karsavId = ilkKarsiVekil.id;
+      syncForm.karsav = ilkKarsiVekil.ad;
     } else {
       syncForm.karsavId = '';
       syncForm.karsav = '';
     }
+    // Legacy vekiller dizisini karşı taraf vekillerinden oluştur (geriye uyum)
+    syncForm.vekiller = (syncForm.karsiTaraflar || []).flatMap((kt) => kt.vekiller || []);
     // davaTuru'yu konu ile senkronize et (geriye uyum)
     if (!syncForm.davaTuru && syncForm.konu) {
       syncForm.davaTuru = syncForm.konu;
@@ -459,31 +475,24 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
               </FormSelect>
             </FormGroup>
 
-            {/* Müvekkiller */}
+            {/* Müvekkiller (vekil = bizim tarafın avukatları) */}
             <CokluRehberSecici
               tip="muvekkil"
               label="Müvekkiller"
               ekleMetni="Müvekkil Ekle"
               value={(form.muvekkilTaraflar as SeciliKisi[]) || []}
               onChange={(v) => setForm((prev) => ({ ...prev, muvekkilTaraflar: v }))}
+              vekilEklenebilir
             />
 
-            {/* Karşı Taraflar */}
+            {/* Karşı Taraflar (her birine ayrı vekil atanabilir) */}
             <CokluRehberSecici
               tip="karsiTaraf"
               label="Karşı Taraflar"
               ekleMetni="Karşı Taraf Ekle"
               value={(form.karsiTaraflar as SeciliKisi[]) || []}
               onChange={(v) => setForm((prev) => ({ ...prev, karsiTaraflar: v }))}
-            />
-
-            {/* Karşı Vekiller */}
-            <CokluRehberSecici
-              tip="avukat"
-              label="Karşı Vekiller"
-              ekleMetni="Vekil Ekle"
-              value={(form.vekiller as SeciliKisi[]) || []}
-              onChange={(v) => setForm((prev) => ({ ...prev, vekiller: v }))}
+              vekilEklenebilir
             />
 
             <div className="grid grid-cols-2 gap-4">

@@ -104,7 +104,7 @@ export const KAPANIS_SEBEPLERI_ICRA = [
 ] as const;
 
 // ── Dava Durumları ──
-export const DAVA_DURUMLARI = ['Aktif', 'Beklemede', 'Kapalı'] as const;
+export const DAVA_DURUMLARI = ['Derdest', 'Hazırlık Aşamasında', 'Kapalı'] as const;
 
 // ── Dava Aşamaları ──
 export const DAVA_ASAMALARI = [

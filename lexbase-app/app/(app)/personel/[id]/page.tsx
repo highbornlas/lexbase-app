@@ -70,7 +70,7 @@ export default function PersonelDetayPage() {
     const aktifGorev = personelGorevleri.filter((g) => g.durum !== 'Tamamlandı' && g.durum !== 'İptal');
     const gecikmiş = aktifGorev.filter((g) => g.sonTarih && new Date(g.sonTarih) < new Date());
     const tamamlanan = personelGorevleri.filter((g) => g.durum === 'Tamamlandı');
-    const aktifDosya = personelDosyalari.filter((d) => d.durum === 'Aktif' || d.durum === 'Devam Ediyor');
+    const aktifDosya = personelDosyalari.filter((d) => d.durum === 'Derdest' || d.durum === 'Aktif' || d.durum === 'Devam Ediyor');
 
     return {
       aktifGorev: aktifGorev.length,
@@ -277,7 +277,7 @@ function DosyalarSekmesi({ dosyalar }: { dosyalar: Array<Record<string, unknown>
                 <td className="px-3 py-2.5 text-text-muted">{tur}</td>
                 <td className="px-3 py-2.5">
                   <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                    durum === 'Aktif' || durum === 'Devam Ediyor' ? 'bg-green-dim text-green' : 'bg-surface2 text-text-dim'
+                    durum === 'Derdest' || durum === 'Aktif' || durum === 'Devam Ediyor' ? 'bg-green-dim text-green' : 'bg-surface2 text-text-dim'
                   }`}>{durum}</span>
                 </td>
                 <td className="px-4 py-2.5 text-right">

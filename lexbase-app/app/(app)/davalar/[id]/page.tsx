@@ -39,7 +39,9 @@ const ASAMA_RENK: Record<string, string> = {
 };
 
 const DURUM_RENK: Record<string, string> = {
+  'Derdest': 'bg-green-dim text-green border-green/20',
   'Aktif': 'bg-green-dim text-green border-green/20',
+  'Hazırlık Aşamasında': 'bg-gold-dim text-gold border-gold/20',
   'Beklemede': 'bg-gold-dim text-gold border-gold/20',
   'Kapalı': 'bg-surface2 text-text-dim border-border',
 };

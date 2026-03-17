@@ -247,13 +247,19 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
       syncForm.karsiId = '';
       syncForm.karsi = '';
     }
-    if (syncForm.vekiller?.length) {
-      syncForm.karsavId = syncForm.vekiller[0].id;
-      syncForm.karsav = syncForm.vekiller[0].ad;
+    // Karşı taraf/borçlu vekillerini legacy alana sync
+    const tumVekiller = [
+      ...(syncForm.karsiTaraflar || []).flatMap((kt) => kt.vekiller || []),
+      ...(syncForm.borclular || []).flatMap((b) => b.vekiller || []),
+    ];
+    if (tumVekiller.length) {
+      syncForm.karsavId = tumVekiller[0].id;
+      syncForm.karsav = tumVekiller[0].ad;
     } else {
       syncForm.karsavId = '';
       syncForm.karsav = '';
     }
+    syncForm.vekiller = tumVekiller;
 
     setHata('');
     try {
@@ -331,22 +337,24 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
               </FormSelect>
             </FormGroup>
 
-            {/* Müvekkiller — çoklu seçim */}
+            {/* Müvekkiller — çoklu seçim + vekil atama */}
             <CokluRehberSecici
               tip="muvekkil"
               label="Müvekkiller"
               ekleMetni="Müvekkil Ekle"
               value={(form.muvekkilTaraflar as SeciliKisi[]) || []}
               onChange={(v) => setForm((prev) => ({ ...prev, muvekkilTaraflar: v }))}
+              vekilEklenebilir
             />
 
-            {/* Borçlular — karşı taraf rehberinden çoklu seçim */}
+            {/* Borçlular — karşı taraf rehberinden çoklu seçim + vekil atama */}
             <CokluRehberSecici
               tip="karsiTaraf"
               label="Borçlular"
               ekleMetni="Borçlu Ekle"
               value={(form.borclular as SeciliKisi[]) || []}
               onChange={(v) => setForm((prev) => ({ ...prev, borclular: v }))}
+              vekilEklenebilir
             />
 
             <div className="grid grid-cols-3 gap-4">
@@ -521,22 +529,14 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
               </div>
             </div>
 
-            {/* Karşı Taraflar — çoklu seçim */}
+            {/* Karşı Taraflar — çoklu seçim + vekil atama */}
             <CokluRehberSecici
               tip="karsiTaraf"
               label="Karşı Taraflar"
               ekleMetni="Karşı Taraf Ekle"
               value={(form.karsiTaraflar as SeciliKisi[]) || []}
               onChange={(v) => setForm((prev) => ({ ...prev, karsiTaraflar: v }))}
-            />
-
-            {/* Vekiller — çoklu seçim */}
-            <CokluRehberSecici
-              tip="avukat"
-              label="Karşı Vekiller"
-              ekleMetni="Vekil Ekle"
-              value={(form.vekiller as SeciliKisi[]) || []}
-              onChange={(v) => setForm((prev) => ({ ...prev, vekiller: v }))}
+              vekilEklenebilir
             />
           </>
         )}
