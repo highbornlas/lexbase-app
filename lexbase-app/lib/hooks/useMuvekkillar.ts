@@ -243,11 +243,11 @@ export function useMuvekkilKaydet() {
   });
 }
 
-// ── Cascade Helper — İlişkili dosyaları toplu işle ──────────
+// ── Cascade Helper — Müvekkil bağlantısını kes (dosyayı silme!) ──
 const ILISKILI_TABLOLAR = ['davalar', 'icra', 'arabuluculuk', 'danismanlik', 'ihtarnameler'] as const;
 
-async function cascadeSoftDelete(supabase: ReturnType<typeof createClient>, buroId: string, muvId: string) {
-  const silindi = new Date().toISOString();
+/** Müvekkil soft-delete: dosyalardaki muvId bağlantısını temizle */
+async function cascadeUnlinkMuvekkil(supabase: ReturnType<typeof createClient>, buroId: string, muvId: string) {
   for (const tablo of ILISKILI_TABLOLAR) {
     const { data: kayitlar } = await supabase
       .from(tablo)
@@ -256,16 +256,17 @@ async function cascadeSoftDelete(supabase: ReturnType<typeof createClient>, buro
     if (!kayitlar) continue;
     for (const k of kayitlar) {
       const d = k.data as Record<string, unknown>;
-      if (d.muvId === muvId && !d._silindi) {
+      if (d.muvId === muvId) {
         await supabase.from(tablo).update({
-          data: { ...d, _silindi: silindi, _silindiByMuvekkil: muvId },
+          data: { ...d, muvId: '', _eskiMuvId: muvId },
         }).eq('id', k.id).eq('buro_id', buroId);
       }
     }
   }
 }
 
-async function cascadeHardDelete(supabase: ReturnType<typeof createClient>, buroId: string, muvId: string) {
+/** Müvekkil kalıcı sil: dosyalardaki muvId bağlantısını temizle (dosya silinmez) */
+async function cascadeUnlinkHard(supabase: ReturnType<typeof createClient>, buroId: string, muvId: string) {
   for (const tablo of ILISKILI_TABLOLAR) {
     const { data: kayitlar } = await supabase
       .from(tablo)
@@ -274,30 +275,19 @@ async function cascadeHardDelete(supabase: ReturnType<typeof createClient>, buro
     if (!kayitlar) continue;
     for (const k of kayitlar) {
       const d = k.data as Record<string, unknown>;
-      if (d.muvId === muvId) {
-        await supabase.from(tablo).delete().eq('id', k.id).eq('buro_id', buroId);
-      }
-    }
-  }
-  // Belgeler de sil
-  const { data: belgeler } = await supabase
-    .from('belgeler')
-    .select('id, data')
-    .eq('buro_id', buroId);
-  if (belgeler) {
-    for (const b of belgeler) {
-      const d = b.data as Record<string, unknown>;
-      if (d.muvId === muvId) {
-        if (d.storagePath) {
-          await supabase.storage.from('belgeler').remove([d.storagePath as string]);
-        }
-        await supabase.from('belgeler').delete().eq('id', b.id).eq('buro_id', buroId);
+      if (d.muvId === muvId || d._eskiMuvId === muvId) {
+        const { _eskiMuvId, ...temiz } = d;
+        void _eskiMuvId;
+        await supabase.from(tablo).update({
+          data: { ...temiz, muvId: '' },
+        }).eq('id', k.id).eq('buro_id', buroId);
       }
     }
   }
 }
 
-async function cascadeRestore(supabase: ReturnType<typeof createClient>, buroId: string, muvId: string) {
+/** Müvekkil geri yükle: _eskiMuvId varsa bağlantıyı geri kur */
+async function cascadeRelinkMuvekkil(supabase: ReturnType<typeof createClient>, buroId: string, muvId: string) {
   for (const tablo of ILISKILI_TABLOLAR) {
     const { data: kayitlar } = await supabase
       .from(tablo)
@@ -306,10 +296,12 @@ async function cascadeRestore(supabase: ReturnType<typeof createClient>, buroId:
     if (!kayitlar) continue;
     for (const k of kayitlar) {
       const d = k.data as Record<string, unknown>;
-      if (d._silindiByMuvekkil === muvId) {
-        const { _silindi, _silindiByMuvekkil, ...temiz } = d;
-        void _silindi; void _silindiByMuvekkil;
-        await supabase.from(tablo).update({ data: temiz }).eq('id', k.id).eq('buro_id', buroId);
+      if (d._eskiMuvId === muvId) {
+        const { _eskiMuvId, ...temiz } = d;
+        void _eskiMuvId;
+        await supabase.from(tablo).update({
+          data: { ...temiz, muvId },
+        }).eq('id', k.id).eq('buro_id', buroId);
       }
     }
   }
@@ -339,8 +331,8 @@ export function useMuvekkilSil() {
         .eq('id', id)
         .eq('buro_id', buroId);
       if (error) throw error;
-      // Cascade: İlişkili dosyaları da soft-delete et
-      await cascadeSoftDelete(supabase, buroId, id);
+      // Cascade: İlişkili dosyalardaki müvekkil bağlantısını kes
+      await cascadeUnlinkMuvekkil(supabase, buroId, id);
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['muvekkillar'] });
@@ -359,8 +351,8 @@ export function useMuvekkilKaliciSil() {
     mutationFn: async (id: string) => {
       if (!buroId) throw new Error('Büro bulunamadı');
       const supabase = createClient();
-      // Cascade: İlişkili dosyaları da kalıcı sil
-      await cascadeHardDelete(supabase, buroId, id);
+      // Cascade: İlişkili dosyalardaki müvekkil bağlantısını kalıcı temizle
+      await cascadeUnlinkHard(supabase, buroId, id);
       const { error } = await supabase
         .from('muvekkillar')
         .delete()
@@ -400,8 +392,8 @@ export function useMuvekkilGeriYukle() {
         .eq('id', id)
         .eq('buro_id', buroId);
       if (error) throw error;
-      // Cascade: İlişkili dosyaları da geri yükle
-      await cascadeRestore(supabase, buroId, id);
+      // Cascade: İlişkili dosyalardaki müvekkil bağlantısını geri kur
+      await cascadeRelinkMuvekkil(supabase, buroId, id);
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['muvekkillar'] });
