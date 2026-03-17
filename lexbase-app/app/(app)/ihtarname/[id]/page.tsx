@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState, useMemo } from 'react';
+import { use, useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useIhtarnameler, useIhtarnameKaydet, useIhtarnameSil, useIhtarnameArsivle, type Ihtarname } from '@/lib/hooks/useIhtarname';
 import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
@@ -8,6 +8,7 @@ import { useDavalar } from '@/lib/hooks/useDavalar';
 import { useIcralar } from '@/lib/hooks/useIcra';
 import { IhtarnameModal } from '@/components/modules/IhtarnameModal';
 import { fmt, fmtTarih } from '@/lib/utils';
+import { useSonErisim } from '@/lib/hooks/useSonErisim';
 
 const TABS = [
   { key: 'ozet', label: 'Özet', icon: '📋' },
@@ -49,10 +50,17 @@ export default function IhtarnameDetayPage({ params }: { params: Promise<{ id: s
   const [pttLoading, setPttLoading] = useState(false);
   const [pttSonuc, setPttSonuc] = useState('');
   const [yeniNot, setYeniNot] = useState('');
+  const { kaydetErisim, toggleSabitle, isSabitlenen } = useSonErisim();
 
   const ihtarname = useMemo(() => {
     return ihtarnameler?.find((i) => i.id === id && !i._silindi) ?? null;
   }, [ihtarnameler, id]);
+
+  useEffect(() => {
+    if (ihtarname && !(ihtarname as Record<string, unknown>)._silindi) {
+      kaydetErisim({ id: ihtarname.id, tip: 'ihtarname', baslik: ihtarname.konu || ihtarname.no || ihtarname.id.slice(0, 8), tarih: new Date().toISOString() });
+    }
+  }, [ihtarname?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const muvAd = useMemo(() => {
     if (!ihtarname?.muvId || !muvekkillar) return '—';
@@ -175,6 +183,13 @@ export default function IhtarnameDetayPage({ params }: { params: Promise<{ id: s
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => { if (ihtarname) toggleSabitle({ id: ihtarname.id, tip: 'ihtarname', baslik: ihtarname.konu || ihtarname.no || ihtarname.id.slice(0, 8), tarih: new Date().toISOString() }); }}
+            className={`text-xs px-3 py-1.5 rounded border transition-colors ${ihtarname && isSabitlenen(ihtarname.id) ? 'bg-gold/10 text-gold border-gold/20' : 'bg-surface text-text-muted border-border hover:border-gold/40'}`}
+            title={ihtarname && isSabitlenen(ihtarname.id) ? 'Hızlı erişimden kaldır' : 'Hızlı erişime sabitle'}
+          >
+            {ihtarname && isSabitlenen(ihtarname.id) ? '⭐' : '☆'}
+          </button>
           <button
             onClick={() => setDuzenleModu(true)}
             className="text-xs px-3 py-1.5 rounded bg-gold/10 text-gold border border-gold/20 hover:bg-gold/20 transition-colors"

@@ -254,3 +254,55 @@ export function useArabuluculukArsivle() {
     onSettled: () => { queryClient.invalidateQueries({ queryKey: ['arabuluculuk'] }); },
   });
 }
+
+// ── Kalıcı Sil ──────────────────────────────────────────────
+export function useArabuluculukKaliciSil() {
+  const buroId = useBuroId();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      if (!buroId) throw new Error('Büro bulunamadı');
+      const supabase = createClient();
+      const { error } = await supabase
+        .from('arabuluculuk')
+        .delete()
+        .eq('id', id)
+        .eq('buro_id', buroId);
+      if (error) throw error;
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['arabuluculuk'] });
+      queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
+    },
+  });
+}
+
+// ── Geri Yükle ──────────────────────────────────────────────
+export function useArabuluculukGeriYukle() {
+  const buroId = useBuroId();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      if (!buroId) throw new Error('Büro bulunamadı');
+      const supabase = createClient();
+      const { data: mevcut } = await supabase
+        .from('arabuluculuk')
+        .select('data')
+        .eq('id', id)
+        .eq('buro_id', buroId)
+        .single();
+      if (!mevcut) throw new Error('Arabuluculuk bulunamadı');
+      const data = { ...(mevcut.data as Record<string, unknown>) };
+      delete data._silindi;
+      const { error } = await supabase.from('arabuluculuk').update({ data })
+        .eq('id', id).eq('buro_id', buroId);
+      if (error) throw error;
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['arabuluculuk'] });
+      queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
+    },
+  });
+}

@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState, useMemo } from 'react';
+import { use, useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useDava, useDavaKaydet, useDavaSil, useDavaArsivle } from '@/lib/hooks/useDavalar';
@@ -19,6 +19,7 @@ import { SureBadge, DurusmaBadge } from '@/components/ui/SureBadge';
 import { DavaModal } from '@/components/modules/DavaModal';
 import { DosyaEvrakTab } from '@/components/modules/DosyaEvrakTab';
 import { TahsilatModal, type TahsilatKaydi } from '@/components/modules/TahsilatModal';
+import { useSonErisim } from '@/lib/hooks/useSonErisim';
 
 const TABS = [
   { key: 'ozet', label: 'Özet', icon: '📋' },
@@ -56,6 +57,14 @@ export default function DavaDetayPage({ params }: { params: Promise<{ id: string
   const [duzenleModu, setDuzenleModu] = useState(false);
   const [tahsilatModal, setTahsilatModal] = useState(false);
   const [duzenlenecekTahsilat, setDuzenlenecekTahsilat] = useState<TahsilatKaydi | null>(null);
+  const { kaydetErisim, toggleSabitle, isSabitlenen } = useSonErisim();
+
+  useEffect(() => {
+    if (dava && !(dava as Record<string, unknown>)._silindi) {
+      const baslik = String(esasNoGoster(dava.esasYil, dava.esasNo) || dava.konu || dava.no || dava.id.slice(0, 8));
+      kaydetErisim({ id: dava.id, tip: 'dava', baslik, tarih: new Date().toISOString() });
+    }
+  }, [dava?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Müvekkil adı
   const muvAd = useMemo(() => {
@@ -155,6 +164,13 @@ export default function DavaDetayPage({ params }: { params: Promise<{ id: string
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => toggleSabitle({ id: dava.id, tip: 'dava', baslik: String(esasNo || dava.konu || dava.no || dava.id.slice(0, 8)), tarih: new Date().toISOString() })}
+            className={`text-xs px-3 py-1.5 rounded border transition-colors ${isSabitlenen(dava.id) ? 'bg-gold/10 text-gold border-gold/20' : 'bg-surface text-text-muted border-border hover:border-gold/40'}`}
+            title={isSabitlenen(dava.id) ? 'Hızlı erişimden kaldır' : 'Hızlı erişime sabitle'}
+          >
+            {isSabitlenen(dava.id) ? '⭐' : '☆'}
+          </button>
           <button
             onClick={() => setDuzenleModu(true)}
             className="text-xs px-3 py-1.5 rounded bg-gold/10 text-gold border border-gold/20 hover:bg-gold/20 transition-colors"

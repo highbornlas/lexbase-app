@@ -50,6 +50,7 @@ export default function ArabuluculukPage() {
   const [sayfa, setSayfa] = useState(1);
   const [sayfaBoyutu, setSayfaBoyutu] = useState(DEFAULT_PAGE_SIZE);
   const [kebabAcik, setKebabAcik] = useState<string | null>(null);
+  const [seciliIdler, setSeciliIdler] = useState<Set<string>>(new Set());
   const [sortKey, setSortKey] = useState<SortKey>('tarih');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   // Cross-module: Anlaşamama → Dava aç
@@ -158,6 +159,18 @@ export default function ArabuluculukPage() {
     return <span className="text-gold ml-0.5">{sortDir === 'asc' ? '↑' : '↓'}</span>;
   };
 
+  function toggleSecim(id: string) {
+    setSeciliIdler((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+  function tumunuSec() {
+    if (seciliIdler.size === sayfadakiler.length) setSeciliIdler(new Set());
+    else setSeciliIdler(new Set(sayfadakiler.map((a) => a.id)));
+  }
+
   // Anlaşamama → Dava oluştur
   function handleAnlasamama(arb: Arabuluculuk) {
     setDavaPreFill({
@@ -170,7 +183,7 @@ export default function ArabuluculukPage() {
     setDavaModalAcik(true);
   }
 
-  const GRID = 'grid-cols-[60px_70px_1fr_1fr_1fr_80px_90px_100px_70px_36px]';
+  const GRID = 'grid-cols-[28px_60px_70px_1fr_1fr_1fr_80px_90px_100px_70px_36px]';
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-8rem)]">
@@ -222,6 +235,16 @@ export default function ArabuluculukPage() {
         </select>
       </div>
 
+      {/* Toplu İşlem Barı */}
+      {seciliIdler.size > 0 && (
+        <div className="flex items-center gap-3 mb-4 px-4 py-2.5 bg-gold-dim border border-gold/20 rounded-lg">
+          <span className="text-xs text-gold font-semibold">{seciliIdler.size} dosya seçili</span>
+          <button onClick={() => { seciliIdler.forEach((id) => { const arb = arabuluculuklar?.find((a) => a.id === id); if (arb) arsivleMut.mutate(arb); }); setSeciliIdler(new Set()); }} className="text-[11px] px-2.5 py-1 bg-surface border border-border rounded text-text hover:border-gold transition-colors">Arşive Kaldır</button>
+          <button onClick={() => { if (confirm(`${seciliIdler.size} kayıt silinecek. Emin misiniz?`)) { seciliIdler.forEach((id) => { const arb = arabuluculuklar?.find((a) => a.id === id); if (arb) silMut.mutate(arb); }); setSeciliIdler(new Set()); } }} className="text-[11px] px-2.5 py-1 bg-surface border border-red/30 rounded text-red hover:bg-red/10 transition-colors">Sil</button>
+          <button onClick={() => setSeciliIdler(new Set())} className="ml-auto text-[11px] text-text-dim hover:text-text transition-colors">Seçimi Temizle</button>
+        </div>
+      )}
+
       {/* Liste */}
       {isLoading ? (
         <SkeletonTable rows={6} cols={10} />
@@ -235,7 +258,10 @@ export default function ArabuluculukPage() {
       ) : (
         <div className="bg-surface border border-border rounded-lg overflow-hidden flex-1 overflow-x-auto">
           {/* Tablo Başlık — Sıralanabilir */}
-          <div className={`grid ${GRID} gap-2 px-4 py-2.5 border-b border-border text-[11px] text-text-muted font-medium uppercase tracking-wider min-w-[950px]`}>
+          <div className={`grid ${GRID} gap-2 px-4 py-2.5 border-b border-border text-[11px] text-text-muted font-medium uppercase tracking-wider min-w-[980px]`}>
+            <label className="flex items-center justify-center cursor-pointer">
+              <input type="checkbox" checked={seciliIdler.size === sayfadakiler.length && sayfadakiler.length > 0} onChange={tumunuSec} className="accent-[var(--gold)]" />
+            </label>
             <button type="button" onClick={() => handleSort('no')} className="text-left hover:text-gold transition-colors flex items-center">No{sortIcon('no')}</button>
             <button type="button" onClick={() => handleSort('tur')} className="text-left hover:text-gold transition-colors flex items-center">Tür{sortIcon('tur')}</button>
             <button type="button" onClick={() => handleSort('muvekkil')} className="text-left hover:text-gold transition-colors flex items-center">Müvekkil{sortIcon('muvekkil')}</button>
@@ -254,7 +280,8 @@ export default function ArabuluculukPage() {
             const aktifDurum = ['Başvuru', 'Arabulucu Atandı', 'Görüşme'].includes(a.durum || '');
 
             return (
-              <div key={a.id} className={`grid ${GRID} gap-2 px-4 py-3 border-b border-border/50 hover:bg-gold-dim transition-colors items-center group min-w-[950px]`}>
+              <div key={a.id} className={`grid ${GRID} gap-2 px-4 py-3 border-b border-border/50 hover:bg-gold-dim transition-colors items-center group min-w-[980px] ${seciliIdler.has(a.id) ? 'bg-gold-dim/50' : ''}`}>
+                <input type="checkbox" checked={seciliIdler.has(a.id)} onChange={() => toggleSecim(a.id)} className="accent-[var(--gold)]" />
                 <Link href={`/arabuluculuk/${a.id}`} className="text-xs font-bold text-gold truncate hover:underline">{a.no || '—'}</Link>
                 <span className={`text-[10px] font-bold ${TUR_RENK[a.tur || ''] || 'text-text-muted'}`}>{a.tur || '—'}</span>
                 <span className="text-xs text-text truncate flex items-center gap-1">

@@ -40,6 +40,7 @@ export default function DanismanlikPage() {
   const [sayfa, setSayfa] = useState(1);
   const [sayfaBoyutu, setSayfaBoyutu] = useState(DEFAULT_PAGE_SIZE);
   const [kebabAcik, setKebabAcik] = useState<string | null>(null);
+  const [seciliIdler, setSeciliIdler] = useState<Set<string>>(new Set());
   const [sortKey, setSortKey] = useState<SortKey>('tarih');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const kebabRef = useRef<HTMLDivElement>(null);
@@ -54,6 +55,18 @@ export default function DanismanlikPage() {
     if (sortKey === key) setSortDir((d) => d === 'asc' ? 'desc' : 'asc');
     else { setSortKey(key); setSortDir('asc'); }
   }, [sortKey]);
+
+  function toggleSecim(id: string) {
+    setSeciliIdler((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+  function tumunuSec() {
+    if (seciliIdler.size === sayfadakiler.length) setSeciliIdler(new Set());
+    else setSeciliIdler(new Set(sayfadakiler.map((d) => d.id)));
+  }
 
   // Kebab dışına tıklanınca kapat
   useEffect(() => {
@@ -138,7 +151,7 @@ export default function DanismanlikPage() {
     return kalan > 0 ? `${saat}s ${kalan}dk` : `${saat} saat`;
   }
 
-  const GRID = 'grid-cols-[80px_50px_1fr_1fr_1fr_100px_90px_80px_36px]';
+  const GRID = 'grid-cols-[28px_80px_50px_1fr_1fr_1fr_100px_90px_80px_36px]';
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-8rem)]">
@@ -197,6 +210,16 @@ export default function DanismanlikPage() {
         </select>
       </div>
 
+      {/* Toplu İşlem Barı */}
+      {seciliIdler.size > 0 && (
+        <div className="flex items-center gap-3 mb-4 px-4 py-2.5 bg-gold-dim border border-gold/20 rounded-lg">
+          <span className="text-xs text-gold font-semibold">{seciliIdler.size} kayıt seçili</span>
+          <button onClick={() => { seciliIdler.forEach((id) => { const dan = danismanliklar?.find((d) => d.id === id); if (dan) arsivleMut.mutate(dan); }); setSeciliIdler(new Set()); }} className="text-[11px] px-2.5 py-1 bg-surface border border-border rounded text-text hover:border-gold transition-colors">Arşive Kaldır</button>
+          <button onClick={() => { if (confirm(`${seciliIdler.size} kayıt silinecek. Emin misiniz?`)) { seciliIdler.forEach((id) => { const dan = danismanliklar?.find((d) => d.id === id); if (dan) silMut.mutate(dan); }); setSeciliIdler(new Set()); } }} className="text-[11px] px-2.5 py-1 bg-surface border border-red/30 rounded text-red hover:bg-red/10 transition-colors">Sil</button>
+          <button onClick={() => setSeciliIdler(new Set())} className="ml-auto text-[11px] text-text-dim hover:text-text transition-colors">Seçimi Temizle</button>
+        </div>
+      )}
+
       {/* Liste */}
       {isLoading ? (
         <SkeletonTable rows={6} cols={9} />
@@ -210,7 +233,10 @@ export default function DanismanlikPage() {
       ) : (
         <div className="bg-surface border border-border rounded-lg overflow-hidden flex-1 overflow-x-auto">
           {/* Tablo Başlık — Sıralanabilir */}
-          <div className={`grid ${GRID} gap-2 px-4 py-2.5 border-b border-border text-[11px] text-text-muted font-medium uppercase tracking-wider min-w-[900px]`}>
+          <div className={`grid ${GRID} gap-2 px-4 py-2.5 border-b border-border text-[11px] text-text-muted font-medium uppercase tracking-wider min-w-[930px]`}>
+            <label className="flex items-center justify-center cursor-pointer">
+              <input type="checkbox" checked={seciliIdler.size === sayfadakiler.length && sayfadakiler.length > 0} onChange={tumunuSec} className="accent-[var(--gold)]" />
+            </label>
             <button type="button" onClick={() => handleSort('tarih')} className="text-left hover:text-gold transition-colors flex items-center">Tarih{sortIcon('tarih')}</button>
             <button type="button" onClick={() => handleSort('model')} className="text-left hover:text-gold transition-colors flex items-center">Tip{sortIcon('model')}</button>
             <button type="button" onClick={() => handleSort('muvekkil')} className="text-left hover:text-gold transition-colors flex items-center">Müvekkil{sortIcon('muvekkil')}</button>
@@ -228,7 +254,8 @@ export default function DanismanlikPage() {
             const isSureklii = d.sozlesmeModeli === 'sureklii';
 
             return (
-              <div key={d.id} className={`grid ${GRID} gap-2 px-4 py-3 border-b border-border/50 hover:bg-gold-dim transition-colors items-center group min-w-[900px]`}>
+              <div key={d.id} className={`grid ${GRID} gap-2 px-4 py-3 border-b border-border/50 hover:bg-gold-dim transition-colors items-center group min-w-[930px] ${seciliIdler.has(d.id) ? 'bg-gold-dim/50' : ''}`}>
+                <input type="checkbox" checked={seciliIdler.has(d.id)} onChange={() => toggleSecim(d.id)} className="accent-[var(--gold)]" />
                 <span className="text-[11px] text-text-dim">{fmtTarih(d.tarih)}</span>
                 <span className="text-sm" title={isSureklii ? 'Sürekli Sözleşme' : 'Tek Seferlik'}>
                   {isSureklii ? '🔄' : '📄'}

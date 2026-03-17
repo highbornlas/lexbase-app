@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useDanismanlik, useDanismanlikKaydet, useDanismanlikSil, useDanismanlikArsivle, type Danismanlik, type EforKaydi, EFOR_KATEGORILERI } from '@/lib/hooks/useDanismanlik';
 import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
 import { fmt, fmtTarih } from '@/lib/utils';
 import { DanismanlikModal } from '@/components/modules/DanismanlikModal';
+import { useSonErisim } from '@/lib/hooks/useSonErisim';
 
 const DURUM_RENK: Record<string, string> = {
   'Taslak': 'bg-surface2 text-text-dim border-border',
@@ -37,6 +38,13 @@ export default function DanismanlikDetayPage() {
   // Not ekleme
   const [yeniNot, setYeniNot] = useState('');
   const [duzenleModu, setDuzenleModu] = useState(false);
+  const { kaydetErisim, toggleSabitle, isSabitlenen } = useSonErisim();
+
+  useEffect(() => {
+    if (dan && !(dan as Record<string, unknown>)._silindi) {
+      kaydetErisim({ id: dan.id, tip: 'danismanlik', baslik: dan.konu || dan.no || dan.id.slice(0, 8), tarih: new Date().toISOString() });
+    }
+  }, [dan?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const muvAd = useMemo(() => {
     if (!dan?.muvId || !muvekkillar) return '—';
@@ -117,6 +125,13 @@ export default function DanismanlikDetayPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => toggleSabitle({ id: dan.id, tip: 'danismanlik', baslik: dan.konu || dan.no || dan.id.slice(0, 8), tarih: new Date().toISOString() })}
+            className={`text-xs px-3 py-1.5 rounded border transition-colors ${isSabitlenen(dan.id) ? 'bg-gold/10 text-gold border-gold/20' : 'bg-surface text-text-muted border-border hover:border-gold/40'}`}
+            title={isSabitlenen(dan.id) ? 'Hızlı erişimden kaldır' : 'Hızlı erişime sabitle'}
+          >
+            {isSabitlenen(dan.id) ? '⭐' : '☆'}
+          </button>
           <button onClick={() => setDuzenleModu(true)}
             className="text-xs px-3 py-1.5 rounded bg-gold/10 text-gold border border-gold/20 hover:bg-gold/20 transition-colors">
             Düzenle

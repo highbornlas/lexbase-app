@@ -232,3 +232,55 @@ export function useDanismanlikArsivle() {
     onSettled: () => { queryClient.invalidateQueries({ queryKey: ['danismanlik'] }); },
   });
 }
+
+// ── Kalıcı Sil ──────────────────────────────────────────────
+export function useDanismanlikKaliciSil() {
+  const buroId = useBuroId();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      if (!buroId) throw new Error('Büro bulunamadı');
+      const supabase = createClient();
+      const { error } = await supabase
+        .from('danismanlik')
+        .delete()
+        .eq('id', id)
+        .eq('buro_id', buroId);
+      if (error) throw error;
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['danismanlik'] });
+      queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
+    },
+  });
+}
+
+// ── Geri Yükle ──────────────────────────────────────────────
+export function useDanismanlikGeriYukle() {
+  const buroId = useBuroId();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      if (!buroId) throw new Error('Büro bulunamadı');
+      const supabase = createClient();
+      const { data: mevcut } = await supabase
+        .from('danismanlik')
+        .select('data')
+        .eq('id', id)
+        .eq('buro_id', buroId)
+        .single();
+      if (!mevcut) throw new Error('Danışmanlık bulunamadı');
+      const data = { ...(mevcut.data as Record<string, unknown>) };
+      delete data._silindi;
+      const { error } = await supabase.from('danismanlik').update({ data })
+        .eq('id', id).eq('buro_id', buroId);
+      if (error) throw error;
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['danismanlik'] });
+      queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
+    },
+  });
+}

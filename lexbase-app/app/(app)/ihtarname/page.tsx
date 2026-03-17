@@ -54,6 +54,7 @@ export default function IhtarnamePage() {
   const [topluPttSonuc, setTopluPttSonuc] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('tarih');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [seciliIdler, setSeciliIdler] = useState<Set<string>>(new Set());
   const kebabRef = useRef<HTMLDivElement>(null);
 
   // Aktif (silinmemiş + arşivlenmemiş) ihtarnameler
@@ -76,6 +77,18 @@ export default function IhtarnamePage() {
       setSortDir('asc');
     }
   }, [sortKey]);
+
+  function toggleSecim(id: string) {
+    setSeciliIdler((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+  function tumunuSec() {
+    if (seciliIdler.size === sayfadakiler.length) setSeciliIdler(new Set());
+    else setSeciliIdler(new Set(sayfadakiler.map((i) => i.id)));
+  }
 
   // Kebab dışına tıklanınca kapat
   useEffect(() => {
@@ -199,7 +212,7 @@ export default function IhtarnamePage() {
     return <span className="text-gold ml-0.5">{sortDir === 'asc' ? '↑' : '↓'}</span>;
   };
 
-  const GRID = 'grid-cols-[minmax(160px,2fr)_30px_80px_1fr_1fr_1fr_1fr_120px_80px_90px_80px_36px]';
+  const GRID = 'grid-cols-[28px_minmax(160px,2fr)_30px_80px_1fr_1fr_1fr_1fr_120px_80px_90px_80px_36px]';
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-8rem)]">
@@ -293,6 +306,16 @@ export default function IhtarnamePage() {
         </select>
       </div>
 
+      {/* Toplu Seçim Bar */}
+      {seciliIdler.size > 0 && (
+        <div className="flex items-center gap-3 mb-4 px-4 py-2.5 bg-gold-dim border border-gold/20 rounded-lg">
+          <span className="text-xs text-gold font-semibold">{seciliIdler.size} ihtarname seçili</span>
+          <button onClick={() => { seciliIdler.forEach((id) => { const ih = ihtarnameler?.find((i) => i.id === id); if (ih) arsivleMut.mutate(ih); }); setSeciliIdler(new Set()); }} className="text-[11px] px-2.5 py-1 bg-surface border border-border rounded text-text hover:border-gold transition-colors">Arşive Kaldır</button>
+          <button onClick={() => { if (confirm(`${seciliIdler.size} ihtarname silinecek. Emin misiniz?`)) { seciliIdler.forEach((id) => { const ih = ihtarnameler?.find((i) => i.id === id); if (ih) silMut.mutate(ih); }); setSeciliIdler(new Set()); } }} className="text-[11px] px-2.5 py-1 bg-surface border border-red/30 rounded text-red hover:bg-red/10 transition-colors">Sil</button>
+          <button onClick={() => setSeciliIdler(new Set())} className="ml-auto text-[11px] text-text-dim hover:text-text transition-colors">Seçimi Temizle</button>
+        </div>
+      )}
+
       {/* Liste */}
       {isLoading ? (
         <SkeletonTable rows={6} cols={12} />
@@ -306,7 +329,10 @@ export default function IhtarnamePage() {
       ) : (
         <div className="bg-surface border border-border rounded-lg overflow-hidden flex-1 overflow-x-auto">
           {/* Tablo Başlık — Sıralanabilir */}
-          <div className={`grid ${GRID} gap-2 px-4 py-2.5 border-b border-border text-[11px] text-text-muted font-medium uppercase tracking-wider min-w-[1100px]`}>
+          <div className={`grid ${GRID} gap-2 px-4 py-2.5 border-b border-border text-[11px] text-text-muted font-medium uppercase tracking-wider min-w-[1130px]`}>
+            <label className="flex items-center justify-center cursor-pointer">
+              <input type="checkbox" checked={seciliIdler.size === sayfadakiler.length && sayfadakiler.length > 0} onChange={tumunuSec} className="accent-[var(--gold)]" />
+            </label>
             <button type="button" onClick={() => handleSort('no')} className="text-left hover:text-gold transition-colors flex items-center">No{sortIcon('no')}</button>
             <button type="button" onClick={() => handleSort('yon')} className="text-left hover:text-gold transition-colors flex items-center">Yön{sortIcon('yon')}</button>
             <button type="button" onClick={() => handleSort('tur')} className="text-left hover:text-gold transition-colors flex items-center">Tür{sortIcon('tur')}</button>
@@ -325,8 +351,9 @@ export default function IhtarnamePage() {
           {sayfadakiler.map((i) => (
             <div
               key={i.id}
-              className={`grid ${GRID} gap-2 px-4 py-3 border-b border-border/50 hover:bg-gold-dim transition-colors items-center group min-w-[1100px]`}
+              className={`grid ${GRID} gap-2 px-4 py-3 border-b border-border/50 hover:bg-gold-dim transition-colors items-center group min-w-[1130px] ${seciliIdler.has(i.id) ? 'bg-gold-dim/50' : ''}`}
             >
+              <input type="checkbox" checked={seciliIdler.has(i.id)} onChange={() => toggleSecim(i.id)} className="accent-[var(--gold)]" />
               <Link href={`/ihtarname/${i.id}`} className="min-w-0 hover:underline">
                 <span className="font-[var(--font-playfair)] text-sm font-bold text-gold truncate block">{ihtarnameDosyaBaslik(i)}</span>
                 {i.konu && <span className="text-[10px] text-text-dim truncate block mt-0.5">{i.konu}</span>}

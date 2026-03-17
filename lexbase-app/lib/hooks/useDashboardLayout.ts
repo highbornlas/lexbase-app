@@ -119,7 +119,7 @@ export function useDashboardLayout() {
     const tumKayitliIds = new Set<string>();
     // Layout'taki widget ID'leri
     if (kayitliLayout.lg) {
-      kayitliLayout.lg.forEach((l: Layout) => tumKayitliIds.add(l.i));
+      (kayitliLayout.lg as unknown as Array<{ i: string }>).forEach((l) => tumKayitliIds.add(l.i));
     }
     // Gizli listedeki ID'ler
     kayitliGizli.forEach((id: string) => tumKayitliIds.add(id));
@@ -136,9 +136,10 @@ export function useDashboardLayout() {
         }
         // Layout'a da ekle (her breakpoint'e)
         for (const bp of ['lg', 'md', 'sm'] as const) {
-          const varsayilanItem = VARSAYILAN_LAYOUTS[bp]?.find((l: Layout) => l.i === w.id);
+          const bpLayout = VARSAYILAN_LAYOUTS[bp] as unknown as Array<{ i: string; x: number; y: number; w: number; h: number; minW?: number; minH?: number }>;
+          const varsayilanItem = bpLayout?.find((l) => l.i === w.id);
           if (varsayilanItem && layoutSonuc[bp]) {
-            (layoutSonuc[bp] as Layout[]).push(varsayilanItem);
+            (layoutSonuc[bp] as unknown as Array<typeof varsayilanItem>).push(varsayilanItem);
           }
         }
         degisti = true;

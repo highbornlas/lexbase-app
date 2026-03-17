@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState, useMemo } from 'react';
+import { use, useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useIcra, useIcraKaydet, useIcraSil, useIcraArsivle } from '@/lib/hooks/useIcra';
@@ -17,6 +17,7 @@ import { SureBadge } from '@/components/ui/SureBadge';
 import { IcraModal } from '@/components/modules/IcraModal';
 import { DosyaEvrakTab } from '@/components/modules/DosyaEvrakTab';
 import { TahsilatModal, type TahsilatKaydi } from '@/components/modules/TahsilatModal';
+import { useSonErisim } from '@/lib/hooks/useSonErisim';
 
 const TABS = [
   { key: 'ozet', label: 'Özet', icon: '📋' },
@@ -50,6 +51,14 @@ export default function IcraDetayPage({ params }: { params: Promise<{ id: string
   const [duzenleModu, setDuzenleModu] = useState(false);
   const [tahsilatModal, setTahsilatModal] = useState(false);
   const [duzenlenecekTahsilat, setDuzenlenecekTahsilat] = useState<TahsilatKaydi | null>(null);
+  const { kaydetErisim, toggleSabitle, isSabitlenen } = useSonErisim();
+
+  useEffect(() => {
+    if (icra && !(icra as Record<string, unknown>)._silindi) {
+      const baslik = String(esasNoGoster(icra.esasYil, icra.esasNo) || icra.konu || icra.no || icra.id.slice(0, 8));
+      kaydetErisim({ id: icra.id, tip: 'icra', baslik, tarih: new Date().toISOString() });
+    }
+  }, [icra?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Müvekkil adı
   const muvAd = useMemo(() => {
@@ -159,6 +168,13 @@ export default function IcraDetayPage({ params }: { params: Promise<{ id: string
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => toggleSabitle({ id: icra.id, tip: 'icra', baslik: String(esasNo || icra.konu || icra.no || icra.id.slice(0, 8)), tarih: new Date().toISOString() })}
+            className={`text-xs px-3 py-1.5 rounded border transition-colors ${isSabitlenen(icra.id) ? 'bg-gold/10 text-gold border-gold/20' : 'bg-surface text-text-muted border-border hover:border-gold/40'}`}
+            title={isSabitlenen(icra.id) ? 'Hızlı erişimden kaldır' : 'Hızlı erişime sabitle'}
+          >
+            {isSabitlenen(icra.id) ? '⭐' : '☆'}
+          </button>
           <button
             onClick={() => setDuzenleModu(true)}
             className="text-xs px-3 py-1.5 rounded bg-gold/10 text-gold border border-gold/20 hover:bg-gold/20 transition-colors"

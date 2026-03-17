@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState, useMemo } from 'react';
+import { use, useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMuvekkil, useMuvDavalar, useMuvIcralar, useMuvArabuluculuklar, useMuvIhtarnameler } from '@/lib/hooks/useMuvekkillar';
@@ -23,6 +23,7 @@ import { MuvPlanlama } from '@/components/modules/muvekkil/MuvPlanlama';
 import { MuvDanismanlik } from '@/components/modules/muvekkil/MuvDanismanlik';
 import { MuvBelgeler } from '@/components/modules/muvekkil/MuvBelgeler';
 import { useMuvekkilKaydet, useMuvekkilSil } from '@/lib/hooks/useMuvekkillar';
+import { useSonErisim } from '@/lib/hooks/useSonErisim';
 
 /* ══════════════════════════════════════════════════════════════
    Müvekkil Detay Sayfası — 11 Sekmeli ERP Yapısı
@@ -70,6 +71,13 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
   const [yeniArabuluculukOpen, setYeniArabuluculukOpen] = useState(false);
   const [yeniIhtarnameOpen, setYeniIhtarnameOpen] = useState(false);
   const [seciliIhtarname, setSeciliIhtarname] = useState<Record<string, unknown> | null>(null);
+  const { kaydetErisim, toggleSabitle, isSabitlenen } = useSonErisim();
+
+  useEffect(() => {
+    if (muv && !(muv as Record<string, unknown>)._silindi) {
+      kaydetErisim({ id: muv.id, tip: 'muvekkil', baslik: muv.ad || muv.id.slice(0, 8), tarih: new Date().toISOString() });
+    }
+  }, [muv?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Dosya sayıları (KPI) ── */
   const davaArr = davalar || [];
@@ -153,6 +161,13 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => toggleSabitle({ id: muv.id, tip: 'muvekkil', baslik: muv.ad || muv.id.slice(0, 8), tarih: new Date().toISOString() })}
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${isSabitlenen(muv.id) ? 'bg-gold/10 text-gold border-gold/20' : 'text-text-muted border-border hover:border-gold hover:text-gold'}`}
+            title={isSabitlenen(muv.id) ? 'Hızlı erişimden kaldır' : 'Hızlı erişime sabitle'}
+          >
+            {isSabitlenen(muv.id) ? '⭐' : '☆'}
+          </button>
           <button
             onClick={() => setEditOpen(true)}
             className="px-3 py-1.5 text-xs font-medium text-text-muted border border-border rounded-lg hover:border-gold hover:text-gold transition-colors"
