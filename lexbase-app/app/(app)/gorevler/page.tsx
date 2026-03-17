@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client';
 import { fmtTarih } from '@/lib/utils';
 import { GorevModal } from '@/components/modules/GorevModal';
 import { SkeletonTable } from '@/components/ui/SkeletonTable';
+import { QuickDateChips } from '@/components/ui/QuickDateChips';
 
 const ONCELIK_RENK: Record<string, { bg: string; text: string; icon: string }> = {
   'Yüksek': { bg: 'bg-red-dim', text: 'text-red', icon: '🔴' },
@@ -44,6 +45,9 @@ export default function GorevlerPage() {
   const [siralama, setSiralama] = useState<string>('');
   const [topluSecim, setTopluSecim] = useState(false);
   const [seciliIds, setSeciliIds] = useState<Set<string>>(new Set());
+  const [tarihChip, setTarihChip] = useState('tumzaman');
+  const [tarihBaslangic, setTarihBaslangic] = useState('');
+  const [tarihBitis, setTarihBitis] = useState('');
 
   // Auth user email for "bana atanan" filter
   useEffect(() => {
@@ -214,6 +218,14 @@ export default function GorevlerPage() {
       );
     }
 
+    // Tarih chip filtresi
+    if (tarihBaslangic && tarihBitis) {
+      filtrelenmis = filtrelenmis.filter((t) => {
+        if (!t.sonTarih) return false;
+        return t.sonTarih >= tarihBaslangic && t.sonTarih <= tarihBitis;
+      });
+    }
+
     // Sıralama
     if (siralama === 'tarih_asc') {
       filtrelenmis = [...filtrelenmis].sort((a, b) => (a.sonTarih || '').localeCompare(b.sonTarih || ''));
@@ -250,7 +262,7 @@ export default function GorevlerPage() {
     });
 
     return map;
-  }, [todolar, arama, filtre, siralama, muvAdMap, myPersonelId]);
+  }, [todolar, arama, filtre, siralama, muvAdMap, myPersonelId, tarihBaslangic, tarihBitis]);
 
   const GRUP_RENK: Record<string, string> = {
     'Gecikmiş': 'border-red/30 text-red',
@@ -341,6 +353,7 @@ export default function GorevlerPage() {
           <option value="baslik">Başlık (A-Z)</option>
           <option value="olusturma">Oluşturma Tarihi (Yeni → Eski)</option>
         </select>
+        <QuickDateChips value={tarihChip} onChange={(key, b, bt) => { setTarihChip(key); setTarihBaslangic(b); setTarihBitis(bt); }} />
       </div>
 
       {/* Toplu Secim: Tümünü Seç / Seçimi Kaldır */}

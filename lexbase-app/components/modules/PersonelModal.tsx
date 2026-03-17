@@ -216,7 +216,7 @@ export function PersonelModal({ open, onClose, personel }: PersonelModalProps) {
       open={open}
       onClose={onClose}
       title={personel ? 'Personel Düzenle' : 'Yeni Personel Ekle'}
-      maxWidth="max-w-xl"
+      maxWidth="max-w-2xl"
       dirty={isDirty}
       hasDraft={hasDraft()}
       onLoadDraft={() => { const d = loadDraft(); if (d) setForm(d as Partial<Personel>); clearDraft(); }}
@@ -242,104 +242,108 @@ export function PersonelModal({ open, onClose, personel }: PersonelModalProps) {
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
-          <FormGroup label="Ad Soyad" required>
-            <FormInput value={form.ad || ''} onChange={(e) => handleChange('ad', e.target.value)} placeholder="Personel adı" />
-          </FormGroup>
-          <FormGroup label="Rol">
-            <FormSelect value={form.rol || ''} onChange={(e) => handleChange('rol', e.target.value)}>
-              <option value="yonetici">Yönetici</option>
-              <option value="avukat">Avukat</option>
-              <option value="stajyer">Stajyer</option>
-              <option value="sekreter">Sekreter</option>
-            </FormSelect>
-          </FormGroup>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <FormGroup label={yeniKayit ? 'E-posta (giriş adresi)' : 'E-posta'}>
-            <FormInput
-              type="email"
-              value={form.email || ''}
-              onChange={(e) => handleChange('email', e.target.value)}
-              placeholder="ornek@mail.com"
-            />
-          </FormGroup>
-          <FormGroup label="Telefon">
-            <FormInput type="tel" value={form.tel || ''} onChange={(e) => handleChange('tel', e.target.value)} placeholder="0532 000 0000" />
-          </FormGroup>
-        </div>
-
-        {/* Davet toggle — yeni kayıt VEYA davet bekleyen mevcut personel */}
-        {davetGosterilebilir && (
-          <div className={`border rounded-lg p-3 ${davetBekliyor ? 'bg-gold-dim/30 border-gold/30' : 'bg-surface2 border-border/50'}`}>
-            <label className="flex items-center gap-3 cursor-pointer group">
-              <div
-                className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 ${
-                  davetGonder ? 'bg-gold' : 'bg-border'
-                }`}
-                onClick={() => setDavetGonder(!davetGonder)}
-              >
-                <div
-                  className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
-                    davetGonder ? 'translate-x-4' : 'translate-x-0.5'
-                  }`}
-                />
-              </div>
-              <div className="flex-1">
-                <div className="text-xs font-medium text-text group-hover:text-gold transition-colors">
-                  {davetBekliyor ? 'Daveti tekrar gönder' : 'Davet e-postası gönder'}
-                </div>
-                <div className="text-[10px] text-text-dim">
-                  {davetBekliyor
-                    ? 'Önceki davet başarısız olmuş olabilir. Tekrar göndermek için aktif bırakın.'
-                    : davetGonder
-                      ? 'Bu kişiye sisteme giriş yapması için bir davet e-postası gönderilecek'
-                      : 'Sadece personel kaydı oluşturulacak, giriş daveti gönderilmeyecek'
-                  }
-                </div>
-              </div>
-            </label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+          {/* LEFT COLUMN */}
+          <div className="space-y-4">
+            <FormGroup label="Ad Soyad" required>
+              <FormInput value={form.ad || ''} onChange={(e) => handleChange('ad', e.target.value)} placeholder="Personel adı" />
+            </FormGroup>
+            <FormGroup label={yeniKayit ? 'E-posta (giriş adresi)' : 'E-posta'}>
+              <FormInput
+                type="email"
+                value={form.email || ''}
+                onChange={(e) => handleChange('email', e.target.value)}
+                placeholder="ornek@mail.com"
+              />
+            </FormGroup>
+            <FormGroup label="Telefon">
+              <FormInput type="tel" value={form.tel || ''} onChange={(e) => handleChange('tel', e.target.value)} placeholder="0532 000 0000" />
+            </FormGroup>
+            <FormGroup label="TC Kimlik No">
+              <FormInput value={form.tc || ''} onChange={(e) => handleChange('tc', e.target.value)} placeholder="11 haneli TC" maxLength={11} />
+            </FormGroup>
+            {(form.rol === 'avukat' || form.rol === 'yonetici' || form.rol === 'sahip') && (
+              <>
+                <FormGroup label="Baro">
+                  <FormInput value={(form as Record<string, unknown>).baro as string || ''} onChange={(e) => handleChange('baro', e.target.value)} placeholder="ör. İstanbul" />
+                </FormGroup>
+                <FormGroup label="Baro Sicil No">
+                  <FormInput value={form.baroSicil || ''} onChange={(e) => handleChange('baroSicil', e.target.value)} placeholder="Baro sicil numarası" />
+                </FormGroup>
+                <FormGroup label="TBB Sicil No">
+                  <FormInput value={(form as Record<string, unknown>).tbbSicil as string || ''} onChange={(e) => handleChange('tbbSicil', e.target.value)} placeholder="TBB sicil numarası" />
+                </FormGroup>
+              </>
+            )}
           </div>
-        )}
 
-        <div className="grid grid-cols-2 gap-4">
-          <FormGroup label="TC Kimlik No">
-            <FormInput value={form.tc || ''} onChange={(e) => handleChange('tc', e.target.value)} placeholder="11 haneli TC" maxLength={11} />
-          </FormGroup>
-          {(form.rol === 'avukat' || form.rol === 'yonetici' || form.rol === 'sahip') && (
-            <FormGroup label="Baro">
-              <FormInput value={(form as Record<string, unknown>).baro as string || ''} onChange={(e) => handleChange('baro', e.target.value)} placeholder="ör. İstanbul" />
-            </FormGroup>
-          )}
-        </div>
-
-        {(form.rol === 'avukat' || form.rol === 'yonetici' || form.rol === 'sahip') && (
-          <div className="grid grid-cols-2 gap-4">
-            <FormGroup label="Baro Sicil No">
-              <FormInput value={form.baroSicil || ''} onChange={(e) => handleChange('baroSicil', e.target.value)} placeholder="Baro sicil numarası" />
-            </FormGroup>
-            <FormGroup label="TBB Sicil No">
-              <FormInput value={(form as Record<string, unknown>).tbbSicil as string || ''} onChange={(e) => handleChange('tbbSicil', e.target.value)} placeholder="TBB sicil numarası" />
-            </FormGroup>
-          </div>
-        )}
-
-        <div className="grid grid-cols-2 gap-4">
-          <FormGroup label="Başlama Tarihi">
-            <FormInput type="date" value={form.baslama || ''} onChange={(e) => handleChange('baslama', e.target.value)} />
-          </FormGroup>
-          {!yeniKayit && !davetBekliyor && (
-            <FormGroup label="Durum">
-              <FormSelect value={form.durum || ''} onChange={(e) => handleChange('durum', e.target.value)}>
-                <option value="aktif">Aktif</option>
-                <option value="davet_gonderildi">Davet Gönderildi</option>
-                <option value="pasif">Pasif</option>
+          {/* RIGHT COLUMN */}
+          <div className="space-y-4">
+            <FormGroup label="Rol">
+              <FormSelect value={form.rol || ''} onChange={(e) => handleChange('rol', e.target.value)}>
+                <option value="yonetici">Yönetici</option>
+                <option value="avukat">Avukat</option>
+                <option value="stajyer">Stajyer</option>
+                <option value="sekreter">Sekreter</option>
               </FormSelect>
             </FormGroup>
-          )}
+            {!yeniKayit && !davetBekliyor && (
+              <FormGroup label="Durum">
+                <div className="flex rounded-lg border border-border overflow-hidden">
+                  {[
+                    { value: 'aktif', label: 'Aktif', icon: '\u{1F7E2}' },
+                    { value: 'pasif', label: 'Pasif', icon: '\u{26AB}' },
+                    { value: 'davet_gonderildi', label: 'Davet', icon: '\u{1F4E7}' },
+                  ].map((d) => (
+                    <button key={d.value} type="button" onClick={() => handleChange('durum', d.value)}
+                      className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
+                        form.durum === d.value ? 'bg-gold text-bg' : 'bg-surface text-text-muted hover:text-text'
+                      }`}>
+                      {d.icon} {d.label}
+                    </button>
+                  ))}
+                </div>
+              </FormGroup>
+            )}
+            <FormGroup label="Başlama Tarihi">
+              <FormInput type="date" value={form.baslama || ''} onChange={(e) => handleChange('baslama', e.target.value)} />
+            </FormGroup>
+            {/* Davet toggle — yeni kayıt VEYA davet bekleyen mevcut personel */}
+            {davetGosterilebilir && (
+              <div className={`border rounded-lg p-3 ${davetBekliyor ? 'bg-gold-dim/30 border-gold/30' : 'bg-surface2 border-border/50'}`}>
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <div
+                    className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 ${
+                      davetGonder ? 'bg-gold' : 'bg-border'
+                    }`}
+                    onClick={() => setDavetGonder(!davetGonder)}
+                  >
+                    <div
+                      className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                        davetGonder ? 'translate-x-4' : 'translate-x-0.5'
+                      }`}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-xs font-medium text-text group-hover:text-gold transition-colors">
+                      {davetBekliyor ? 'Daveti tekrar gönder' : 'Davet e-postası gönder'}
+                    </div>
+                    <div className="text-[10px] text-text-dim">
+                      {davetBekliyor
+                        ? 'Önceki davet başarısız olmuş olabilir. Tekrar göndermek için aktif bırakın.'
+                        : davetGonder
+                          ? 'Bu kişiye sisteme giriş yapması için bir davet e-postası gönderilecek'
+                          : 'Sadece personel kaydı oluşturulacak, giriş daveti gönderilmeyecek'
+                      }
+                    </div>
+                  </div>
+                </label>
+              </div>
+            )}
+          </div>
         </div>
 
+        {/* FULL WIDTH — Notlar */}
         <FormGroup label="Notlar">
           <FormTextarea value={form.notlar || ''} onChange={(e) => handleChange('notlar', e.target.value)} rows={2} placeholder="Ek notlar..." />
         </FormGroup>

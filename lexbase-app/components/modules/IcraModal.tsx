@@ -332,9 +332,16 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
         {adim === 1 && (
           <>
             <FormGroup label="Müvekkil Rolü">
-              <FormSelect value={form.muvRol || ''} onChange={(e) => handleChange('muvRol', e.target.value)}>
-                {ICRA_MUVEKKIL_ROL.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-              </FormSelect>
+              <div className="flex rounded-lg border border-border overflow-hidden">
+                {ICRA_MUVEKKIL_ROL.map((r) => (
+                  <button key={r.value} type="button" onClick={() => handleChange('muvRol', r.value)}
+                    className={`flex-1 px-4 py-2 text-xs font-medium transition-colors ${
+                      form.muvRol === r.value ? 'bg-gold text-bg' : 'bg-surface text-text-muted hover:text-text'
+                    }`}>
+                    {r.value === 'alacakli' ? '\u{1F4B0}' : '\u{1F4CB}'} {r.label}
+                  </button>
+                ))}
+              </div>
             </FormGroup>
 
             {/* Müvekkiller — çoklu seçim + vekil atama */}

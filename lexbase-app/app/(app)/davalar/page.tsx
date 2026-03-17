@@ -13,6 +13,7 @@ import { DAVA_DURUMLARI, YARGI_TURLERI, YARGI_BIRIMLERI } from '@/lib/constants/
 import { exportDavaListeUYAPXLS } from '@/lib/export/excelExport';
 import { exportDavaListePDF } from '@/lib/export/pdfExport';
 import { SkeletonTable, SkeletonKPI } from '@/components/ui/SkeletonTable';
+import { CopyNo } from '@/components/ui/CopyNo';
 
 // ── Badge renk haritaları ────────────────────────────────────
 
@@ -655,7 +656,7 @@ export default function DavalarPage() {
             const globalIdx = (sayfa - 1) * sayfaBoyutu + idx;
 
             return (
-              <div key={d.id} className={`${gridClass} py-3 border-b border-border/50 hover:bg-gold-dim transition-colors items-center ${vurgu} ${secili ? 'bg-gold-dim/50' : ''}`} style={gridStyle}>
+              <div key={d.id} className={`${gridClass} py-3 border-b border-border/50 hover:bg-gold-dim transition-colors items-center group/row ${vurgu} ${secili ? 'bg-gold-dim/50' : ''}`} style={gridStyle}>
                 <label className="flex items-center justify-center cursor-pointer" onClick={(e) => e.stopPropagation()}>
                   <input type="checkbox" checked={secili} onChange={() => toggleSecim(d.id)} className="accent-[var(--gold)]" />
                 </label>
@@ -669,11 +670,14 @@ export default function DavalarPage() {
                       </Link>
                     );
                     case 'esasNo': return (
-                      <Link key={colKey} href={`/davalar/${d.id}`} className="min-w-0 hover:underline">
-                        <span className="font-[var(--font-playfair)] text-sm font-bold text-gold truncate">
-                          {esasStr || <span className="text-text-dim/40">—</span>}
-                        </span>
-                      </Link>
+                      <div key={colKey} className="flex items-center min-w-0">
+                        <Link href={`/davalar/${d.id}`} className="min-w-0 hover:underline">
+                          <span className="font-[var(--font-playfair)] text-sm font-bold text-gold truncate">
+                            {esasStr || <span className="text-text-dim/40">—</span>}
+                          </span>
+                        </Link>
+                        <CopyNo text={esasStr} />
+                      </div>
                     );
                     case 'konu': return <span key={colKey} className="text-xs text-text truncate" title={d.konu || ''}>{d.konu || <span className="text-text-dim/40">—</span>}</span>;
                     case 'davaci': return (

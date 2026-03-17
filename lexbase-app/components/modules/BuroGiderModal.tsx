@@ -108,44 +108,56 @@ export function BuroGiderModal({ open, onClose, gider }: BuroGiderModalProps) {
           <div className="bg-red-dim border border-red/20 rounded-lg px-3 py-2 text-xs text-red">{hata}</div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
-          <FormGroup label="Kategori *">
-            <FormSelect value={form.kategori || ''} onChange={(e) => handleChange('kategori', e.target.value)}>
-              <option value="">Seçiniz...</option>
-              {GIDER_KATEGORILERI.map((k) => (
-                <option key={k} value={k}>{k}</option>
-              ))}
-            </FormSelect>
-          </FormGroup>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+          {/* ── SOL SÜTUN ── */}
+          <div className="space-y-4">
+            <FormGroup label="Açıklama">
+              <FormInput value={form.aciklama || ''} onChange={(e) => handleChange('aciklama', e.target.value)} placeholder="Gider açıklaması..." />
+            </FormGroup>
 
-          <FormGroup label="Tarih">
-            <FormInput type="date" value={form.tarih || ''} onChange={(e) => handleChange('tarih', e.target.value)} />
-          </FormGroup>
+            <FormGroup label="Kategori *">
+              <FormSelect value={form.kategori || ''} onChange={(e) => handleChange('kategori', e.target.value)}>
+                <option value="">Seçiniz...</option>
+                {GIDER_KATEGORILERI.map((k) => (
+                  <option key={k} value={k}>{k}</option>
+                ))}
+              </FormSelect>
+            </FormGroup>
+
+            <FormGroup label="Tutar (₺) *">
+              <FormInput type="number" value={String(form.tutar || '')} onChange={(e) => handleChange('tutar', Number(e.target.value))} placeholder="0" />
+            </FormGroup>
+          </div>
+
+          {/* ── SAĞ SÜTUN ── */}
+          <div className="space-y-4">
+            <FormGroup label="KDV Oranı (%)">
+              <FormSelect value={String(form.kdvOrani ?? 20)} onChange={(e) => handleChange('kdvOrani', Number(e.target.value))}>
+                {KDV_ORANLARI.map((o) => (
+                  <option key={o} value={o}>%{o}</option>
+                ))}
+              </FormSelect>
+            </FormGroup>
+
+            <FormGroup label="Stopaj Oranı (%)">
+              <FormInput type="number" value={String(form.stopajOrani || '')} onChange={(e) => handleChange('stopajOrani', Number(e.target.value))} placeholder="0" />
+            </FormGroup>
+
+            <FormGroup label="Tarih">
+              <FormInput type="date" value={form.tarih || ''} onChange={(e) => handleChange('tarih', e.target.value)} />
+            </FormGroup>
+
+            <FormGroup label="Tekrar">
+              <FormSelect value={form.tekrar || 'tek'} onChange={(e) => handleChange('tekrar', e.target.value)}>
+                <option value="tek">Tek Seferlik</option>
+                <option value="aylik">Aylık</option>
+                <option value="yillik">Yıllık</option>
+              </FormSelect>
+            </FormGroup>
+          </div>
         </div>
 
-        <FormGroup label="Açıklama">
-          <FormInput value={form.aciklama || ''} onChange={(e) => handleChange('aciklama', e.target.value)} placeholder="Gider açıklaması..." />
-        </FormGroup>
-
-        <div className="grid grid-cols-3 gap-4">
-          <FormGroup label="Tutar (₺) *">
-            <FormInput type="number" value={String(form.tutar || '')} onChange={(e) => handleChange('tutar', Number(e.target.value))} placeholder="0" />
-          </FormGroup>
-
-          <FormGroup label="KDV Oranı (%)">
-            <FormSelect value={String(form.kdvOrani ?? 20)} onChange={(e) => handleChange('kdvOrani', Number(e.target.value))}>
-              {KDV_ORANLARI.map((o) => (
-                <option key={o} value={o}>%{o}</option>
-              ))}
-            </FormSelect>
-          </FormGroup>
-
-          <FormGroup label="Stopaj Oranı (%)">
-            <FormInput type="number" value={String(form.stopajOrani || '')} onChange={(e) => handleChange('stopajOrani', Number(e.target.value))} placeholder="0" />
-          </FormGroup>
-        </div>
-
-        {/* Otomatik hesaplanan alanlar */}
+        {/* Otomatik hesaplanan alanlar — tam genişlik */}
         <div className="grid grid-cols-3 gap-3 bg-surface2 rounded-lg p-3">
           <div>
             <div className="text-[9px] text-text-dim uppercase tracking-wider">KDV Tutarı</div>
@@ -162,14 +174,6 @@ export function BuroGiderModal({ open, onClose, gider }: BuroGiderModalProps) {
         </div>
 
         <div className="grid grid-cols-3 gap-4">
-          <FormGroup label="Tekrar">
-            <FormSelect value={form.tekrar || 'tek'} onChange={(e) => handleChange('tekrar', e.target.value)}>
-              <option value="tek">Tek Seferlik</option>
-              <option value="aylik">Aylık</option>
-              <option value="yillik">Yıllık</option>
-            </FormSelect>
-          </FormGroup>
-
           <FormGroup label="Ödeme Durumu">
             <FormSelect value={form.odemeDurumu || 'odendi'} onChange={(e) => handleChange('odemeDurumu', e.target.value)}>
               <option value="odendi">Ödendi</option>

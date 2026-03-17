@@ -8,6 +8,7 @@ import { fmt, fmtTarih } from '@/lib/utils';
 import { ihtarnameDosyaBaslik } from '@/lib/utils/uyapHelpers';
 import Link from 'next/link';
 import { SkeletonTable, SkeletonKPI } from '@/components/ui/SkeletonTable';
+import { CopyNo } from '@/components/ui/CopyNo';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
 const DEFAULT_PAGE_SIZE = 10;
@@ -351,13 +352,16 @@ export default function IhtarnamePage() {
           {sayfadakiler.map((i) => (
             <div
               key={i.id}
-              className={`grid ${GRID} gap-2 px-4 py-3 border-b border-border/50 hover:bg-gold-dim transition-colors items-center group min-w-[1130px] ${seciliIdler.has(i.id) ? 'bg-gold-dim/50' : ''}`}
+              className={`grid ${GRID} gap-2 px-4 py-3 border-b border-border/50 hover:bg-gold-dim transition-colors items-center group group/row min-w-[1130px] ${seciliIdler.has(i.id) ? 'bg-gold-dim/50' : ''}`}
             >
               <input type="checkbox" checked={seciliIdler.has(i.id)} onChange={() => toggleSecim(i.id)} className="accent-[var(--gold)]" />
-              <Link href={`/ihtarname/${i.id}`} className="min-w-0 hover:underline">
-                <span className="font-[var(--font-playfair)] text-sm font-bold text-gold truncate block">{ihtarnameDosyaBaslik(i)}</span>
-                {i.konu && <span className="text-[10px] text-text-dim truncate block mt-0.5">{i.konu}</span>}
-              </Link>
+              <div className="flex items-center min-w-0">
+                <Link href={`/ihtarname/${i.id}`} className="min-w-0 hover:underline">
+                  <span className="font-[var(--font-playfair)] text-sm font-bold text-gold truncate block">{ihtarnameDosyaBaslik(i)}</span>
+                  {i.konu && <span className="text-[10px] text-text-dim truncate block mt-0.5">{i.konu}</span>}
+                </Link>
+                <CopyNo text={i.no || ''} />
+              </div>
               <span className="text-sm" title={(i.yon || 'giden') === 'giden' ? 'Giden' : 'Gelen'}>{(i.yon || 'giden') === 'giden' ? '📤' : '📥'}</span>
               <span className={`text-[10px] font-bold ${TUR_BADGE[i.tur || ''] || 'text-text-muted'}`}>
                 {i.tur || '—'}
@@ -370,7 +374,7 @@ export default function IhtarnamePage() {
               <span className="text-xs text-text-muted truncate">{i.alici || '—'}</span>
               <Link href={`/ihtarname/${i.id}`} className="text-xs text-text-muted truncate hover:text-gold">{i.konu || '—'}</Link>
               <span className="text-[11px] text-text truncate" title={i.noterAd || ''}>{i.noterAd || '—'}</span>
-              <span className="text-[11px] text-text-dim truncate" title={i.noterNo || ''}>{i.noterNo || '—'}</span>
+              <span className="text-[11px] text-text-dim truncate flex items-center" title={i.noterNo || ''}>{i.noterNo || '—'}<CopyNo text={i.noterNo || ''} /></span>
               <span>
                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${DURUM_RENK[i.durum || ''] || 'bg-surface2 text-text-dim border-border'}`}>
                   {i.durum || '—'}

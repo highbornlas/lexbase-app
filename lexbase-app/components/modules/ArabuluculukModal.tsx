@@ -387,6 +387,28 @@ export function ArabuluculukModal({ open, onClose, arabuluculuk, onAnlasamama }:
                 <FormInput type="number" value={form.tahsilEdildi || ''} onChange={(e) => handleChange('tahsilEdildi', Number(e.target.value))} placeholder="0" />
               </FormGroup>
             </div>
+            {(form.ucret || 0) > 0 && (
+              <div className="grid grid-cols-3 gap-3 p-3 mt-3 bg-surface2 rounded-lg border border-border">
+                <div className="text-center">
+                  <div className="text-[10px] text-text-dim uppercase">KDV (%20)</div>
+                  <div className="text-sm font-bold text-blue-400">
+                    {fmt((form.ucret || 0) * 0.20)}
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[10px] text-text-dim uppercase">Stopaj (%20)</div>
+                  <div className="text-sm font-bold text-red">
+                    {fmt((form.ucret || 0) * 0.20)}
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[10px] text-text-dim uppercase">Net Tahsilat</div>
+                  <div className="text-sm font-bold text-green">
+                    {fmt(form.ucret || 0)}
+                  </div>
+                </div>
+              </div>
+            )}
             {form.durum === 'Anlaşma' && (form.anlasmaUcret || 0) > 0 && (
               <div className="mt-2 bg-green-dim border border-green/20 rounded-lg p-2 text-xs text-green">
                 ℹ️ Anlaşma ücreti ({fmt(form.anlasmaUcret || 0)}) müvekkilin bekleyen tahsilat kasasına yansıtılacaktır.

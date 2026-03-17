@@ -13,6 +13,7 @@ import { ICRA_TURLERI, ICRA_DURUMLARI, ICRA_YARGI_BIRIMLERI } from '@/lib/consta
 import { exportIcraListeUYAPXLS } from '@/lib/export/excelExport';
 import { exportIcraListePDF } from '@/lib/export/pdfExport';
 import { SkeletonTable, SkeletonKPI } from '@/components/ui/SkeletonTable';
+import { CopyNo } from '@/components/ui/CopyNo';
 
 /* ── Durum renk haritasi ── */
 const DURUM_RENK: Record<string, string> = {
@@ -560,7 +561,7 @@ export default function IcraPage() {
             const globalIdx = (sayfa - 1) * sayfaBoyutu + idx;
 
             return (
-              <div key={ic.id} className={`${gridClass} py-3 border-b border-border/50 hover:bg-gold-dim transition-colors items-center ${rowVurgu} ${secili ? 'bg-gold-dim/50' : ''}`} style={gridStyle}>
+              <div key={ic.id} className={`${gridClass} py-3 border-b border-border/50 hover:bg-gold-dim transition-colors items-center group/row ${rowVurgu} ${secili ? 'bg-gold-dim/50' : ''}`} style={gridStyle}>
                 <label className="flex items-center justify-center cursor-pointer" onClick={(e) => e.stopPropagation()}>
                   <input type="checkbox" checked={secili} onChange={() => toggleSecim(ic.id)} className="accent-[var(--gold)]" />
                 </label>
@@ -569,13 +570,16 @@ export default function IcraPage() {
                   switch (colKey) {
                     case 'sira': return <span key={colKey} className="text-[11px] text-text-dim">{globalIdx + 1}</span>;
                     case 'esasNo': return (
-                      <Link key={colKey} href={`/icra/${ic.id}`} className="min-w-0 hover:underline">
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-[var(--font-playfair)] text-sm font-bold text-gold truncate">{icraDosyaBaslik(ic)}</span>
-                          {ic.tur && <span className="text-[9px] px-1 py-0.5 rounded bg-surface2 text-text-dim border border-border/50 whitespace-nowrap flex-shrink-0">{ic.tur}</span>}
-                        </div>
-                        {borcluAd && <div className="text-[10px] text-text-dim truncate mt-0.5">{borcluAd}</div>}
-                      </Link>
+                      <div key={colKey} className="flex items-center min-w-0">
+                        <Link href={`/icra/${ic.id}`} className="min-w-0 hover:underline">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-[var(--font-playfair)] text-sm font-bold text-gold truncate">{icraDosyaBaslik(ic)}</span>
+                            {ic.tur && <span className="text-[9px] px-1 py-0.5 rounded bg-surface2 text-text-dim border border-border/50 whitespace-nowrap flex-shrink-0">{ic.tur}</span>}
+                          </div>
+                          {borcluAd && <div className="text-[10px] text-text-dim truncate mt-0.5">{borcluAd}</div>}
+                        </Link>
+                        <CopyNo text={esasStr} />
+                      </div>
                     );
                     case 'daire': return <Link key={colKey} href={`/icra/${ic.id}`} className="text-xs text-text truncate hover:underline" title={daireFull}>{daireFull || '—'}</Link>;
                     case 'alacakli': return (

@@ -356,10 +356,20 @@ export function IhtarnameModal({ open, onClose, ihtarname }: IhtarnameModalProps
             </FormSelect>
           </FormGroup>
           <FormGroup label="Yön">
-            <FormSelect value={form.yon || 'giden'} onChange={(e) => handleYonDegistir(e.target.value)}>
-              <option value="giden">📤 Giden</option>
-              <option value="gelen">📥 Gelen</option>
-            </FormSelect>
+            <div className="flex rounded-lg border border-border overflow-hidden">
+              <button type="button" onClick={() => handleYonDegistir('giden')}
+                className={`flex-1 px-4 py-2 text-xs font-medium transition-colors ${
+                  form.yon === 'giden' ? 'bg-gold text-bg' : 'bg-surface text-text-muted hover:text-text'
+                }`}>
+                📤 Giden
+              </button>
+              <button type="button" onClick={() => handleYonDegistir('gelen')}
+                className={`flex-1 px-4 py-2 text-xs font-medium transition-colors ${
+                  form.yon === 'gelen' ? 'bg-gold text-bg' : 'bg-surface text-text-muted hover:text-text'
+                }`}>
+                📥 Gelen
+              </button>
+            </div>
           </FormGroup>
         </div>
 
@@ -732,6 +742,29 @@ export function IhtarnameModal({ open, onClose, ihtarname }: IhtarnameModalProps
           {!form.makbuzKesildi && (form.kdvOrani || 0) > 0 && (
             <div className="text-[10px] text-text-dim mt-1">
               ℹ️ Makbuz kesilmediğinde KDV/Stopaj vergi hesabına dahil edilmez.
+            </div>
+          )}
+          {/* Always-visible KDV summary */}
+          {(form.ucret || 0) > 0 && (
+            <div className="grid grid-cols-3 gap-3 p-3 bg-surface2 rounded-lg border border-border mt-3">
+              <div className="text-center">
+                <div className="text-[10px] text-text-dim uppercase">KDV Tutarı</div>
+                <div className="text-sm font-bold text-blue-400">
+                  {fmt((form.ucret || 0) * ((form.kdvOrani ?? 0) / 100))}
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-[10px] text-text-dim uppercase">Stopaj Tutarı</div>
+                <div className="text-sm font-bold text-red">
+                  {fmt((form.ucret || 0) * ((form.stopajOrani ?? 0) / 100))}
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-[10px] text-text-dim uppercase">Net Tutar</div>
+                <div className="text-sm font-bold text-green">
+                  {fmt((form.ucret || 0) + (form.ucret || 0) * ((form.kdvOrani ?? 0) / 100) - (form.ucret || 0) * ((form.stopajOrani ?? 0) / 100))}
+                </div>
+              </div>
             </div>
           )}
         </div>

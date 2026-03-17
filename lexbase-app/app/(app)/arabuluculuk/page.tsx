@@ -11,6 +11,7 @@ import { DavaModal } from '@/components/modules/DavaModal';
 import { fmt, fmtTarih } from '@/lib/utils';
 import Link from 'next/link';
 import { SkeletonTable, SkeletonKPI } from '@/components/ui/SkeletonTable';
+import { CopyNo } from '@/components/ui/CopyNo';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
 const DEFAULT_PAGE_SIZE = 10;
@@ -280,9 +281,12 @@ export default function ArabuluculukPage() {
             const aktifDurum = ['Başvuru', 'Arabulucu Atandı', 'Görüşme'].includes(a.durum || '');
 
             return (
-              <div key={a.id} className={`grid ${GRID} gap-2 px-4 py-3 border-b border-border/50 hover:bg-gold-dim transition-colors items-center group min-w-[980px] ${seciliIdler.has(a.id) ? 'bg-gold-dim/50' : ''}`}>
+              <div key={a.id} className={`grid ${GRID} gap-2 px-4 py-3 border-b border-border/50 hover:bg-gold-dim transition-colors items-center group group/row min-w-[980px] ${seciliIdler.has(a.id) ? 'bg-gold-dim/50' : ''}`}>
                 <input type="checkbox" checked={seciliIdler.has(a.id)} onChange={() => toggleSecim(a.id)} className="accent-[var(--gold)]" />
-                <Link href={`/arabuluculuk/${a.id}`} className="text-xs font-bold text-gold truncate hover:underline">{a.no || '—'}</Link>
+                <span className="flex items-center min-w-0">
+                  <Link href={`/arabuluculuk/${a.id}`} className="text-xs font-bold text-gold truncate hover:underline">{a.no || '—'}</Link>
+                  <CopyNo text={a.no || ''} />
+                </span>
                 <span className={`text-[10px] font-bold ${TUR_RENK[a.tur || ''] || 'text-text-muted'}`}>{a.tur || '—'}</span>
                 <span className="text-xs text-text truncate flex items-center gap-1">
                   {a.muvId && muvAdMap[a.muvId] && <span className="text-[8px] font-black w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border text-green bg-green-dim border-green/30" title="Müvekkil">M</span>}
@@ -296,8 +300,8 @@ export default function ArabuluculukPage() {
                     {a.durum || '—'}
                   </span>
                   {aktifDurum && kalanGun !== null && kalanGun <= 7 && (
-                    <span className={`text-[9px] font-bold ${kalanGun <= 0 ? 'text-red' : 'text-orange-400'}`} title={`Yasal süre: ${kalanGun} gün kaldı`}>
-                      ⏰
+                    <span className={`text-[9px] font-bold px-1 py-0.5 rounded-full ${kalanGun <= 0 ? 'text-red bg-red-dim' : kalanGun <= 3 ? 'text-orange-400 bg-orange-400/10' : 'text-gold bg-gold-dim'}`} title={`Yasal süre: ${sureBitis}`}>
+                      {kalanGun <= 0 ? `⏰ ${Math.abs(kalanGun)}g gecikti` : `⏰ ${kalanGun}g kaldı`}
                     </span>
                   )}
                 </span>

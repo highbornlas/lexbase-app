@@ -7,6 +7,7 @@ import { fmt, fmtTarih } from '@/lib/utils';
 import { DanismanlikModal } from '@/components/modules/DanismanlikModal';
 import Link from 'next/link';
 import { SkeletonTable, SkeletonKPI } from '@/components/ui/SkeletonTable';
+import { QuickDateChips } from '@/components/ui/QuickDateChips';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
 const DEFAULT_PAGE_SIZE = 10;
@@ -277,7 +278,14 @@ export default function DanismanlikPage() {
                   {isSureklii ? (
                     <span title="Aylık">{fmt(d.aylikUcret || 0)}<span className="text-[9px] text-text-dim">/ay</span></span>
                   ) : (
-                    <span className={kalan > 0 ? 'text-text' : 'text-green'}>{fmt(d.ucret || 0)}</span>
+                    <span className="flex items-center gap-1">
+                      <span className={kalan > 0 ? 'text-text' : 'text-green'}>{fmt(d.ucret || 0)}</span>
+                      {(d.ucret || 0) > 0 && (
+                        <div className="w-12 h-1 bg-surface2 rounded-full inline-block" title={`${fmt(d.tahsilEdildi || 0)} / ${fmt(d.ucret || 0)} tahsil edildi`}>
+                          <div className="h-full bg-green rounded-full" style={{ width: `${Math.min(100, ((d.tahsilEdildi || 0) / (d.ucret || 1)) * 100)}%` }} />
+                        </div>
+                      )}
+                    </span>
                   )}
                 </span>
                 <span className="text-[11px] text-center text-text-dim">

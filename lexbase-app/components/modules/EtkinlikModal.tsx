@@ -178,7 +178,7 @@ export function EtkinlikModal({ open, onClose, etkinlik, prefillTarih, prefillMu
       open={open}
       onClose={onClose}
       title={isSanal ? '📌 Sanal Etkinlik Detayı' : etkinlik ? 'Etkinlik Düzenle' : 'Yeni Etkinlik'}
-      maxWidth="max-w-2xl"
+      maxWidth="max-w-3xl"
       dirty={isDirty}
       hasDraft={hasDraft()}
       onLoadDraft={() => { const d = loadDraft(); if (d) setForm(d as Partial<Etkinlik>); clearDraft(); }}
@@ -254,126 +254,131 @@ export function EtkinlikModal({ open, onClose, etkinlik, prefillTarih, prefillMu
           </div>
         )}
 
-        <FormGroup label="Etkinlik Başlığı" required>
-          <FormInput
-            value={form.baslik || ''}
-            onChange={(e) => handleChange('baslik', e.target.value)}
-            placeholder="Ör: Duruşma, Toplantı, Son Gün"
-            disabled={!!isSanal}
-          />
-        </FormGroup>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+          {/* ── SOL SÜTUN ── */}
+          <div className="space-y-4">
+            <FormGroup label="Etkinlik Başlığı" required>
+              <FormInput
+                value={form.baslik || ''}
+                onChange={(e) => handleChange('baslik', e.target.value)}
+                placeholder="Ör: Duruşma, Toplantı, Son Gün"
+                disabled={!!isSanal}
+              />
+            </FormGroup>
 
-        {/* Tarih · Saat · Bitiş · Tür */}
-        <div className="grid grid-cols-4 gap-3">
-          <FormGroup label="Tarih" required>
-            <FormInput type="date" value={form.tarih || ''} onChange={(e) => handleChange('tarih', e.target.value)} disabled={!!isSanal} />
-          </FormGroup>
-          <FormGroup label="Başlangıç Saati">
-            <FormInput type="time" value={form.saat || ''} onChange={(e) => handleChange('saat', e.target.value)} disabled={!!isSanal} />
-          </FormGroup>
-          <FormGroup label="Bitiş Saati">
-            <FormInput type="time" value={form.bitisSaati || ''} onChange={(e) => handleChange('bitisSaati', e.target.value)} disabled={!!isSanal} />
-          </FormGroup>
-          <FormGroup label="Tür">
-            <FormSelect value={form.tur || ''} onChange={(e) => handleChange('tur', e.target.value)} disabled={!!isSanal}>
-              {TURLER.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </FormSelect>
-          </FormGroup>
-        </div>
-
-        {/* Müvekkil · Hatırlatma */}
-        <div className="grid grid-cols-2 gap-4">
-          <FormGroup label="Müvekkil">
-            <FormSelect value={form.muvId || ''} onChange={(e) => handleChange('muvId', e.target.value)} disabled={!!isSanal}>
-              <option value="">Seçiniz (Opsiyonel)</option>
-              {muvekkillar?.map((m) => (
-                <option key={m.id} value={m.id}>{m.ad}</option>
-              ))}
-            </FormSelect>
-          </FormGroup>
-          <FormGroup label="Hatırlatma">
-            <FormSelect value={form.hatirlatma || ''} onChange={(e) => handleChange('hatirlatma', e.target.value)} disabled={!!isSanal}>
-              <option value="">Yok</option>
-              <option value="15">15 dakika önce</option>
-              <option value="30">30 dakika önce</option>
-              <option value="60">1 saat önce</option>
-              <option value="1440">1 gün önce</option>
-              <option value="4320">3 gün önce</option>
-              <option value="10080">1 hafta önce</option>
-            </FormSelect>
-          </FormGroup>
-        </div>
-
-        {/* Dosya Bağlantısı (cascade) */}
-        {!isSanal && (
-          <div className="grid grid-cols-2 gap-4">
-            <FormGroup label="İlgili Dosya Türü">
-              <FormSelect value={form.dosyaTur || ''} onChange={(e) => handleChange('dosyaTur', e.target.value)}>
-                {DOSYA_TURLERI.map((dt) => (
-                  <option key={dt.value} value={dt.value}>{dt.label}</option>
+            <FormGroup label="Tür">
+              <FormSelect value={form.tur || ''} onChange={(e) => handleChange('tur', e.target.value)} disabled={!!isSanal}>
+                {TURLER.map((t) => (
+                  <option key={t} value={t}>{t}</option>
                 ))}
               </FormSelect>
             </FormGroup>
-            {form.dosyaTur && (
-              <FormGroup label="Dosya Seç">
-                <FormSelect value={form.dosyaId || ''} onChange={(e) => handleChange('dosyaId', e.target.value)}>
-                  <option value="">Seçiniz</option>
-                  {dosyaSecenekleri.map((d) => (
-                    <option key={d.id} value={d.id}>{d.label}</option>
-                  ))}
-                </FormSelect>
+
+            <FormGroup label="Konum / Adliye">
+              <FormInput
+                value={form.yer || ''}
+                onChange={(e) => handleChange('yer', e.target.value)}
+                placeholder="Ör: İstanbul 3. Asliye Hukuk Mahkemesi, Salon 4"
+                disabled={!!isSanal}
+              />
+            </FormGroup>
+
+            <FormGroup label="Notlar">
+              <FormTextarea
+                value={(form.not as string) || ''}
+                onChange={(e) => handleChange('not', e.target.value)}
+                rows={3}
+                placeholder="Ek notlar, hazırlık notları..."
+                disabled={!!isSanal}
+              />
+            </FormGroup>
+          </div>
+
+          {/* ── SAĞ SÜTUN ── */}
+          <div className="space-y-4">
+            <FormGroup label="Tarih" required>
+              <FormInput type="date" value={form.tarih || ''} onChange={(e) => handleChange('tarih', e.target.value)} disabled={!!isSanal} />
+            </FormGroup>
+
+            <div className="grid grid-cols-2 gap-3">
+              <FormGroup label="Başlangıç Saati">
+                <FormInput type="time" value={form.saat || ''} onChange={(e) => handleChange('saat', e.target.value)} disabled={!!isSanal} />
+              </FormGroup>
+              <FormGroup label="Bitiş Saati">
+                <FormInput type="time" value={form.bitisSaati || ''} onChange={(e) => handleChange('bitisSaati', e.target.value)} disabled={!!isSanal} />
+              </FormGroup>
+            </div>
+
+            <FormGroup label="Hatırlatma">
+              <FormSelect value={form.hatirlatma || ''} onChange={(e) => handleChange('hatirlatma', e.target.value)} disabled={!!isSanal}>
+                <option value="">Yok</option>
+                <option value="15">15 dakika önce</option>
+                <option value="30">30 dakika önce</option>
+                <option value="60">1 saat önce</option>
+                <option value="1440">1 gün önce</option>
+                <option value="4320">3 gün önce</option>
+                <option value="10080">1 hafta önce</option>
+              </FormSelect>
+            </FormGroup>
+
+            <FormGroup label="Müvekkil">
+              <FormSelect value={form.muvId || ''} onChange={(e) => handleChange('muvId', e.target.value)} disabled={!!isSanal}>
+                <option value="">Seçiniz (Opsiyonel)</option>
+                {muvekkillar?.map((m) => (
+                  <option key={m.id} value={m.id}>{m.ad}</option>
+                ))}
+              </FormSelect>
+            </FormGroup>
+
+            {/* Dosya Bağlantısı (cascade) */}
+            {!isSanal && (
+              <div className="grid grid-cols-2 gap-3">
+                <FormGroup label="İlgili Dosya Türü">
+                  <FormSelect value={form.dosyaTur || ''} onChange={(e) => handleChange('dosyaTur', e.target.value)}>
+                    {DOSYA_TURLERI.map((dt) => (
+                      <option key={dt.value} value={dt.value}>{dt.label}</option>
+                    ))}
+                  </FormSelect>
+                </FormGroup>
+                {form.dosyaTur && (
+                  <FormGroup label="Dosya Seç">
+                    <FormSelect value={form.dosyaId || ''} onChange={(e) => handleChange('dosyaId', e.target.value)}>
+                      <option value="">Seçiniz</option>
+                      {dosyaSecenekleri.map((d) => (
+                        <option key={d.id} value={d.id}>{d.label}</option>
+                      ))}
+                    </FormSelect>
+                  </FormGroup>
+                )}
+              </div>
+            )}
+
+            {/* Katılımcılar */}
+            {!isSanal && personeller && personeller.length > 0 && (
+              <FormGroup label="Katılımcılar">
+                <div className="flex flex-wrap gap-1.5">
+                  {personeller.map((p) => {
+                    const secili = (form.katilimcilar || []).includes(p.id);
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => katilimciToggle(p.id)}
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors border ${
+                          secili
+                            ? 'bg-gold/20 text-gold border-gold/30'
+                            : 'bg-surface2 text-text-muted border-border hover:text-text hover:border-text-muted'
+                        }`}
+                      >
+                        {secili && '✓ '}{p.ad || p.email || '?'}
+                      </button>
+                    );
+                  })}
+                </div>
               </FormGroup>
             )}
           </div>
-        )}
-
-        {/* Konum */}
-        <FormGroup label="Konum / Adliye">
-          <FormInput
-            value={form.yer || ''}
-            onChange={(e) => handleChange('yer', e.target.value)}
-            placeholder="Ör: İstanbul 3. Asliye Hukuk Mahkemesi, Salon 4"
-            disabled={!!isSanal}
-          />
-        </FormGroup>
-
-        {/* Katılımcılar */}
-        {!isSanal && personeller && personeller.length > 0 && (
-          <FormGroup label="Katılımcılar">
-            <div className="flex flex-wrap gap-1.5">
-              {personeller.map((p) => {
-                const secili = (form.katilimcilar || []).includes(p.id);
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => katilimciToggle(p.id)}
-                    className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors border ${
-                      secili
-                        ? 'bg-gold/20 text-gold border-gold/30'
-                        : 'bg-surface2 text-text-muted border-border hover:text-text hover:border-text-muted'
-                    }`}
-                  >
-                    {secili && '✓ '}{p.ad || p.email || '?'}
-                  </button>
-                );
-              })}
-            </div>
-          </FormGroup>
-        )}
-
-        {/* Notlar */}
-        <FormGroup label="Notlar">
-          <FormTextarea
-            value={(form.not as string) || ''}
-            onChange={(e) => handleChange('not', e.target.value)}
-            rows={3}
-            placeholder="Ek notlar, hazırlık notları..."
-            disabled={!!isSanal}
-          />
-        </FormGroup>
+        </div>
       </div>
     </Modal>
   );
