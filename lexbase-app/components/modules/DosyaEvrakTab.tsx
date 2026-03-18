@@ -955,16 +955,15 @@ interface UyapParagraph {
   lineSpacing?: string;
   isHeader?: boolean;
   isFooter?: boolean;
-  // Border/frame
-  borderTop?: boolean;
-  borderBottom?: boolean;
-  borderLeft?: boolean;
-  borderRight?: boolean;
-  borderAll?: boolean;
-  // Shade/background
-  shadeColor?: string;
-  // Tab stops
-  tabStops?: number[];
+  // Numbering
+  bulleted?: boolean;
+  listLevel?: number;
+  listId?: string;
+  bulletType?: string;
+  numberType?: string;
+  // Table
+  inTable?: boolean;
+  tableBorder?: string;
 }
 
 function parseBool(val: string | null): boolean {
@@ -981,122 +980,133 @@ function getAllAttrs(el: Element): Record<string, string> {
   return attrs;
 }
 
+function parseRunsFromElement(el: Element, para: UyapParagraph) {
+  // Çocuk <content> ve <tab> elementleri → inline run'lar
+  for (let c = 0; c < el.children.length; c++) {
+    const child = el.children[c];
+    const childName = ln(child);
+    if (childName === 'content' || childName === 'tab') {
+      const cAttrs = getAllAttrs(child);
+      const cOffset = cAttrs['startOffset'];
+      const cLength = cAttrs['length'];
+      if (cOffset !== undefined && cLength !== undefined) {
+        const off = parseInt(cOffset, 10);
+        const len = parseInt(cLength, 10);
+        para.runs.push({
+          charOffset: off,
+          charLength: len,
+          bold: parseBool(cAttrs['bold'] || null),
+          italic: parseBool(cAttrs['italic'] || null),
+          underline: parseBool(cAttrs['underline'] || null),
+          strikethrough: parseBool(cAttrs['strikethrough'] || null),
+          fontSize: cAttrs['size'] || cAttrs['fontSize'] || para.fontSize,
+          fontFamily: cAttrs['family'] || cAttrs['fontFamily'] || para.fontFamily,
+          color: cAttrs['color'] || undefined,
+          superscript: parseBool(cAttrs['superscript'] || null),
+          subscript: parseBool(cAttrs['subscript'] || null),
+        });
+        para.startChar = Math.min(para.startChar, off);
+        para.endChar = Math.max(para.endChar, off + len);
+      }
+    }
+  }
+}
+
+function parseParagraphAttrs(el: Element, parentName: string, tableBorder?: string): UyapParagraph {
+  const attrs = getAllAttrs(el);
+  const isHeader = parentName === 'header';
+  const isFooter = parentName === 'footer';
+
+  const para: UyapParagraph = {
+    startChar: Infinity,
+    endChar: 0,
+    runs: [],
+    alignment: attrs['Alignment'] || attrs['alignment'] || undefined,
+    bold: parseBool(attrs['bold'] || null),
+    italic: parseBool(attrs['italic'] || null),
+    underline: parseBool(attrs['underline'] || null),
+    fontSize: attrs['size'] || attrs['fontSize'] || undefined,
+    fontFamily: attrs['family'] || attrs['fontFamily'] || attrs['font'] || undefined,
+    firstLineIndent: attrs['FirstLineIndent'] || attrs['firstLineIndent'] || undefined,
+    leftIndent: attrs['LeftIndent'] || attrs['leftIndent'] || undefined,
+    lineSpacing: attrs['LineSpacing'] || attrs['lineSpacing'] || undefined,
+    isHeader,
+    isFooter,
+    bulleted: parseBool(attrs['Bulleted'] || null),
+    listLevel: attrs['ListLevel'] ? parseInt(attrs['ListLevel'], 10) : undefined,
+    listId: attrs['ListId'] || undefined,
+    bulletType: attrs['BulletType'] || undefined,
+    numberType: attrs['SecListTypeLevel1'] || undefined,
+    inTable: !!tableBorder,
+    tableBorder: tableBorder,
+  };
+
+  // Paragraf kendisi startOffset/length taşıyorsa → tek run
+  const pOffset = attrs['startOffset'];
+  const pLength = attrs['length'];
+  if (pOffset !== undefined && pLength !== undefined) {
+    const off = parseInt(pOffset, 10);
+    const len = parseInt(pLength, 10);
+    para.runs.push({
+      charOffset: off, charLength: len,
+      bold: para.bold, italic: para.italic, underline: para.underline,
+      fontSize: para.fontSize, fontFamily: para.fontFamily,
+    });
+    para.startChar = Math.min(para.startChar, off);
+    para.endChar = Math.max(para.endChar, off + len);
+  }
+
+  // Çocuk content/tab elementleri
+  parseRunsFromElement(el, para);
+
+  return para;
+}
+
 function parseUyapParagraphs(doc: Document): UyapParagraph[] {
   const paragraphs: UyapParagraph[] = [];
+
+  // <elements> altındaki tüm elementleri recursive olarak dolaş
+  const elementsEl = Array.from(doc.getElementsByTagName('*')).find(e => ln(e) === 'elements');
+  if (!elementsEl) return paragraphs;
+
+  function walkElements(parent: Element, context: string, tableBorder?: string) {
+    for (let i = 0; i < parent.children.length; i++) {
+      const el = parent.children[i];
+      const name = ln(el);
+
+      if (name === 'paragraph') {
+        const parentName = el.parentElement ? ln(el.parentElement) : context;
+        const para = parseParagraphAttrs(el, parentName, tableBorder);
+        para.runs.sort((a, b) => a.charOffset - b.charOffset);
+        if (para.runs.length > 0) paragraphs.push(para);
+      } else if (name === 'table') {
+        const tAttrs = getAllAttrs(el);
+        const tBorder = tAttrs['border'] || undefined;
+        walkElements(el, 'table', tBorder);
+      } else if (name === 'header' || name === 'footer' || name === 'row' || name === 'cell') {
+        walkElements(el, name, tableBorder);
+      }
+    }
+  }
+
+  // Header/footer da <elements> dışında olabilir, elements içinde de
+  walkElements(elementsEl, 'elements');
+
+  // Ayrıca elements dışındaki header/footer'ı da kontrol et
   const allEls = doc.getElementsByTagName('*');
-
-  // Debug: ilk 5 paragrafın tüm attribute'larını logla
-  let debugCount = 0;
-
   for (let i = 0; i < allEls.length; i++) {
     const el = allEls[i];
-    if (ln(el) !== 'paragraph') continue;
-
-    const parentName = el.parentElement ? ln(el.parentElement) : '';
-    const isHeader = parentName === 'header';
-    const isFooter = parentName === 'footer';
-    const attrs = getAllAttrs(el);
-
-    // Debug: ilk paragrafların tüm attr'larını logla
-    if (debugCount < 8) {
-      console.log(`[UDF v7] para[${debugCount}] parent=${parentName} attrs=`, attrs);
-      // Çocuk elementlerin attr'larını da logla
+    if (ln(el) === 'header' || ln(el) === 'footer') {
+      // elements içindeyse zaten işlendi
+      if (elementsEl.contains(el)) continue;
       for (let c = 0; c < el.children.length; c++) {
-        const ch = el.children[c];
-        console.log(`[UDF v7]   └ <${ch.nodeName}> attrs=`, getAllAttrs(ch));
-      }
-      debugCount++;
-    }
-
-    // Border detection
-    const hasBorderTop = parseBool(attrs['borderTop'] || attrs['bordertop'] || null) || parseBool(attrs['topBorder'] || null);
-    const hasBorderBottom = parseBool(attrs['borderBottom'] || attrs['borderbottom'] || null) || parseBool(attrs['bottomBorder'] || null);
-    const hasBorderLeft = parseBool(attrs['borderLeft'] || attrs['borderleft'] || null) || parseBool(attrs['leftBorder'] || null);
-    const hasBorderRight = parseBool(attrs['borderRight'] || attrs['borderright'] || null) || parseBool(attrs['rightBorder'] || null);
-    const hasBorderAll = parseBool(attrs['border'] || null) || (hasBorderTop && hasBorderBottom && hasBorderLeft && hasBorderRight);
-
-    // Shade detection
-    let shadeColor: string | undefined;
-    for (let c = 0; c < el.children.length; c++) {
-      if (ln(el.children[c]) === 'shade') {
-        const sAttrs = getAllAttrs(el.children[c]);
-        shadeColor = sAttrs['color'] || sAttrs['backgroundColor'] || sAttrs['background'] || '#2a2825';
-      }
-    }
-
-    const para: UyapParagraph = {
-      startChar: Infinity,
-      endChar: 0,
-      runs: [],
-      alignment: attrs['Alignment'] || attrs['alignment'] || undefined,
-      bold: parseBool(attrs['bold'] || null),
-      italic: parseBool(attrs['italic'] || null),
-      underline: parseBool(attrs['underline'] || null),
-      fontSize: attrs['size'] || attrs['fontSize'] || undefined,
-      fontFamily: attrs['family'] || attrs['fontFamily'] || attrs['font'] || undefined,
-      firstLineIndent: attrs['FirstLineIndent'] || attrs['firstLineIndent'] || undefined,
-      leftIndent: attrs['LeftIndent'] || attrs['leftIndent'] || attrs['indent'] || attrs['leftMargin'] || undefined,
-      lineSpacing: attrs['LineSpacing'] || attrs['lineSpacing'] || undefined,
-      isHeader,
-      isFooter,
-      borderTop: hasBorderTop,
-      borderBottom: hasBorderBottom,
-      borderLeft: hasBorderLeft,
-      borderRight: hasBorderRight,
-      borderAll: hasBorderAll,
-      shadeColor,
-    };
-
-    // Paragraf kendisi startOffset/length taşıyorsa → tek run
-    const pOffset = attrs['startOffset'];
-    const pLength = attrs['length'];
-    if (pOffset !== undefined && pLength !== undefined) {
-      const off = parseInt(pOffset, 10);
-      const len = parseInt(pLength, 10);
-      para.runs.push({
-        charOffset: off,
-        charLength: len,
-        bold: para.bold,
-        italic: para.italic,
-        underline: para.underline,
-        fontSize: para.fontSize,
-        fontFamily: para.fontFamily,
-      });
-      para.startChar = Math.min(para.startChar, off);
-      para.endChar = Math.max(para.endChar, off + len);
-    }
-
-    // Çocuk <content> elementleri → inline run'lar
-    for (let c = 0; c < el.children.length; c++) {
-      const child = el.children[c];
-      if (ln(child) === 'content') {
-        const cAttrs = getAllAttrs(child);
-        const cOffset = cAttrs['startOffset'];
-        const cLength = cAttrs['length'];
-        if (cOffset !== undefined && cLength !== undefined) {
-          const off = parseInt(cOffset, 10);
-          const len = parseInt(cLength, 10);
-          para.runs.push({
-            charOffset: off,
-            charLength: len,
-            bold: parseBool(cAttrs['bold'] || null),
-            italic: parseBool(cAttrs['italic'] || null),
-            underline: parseBool(cAttrs['underline'] || null),
-            strikethrough: parseBool(cAttrs['strikethrough'] || null),
-            fontSize: cAttrs['size'] || cAttrs['fontSize'] || para.fontSize,
-            fontFamily: cAttrs['family'] || cAttrs['fontFamily'] || para.fontFamily,
-            color: cAttrs['color'] || undefined,
-            superscript: parseBool(cAttrs['superscript'] || null),
-            subscript: parseBool(cAttrs['subscript'] || null),
-          });
-          para.startChar = Math.min(para.startChar, off);
-          para.endChar = Math.max(para.endChar, off + len);
+        if (ln(el.children[c]) === 'paragraph') {
+          const para = parseParagraphAttrs(el.children[c], ln(el));
+          para.runs.sort((a, b) => a.charOffset - b.charOffset);
+          if (para.runs.length > 0) paragraphs.push(para);
         }
       }
     }
-
-    para.runs.sort((a, b) => a.charOffset - b.charOffset);
-    if (para.runs.length > 0) paragraphs.push(para);
   }
 
   paragraphs.sort((a, b) => a.startChar - b.startChar);
@@ -1118,44 +1128,72 @@ function buildUyapHtml(text: string, paragraphs: UyapParagraph[]): string {
   let html = '';
   const coveredChars = new Set<number>();
 
-  // Footer paragraflarını grupla
   const headerParas = paragraphs.filter(p => p.isHeader);
   const footerParas = paragraphs.filter(p => p.isFooter);
   const bodyParas = paragraphs.filter(p => !p.isHeader && !p.isFooter);
 
-  // Çerçeveli paragrafları grupla (ardışık border paragrafları = bir kutu)
-  interface ParaGroup { paras: UyapParagraph[]; hasBorder: boolean; }
+  // Paragrafları grupla: table (border), numbered list, normal
+  interface ParaGroup { paras: UyapParagraph[]; type: 'table' | 'list' | 'normal'; tableBorder?: string; }
   const groups: ParaGroup[] = [];
-  let currentGroup: ParaGroup | null = null;
 
   for (const para of bodyParas) {
-    const hasBorder = para.borderAll || para.borderTop || para.borderBottom || para.borderLeft || para.borderRight || !!para.shadeColor;
-    if (currentGroup && currentGroup.hasBorder === hasBorder && hasBorder) {
-      currentGroup.paras.push(para);
+    const lastGroup = groups[groups.length - 1];
+
+    if (para.inTable && para.tableBorder) {
+      // Table paragrafı — aynı table grubuyla birleştir
+      if (lastGroup && lastGroup.type === 'table') {
+        lastGroup.paras.push(para);
+      } else {
+        groups.push({ paras: [para], type: 'table', tableBorder: para.tableBorder });
+      }
+    } else if (para.bulleted) {
+      // Numaralı/madde işaretli paragraf
+      if (lastGroup && lastGroup.type === 'list') {
+        lastGroup.paras.push(para);
+      } else {
+        groups.push({ paras: [para], type: 'list' });
+      }
     } else {
-      currentGroup = { paras: [para], hasBorder };
-      groups.push(currentGroup);
+      // Normal paragraf — ancak list içindeki boş satırları list'e dahil et
+      if (lastGroup && lastGroup.type === 'list' && para.leftIndent) {
+        lastGroup.paras.push(para); // list devam paragrafı
+      } else {
+        groups.push({ paras: [para], type: 'normal' });
+      }
     }
   }
 
   // Header render
   if (headerParas.length > 0) {
-    html += '<div style="border-bottom:1px solid #3a3832;padding-bottom:0.5em;margin-bottom:1em">';
     for (const para of headerParas) {
       html += renderParagraph(para, text, coveredChars);
     }
-    html += '</div>';
   }
+
+  // Numaralı liste counter'ı
+  const listCounters: Record<string, number> = {};
 
   // Body render (gruplar halinde)
   for (const group of groups) {
-    if (group.hasBorder) {
-      // Çerçeveli kutu
-      html += '<div style="border:1px solid #4a4840;padding:0.8em 1em;margin:0.8em 0;border-radius:4px;background:rgba(255,255,255,0.02)">';
+    if (group.type === 'table') {
+      // Çerçeveli kutu (Yargıtay kararları vb.)
+      html += '<div style="border:1px solid #5a5850;padding:0.8em 1em;margin:1em 0;background:rgba(255,255,255,0.02)">';
       for (const para of group.paras) {
         html += renderParagraph(para, text, coveredChars);
       }
       html += '</div>';
+    } else if (group.type === 'list') {
+      for (const para of group.paras) {
+        if (para.bulleted && para.numberType?.includes('NUMBER')) {
+          // Numaralı paragraf
+          const listId = para.listId || '0';
+          if (!listCounters[listId]) listCounters[listId] = 0;
+          listCounters[listId]++;
+          html += renderParagraph(para, text, coveredChars, `${listCounters[listId]})`);
+        } else {
+          html += renderParagraph(para, text, coveredChars);
+        }
+      }
     } else {
       for (const para of group.paras) {
         html += renderParagraph(para, text, coveredChars);
@@ -1193,7 +1231,7 @@ function buildUyapHtml(text: string, paragraphs: UyapParagraph[]): string {
   return html;
 }
 
-function renderParagraph(para: UyapParagraph, text: string, coveredChars: Set<number>): string {
+function renderParagraph(para: UyapParagraph, text: string, coveredChars: Set<number>, numberPrefix?: string): string {
   // Paragraf CSS
   const paraCss: string[] = ['margin:0.4em 0'];
   if (para.alignment) {
@@ -1211,7 +1249,11 @@ function renderParagraph(para: UyapParagraph, text: string, coveredChars: Set<nu
   }
   if (para.leftIndent) {
     const li = parseFloat(para.leftIndent);
-    if (!isNaN(li) && li > 0) paraCss.push(`padding-left:${li}cm`);
+    // LeftIndent=25.0 gibi büyük değerler mm cinsinden olabilir, px'e çevir
+    if (!isNaN(li) && li > 0) {
+      const px = li > 20 ? li * 0.8 : li * 10; // 25 → 20px, 3 → 30px
+      paraCss.push(`padding-left:${px}px`);
+    }
   }
   if (para.lineSpacing) {
     const ls = parseFloat(para.lineSpacing);
@@ -1269,13 +1311,15 @@ function renderParagraph(para: UyapParagraph, text: string, coveredChars: Set<nu
 
   const cleanContent = paraContent.replace(/<br\/?>/g, '').replace(/&nbsp;/g, '').replace(/&emsp;/g, '').replace(/<[^>]*>/g, '').trim();
 
-  return `<p style="${paraCss.join(';')}">${cleanContent ? paraContent : '&nbsp;'}</p>`;
+  // Numara prefix (1), 2), 3) vb.)
+  const prefix = numberPrefix ? `<span style="display:inline-block;min-width:2em;font-weight:bold">${numberPrefix}</span>` : '';
+
+  return `<p style="${paraCss.join(';')}">${prefix}${cleanContent ? paraContent : '&nbsp;'}</p>`;
 }
 
 function formatText(s: string): string {
-  // Tab → sabit genişlikli tab stop (8em), newline → br
   return escHtml(s)
-    .replace(/\t/g, '<span style="display:inline-block;min-width:4em;border-bottom:1px solid #3a3832">&nbsp;</span>')
+    .replace(/\t/g, '&emsp;&emsp;&emsp;')
     .replace(/\n/g, '<br/>');
 }
 
