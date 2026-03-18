@@ -71,6 +71,7 @@ function dosyaIkonRenk(tip: string): string {
   if (tip.includes('pdf')) return 'text-red';
   if (tip.includes('word') || tip.includes('doc')) return 'text-blue-400';
   if (tip.includes('image') || tip.includes('jpg') || tip.includes('png')) return 'text-green';
+  if (isTiff(tip)) return 'text-teal-400';
   if (tip.includes('excel') || tip.includes('sheet')) return 'text-green';
   if (isUdf(tip)) return 'text-orange-400';
   return 'text-text-dim';
@@ -79,6 +80,15 @@ function dosyaIkonRenk(tip: string): string {
 function isUdf(tip: string, dosyaAd?: string): boolean {
   if (tip.includes('udf')) return true;
   if (dosyaAd && dosyaAd.toLowerCase().endsWith('.udf')) return true;
+  return false;
+}
+
+function isTiff(tip: string, dosyaAd?: string): boolean {
+  if (tip.includes('tiff') || tip.includes('tif')) return true;
+  if (dosyaAd) {
+    const lower = dosyaAd.toLowerCase();
+    if (lower.endsWith('.tiff') || lower.endsWith('.tif')) return true;
+  }
   return false;
 }
 
@@ -720,11 +730,12 @@ function InspectorDrawer({
   const isPdf = belge.tip?.includes('pdf');
   const isImage = belge.tip?.includes('image');
   const isUdfFile = isUdf(belge.tip || '', belge.dosyaAd);
-  const canPreview = isPdf || isImage || isUdfFile;
+  const isTiffFile = isTiff(belge.tip || '', belge.dosyaAd);
+  const canPreview = isPdf || isImage || isUdfFile || isTiffFile;
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
 
-  // Önizleme URL'si oluştur (PDF, resim ve UDF için)
+  // Önizleme URL'si oluştur (PDF, resim, UDF ve TIFF için)
   useEffect(() => {
     if (canPreview) {
       setPreviewLoading(true);
@@ -1489,15 +1500,20 @@ function OnizlemeModal({ belge, onKapat }: { belge: Belge; onKapat: () => void }
   const [tamEkran, setTamEkran] = useState(false);
   const [udfHtml, setUdfHtml] = useState<string | null>(null);
   const [udfHata, setUdfHata] = useState<string | null>(null);
+  const [tiffDataUrl, setTiffDataUrl] = useState<string | null>(null);
+  const [tiffHata, setTiffHata] = useState<string | null>(null);
 
   const isPdf = belge.tip?.includes('pdf');
   const isImage = belge.tip?.includes('image');
   const isUdfFile = isUdf(belge.tip || '', belge.dosyaAd);
+  const isTiffFile = isTiff(belge.tip || '', belge.dosyaAd);
 
   useEffect(() => {
     setLoading(true);
     setUdfHtml(null);
     setUdfHata(null);
+    setTiffDataUrl(null);
+    setTiffHata(null);
     belgeIndir(belge.storagePath)
       .then(async (signedUrl) => {
         setUrl(signedUrl);
@@ -1508,6 +1524,30 @@ function OnizlemeModal({ belge, onKapat }: { belge: Belge; onKapat: () => void }
             setUdfHtml(html);
           } catch (err) {
             setUdfHata((err as Error).message || 'UDF dosyası okunamadı');
+          }
+        }
+        // TIFF dosyasıysa decode et
+        if (isTiffFile) {
+          try {
+            const UTIF = await import('utif2');
+            const resp = await fetch(signedUrl);
+            const buf = await resp.arrayBuffer();
+            const ifds = UTIF.decode(buf);
+            if (!ifds.length) throw new Error('TIFF sayfası bulunamadı');
+            UTIF.decodeImage(buf, ifds[0]);
+            const rgba = UTIF.toRGBA8(ifds[0]);
+            const w = ifds[0].width;
+            const h = ifds[0].height;
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d')!;
+            const imgData = ctx.createImageData(w, h);
+            imgData.data.set(new Uint8Array(rgba.buffer));
+            ctx.putImageData(imgData, 0, 0);
+            setTiffDataUrl(canvas.toDataURL('image/png'));
+          } catch (err) {
+            setTiffHata((err as Error).message || 'TIFF dosyası okunamadı');
           }
         }
       })
@@ -1543,11 +1583,12 @@ function OnizlemeModal({ belge, onKapat }: { belge: Belge; onKapat: () => void }
             <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
               isPdf ? 'bg-red/10 text-red' :
               isImage ? 'bg-green/10 text-green' :
+              isTiffFile ? 'bg-teal-400/10 text-teal-400' :
               isUdfFile ? 'bg-orange-400/10 text-orange-400' :
               'bg-surface2 text-text-dim'
             }`}>
               <span className="text-[10px] font-bold uppercase">
-                {isPdf ? 'PDF' : isUdfFile ? 'UDF' : dosyaUzanti(belge.dosyaAd || '')}
+                {isPdf ? 'PDF' : isUdfFile ? 'UDF' : isTiffFile ? 'TIFF' : dosyaUzanti(belge.dosyaAd || '')}
               </span>
             </div>
             <div className="min-w-0">
@@ -1558,7 +1599,7 @@ function OnizlemeModal({ belge, onKapat }: { belge: Belge; onKapat: () => void }
             </div>
           </div>
           <div className="flex items-center gap-1.5">
-            {url && !isUdfFile && (
+            {url && !isUdfFile && !isTiffFile && (
               <a
                 href={url}
                 target="_blank"
@@ -1608,13 +1649,29 @@ function OnizlemeModal({ belge, onKapat }: { belge: Belge; onKapat: () => void }
               className="w-full h-full border-0"
               title={belge.ad}
             />
-          ) : isImage ? (
+          ) : isImage && !isTiffFile ? (
             <div className="h-full flex items-center justify-center p-4 overflow-auto">
               <img
                 src={url}
                 alt={belge.ad}
                 className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
               />
+            </div>
+          ) : isTiffFile && tiffDataUrl ? (
+            <div className="h-full flex items-center justify-center p-4 overflow-auto">
+              <img
+                src={tiffDataUrl}
+                alt={belge.ad}
+                className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
+              />
+            </div>
+          ) : isTiffFile && tiffHata ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center">
+                <div className="text-3xl mb-3">⚠️</div>
+                <div className="text-sm text-text-muted mb-1">TIFF dosyası okunamadı</div>
+                <div className="text-[10px] text-text-dim">{tiffHata}</div>
+              </div>
             </div>
           ) : isUdfFile && udfHtml ? (
             /* UDF Görüntüleyici — ZIP'ten çıkarılmış content.xml render */
