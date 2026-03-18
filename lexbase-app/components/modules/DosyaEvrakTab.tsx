@@ -788,6 +788,15 @@ function InspectorDrawer({
                 Önizleme aç →
               </button>
             </div>
+          ) : previewUrl && isTiffFile ? (
+            <div className="h-40 flex flex-col items-center justify-center gap-2">
+              <div className="w-12 h-12 rounded-lg bg-teal-400/10 flex items-center justify-center">
+                <span className="text-teal-400 font-bold text-xs">TIFF</span>
+              </div>
+              <button type="button" onClick={onOnizleme} className="text-[10px] text-gold hover:underline">
+                Önizleme aç →
+              </button>
+            </div>
           ) : (
             <div className="h-32 flex flex-col items-center justify-center gap-2">
               <div className={`w-12 h-12 rounded-lg bg-surface2 flex items-center justify-center ${dosyaIkonRenk(belge.tip || '')}`}>
