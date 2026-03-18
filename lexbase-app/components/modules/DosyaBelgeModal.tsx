@@ -97,7 +97,6 @@ export function DosyaBelgeModal({ open, onClose, onKaydet, dosyaTipi, yukleniyor
     }
     setBoyutHata('');
     setDosya(file);
-    if (!ad) setAd(file.name.replace(/\.[^.]+$/, ''));
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -352,7 +351,15 @@ export function DosyaBelgeModal({ open, onClose, onKaydet, dosyaTipi, yukleniyor
       {/* Form Alanları */}
       <div className="space-y-3">
         <FormGroup label="Evrak Adı" required>
-          <FormInput value={ad} onChange={(e) => setAd(e.target.value)} placeholder="Ör: 2026 tarihli tensip zaptı" />
+          <FormInput
+            value={ad}
+            onChange={(e) => setAd(e.target.value)}
+            placeholder="Ör: 2026 tarihli tensip zaptı"
+            className={dosya && !ad.trim() ? '!border-red' : ''}
+          />
+          {dosya && !ad.trim() && (
+            <div className="text-[10px] text-red mt-1">Evrak adı zorunludur</div>
+          )}
         </FormGroup>
 
         <div className="grid grid-cols-2 gap-3">

@@ -1509,8 +1509,9 @@ function OnizlemeModal({ belge, onKapat }: { belge: Belge; onKapat: () => void }
   const [tamEkran, setTamEkran] = useState(false);
   const [udfHtml, setUdfHtml] = useState<string | null>(null);
   const [udfHata, setUdfHata] = useState<string | null>(null);
-  const [tiffDataUrl, setTiffDataUrl] = useState<string | null>(null);
+  const [tiffPages, setTiffPages] = useState<string[]>([]);
   const [tiffHata, setTiffHata] = useState<string | null>(null);
+  const [tiffSayfa, setTiffSayfa] = useState(0);
 
   const isPdf = belge.tip?.includes('pdf');
   const isImage = belge.tip?.includes('image');
@@ -1521,8 +1522,9 @@ function OnizlemeModal({ belge, onKapat }: { belge: Belge; onKapat: () => void }
     setLoading(true);
     setUdfHtml(null);
     setUdfHata(null);
-    setTiffDataUrl(null);
+    setTiffPages([]);
     setTiffHata(null);
+    setTiffSayfa(0);
     belgeIndir(belge.storagePath)
       .then(async (signedUrl) => {
         setUrl(signedUrl);
@@ -1535,7 +1537,7 @@ function OnizlemeModal({ belge, onKapat }: { belge: Belge; onKapat: () => void }
             setUdfHata((err as Error).message || 'UDF dosyası okunamadı');
           }
         }
-        // TIFF dosyasıysa decode et
+        // TIFF dosyasıysa tüm sayfaları decode et
         if (isTiffFile) {
           try {
             const UTIF = await import('utif2');
@@ -1543,18 +1545,22 @@ function OnizlemeModal({ belge, onKapat }: { belge: Belge; onKapat: () => void }
             const buf = await resp.arrayBuffer();
             const ifds = UTIF.decode(buf);
             if (!ifds.length) throw new Error('TIFF sayfası bulunamadı');
-            UTIF.decodeImage(buf, ifds[0]);
-            const rgba = UTIF.toRGBA8(ifds[0]);
-            const w = ifds[0].width;
-            const h = ifds[0].height;
-            const canvas = document.createElement('canvas');
-            canvas.width = w;
-            canvas.height = h;
-            const ctx = canvas.getContext('2d')!;
-            const imgData = ctx.createImageData(w, h);
-            imgData.data.set(new Uint8Array(rgba.buffer));
-            ctx.putImageData(imgData, 0, 0);
-            setTiffDataUrl(canvas.toDataURL('image/png'));
+            const pages: string[] = [];
+            for (let i = 0; i < ifds.length; i++) {
+              UTIF.decodeImage(buf, ifds[i]);
+              const rgba = UTIF.toRGBA8(ifds[i]);
+              const w = ifds[i].width;
+              const h = ifds[i].height;
+              const canvas = document.createElement('canvas');
+              canvas.width = w;
+              canvas.height = h;
+              const ctx = canvas.getContext('2d')!;
+              const imgData = ctx.createImageData(w, h);
+              imgData.data.set(new Uint8Array(rgba.buffer));
+              ctx.putImageData(imgData, 0, 0);
+              pages.push(canvas.toDataURL('image/png'));
+            }
+            setTiffPages(pages);
           } catch (err) {
             setTiffHata((err as Error).message || 'TIFF dosyası okunamadı');
           }
@@ -1666,13 +1672,39 @@ function OnizlemeModal({ belge, onKapat }: { belge: Belge; onKapat: () => void }
                 className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
               />
             </div>
-          ) : isTiffFile && tiffDataUrl ? (
-            <div className="h-full flex items-center justify-center p-4 overflow-auto">
-              <img
-                src={tiffDataUrl}
-                alt={belge.ad}
-                className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
-              />
+          ) : isTiffFile && tiffPages.length > 0 ? (
+            <div className="h-full flex flex-col">
+              {/* TIFF sayfa navigasyonu */}
+              {tiffPages.length > 1 && (
+                <div className="flex items-center justify-center gap-3 px-4 py-2 border-b border-border bg-surface/80 flex-shrink-0">
+                  <button
+                    onClick={() => setTiffSayfa(Math.max(0, tiffSayfa - 1))}
+                    disabled={tiffSayfa === 0}
+                    className="p-1.5 rounded-lg hover:bg-surface2 text-text-dim hover:text-text transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Önceki sayfa"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
+                  </button>
+                  <span className="text-xs text-text-muted font-medium tabular-nums">
+                    {tiffSayfa + 1} / {tiffPages.length} sayfa
+                  </span>
+                  <button
+                    onClick={() => setTiffSayfa(Math.min(tiffPages.length - 1, tiffSayfa + 1))}
+                    disabled={tiffSayfa === tiffPages.length - 1}
+                    className="p-1.5 rounded-lg hover:bg-surface2 text-text-dim hover:text-text transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Sonraki sayfa"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
+                  </button>
+                </div>
+              )}
+              <div className="flex-1 min-h-0 flex items-center justify-center p-4 overflow-auto">
+                <img
+                  src={tiffPages[tiffSayfa]}
+                  alt={`${belge.ad} — Sayfa ${tiffSayfa + 1}`}
+                  className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
+                />
+              </div>
             </div>
           ) : isTiffFile && tiffHata ? (
             <div className="h-full flex items-center justify-center">
