@@ -3,13 +3,11 @@
 // js/modules/admin.js
 // ================================================================
 
-// ── Admin Supabase Credentials ─────────────────────────────────
-// ⚠️ GÜVENLİK UYARISI: Bu anahtarlar client-side'da açıktır.
-// ÖNERİ: Admin işlemlerini Supabase Edge Function arkasına taşıyın.
-// Row Level Security (RLS) ile sadece yazma izni verin, okuma engelleyin.
-// Mevcut RLS kurallarını kontrol edin: admin tablosuna herkes yazabilir mi?
-const ADMIN_SB_URL = 'https://ewvbpfsgmjghmbnkuvpx.supabase.co';
-const ADMIN_SB_KEY = 'sb_publishable_ccz6M_f4JCnnQzr0auQD7A_-A2YGb91';
+// ── Admin Proxy ─────────────────────────────────────────────────
+// Admin Supabase işlemleri artık server-side proxy üzerinden yapılır.
+// Credential'lar Cloudflare Pages env vars'ta tutulur.
+// Bkz: functions/api/admin-proxy.js
+const ADMIN_PROXY_URL = '/api/admin-proxy';
 
 // ── Oturum değişkenleri (global) ──────────────────────────────
 let _oturumBaslangic = null;
@@ -59,30 +57,20 @@ function ipLogGonder(islem) {
   }
 }
 
-// ── Yardımcılar ───────────────────────────────────────────────
+// ── Yardımcılar (server-side proxy üzerinden) ─────────────────
 async function adminSbPost(tablo, data) {
-  if (!ADMIN_SB_URL || !ADMIN_SB_KEY) return false;
   try {
-    const res = await fetch(`${ADMIN_SB_URL}/rest/v1/${tablo}`, {
+    const res = await fetch(ADMIN_PROXY_URL, {
       method: 'POST',
-      headers: {
-        'apikey': ADMIN_SB_KEY,
-        'Authorization': `Bearer ${ADMIN_SB_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation'
-      },
-      body: JSON.stringify(data)
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'post', tablo, data })
     });
     if (!res.ok) {
-      var errText = await res.text().catch(function() { return ''; });
-      console.warn(`[Admin] POST ${tablo} hatası: ${res.status}`, errText);
-      // RLS hatası ise kullanıcıya anlamlı mesaj
-      if (res.status === 401 || res.status === 403 || errText.indexOf('policy') !== -1) {
-        console.warn('[Admin] RLS yetkisi eksik — admin projesinde tablo izinlerini kontrol edin.');
-      }
+      console.warn(`[Admin] POST ${tablo} hatası: ${res.status}`);
       return false;
     }
-    return true;
+    const body = await res.json();
+    return body.ok === true;
   } catch(e) {
     console.warn(`[Admin] POST ${tablo} ağ hatası:`, e.message);
     return false;
@@ -90,30 +78,18 @@ async function adminSbPost(tablo, data) {
 }
 
 async function adminSbUpdate(tablo, id, data) {
-  if (!ADMIN_SB_URL || !ADMIN_SB_KEY) return false;
   try {
-    const res = await fetch(`${ADMIN_SB_URL}/rest/v1/${tablo}?id=eq.${id}`, {
-      method: 'PATCH',
-      headers: {
-        'apikey': ADMIN_SB_KEY,
-        'Authorization': `Bearer ${ADMIN_SB_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation'
-      },
-      body: JSON.stringify(data)
+    const res = await fetch(ADMIN_PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'patch', tablo, id, data })
     });
     if (!res.ok) {
-      console.warn(`[Admin] PATCH ${tablo} hatası: ${res.status}`, await res.text().catch(()=>''));
+      console.warn(`[Admin] PATCH ${tablo} hatası: ${res.status}`);
       return false;
     }
-    // Prefer: return=representation ile Supabase güncellenen satırları döndürür
-    // Eğer boş dizi dönerse → RLS engelledi veya id eşleşmedi
-    var body = await res.json().catch(function() { return null; });
-    if (Array.isArray(body) && body.length === 0) {
-      console.warn(`[Admin] PATCH ${tablo} başarısız: satır güncellenemedi (RLS veya id eşleşmedi). id=${id}`);
-      return false;
-    }
-    return true;
+    const body = await res.json();
+    return body.ok === true;
   } catch(e) {
     console.warn(`[Admin] PATCH ${tablo} ağ hatası:`, e.message);
     return false;
@@ -121,13 +97,15 @@ async function adminSbUpdate(tablo, id, data) {
 }
 
 async function adminSbGet(tablo, filtre) {
-  if (!ADMIN_SB_URL || !ADMIN_SB_KEY) return [];
   try {
-    const res = await fetch(`${ADMIN_SB_URL}/rest/v1/${tablo}?${filtre}&select=*`, {
-      headers: { 'apikey': ADMIN_SB_KEY, 'Authorization': `Bearer ${ADMIN_SB_KEY}` }
+    const res = await fetch(ADMIN_PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'get', tablo, filtre })
     });
     if (!res.ok) return [];
-    return await res.json();
+    const body = await res.json();
+    return body.ok ? (body.data || []) : [];
   } catch(e) { return []; }
 }
 
@@ -226,8 +204,8 @@ async function duyurulariYukle() {
       el.style.cssText = `position:fixed;top:70px;right:16px;background:var(--surface,#141210);border:1px solid ${renk};border-left:4px solid ${renk};border-radius:8px;padding:12px 16px;z-index:9999;max-width:320px;box-shadow:0 4px 20px rgba(0,0,0,.4);animation:slideIn .3s ease`;
       el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
         <div>
-          <div style="font-size:13px;font-weight:700;margin-bottom:4px">${turIcon[d.tur]||'📢'} ${d.baslik}</div>
-          <div style="font-size:12px;color:var(--text-muted,#8a8278)">${d.icerik.slice(0,120)}${d.icerik.length>120?'…':''}</div>
+          <div style="font-size:13px;font-weight:700;margin-bottom:4px">${turIcon[d.tur]||'📢'} ${escHTML(d.baslik)}</div>
+          <div style="font-size:12px;color:var(--text-muted,#8a8278)">${escHTML((d.icerik||'').slice(0,120))}${(d.icerik||'').length>120?'…':''}</div>
         </div>
         <button onclick="this.parentElement.parentElement.remove()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:0">×</button>
       </div>`;
@@ -409,7 +387,7 @@ async function destekGecmisiYukle() {
       return '<div onclick="destekDetayGoster(' + idx + ')" style="padding:10px 14px;margin-bottom:4px;background:var(--surface2);border-radius:var(--radius);cursor:pointer;display:flex;align-items:center;gap:10px;transition:background .15s" onmouseover="this.style.background=\'var(--surface3,#1e1c18)\'" onmouseout="this.style.background=\'var(--surface2)\'">' +
         '<div style="width:6px;height:6px;border-radius:50%;background:' + renk + ';flex-shrink:0"></div>' +
         '<div style="flex:1;min-width:0">' +
-          '<div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (t.konu || '—') + '</div>' +
+          '<div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escHTML(t.konu || '—') + '</div>' +
         '</div>' +
         (yanitVar ? '<span style="font-size:10px;padding:1px 6px;border-radius:8px;background:rgba(39,174,96,.12);color:#27ae60;font-weight:600">yanıt</span>' : '') +
         '<span style="font-size:10px;padding:2px 7px;border-radius:8px;background:' + renk + '18;color:' + renk + ';font-weight:700">' + (durumLabel[t.durum] || 'Bekliyor') + '</span>' +
@@ -470,7 +448,7 @@ function destekDetayGoster(idx) {
           '<div style="font-size:10px;font-weight:600;margin-bottom:4px;color:' + (benMi ? 'var(--text-muted)' : 'var(--gold)') + '">' +
             (benMi ? '🧑 Siz' : '💬 Ekip') + (zaman ? ' · ' + zaman : '') +
           '</div>' +
-          m.mesaj +
+          escHTML(m.mesaj) +
         '</div>' +
       '</div>';
     }).join('');

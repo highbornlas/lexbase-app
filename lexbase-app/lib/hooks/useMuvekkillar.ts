@@ -108,6 +108,39 @@ export function useMuvekkil(id: string | null) {
   });
 }
 
+// ── Yardımcı: JSONB data içinden muvId ve _silindi filtreleme ──
+// Supabase JSONB operatörü: data->>'muvId' ile server-side filtreleme
+// Bu sayede tüm tabloyu çekip client-side filtreleme yapmıyoruz (N+1 sorunu çözümü)
+async function fetchMuvDosyalar(
+  supabase: ReturnType<typeof createClient>,
+  tablo: string,
+  buroId: string,
+  muvId: string,
+) {
+  // data->>muvId ile server-side filtreleme
+  // Çoklu müvekkil desteği: muvekkilTaraflar JSONB dizisinde de muvId olabilir
+  // Ancak temel filtreyi DB'de yapıp muvekkilTaraflar kontrolünü client-side'da yapıyoruz
+  const { data, error } = await supabase
+    .from(tablo)
+    .select('id, data')
+    .eq('buro_id', buroId)
+    .or(`data->muvId.eq.${muvId},data->muvId.eq."${muvId}"`);
+
+  if (error) throw error;
+
+  return (data || [])
+    .map((r) => ({ id: r.id, ...(r.data as object) }))
+    .filter((d: Record<string, unknown>) => {
+      if (d._silindi) return false;
+      // muvId doğrudan eşleşme
+      if (d.muvId === muvId) return true;
+      // muvekkilTaraflar dizisinde eşleşme (çoklu müvekkil)
+      const taraflar = d.muvekkilTaraflar as Array<{ id: string }> | undefined;
+      if (taraflar?.some((t) => t.id === muvId)) return true;
+      return false;
+    });
+}
+
 // ── Müvekkile bağlı davalar ───────────────────────────────────
 export function useMuvDavalar(muvId: string | null) {
   const buroId = useBuroId();
@@ -117,15 +150,7 @@ export function useMuvDavalar(muvId: string | null) {
     queryFn: async () => {
       if (!buroId || !muvId) return [];
       const supabase = createClient();
-      const { data, error } = await supabase
-        .from('davalar')
-        .select('id, data')
-        .eq('buro_id', buroId);
-
-      if (error) throw error;
-      return (data || [])
-        .map((r) => ({ id: r.id, ...(r.data as object) }))
-        .filter((d: Record<string, unknown>) => d.muvId === muvId && !d._silindi);
+      return fetchMuvDosyalar(supabase, 'davalar', buroId, muvId);
     },
     enabled: !!buroId && !!muvId,
   });
@@ -140,15 +165,7 @@ export function useMuvIcralar(muvId: string | null) {
     queryFn: async () => {
       if (!buroId || !muvId) return [];
       const supabase = createClient();
-      const { data, error } = await supabase
-        .from('icra')
-        .select('id, data')
-        .eq('buro_id', buroId);
-
-      if (error) throw error;
-      return (data || [])
-        .map((r) => ({ id: r.id, ...(r.data as object) }))
-        .filter((i: Record<string, unknown>) => i.muvId === muvId && !i._silindi);
+      return fetchMuvDosyalar(supabase, 'icra', buroId, muvId);
     },
     enabled: !!buroId && !!muvId,
   });
@@ -163,15 +180,7 @@ export function useMuvArabuluculuklar(muvId: string | null) {
     queryFn: async () => {
       if (!buroId || !muvId) return [];
       const supabase = createClient();
-      const { data, error } = await supabase
-        .from('arabuluculuk')
-        .select('id, data')
-        .eq('buro_id', buroId);
-
-      if (error) throw error;
-      return (data || [])
-        .map((r) => ({ id: r.id, ...(r.data as object) }))
-        .filter((a: Record<string, unknown>) => a.muvId === muvId && !a._silindi);
+      return fetchMuvDosyalar(supabase, 'arabuluculuk', buroId, muvId);
     },
     enabled: !!buroId && !!muvId,
   });
@@ -186,15 +195,7 @@ export function useMuvIhtarnameler(muvId: string | null) {
     queryFn: async () => {
       if (!buroId || !muvId) return [];
       const supabase = createClient();
-      const { data, error } = await supabase
-        .from('ihtarnameler')
-        .select('id, data')
-        .eq('buro_id', buroId);
-
-      if (error) throw error;
-      return (data || [])
-        .map((r) => ({ id: r.id, ...(r.data as object) }))
-        .filter((h: Record<string, unknown>) => h.muvId === muvId && !h._silindi);
+      return fetchMuvDosyalar(supabase, 'ihtarnameler', buroId, muvId);
     },
     enabled: !!buroId && !!muvId,
   });
@@ -249,10 +250,12 @@ const ILISKILI_TABLOLAR = ['davalar', 'icra', 'arabuluculuk', 'danismanlik', 'ih
 /** Müvekkil soft-delete: dosyalardaki muvId bağlantısını temizle */
 async function cascadeUnlinkMuvekkil(supabase: ReturnType<typeof createClient>, buroId: string, muvId: string) {
   for (const tablo of ILISKILI_TABLOLAR) {
+    // Server-side filtreleme: sadece bu müvekkile ait kayıtları çek
     const { data: kayitlar } = await supabase
       .from(tablo)
       .select('id, data')
-      .eq('buro_id', buroId);
+      .eq('buro_id', buroId)
+      .or(`data->muvId.eq.${muvId},data->muvId.eq."${muvId}"`);
     if (!kayitlar) continue;
     for (const k of kayitlar) {
       const d = k.data as Record<string, unknown>;
@@ -271,7 +274,8 @@ async function cascadeUnlinkHard(supabase: ReturnType<typeof createClient>, buro
     const { data: kayitlar } = await supabase
       .from(tablo)
       .select('id, data')
-      .eq('buro_id', buroId);
+      .eq('buro_id', buroId)
+      .or(`data->muvId.eq.${muvId},data->muvId.eq."${muvId}",data->_eskiMuvId.eq.${muvId},data->_eskiMuvId.eq."${muvId}"`);
     if (!kayitlar) continue;
     for (const k of kayitlar) {
       const d = k.data as Record<string, unknown>;
@@ -292,7 +296,8 @@ async function cascadeRelinkMuvekkil(supabase: ReturnType<typeof createClient>, 
     const { data: kayitlar } = await supabase
       .from(tablo)
       .select('id, data')
-      .eq('buro_id', buroId);
+      .eq('buro_id', buroId)
+      .or(`data->_eskiMuvId.eq.${muvId},data->_eskiMuvId.eq."${muvId}"`);
     if (!kayitlar) continue;
     for (const k of kayitlar) {
       const d = k.data as Record<string, unknown>;

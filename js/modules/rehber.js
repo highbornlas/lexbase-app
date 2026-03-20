@@ -38,7 +38,7 @@ function populateMuvSelects(){
     const el=document.getElementById(sid);if(!el)return;
     const hasEmpty=sid!=='d-muv'&&sid!=='i-muv';
     el.innerHTML=hasEmpty?'<option value="">—</option>':'';
-    state.muvekkillar.forEach(m=>{el.innerHTML+=`<option value="${m.id}">${m.ad}</option>`;});
+    state.muvekkillar.forEach(m=>{el.innerHTML+=`<option value="${escAttr(m.id)}">${escHTML(m.ad)}</option>`;});
   });
 }
 
@@ -78,11 +78,11 @@ function renderMuvBankalar(){
     <button type="button" onclick="muvBankaKaldir(${i})" style="position:absolute;top:8px;right:10px;background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:15px">✕</button>
     <div style="font-size:10px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;font-weight:700">Banka Hesabı ${i+1}</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <div><label style="font-size:10px;color:var(--text-muted)">Banka</label><input value="${b.banka}" oninput="muvBankalar[${i}].banka=this.value" placeholder="Banka Adı" style="width:100%;margin-top:2px"></div>
-      <div><label style="font-size:10px;color:var(--text-muted)">Şube</label><input value="${b.sube}" oninput="muvBankalar[${i}].sube=this.value" placeholder="Şube Adı / No" style="width:100%;margin-top:2px"></div>
-      <div style="grid-column:1/-1"><label style="font-size:10px;color:var(--text-muted)">IBAN</label><input value="${b.iban}" oninput="muvBankalar[${i}].iban=this.value" placeholder="TR00 0000 0000 0000 0000 0000 00" style="width:100%;margin-top:2px;font-family:monospace;letter-spacing:1px"></div>
-      <div><label style="font-size:10px;color:var(--text-muted)">Hesap Adı</label><input value="${b.hesapAd}" oninput="muvBankalar[${i}].hesapAd=this.value" placeholder="Hesap sahibi adı" style="width:100%;margin-top:2px"></div>
-      <div><label style="font-size:10px;color:var(--text-muted)">Hesap No</label><input value="${b.hesapNo}" oninput="muvBankalar[${i}].hesapNo=this.value" placeholder="Hesap numarası" style="width:100%;margin-top:2px"></div>
+      <div><label style="font-size:10px;color:var(--text-muted)">Banka</label><input value="${escAttr(b.banka)}" oninput="muvBankalar[${i}].banka=this.value" placeholder="Banka Adı" style="width:100%;margin-top:2px"></div>
+      <div><label style="font-size:10px;color:var(--text-muted)">Şube</label><input value="${escAttr(b.sube)}" oninput="muvBankalar[${i}].sube=this.value" placeholder="Şube Adı / No" style="width:100%;margin-top:2px"></div>
+      <div style="grid-column:1/-1"><label style="font-size:10px;color:var(--text-muted)">IBAN</label><input value="${escAttr(b.iban)}" oninput="muvBankalar[${i}].iban=this.value" placeholder="TR00 0000 0000 0000 0000 0000 00" style="width:100%;margin-top:2px;font-family:monospace;letter-spacing:1px"></div>
+      <div><label style="font-size:10px;color:var(--text-muted)">Hesap Adı</label><input value="${escAttr(b.hesapAd)}" oninput="muvBankalar[${i}].hesapAd=this.value" placeholder="Hesap sahibi adı" style="width:100%;margin-top:2px"></div>
+      <div><label style="font-size:10px;color:var(--text-muted)">Hesap No</label><input value="${escAttr(b.hesapNo)}" oninput="muvBankalar[${i}].hesapNo=this.value" placeholder="Hesap numarası" style="width:100%;margin-top:2px"></div>
     </div>
   </div>`).join('');
 }
@@ -102,11 +102,11 @@ function renderKtBankalar(){
     <button type="button" onclick="ktBankaKaldir(${i})" style="position:absolute;top:8px;right:10px;background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:15px">✕</button>
     <div style="font-size:10px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;font-weight:700">Banka Hesabı ${i+1}</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <div><label style="font-size:10px;color:var(--text-muted)">Banka</label><input value="${b.banka}" oninput="ktBankalar[${i}].banka=this.value" placeholder="Banka Adı" style="width:100%;margin-top:2px"></div>
-      <div><label style="font-size:10px;color:var(--text-muted)">Şube</label><input value="${b.sube}" oninput="ktBankalar[${i}].sube=this.value" placeholder="Şube Adı / No" style="width:100%;margin-top:2px"></div>
-      <div style="grid-column:1/-1"><label style="font-size:10px;color:var(--text-muted)">IBAN</label><input value="${b.iban}" oninput="ktBankalar[${i}].iban=this.value" placeholder="TR00 0000 0000 0000 0000 0000 00" style="width:100%;margin-top:2px;font-family:monospace;letter-spacing:1px"></div>
-      <div><label style="font-size:10px;color:var(--text-muted)">Hesap Adı</label><input value="${b.hesapAd}" oninput="ktBankalar[${i}].hesapAd=this.value" placeholder="Hesap sahibi adı" style="width:100%;margin-top:2px"></div>
-      <div><label style="font-size:10px;color:var(--text-muted)">Hesap No</label><input value="${b.hesapNo}" oninput="ktBankalar[${i}].hesapNo=this.value" placeholder="Hesap numarası" style="width:100%;margin-top:2px"></div>
+      <div><label style="font-size:10px;color:var(--text-muted)">Banka</label><input value="${escAttr(b.banka)}" oninput="ktBankalar[${i}].banka=this.value" placeholder="Banka Adı" style="width:100%;margin-top:2px"></div>
+      <div><label style="font-size:10px;color:var(--text-muted)">Şube</label><input value="${escAttr(b.sube)}" oninput="ktBankalar[${i}].sube=this.value" placeholder="Şube Adı / No" style="width:100%;margin-top:2px"></div>
+      <div style="grid-column:1/-1"><label style="font-size:10px;color:var(--text-muted)">IBAN</label><input value="${escAttr(b.iban)}" oninput="ktBankalar[${i}].iban=this.value" placeholder="TR00 0000 0000 0000 0000 0000 00" style="width:100%;margin-top:2px;font-family:monospace;letter-spacing:1px"></div>
+      <div><label style="font-size:10px;color:var(--text-muted)">Hesap Adı</label><input value="${escAttr(b.hesapAd)}" oninput="ktBankalar[${i}].hesapAd=this.value" placeholder="Hesap sahibi adı" style="width:100%;margin-top:2px"></div>
+      <div><label style="font-size:10px;color:var(--text-muted)">Hesap No</label><input value="${escAttr(b.hesapNo)}" oninput="ktBankalar[${i}].hesapNo=this.value" placeholder="Hesap numarası" style="width:100%;margin-top:2px"></div>
     </div>
   </div>`).join('');
 }

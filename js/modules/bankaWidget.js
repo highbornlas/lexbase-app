@@ -295,23 +295,23 @@ function _renderBankalarBW(bankalarArr, containerId, prefix, kaldirFn, renderFn)
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <div>
           <label style="font-size:10px;color:var(--text-muted)">Şube</label>
-          <input value="${b.sube||''}" oninput="${prefix === 'muv' ? 'muvBankalar' : prefix === 'kt' ? 'ktBankalar' : 'vekBankalar'}[${i}].sube=this.value" placeholder="Şube adı / no"
+          <input value="${escAttr(b.sube||'')}" oninput="${prefix === 'muv' ? 'muvBankalar' : prefix === 'kt' ? 'ktBankalar' : 'vekBankalar'}[${i}].sube=this.value" placeholder="Şube adı / no"
             style="width:100%;margin-top:2px">
         </div>
         <div>
           <label style="font-size:10px;color:var(--text-muted)">Hesap Adı</label>
-          <input value="${b.hesapAd||''}" oninput="${prefix === 'muv' ? 'muvBankalar' : prefix === 'kt' ? 'ktBankalar' : 'vekBankalar'}[${i}].hesapAd=this.value" placeholder="Hesap sahibi adı"
+          <input value="${escAttr(b.hesapAd||'')}" oninput="${prefix === 'muv' ? 'muvBankalar' : prefix === 'kt' ? 'ktBankalar' : 'vekBankalar'}[${i}].hesapAd=this.value" placeholder="Hesap sahibi adı"
             style="width:100%;margin-top:2px">
         </div>
         <div style="grid-column:1/-1">
           <label style="font-size:10px;color:var(--text-muted)">IBAN</label>
-          <input id="bw-${prefix}-iban-${i}" value="${b.iban||''}" placeholder="TR00 0000 0000 0000 0000 0000 00"
+          <input id="bw-${prefix}-iban-${i}" value="${escAttr(b.iban||'')}" placeholder="TR00 0000 0000 0000 0000 0000 00"
             oninput="${prefix === 'muv' ? 'muvBankalar' : prefix === 'kt' ? 'ktBankalar' : 'vekBankalar'}[${i}].iban=this.value"
             style="width:100%;margin-top:2px;font-family:monospace;letter-spacing:1px">
         </div>
         <div>
           <label style="font-size:10px;color:var(--text-muted)">Hesap No</label>
-          <input value="${b.hesapNo||''}" oninput="${prefix === 'muv' ? 'muvBankalar' : prefix === 'kt' ? 'ktBankalar' : 'vekBankalar'}[${i}].hesapNo=this.value" placeholder="Hesap numarası"
+          <input value="${escAttr(b.hesapNo||'')}" oninput="${prefix === 'muv' ? 'muvBankalar' : prefix === 'kt' ? 'ktBankalar' : 'vekBankalar'}[${i}].hesapNo=this.value" placeholder="Hesap numarası"
             style="width:100%;margin-top:2px">
         </div>
       </div>

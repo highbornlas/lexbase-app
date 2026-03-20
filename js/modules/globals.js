@@ -147,13 +147,13 @@ const ILLER=Object.keys(IL_ADLIYELER).sort(function(a,b){return a.localeCompare(
 function populateIlSelect(selId,curVal){
   var sel=document.getElementById(selId);if(!sel)return;
   sel.innerHTML='<option value="">— İl seçin —</option>';
-  ILLER.forEach(function(il){sel.innerHTML+='<option value="'+il+'"'+(il===curVal?' selected':'')+'>'+il+'</option>';});
+  ILLER.forEach(function(il){sel.innerHTML+='<option value="'+escAttr(il)+'"'+(il===curVal?' selected':'')+'>'+escHTML(il)+'</option>';});
 }
 function populateAdliyeSelect(selId,il,curVal){
   var sel=document.getElementById(selId);if(!sel)return;
   var list=IL_ADLIYELER[il]||[];
   sel.innerHTML='<option value="">— Adliye seçin —</option>';
-  list.forEach(function(a){sel.innerHTML+='<option value="'+a+'"'+(a===curVal?' selected':'')+'>'+a+'</option>';});
+  list.forEach(function(a){sel.innerHTML+='<option value="'+escAttr(a)+'"'+(a===curVal?' selected':'')+'>'+escHTML(a)+'</option>';});
 }
 function ilSecDava(il){populateAdliyeSelect('d-adliye',il,'');}
 function ilSecIcra(il){populateAdliyeSelect('i-adliye',il,'');}

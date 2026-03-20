@@ -78,6 +78,23 @@ export function DosyaBelgeModal({ open, onClose, onKaydet, dosyaTipi, yukleniyor
                                      DANISMANLIK_EVRAK_GRUPLARI;
   const MAX_BOYUT = 10 * 1024 * 1024; // 10MB
 
+  // İzin verilen dosya uzantıları ve MIME tipleri
+  const IZINLI_UZANTILAR = new Set([
+    '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+    '.odt', '.ods', '.odp', '.rtf', '.txt', '.csv',
+    '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.svg', '.tif', '.tiff',
+    '.zip', '.rar', '.7z',
+    '.udf', '.xml',
+  ]);
+
+  const IZINLI_MIME_PREFIXLER = [
+    'application/pdf', 'application/msword',
+    'application/vnd.openxmlformats', 'application/vnd.ms-',
+    'application/vnd.oasis.opendocument',
+    'application/rtf', 'text/plain', 'text/csv', 'text/xml',
+    'image/', 'application/zip', 'application/x-rar', 'application/x-7z',
+  ];
+
   // Page-level drop event listener
   useEffect(() => {
     if (!open) return;
@@ -93,6 +110,17 @@ export function DosyaBelgeModal({ open, onClose, onKaydet, dosyaTipi, yukleniyor
     if (!file) return;
     if (file.size > MAX_BOYUT) {
       setBoyutHata('Dosya boyutu 10MB\'dan büyük olamaz');
+      return;
+    }
+    // Uzantı kontrolü
+    const uzanti = ('.' + (file.name.split('.').pop() || '')).toLowerCase();
+    if (!IZINLI_UZANTILAR.has(uzanti)) {
+      setBoyutHata(`Bu dosya türü desteklenmiyor (${uzanti}). İzin verilen: PDF, Word, Excel, resim vb.`);
+      return;
+    }
+    // MIME tip kontrolü (boş MIME kabul edilir — bazı OS'ler MIME vermez)
+    if (file.type && !IZINLI_MIME_PREFIXLER.some(p => file.type.startsWith(p))) {
+      setBoyutHata('Bu dosya içeriği desteklenmiyor. Lütfen belge veya resim dosyası yükleyin.');
       return;
     }
     setBoyutHata('');

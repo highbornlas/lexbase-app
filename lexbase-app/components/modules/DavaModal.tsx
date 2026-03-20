@@ -132,7 +132,7 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
     setKonuArama('');
     setKonuDropOpen(false);
     setOzelKonuOpen(false);
-  }, [dava, open]);
+  }, [dava, open, muvekkillar]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const draftKey = `dava_${form.id || 'yeni'}`;
   const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(

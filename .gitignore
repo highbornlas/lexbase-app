@@ -1,5 +1,10 @@
 .claude/
 
+# Environment — secrets
+.env
+.env.local
+.env.*.local
+
 # Next.js
 lexbase-app/node_modules/
 lexbase-app/.next/

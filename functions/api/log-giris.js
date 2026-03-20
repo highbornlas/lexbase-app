@@ -10,17 +10,41 @@
 // - request.cf → { country, city, region, timezone, asOrganization }
 // ================================================================
 
-const ADMIN_SB_URL = 'https://ewvbpfsgmjghmbnkuvpx.supabase.co';
-const ADMIN_SB_KEY = 'sb_publishable_ccz6M_f4JCnnQzr0auQD7A_-A2YGb91';
+// Credentials are now read from Cloudflare Pages environment variables.
+// Set ADMIN_SB_URL and ADMIN_SB_KEY in Cloudflare Dashboard → Pages → Settings → Environment variables.
 
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-};
+// İzin verilen origin'ler — production ve local dev
+const IZINLI_ORIGINLER = [
+  'https://lexbase.app',
+  'https://www.lexbase.app',
+  'http://localhost:3000',
+  'http://localhost:8788',
+];
+
+function corsHeaders(request) {
+  const origin = request.headers.get('Origin') || '';
+  const allowedOrigin = IZINLI_ORIGINLER.includes(origin) ? origin : IZINLI_ORIGINLER[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Vary': 'Origin',
+  };
+}
 
 export async function onRequestPost(context) {
-  const { request } = context;
+  const { request, env } = context;
+  const CORS_HEADERS = corsHeaders(request);
+  const ADMIN_SB_URL = env.ADMIN_SB_URL;
+  const ADMIN_SB_KEY = env.ADMIN_SB_KEY;
+
+  if (!ADMIN_SB_URL || !ADMIN_SB_KEY) {
+    console.error('[IP Log] ADMIN_SB_URL veya ADMIN_SB_KEY env değişkeni tanımlı değil.');
+    return new Response(JSON.stringify({ ok: false, error: 'Sunucu yapılandırma hatası' }), {
+      status: 500,
+      headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
+    });
+  }
 
   try {
     // 1. IP ve Geo bilgisi (Cloudflare bedava sağlıyor)
@@ -90,9 +114,9 @@ export async function onRequestPost(context) {
 }
 
 // OPTIONS handler — CORS preflight
-export async function onRequestOptions() {
+export async function onRequestOptions(context) {
   return new Response(null, {
     status: 204,
-    headers: CORS_HEADERS
+    headers: corsHeaders(context.request)
   });
 }

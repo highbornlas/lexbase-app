@@ -18,15 +18,15 @@ ListeMotoru.register('arabuluculuk', {
   emptyText: 'Henüz arabuluculuk dosyası yok',
 
   cardRenderer: function(a, isYeni) {
-    return '<div class="arab-row" onclick="openArabDetay(\'' + a.id + '\')" style="' + (isYeni ? 'border-left:3px solid var(--gold);' : '') + '">' +
+    return '<div class="arab-row" onclick="openArabDetay(\'' + escAttr(a.id) + '\')" style="' + (isYeni ? 'border-left:3px solid var(--gold);' : '') + '">' +
       '<div class="arab-row-left">' +
-        '<div class="arab-row-title">' + a.konu + (isYeni ? ' <span class="lm-yeni-badge">YENİ</span>' : '') + '</div>' +
+        '<div class="arab-row-title">' + escHTML(a.konu) + (isYeni ? ' <span class="lm-yeni-badge">YENİ</span>' : '') + '</div>' +
         '<div class="arab-row-meta">' +
-          '<span style="background:var(--surface2);padding:1px 7px;border-radius:10px;font-size:10px;margin-right:6px">' + a.tur + '</span>' +
-          (a.uyusmazlikTur ? '<span style="background:rgba(201,168,76,.1);color:#C9A84C;padding:1px 7px;border-radius:10px;font-size:10px;margin-right:6px">' + a.uyusmazlikTur + '</span>' : '') +
-          (a.muvId ? getMuvAd(a.muvId) + '  ·  ' : '') +
-          (a.karsi ? 'Karşı: ' + a.karsi : '') +
-          (a.basvuruTarih ? ' · ' + fmtD(a.basvuruTarih) : '') +
+          '<span style="background:var(--surface2);padding:1px 7px;border-radius:10px;font-size:10px;margin-right:6px">' + escHTML(a.tur) + '</span>' +
+          (a.uyusmazlikTur ? '<span style="background:rgba(201,168,76,.1);color:#C9A84C;padding:1px 7px;border-radius:10px;font-size:10px;margin-right:6px">' + escHTML(a.uyusmazlikTur) + '</span>' : '') +
+          (a.muvId ? escHTML(getMuvAd(a.muvId)) + '  ·  ' : '') +
+          (a.karsi ? 'Karşı: ' + escHTML(a.karsi) : '') +
+          (a.basvuruTarih ? ' · ' + escHTML(fmtD(a.basvuruTarih)) : '') +
         '</div>' +
       '</div>' +
       '<div class="arab-row-right">' +
@@ -74,7 +74,7 @@ function openArabDetay(id){
   document.getElementById('arab-bc').textContent=a.konu;
   document.getElementById('arab-detay-baslik').textContent=a.konu;
   document.getElementById('arab-detay-meta').innerHTML=
-    `${a.tur}${a.uyusmazlikTur?' · '+a.uyusmazlikTur:''} · ${getMuvAd(a.muvId)||'—'} · ${arabDurumBadge(a.durum)}`;
+    `${escHTML(a.tur)}${a.uyusmazlikTur?' · '+escHTML(a.uyusmazlikTur):''} · ${escHTML(getMuvAd(a.muvId)||'—')} · ${arabDurumBadge(a.durum)}`;
   renderArabDetayCards(a);
   arabTab('bilgi',document.querySelector('#page-arab-detay .tab'));
 }
@@ -83,10 +83,10 @@ function renderArabDetayCards(a){
   const toplanti=(a.toplantılar||[]).length;
   const sonToplanti=(a.toplantılar||[]).slice(-1)[0];
   document.getElementById('arab-detay-cards').innerHTML=`
-    <div class="card"><div class="card-label">Dosya Türü</div><div class="card-value gold" style="font-size:12px">${a.tur}</div></div>
-    <div class="card"><div class="card-label">Uyuşmazlık</div><div class="card-value" style="font-size:12px;color:#C9A84C">${a.uyusmazlikTur||'—'}</div></div>
+    <div class="card"><div class="card-label">Dosya Türü</div><div class="card-value gold" style="font-size:12px">${escHTML(a.tur)}</div></div>
+    <div class="card"><div class="card-label">Uyuşmazlık</div><div class="card-value" style="font-size:12px;color:#C9A84C">${escHTML(a.uyusmazlikTur||'—')}</div></div>
     <div class="card"><div class="card-label">Durum</div><div class="card-value" style="font-size:12px">${arabDurumBadge(a.durum)}</div></div>
-    <div class="card"><div class="card-label">Toplantı</div><div class="card-value gold">${toplanti} ${sonToplanti?'<span style="font-size:10px;color:var(--text-muted)">· '+fmtD(sonToplanti.tarih)+'</span>':''}</div></div>`;
+    <div class="card"><div class="card-label">Toplantı</div><div class="card-value gold">${toplanti} ${sonToplanti?'<span style="font-size:10px;color:var(--text-muted)">· '+escHTML(fmtD(sonToplanti.tarih))+'</span>':''}</div></div>`;
 }
 
 let _arabAktifTab='bilgi';
