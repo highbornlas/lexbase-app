@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Modal, FormGroup, FormInput, FormSelect, FormTextarea, BtnGold, BtnOutline } from '@/components/ui/Modal';
 import { useModalDraft } from '@/lib/hooks/useModalDraft';
 import { useBuroGiderKaydet, type BuroGider, GIDER_KATEGORILERI, KDV_ORANLARI } from '@/lib/hooks/useBuroGiderleri';
+import { bruttenNete, formatTL } from '@/lib/utils/finans';
 
 interface BuroGiderModalProps {
   open: boolean;
@@ -61,13 +62,11 @@ export function BuroGiderModal({ open, onClose, gider }: BuroGiderModalProps) {
         const kdvOrani = field === 'kdvOrani' ? Number(value) : Number(yeni.kdvOrani || 0);
         const stopajOrani = field === 'stopajOrani' ? Number(value) : Number(yeni.stopajOrani || 0);
 
-        const kdvTutar = Math.round(tutar * kdvOrani / 100 * 100) / 100;
-        const stopajTutar = Math.round(tutar * stopajOrani / 100 * 100) / 100;
-        const netTutar = Math.round((tutar + kdvTutar - stopajTutar) * 100) / 100;
+        const hesap = bruttenNete(tutar, kdvOrani, stopajOrani);
 
-        yeni.kdvTutar = kdvTutar;
-        yeni.stopajTutar = stopajTutar;
-        yeni.netTutar = netTutar;
+        yeni.kdvTutar = hesap.kdvTutar;
+        yeni.stopajTutar = hesap.stopajTutar;
+        yeni.netTutar = hesap.netTutar;
       }
 
       return yeni;
@@ -94,7 +93,7 @@ export function BuroGiderModal({ open, onClose, gider }: BuroGiderModalProps) {
     }
   }
 
-  const fmtTRY = (n: number) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(n);
+  const fmtTRY = (n: number) => formatTL(n);
 
   return (
     <Modal open={open} onClose={onClose} title={gider ? 'Gideri Düzenle' : 'Yeni Büro Gideri'} maxWidth="max-w-2xl"

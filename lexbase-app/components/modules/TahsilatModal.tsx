@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Modal, FormGroup, FormInput, FormSelect, BtnGold, BtnOutline } from '@/components/ui/Modal';
 import { useModalDraft } from '@/lib/hooks/useModalDraft';
 import { fmt } from '@/lib/utils';
-import { bruttenNete, nettenBrute } from '@/lib/hooks/useGelirHesapla';
+import { bruttenNete, nettenBrute } from '@/lib/utils/finans';
 
 /* ══════════════════════════════════════════════════════════════
    Tahsilat Ekleme / Düzenleme Modal

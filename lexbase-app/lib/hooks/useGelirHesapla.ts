@@ -29,25 +29,9 @@ export interface GelirKaydi {
   dosyaId: string;
 }
 
-// ── SMM Hesaplama Yardımcıları ────────────────────────────────
-
-/** Brüt tutardan net hesapla: Net = Brüt + KDV - Stopaj */
-export function bruttenNete(brut: number, kdvOrani: number, stopajOrani: number) {
-  const kdv = Math.round(brut * kdvOrani / 100 * 100) / 100;
-  const stopaj = Math.round(brut * stopajOrani / 100 * 100) / 100;
-  const net = Math.round((brut + kdv - stopaj) * 100) / 100;
-  return { kdvTutar: kdv, stopajTutar: stopaj, netTutar: net };
-}
-
-/** Net tutardan brüt hesapla: Brüt = Net / (1 + kdv% - stopaj%) */
-export function nettenBrute(net: number, kdvOrani: number, stopajOrani: number) {
-  const carpan = 1 + (kdvOrani / 100) - (stopajOrani / 100);
-  if (carpan === 0) return { brutTutar: net, kdvTutar: 0, stopajTutar: 0 };
-  const brut = Math.round(net / carpan * 100) / 100;
-  const kdv = Math.round(brut * kdvOrani / 100 * 100) / 100;
-  const stopaj = Math.round(brut * stopajOrani / 100 * 100) / 100;
-  return { brutTutar: brut, kdvTutar: kdv, stopajTutar: stopaj };
-}
+// ── SMM Hesaplama Yardımcıları (merkezi utils'den import + re-export) ──
+import { bruttenNete, nettenBrute } from '@/lib/utils/finans';
+export { bruttenNete, nettenBrute };
 
 // ── Gelir Hesaplama Hook'u ────────────────────────────────────
 export function useGelirHesapla() {

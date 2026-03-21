@@ -1,111 +1,87 @@
 'use client';
 
-import { useMemo } from 'react';
 import { fmt, fmtTarih } from '@/lib/utils';
+import { useBeklenenGelir } from '@/lib/hooks/useFinans';
 import { EmptyState } from '../WidgetWrapper';
 
 /* ══════════════════════════════════════════════════════════════
-   Beklenen Gelir Widget — Önümüzdeki 30 gün beklenen tahsilatlar
+   Beklenen Gelir Widget — RPC tabanlı beklenen gelir hesaplama
    ══════════════════════════════════════════════════════════════ */
 
-interface BeklenenGelirWidgetProps {
-  davalar: Array<Record<string, unknown>>;
-  icralar: Array<Record<string, unknown>>;
-  danismanliklar: Array<Record<string, unknown>>;
-  muvAdMap: Record<string, string>;
+interface BeklenenGelirItem {
+  kaynak: string;
+  aciklama: string;
+  tutar: number;
+  tarih: string;
+  muvAd: string;
+  gecikmisMi: boolean;
 }
 
-export function BeklenenGelirWidget({ davalar, icralar, danismanliklar, muvAdMap }: BeklenenGelirWidgetProps) {
-  const { beklenenler, toplamTutar } = useMemo(() => {
-    const items: Array<{ kaynak: string; icon: string; acik: string; tutar: number; tarih: string; muvAd: string }> = [];
-    const bugun = new Date();
-    const otuzGun = new Date();
-    otuzGun.setDate(bugun.getDate() + 30);
+interface BeklenenGelirData {
+  topTutar: number;
+  gecikmisTutar: number;
+  gecikmisAdet: number;
+  ucAyToplam: number;
+  items: BeklenenGelirItem[];
+}
 
-    // Yaklaşan duruşmalar (dava değeri baz)
-    (davalar || []).forEach((d) => {
-      if (!d.durusma || !d.deger) return;
-      const t = new Date(d.durusma as string);
-      if (t < bugun || t > otuzGun) return;
-      items.push({
-        kaynak: 'Dava',
-        icon: '⚖️',
-        acik: `${d.no || d.konu || '—'}`,
-        tutar: Number(d.deger) * 0.1, // tahmini %10 vekalet ücreti
-        tarih: d.durusma as string,
-        muvAd: muvAdMap[d.muvId as string] || '',
-      });
-    });
+const KAYNAK_ICON: Record<string, string> = {
+  'Dava': '\u2696\uFE0F',
+  'İcra': '\u26A1',
+  'Danışmanlık': '\uD83D\uDCCB',
+  'Arabuluculuk': '\uD83E\uDD1D',
+  'İhtarname': '\uD83D\uDCE8',
+};
 
-    // Devam eden danışmanlıklar (henüz tahsil edilmemiş)
-    (danismanliklar || []).forEach((d) => {
-      if (d.durum === 'Tamamlandı' || d.durum === 'İptal') return;
-      const tutar = Number(d.ucret || d.tutar || 0);
-      const tahsil = Number(d.tahsilEdildi || 0);
-      const kalan = tutar - tahsil;
-      if (kalan <= 0) return;
-      const teslim = (d.teslimTarihi || d.sonucTarih) as string | undefined;
-      if (teslim) {
-        const t = new Date(teslim);
-        if (t < bugun || t > otuzGun) return;
-      }
-      items.push({
-        kaynak: 'Danışmanlık',
-        icon: '📋',
-        acik: (d.konu as string) || '—',
-        tutar: kalan,
-        tarih: (teslim || '') as string,
-        muvAd: muvAdMap[d.muvId as string] || '',
-      });
-    });
+export function BeklenenGelirWidget() {
+  const { data, isLoading } = useBeklenenGelir();
 
-    // İcra tahsilatları (aktif icra dosyaları)
-    (icralar || []).forEach((i) => {
-      if (i.durum === 'Kapandı') return;
-      const alacak = Number(i.toplamAlacak || i.takipTutari || 0);
-      const tahsil = ((i.tahsilatlar as Array<{ tutar: number }>) || []).reduce((s, t) => s + (t.tutar || 0), 0);
-      const kalan = alacak - tahsil;
-      if (kalan <= 0) return;
-      items.push({
-        kaynak: 'İcra',
-        icon: '⚡',
-        acik: `${i.no || '—'}`,
-        tutar: kalan,
-        tarih: '',
-        muvAd: muvAdMap[i.muvId as string] || '',
-      });
-    });
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-6">
+        <div className="animate-spin rounded-full h-5 w-5 border-2 border-gold border-t-transparent" />
+      </div>
+    );
+  }
 
-    const sorted = items.sort((a, b) => b.tutar - a.tutar).slice(0, 5);
-    const toplamTutar = sorted.reduce((s, i) => s + i.tutar, 0);
+  const gelir = data as BeklenenGelirData | null;
 
-    return { beklenenler: sorted, toplamTutar };
-  }, [davalar, icralar, danismanliklar, muvAdMap]);
-
-  if (beklenenler.length === 0) {
+  if (!gelir || !gelir.items || gelir.items.length === 0) {
     return <EmptyState icon="📈" text="Beklenen gelir bulunmuyor" />;
   }
+
+  const topItems = gelir.items.slice(0, 5);
 
   return (
     <div className="space-y-2 mt-1">
       {/* Toplam KPI */}
       <div className="flex items-center justify-between px-2 py-1.5 bg-green/10 rounded-lg">
-        <span className="text-[10px] text-text-muted font-medium">Tahmini Toplam</span>
-        <span className="text-sm font-bold text-green font-[var(--font-playfair)]">{fmt(toplamTutar)}</span>
+        <span className="text-[10px] text-text-muted font-medium">Toplam Beklenen</span>
+        <span className="text-sm font-bold text-green font-[var(--font-playfair)]">{fmt(gelir.topTutar)}</span>
       </div>
+
+      {/* Gecikme uyarısı */}
+      {gelir.gecikmisAdet > 0 && (
+        <div className="flex items-center justify-between px-2 py-1 bg-red/10 rounded-lg">
+          <span className="text-[10px] text-text-muted font-medium">Gecikmiş ({gelir.gecikmisAdet})</span>
+          <span className="text-[11px] font-semibold text-red">{fmt(gelir.gecikmisTutar)}</span>
+        </div>
+      )}
 
       {/* Liste */}
       <div className="space-y-0.5">
-        {beklenenler.map((b, i) => (
+        {topItems.map((b, i) => (
           <div key={i} className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-surface2/50 transition-colors">
-            <span className="text-sm flex-shrink-0">{b.icon}</span>
+            <span className="text-sm flex-shrink-0">{KAYNAK_ICON[b.kaynak] || '📄'}</span>
             <div className="flex-1 min-w-0">
-              <div className="text-[11px] font-medium text-text truncate">{b.acik}</div>
+              <div className="text-[11px] font-medium text-text truncate">{b.aciklama}</div>
               <div className="text-[9px] text-text-dim truncate">
                 {b.kaynak}{b.muvAd ? ` · ${b.muvAd}` : ''}{b.tarih ? ` · ${fmtTarih(b.tarih)}` : ''}
               </div>
             </div>
-            <span className="text-[11px] font-semibold text-green flex-shrink-0">{fmt(b.tutar)}</span>
+            <span className={`text-[11px] font-semibold flex-shrink-0 ${b.gecikmisMi ? 'text-red' : 'text-green'}`}>
+              {fmt(b.tutar)}
+            </span>
           </div>
         ))}
       </div>

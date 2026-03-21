@@ -153,9 +153,9 @@ export function WidgetGrid({
       case 'finans-uyari':
         return <FinansUyariWidget uyarilar={uyarilar} />;
       case 'muvekkil-bakiye':
-        return <MuvekkilBakiyeWidget muvekkillar={muvekkillar} davalar={davalar} icralar={icralar} danismanliklar={danismanliklar} arabuluculuklar={arabuluculuklar} ihtarnameler={ihtarnameler} muvAdMap={muvAdMap} />;
+        return <MuvekkilBakiyeWidget />;
       case 'beklenen-gelir':
-        return <BeklenenGelirWidget davalar={davalar} icralar={icralar} danismanliklar={danismanliklar} muvAdMap={muvAdMap} />;
+        return <BeklenenGelirWidget />;
       case 'personel-ozet':
         return <PersonelOzetWidget personeller={personeller} />;
       case 'menfaat':
