@@ -163,7 +163,7 @@ async function adminGirisLog(musteri) {
       son_giris:           new Date().toISOString(),
       toplam_giris_sayisi: mevcutSayi + 1,
     });
-  } catch(e) {}
+  } catch(e) { console.warn('[Admin] Giriş sayısı güncelleme hatası:', e.message || e); }
 }
 
 // ── Çıkış → oturum süresini kapat ─────────────────────────────
@@ -214,7 +214,7 @@ async function duyurulariYukle() {
       okunanlar.push(d.id);
       localStorage.setItem('okunan_duyurular', JSON.stringify(okunanlar.slice(-50)));
     });
-  } catch(e) {}
+  } catch(e) { console.warn('[Admin] Duyurular yüklenemedi:', e.message || e); }
 }
 
 // ── Destek Talebi Gönder ────────────────────────────────────
@@ -242,7 +242,7 @@ async function destekTalebiGonder() {
     if (typeof currentUser !== 'undefined' && currentUser) email = currentUser.email || '';
     if (!email && typeof state !== 'undefined' && state.ayarlar) email = state.ayarlar.email || '';
     if (!email && typeof state !== 'undefined' && state.profil) email = state.profil.email || '';
-  } catch(e) {}
+  } catch(e) { console.warn('[Admin] Destek talebi için kullanıcı bilgisi alınamadı:', e.message || e); }
 
   var turEmoji = { sorun: '🐛', ozellik: '💡', soru: '❓', oneri: '📝' };
   var turLabel = { sorun: 'Hata', ozellik: 'Özellik', soru: 'Soru', oneri: 'Öneri' };
@@ -364,7 +364,7 @@ async function destekGecmisiYukle() {
     if (typeof currentUser !== 'undefined' && currentUser) email = currentUser.email || '';
     if (!email && typeof state !== 'undefined' && state.ayarlar) email = state.ayarlar.email || '';
     if (!email && typeof state !== 'undefined' && state.profil) email = state.profil.email || '';
-  } catch(e) {}
+  } catch(e) { console.warn('[Admin] Destek geçmişi için e-posta alınamadı:', e.message || e); }
   if (!email) return;
 
   var el = document.getElementById('destek-gecmis');
@@ -516,7 +516,7 @@ async function destekBildirimKontrol() {
   var email = '';
   try {
     if (typeof currentUser !== 'undefined' && currentUser) email = currentUser.email || '';
-  } catch(e) {}
+  } catch(e) { console.warn('[Admin] Destek bildirim kontrolü için e-posta alınamadı:', e.message || e); }
   if (!email) return;
 
   try {

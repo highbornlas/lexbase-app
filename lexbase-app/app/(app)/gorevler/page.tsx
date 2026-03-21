@@ -460,16 +460,16 @@ export default function GorevlerPage() {
                           {t.dosyaTur && (
                             <span className="text-[10px] text-text-dim">📂 {t.dosyaTur}</span>
                           )}
-                          {t.atananId && (personelAdMap[t.atananId] || (t as any).atananAd) && (
-                            <span className="text-[10px] text-purple-400">🎯 {personelAdMap[t.atananId] || (t as any).atananAd}</span>
+                          {t.atananId && (personelAdMap[t.atananId] || (t.atananAd as string)) && (
+                            <span className="text-[10px] text-purple-400">🎯 {personelAdMap[t.atananId] || (t.atananAd as string)}</span>
                           )}
                           {t.kategori && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface2 text-text-muted border border-border">
                               {t.kategori}
                             </span>
                           )}
-                          {(t as any).altGorevler?.length > 0 && (() => {
-                            const alts = (t as any).altGorevler as { tamam: boolean }[];
+                          {t.altGorevler && t.altGorevler.length > 0 && (() => {
+                            const alts = t.altGorevler;
                             const done = alts.filter(a => a.tamam).length;
                             return (
                               <span className="text-[10px] text-text-dim">

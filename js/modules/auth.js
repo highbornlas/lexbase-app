@@ -85,7 +85,7 @@ async function cikisYap() {
     }
     // Ana anahtarı tamamen temizle
     localStorage.removeItem(SK);
-  } catch(e) {}
+  } catch(e) { console.warn('[Auth] Çıkış sırasında veri yedekleme/temizleme hatası:', e.message || e); }
   // Global değişkenleri sıfırla (sayfa yenilemesiz geçiş için)
   aktivMuvId = null; aktivDavaId = null; aktivIcraId = null;
   await sbCikisYap();
@@ -143,7 +143,7 @@ function showPlanSayfasi() {
       const gun = Math.ceil((Date.now() - new Date(d.olusturmaTarih||Date.now())) / (1000*60*60*24));
       const kalan = Math.max(0, 30 - gun);
       denemeMetni = kalan > 0 ? `Deneme süreniz: ${kalan} gün kaldı` : '⚠️ Deneme süreniz doldu!';
-    } catch(e) {}
+    } catch(e) { console.warn('[Auth] Deneme süresi hesaplama hatası:', e.message || e); }
   }
 
   const limitBar = (sayi, limit) => {
@@ -211,7 +211,7 @@ async function loadDataFromSupabase() {}
   try {
     const d = localStorage.getItem('hukuk_buro_v3');
     if (d) { const p = JSON.parse(d); if(p.sahipEmail) { const el = document.getElementById('l-email'); if(el) el.value = p.sahipEmail; } }
-  } catch(e) {}
+  } catch(e) { console.warn('[Auth] Kayıtlı e-posta yükleme hatası:', e.message || e); }
 })();
 
 // ================================================================
@@ -246,7 +246,7 @@ function yedekIstatistikGoster() {
     if (sonYedekBoyut) {
       document.getElementById('son-yedek-boyut').textContent = sonYedekBoyut;
     }
-  } catch(e) {}
+  } catch(e) { console.warn('[Auth] Yedek istatistikleri yükleme hatası:', e.message || e); }
 
   // Plan bazlı UI
   const plan = mevcutPlan();

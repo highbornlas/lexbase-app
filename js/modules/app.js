@@ -150,7 +150,7 @@ function seedTemizle() {
     if (typeof renderTodo === 'function') renderTodo();
     if (typeof renderArabuluculuk === 'function') renderArabuluculuk();
     if (typeof refreshFinansViews === 'function') refreshFinansViews();
-  } catch(e) {}
+  } catch(e) { console.warn('[App] Seed temizleme sonrası UI yenileme hatası:', e.message || e); }
   notify('🗑️ Tüm veriler silindi');
 }
 

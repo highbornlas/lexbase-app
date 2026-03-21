@@ -104,8 +104,7 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
   };
 
   /* ── Masraf & Tahsilat handlers ── */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const turMap: Record<string, { arr: Record<string, unknown>[]; kaydet: { mutate: (v: any) => void } }> = {
+  const turMap: Record<string, { arr: Record<string, unknown>[]; kaydet: { mutate: (v: never) => void } }> = {
     'Dava': { arr: davaArr, kaydet: davaKaydet },
     'İcra': { arr: icraArr, kaydet: icraKaydet },
     'Arabuluculuk': { arr: arabArr, kaydet: arabKaydet },

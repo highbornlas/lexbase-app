@@ -455,7 +455,7 @@ function saveDashOrder() {
     container.querySelectorAll('.dash-panel').forEach(function(p) { ids.push(p.id); });
     order[gid] = ids;
   });
-  try { localStorage.setItem('dashboardSiralama', JSON.stringify(order)); } catch(e) {}
+  try { localStorage.setItem('dashboardSiralama', JSON.stringify(order)); } catch(e) { console.warn('[Dashboard] Dashboard sıralaması kaydedilemedi:', e.message || e); }
 }
 
 function restoreDashOrder() {

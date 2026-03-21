@@ -5,7 +5,7 @@
 
 // ── Eski fonksiyonlar için uyumluluk ─────────────────────────────
 // renderButce artık yok — çağıran kodların kırılmaması için
-function renderButce() { try { renderFinansKPI(); renderBuroGiderleri(); } catch(e) {} }
+function renderButce() { try { renderFinansKPI(); renderBuroGiderleri(); } catch(e) { console.warn('[Finans] renderButce hatası:', e.message || e); } }
 function tumFinansHesapla(f) {
   var kz = FinansMotoru.buroKarZarar(f || {});
   return { gelir: kz.gelirler.toplam, gider: kz.giderler.toplam, net: kz.net, gelirler: kz.gelirler, giderler: kz.giderler, karZararOrani: kz.karZararOrani };
@@ -1250,45 +1250,45 @@ function refreshFinansViews(opts) {
   opts = opts || {};
 
   // 1. KPI kartları + uyarılar
-  try { renderFinansKPI(); } catch(e) {}
-  try { renderFinansUyariBar(); } catch(e) {}
+  try { renderFinansKPI(); } catch(e) { console.warn('[Finans] renderFinansKPI hatası:', e.message || e); }
+  try { renderFinansUyariBar(); } catch(e) { console.warn('[Finans] renderFinansUyariBar hatası:', e.message || e); }
 
   // 2. Müvekkil cari bakiye (Finans → Müvekkil sekmesi)
-  try { renderMuvekkilBakiye(); } catch(e) {}
+  try { renderMuvekkilBakiye(); } catch(e) { console.warn('[Finans] renderMuvekkilBakiye hatası:', e.message || e); }
 
   // 3. Büro giderleri
-  try { renderBuroGiderleri(); } catch(e) {}
+  try { renderBuroGiderleri(); } catch(e) { console.warn('[Finans] renderBuroGiderleri hatası:', e.message || e); }
 
   // 4. Dosya detay kartları (açık dosya varsa)
   if (opts.dosyaTur === 'dava' || aktivDavaId) {
     var dava = typeof getDava === 'function' ? getDava(opts.dosyaId || aktivDavaId) : null;
     if (dava) {
-      try { if (typeof renderDdCards === 'function') renderDdCards(dava); } catch(e) {}
-      try { if (typeof renderDavaTabContent === 'function') renderDavaTabContent('harcamalar'); } catch(e) {}
+      try { if (typeof renderDdCards === 'function') renderDdCards(dava); } catch(e) { console.warn('[Finans] renderDdCards hatası:', e.message || e); }
+      try { if (typeof renderDavaTabContent === 'function') renderDavaTabContent('harcamalar'); } catch(e) { console.warn('[Finans] renderDavaTabContent hatası:', e.message || e); }
     }
   }
   if (opts.dosyaTur === 'icra' || aktivIcraId) {
     var icra = typeof getIcra === 'function' ? getIcra(opts.dosyaId || aktivIcraId) : null;
     if (icra) {
-      try { if (typeof renderIdCards === 'function') renderIdCards(icra); } catch(e) {}
-      try { if (typeof renderIcraTabContent === 'function') renderIcraTabContent('harcamalar'); } catch(e) {}
+      try { if (typeof renderIdCards === 'function') renderIdCards(icra); } catch(e) { console.warn('[Finans] renderIdCards hatası:', e.message || e); }
+      try { if (typeof renderIcraTabContent === 'function') renderIcraTabContent('harcamalar'); } catch(e) { console.warn('[Finans] renderIcraTabContent hatası:', e.message || e); }
     }
   }
 
   // 5. Müvekkil detay sayfası (avans, harcama, kartlar)
   if (opts.muvId || aktivMuvId) {
-    try { if (typeof renderMdAvans === 'function') renderMdAvans(); } catch(e) {}
-    try { if (typeof renderMdHarcamalar === 'function') renderMdHarcamalar(); } catch(e) {}
-    try { if (typeof renderMdCards === 'function') renderMdCards(); } catch(e) {}
+    try { if (typeof renderMdAvans === 'function') renderMdAvans(); } catch(e) { console.warn('[Finans] renderMdAvans hatası:', e.message || e); }
+    try { if (typeof renderMdHarcamalar === 'function') renderMdHarcamalar(); } catch(e) { console.warn('[Finans] renderMdHarcamalar hatası:', e.message || e); }
+    try { if (typeof renderMdCards === 'function') renderMdCards(); } catch(e) { console.warn('[Finans] renderMdCards hatası:', e.message || e); }
   }
 
   // 6. İcra ve Dava liste kartları
-  try { if (typeof renderIcraCards === 'function') renderIcraCards(); } catch(e) {}
-  try { if (typeof renderDavaCards === 'function') renderDavaCards(); } catch(e) {}
+  try { if (typeof renderIcraCards === 'function') renderIcraCards(); } catch(e) { console.warn('[Finans] renderIcraCards hatası:', e.message || e); }
+  try { if (typeof renderDavaCards === 'function') renderDavaCards(); } catch(e) { console.warn('[Finans] renderDavaCards hatası:', e.message || e); }
 
   // 7. Dashboard
-  try { if (typeof renderDashboard === 'function') renderDashboard(); } catch(e) {}
+  try { if (typeof renderDashboard === 'function') renderDashboard(); } catch(e) { console.warn('[Finans] renderDashboard hatası:', e.message || e); }
 
   // 8. Badge'ler
-  try { if (typeof updateBadges === 'function') updateBadges(); } catch(e) {}
+  try { if (typeof updateBadges === 'function') updateBadges(); } catch(e) { console.warn('[Finans] updateBadges hatası:', e.message || e); }
 }

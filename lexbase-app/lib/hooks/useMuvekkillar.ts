@@ -124,21 +124,13 @@ async function fetchMuvDosyalar(
     .from(tablo)
     .select('id, data')
     .eq('buro_id', buroId)
-    .or(`data->muvId.eq.${muvId},data->muvId.eq."${muvId}"`);
+    .or(`data->>muvId.eq.${muvId},data->muvekkilTaraflar.cs.[{"id":"${muvId}"}]`);
 
   if (error) throw error;
 
   return (data || [])
     .map((r) => ({ id: r.id, ...(r.data as object) }))
-    .filter((d: Record<string, unknown>) => {
-      if (d._silindi) return false;
-      // muvId doğrudan eşleşme
-      if (d.muvId === muvId) return true;
-      // muvekkilTaraflar dizisinde eşleşme (çoklu müvekkil)
-      const taraflar = d.muvekkilTaraflar as Array<{ id: string }> | undefined;
-      if (taraflar?.some((t) => t.id === muvId)) return true;
-      return false;
-    });
+    .filter((d: Record<string, unknown>) => !d._silindi);
 }
 
 // ── Müvekkile bağlı davalar ───────────────────────────────────
@@ -255,7 +247,7 @@ async function cascadeUnlinkMuvekkil(supabase: ReturnType<typeof createClient>, 
       .from(tablo)
       .select('id, data')
       .eq('buro_id', buroId)
-      .or(`data->muvId.eq.${muvId},data->muvId.eq."${muvId}"`);
+      .or(`data->>muvId.eq.${muvId}`);
     if (!kayitlar) continue;
     for (const k of kayitlar) {
       const d = k.data as Record<string, unknown>;
@@ -275,7 +267,7 @@ async function cascadeUnlinkHard(supabase: ReturnType<typeof createClient>, buro
       .from(tablo)
       .select('id, data')
       .eq('buro_id', buroId)
-      .or(`data->muvId.eq.${muvId},data->muvId.eq."${muvId}",data->_eskiMuvId.eq.${muvId},data->_eskiMuvId.eq."${muvId}"`);
+      .or(`data->>muvId.eq.${muvId},data->>_eskiMuvId.eq.${muvId}`);
     if (!kayitlar) continue;
     for (const k of kayitlar) {
       const d = k.data as Record<string, unknown>;
@@ -297,7 +289,7 @@ async function cascadeRelinkMuvekkil(supabase: ReturnType<typeof createClient>, 
       .from(tablo)
       .select('id, data')
       .eq('buro_id', buroId)
-      .or(`data->_eskiMuvId.eq.${muvId},data->_eskiMuvId.eq."${muvId}"`);
+      .or(`data->>_eskiMuvId.eq.${muvId}`);
     if (!kayitlar) continue;
     for (const k of kayitlar) {
       const d = k.data as Record<string, unknown>;

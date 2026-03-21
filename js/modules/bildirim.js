@@ -43,15 +43,15 @@ var Bildirim = (function () {
     try {
       const d = localStorage.getItem(AYAR_KEY);
       if (d) _ayarlar = { ...VARSAYILAN_AYAR, ...JSON.parse(d) };
-    } catch (e) { }
+    } catch (e) { console.warn('[Bildirim] Ayarlar yüklenemedi:', e.message || e); }
     try {
       const o = localStorage.getItem(OKUNAN_KEY);
       if (o) _okunanIds = new Set(JSON.parse(o));
-    } catch (e) { }
+    } catch (e) { console.warn('[Bildirim] Okunan bildirimler yüklenemedi:', e.message || e); }
   }
 
   function ayarlariKaydet() {
-    try { localStorage.setItem(AYAR_KEY, JSON.stringify(_ayarlar)); } catch (e) { }
+    try { localStorage.setItem(AYAR_KEY, JSON.stringify(_ayarlar)); } catch (e) { console.warn('[Bildirim] Ayarlar kaydedilemedi:', e.message || e); }
   }
 
   function okunanKaydet() {
@@ -59,7 +59,7 @@ var Bildirim = (function () {
       // Son 500 okunanı tut
       const arr = [..._okunanIds].slice(-500);
       localStorage.setItem(OKUNAN_KEY, JSON.stringify(arr));
-    } catch (e) { }
+    } catch (e) { console.warn('[Bildirim] Okunan bildirimler kaydedilemedi:', e.message || e); }
   }
 
   // ── Bildirim Tarama ────────────────────────────────────────
@@ -401,7 +401,7 @@ var Bildirim = (function () {
       osc.start();
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
       setTimeout(() => { osc.stop(); ctx.close(); }, 400);
-    } catch (e) { }
+    } catch (e) { console.warn('[Bildirim] Ses çalma hatası:', e.message || e); }
   }
 
   // ── Yenile & Kontrol ──────────────────────────────────────

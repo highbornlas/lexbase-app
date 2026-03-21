@@ -140,7 +140,7 @@ function sbAuthDinle() {
           }
         }
         localStorage.removeItem(SK);
-      } catch(e) {}
+      } catch(e) { console.warn('[Supabase] Çıkış sırasında veri yedekleme/temizleme hatası:', e.message || e); }
 
       currentBuroId = null;
       currentUser = null;
@@ -295,7 +295,7 @@ async function sbVeriYukle() {
     });
 
     // State'i localStorage'a yaz (plan bilgisi dahil) — saveData'dan önce tamamla
-    try { localStorage.setItem(SK, JSON.stringify(state)); } catch(e) {}
+    try { localStorage.setItem(SK, JSON.stringify(state)); } catch(e) { console.warn('[Supabase] State localStorage yazma hatası:', e.message || e); }
     console.log('[LexBase] Plan durumu:', state.planId, '| Kullanıcı:', state.planKullanici);
 
     showYukleniyor(false);
@@ -472,13 +472,13 @@ window.addEventListener('beforeunload', function() {
   if (!currentBuroId || typeof sb === 'undefined') return;
 
   // localStorage zaten güncel (saveData'da yazıldı)
-  try { localStorage.setItem(SK, JSON.stringify(state)); } catch(e) {}
+  try { localStorage.setItem(SK, JSON.stringify(state)); } catch(e) { console.warn('[Supabase] beforeunload state kaydetme hatası:', e.message || e); }
   // Kullanıcıya özel anahtarı da güncelle (izolasyon)
   try {
     if (currentUser && currentUser.email) {
       localStorage.setItem(SK + '_user_' + currentUser.email, JSON.stringify(state));
     }
-  } catch(e) {}
+  } catch(e) { console.warn('[Supabase] beforeunload kullanıcı izolasyon hatası:', e.message || e); }
 
   // Supabase REST API üzerinden doğrudan keepalive fetch
   // sb client yerine doğrudan REST endpoint kullanıyoruz çünkü

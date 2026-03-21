@@ -12,6 +12,7 @@ import { useIhtarnameler } from '@/lib/hooks/useIhtarname';
 import { useRol, yetkiVar } from '@/lib/hooks/useRol';
 import { useOnayBekleyenSayisi } from '@/lib/hooks/useOnay';
 import { BuroSecici } from './BuroSecici';
+import { APP_VERSION } from '@/lib/version';
 
 /* ══════════════════════════════════════════════════════════════
    Premium Sidebar — Responsive + Mobil Toggle
@@ -204,7 +205,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
           {/* Version */}
           <div className="text-center mt-2">
-            <span className="text-[9px] text-text-dim/50 tracking-wider">v2.1.0</span>
+            <span className="text-[9px] text-text-dim/50 tracking-wider">v{APP_VERSION}</span>
           </div>
         </div>
       </aside>

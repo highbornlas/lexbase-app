@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { DosyaDrawer } from './DosyaDrawer';
+import { DURUM_RENK } from '@/lib/constants/ui';
 
 /* ── Dosya türü ayarları ── */
 const DOSYA_TURLERI = [
@@ -10,26 +11,6 @@ const DOSYA_TURLERI = [
   { key: 'arabuluculuk', label: 'Arabuluculuk', icon: '🤝', color: 'text-emerald-400', bgColor: 'bg-emerald-400/10', linkPrefix: '/arabuluculuk' },
   { key: 'ihtarname', label: 'İhtarnameler', icon: '📨', color: 'text-purple-400', bgColor: 'bg-purple-400/10', linkPrefix: '/ihtarname' },
 ] as const;
-
-const DURUM_RENK: Record<string, string> = {
-  'Derdest': 'text-green bg-green-dim border-green/20',
-  'Aktif': 'text-green bg-green-dim border-green/20',
-  'derdest': 'text-green bg-green-dim border-green/20',
-  'Devam Ediyor': 'text-green bg-green-dim border-green/20',
-  'Başvuru': 'text-blue-400 bg-blue-400/10 border-blue-400/20',
-  'Görüşme': 'text-gold bg-gold-dim border-gold/20',
-  'Hazırlandı': 'text-blue-400 bg-blue-400/10 border-blue-400/20',
-  'Gönderildi': 'text-gold bg-gold-dim border-gold/20',
-  'Tebliğ Edildi': 'text-green bg-green-dim border-green/20',
-  'Kapandı': 'text-text-dim bg-surface2 border-border',
-  'kapandi': 'text-text-dim bg-surface2 border-border',
-  'Tamamlandı': 'text-text-dim bg-surface2 border-border',
-  'Anlaşma': 'text-green bg-green-dim border-green/20',
-  'Anlaşamama': 'text-red bg-red-dim border-red/20',
-  'Kazanıldı': 'text-green bg-green-dim border-green/20',
-  'Kaybedildi': 'text-red bg-red-dim border-red/20',
-  'Taslak': 'text-text-dim bg-surface2 border-border',
-};
 
 interface DosyaInfo {
   id: string;

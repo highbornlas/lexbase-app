@@ -14,26 +14,7 @@ import { exportDavaListeUYAPXLS } from '@/lib/export/excelExport';
 import { exportDavaListePDF } from '@/lib/export/pdfExport';
 import { SkeletonTable, SkeletonKPI } from '@/components/ui/SkeletonTable';
 import { CopyNo } from '@/components/ui/CopyNo';
-
-// ── Badge renk haritaları ────────────────────────────────────
-
-const ASAMA_RENK: Record<string, string> = {
-  'İlk Derece': 'text-blue-400 bg-blue-400/10',
-  'İstinaf': 'text-purple-400 bg-purple-400/10',
-  'Temyiz (Yargıtay)': 'text-orange-400 bg-orange-400/10',
-  'Temyiz (Danıştay)': 'text-orange-400 bg-orange-400/10',
-  'Kesinleşti': 'text-green bg-green-dim',
-  'Düşürüldü': 'text-text-dim bg-surface2',
-};
-
-const DURUM_RENK: Record<string, string> = {
-  'Derdest': 'text-green bg-green-dim border-green/20',
-  'Aktif': 'text-green bg-green-dim border-green/20', // legacy uyum
-  'Devam Ediyor': 'text-green bg-green-dim border-green/20',
-  'Hazırlık Aşamasında': 'text-gold bg-gold-dim border-gold/20',
-  'Beklemede': 'text-gold bg-gold-dim border-gold/20', // legacy uyum
-  'Kapalı': 'text-text-dim bg-surface2 border-border',
-};
+import { ASAMA_RENK, DURUM_RENK } from '@/lib/constants/ui';
 
 // ── Sıralama ─────────────────────────────────────────────────
 
