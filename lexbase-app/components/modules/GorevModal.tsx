@@ -14,6 +14,8 @@ import { usePersoneller } from '@/lib/hooks/usePersonel';
 import { useYetki } from '@/lib/hooks/useRol';
 import { createClient } from '@/lib/supabase/client';
 import { fmtTarih } from '@/lib/utils';
+import { gorevAtamaBildirimi } from '@/lib/utils/bildirimGonder';
+import { useBuroId } from '@/lib/hooks/useBuro';
 
 const VARSAYILAN_KATEGORILER = [
   'Duruşma',
@@ -95,6 +97,8 @@ export function GorevModal({ open, onClose, gorev, muvId }: GorevModalProps) {
   const { data: ihtarnameler } = useIhtarnameler();
   const { data: personeller } = usePersoneller();
 
+  const buroId = useBuroId();
+
   const { yetkili: ekleYetkisi } = useYetki('gorev:ekle');
   const { yetkili: duzenleYetkisi } = useYetki('gorev:duzenle');
   const { yetkili: silYetkisi } = useYetki('gorev:sil');
@@ -172,6 +176,19 @@ export function GorevModal({ open, onClose, gorev, muvId }: GorevModalProps) {
     setHata('');
     try {
       await kaydet.mutateAsync(form as Todo);
+
+      // Atanan kisi varsa ve kendimiz degilse bildirim gonder
+      if (form.atananId && form.atananId !== authIdRef.current && buroId) {
+        gorevAtamaBildirimi({
+          buroId,
+          atananAuthId: form.atananId,
+          gorevBaslik: form.baslik || 'Yeni gorev',
+          gorevId: form.id,
+        }).catch(() => {
+          // Bildirim gonderilemezse gorevi engelleme
+        });
+      }
+
       clearDraft();
       onClose();
     } catch {

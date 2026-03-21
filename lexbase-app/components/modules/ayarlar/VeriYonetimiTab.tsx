@@ -39,7 +39,7 @@ export function VeriYonetimiTab() {
 
     try {
       const supabase = createClient();
-      const tablolar = ['muvekkillar', 'karsi_taraflar', 'vekillar', 'davalar', 'icra', 'ihtarnameler', 'danismanliklar', 'arabuluculuklar', 'gorevler', 'etkinlikler', 'buro_giderleri'];
+      const tablolar = ['muvekkillar', 'karsi_taraflar', 'vekillar', 'davalar', 'icra', 'ihtarnameler', 'danismanliklar', 'arabuluculuklar', 'gorevler', 'etkinlikler', 'buro_giderleri', 'tahsilatlar'];
 
       const veri: Record<string, unknown[]> = {};
 

@@ -41,6 +41,7 @@ const bos: Partial<Dava> = {
   tarih: new Date().toISOString().split('T')[0],
   durusma: '',
   durusmaSaati: '',
+  durusmalar: [],
   deger: 0,
   karsi: '',
   karsiId: '',
@@ -115,6 +116,7 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
       if (!init.muvekkilTaraflar) init.muvekkilTaraflar = [];
       if (!init.karsiTaraflar) init.karsiTaraflar = [];
       if (!init.vekiller) init.vekiller = [];
+      if (!init.durusmalar) init.durusmalar = [];
       // Yargı türünü mtur'dan türet
       const bulunanTur = Object.entries(YARGI_BIRIMLERI).find(([, birimler]) =>
         birimler.some((b) => b === dava.mtur)
@@ -234,6 +236,7 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
   function adim1Dogrula(): boolean {
     if (!form.mtur) { setHata('Yargı birimi seçmelisiniz.'); return false; }
     if (!form.konu?.trim()) { setHata('Dava konusu zorunludur.'); return false; }
+    if (!form.muvekkilTaraflar?.length) { setHata('En az bir müvekkil taraf seçmelisiniz.'); return false; }
     if (form.durum === 'Kapalı' && !form.kapanisSebebi) { setHata('Kapanış sebebi seçmelisiniz.'); return false; }
     setHata('');
     return true;
@@ -288,6 +291,15 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
     // davaTuru'yu konu ile senkronize et (geriye uyum)
     if (!syncForm.davaTuru && syncForm.konu) {
       syncForm.davaTuru = syncForm.konu;
+    }
+    // Duruşmalar → legacy durusma alanına sync (sonraki gelecek duruşma)
+    const durusmalarArr = (syncForm.durusmalar || []) as Array<{ id: string; tarih: string; saat?: string }>;
+    if (durusmalarArr.length > 0) {
+      const bugun = new Date().toISOString().split('T')[0];
+      const gelecek = durusmalarArr.filter((d) => d.tarih >= bugun).sort((a, b) => a.tarih.localeCompare(b.tarih));
+      const sonraki = gelecek[0] || durusmalarArr[durusmalarArr.length - 1];
+      syncForm.durusma = sonraki.tarih;
+      syncForm.durusmaSaati = sonraki.saat || '';
     }
     try {
       await kaydet.mutateAsync(syncForm as Dava);
@@ -619,19 +631,62 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
               )}
             </div>
 
-            {/* Duruşma */}
+            {/* Duruşmalar & Değer */}
             <div className="border-t border-border/50 pt-4">
-              <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-3">Duruşma & Değer</div>
-              <div className="grid grid-cols-3 gap-4">
-                <FormGroup label="Duruşma Tarihi">
-                  <FormInput type="date" value={form.durusma || ''} onChange={(e) => handleChange('durusma', e.target.value)} />
-                </FormGroup>
-                <FormGroup label="Duruşma Saati">
-                  <FormSelect value={form.durusmaSaati || ''} onChange={(e) => handleChange('durusmaSaati', e.target.value)}>
-                    <option value="">Saat seçin</option>
-                    {DURUSMA_SAATLERI.map((s) => <option key={s} value={s}>{s}</option>)}
-                  </FormSelect>
-                </FormGroup>
+              <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-3">Duruşmalar & Değer</div>
+
+              {/* Mevcut duruşmalar listesi */}
+              {(form.durusmalar as Dava['durusmalar'] || []).length > 0 && (
+                <div className="space-y-1.5 mb-3">
+                  {(form.durusmalar as Dava['durusmalar'] || []).map((dur) => (
+                    <div key={dur.id} className="flex items-center gap-2 px-3 py-2 bg-surface2/50 rounded-lg text-xs">
+                      <span className="text-text font-medium">{dur.tarih}</span>
+                      {dur.saat && <span className="text-text-muted font-mono">{dur.saat}</span>}
+                      {dur.salon && <span className="text-text-dim">Salon: {dur.salon}</span>}
+                      {dur.hakim && <span className="text-text-dim">Hkm: {dur.hakim}</span>}
+                      <span className="flex-1" />
+                      <button type="button" onClick={() => {
+                        setForm((prev) => ({
+                          ...prev,
+                          durusmalar: ((prev.durusmalar as Dava['durusmalar']) || []).filter((d) => d.id !== dur.id),
+                        }));
+                      }} className="text-text-dim hover:text-red p-0.5" title="Kaldır">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Yeni duruşma ekleme */}
+              <DurusmaEkleRow onEkle={(dur) => {
+                setForm((prev) => ({
+                  ...prev,
+                  durusmalar: [...((prev.durusmalar as Dava['durusmalar']) || []), dur],
+                }));
+              }} />
+
+              {/* Legacy tek duruşma alanı (geriye uyumluluk) */}
+              {form.durusma && !(form.durusmalar as Dava['durusmalar'] || []).some((d) => d.tarih === form.durusma) && (
+                <div className="mt-2 px-3 py-2 bg-gold-dim/30 border border-gold/20 rounded-lg text-[11px] text-text-muted flex items-center gap-2">
+                  <span>Mevcut duruşma: {form.durusma} {form.durusmaSaati || ''}</span>
+                  <button type="button" onClick={() => {
+                    const yeniDur = {
+                      id: crypto.randomUUID(),
+                      tarih: form.durusma as string,
+                      saat: form.durusmaSaati || undefined,
+                    };
+                    setForm((prev) => ({
+                      ...prev,
+                      durusmalar: [...((prev.durusmalar as Dava['durusmalar']) || []), yeniDur],
+                      durusma: '',
+                      durusmaSaati: '',
+                    }));
+                  }} className="text-gold hover:underline font-semibold">Listeye Aktar</button>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 gap-4 mt-3">
                 <FormGroup label="Dava Değeri (TL)">
                   <FormInput type="number" value={form.deger || ''} onChange={(e) => handleChange('deger', Number(e.target.value))} placeholder="0" />
                 </FormGroup>
@@ -683,5 +738,57 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
         )}
       </div>
     </Modal>
+  );
+}
+
+// ── Duruşma Ekleme Satırı (DavaModal içi) ───────────────────
+function DurusmaEkleRow({ onEkle }: { onEkle: (d: { id: string; tarih: string; saat?: string; salon?: string; hakim?: string }) => void }) {
+  const [acik, setAcik] = useState(false);
+  const [tarih, setTarih] = useState('');
+  const [saat, setSaat] = useState('');
+  const [salon, setSalon] = useState('');
+  const [hakim, setHakim] = useState('');
+
+  function ekle() {
+    if (!tarih) return;
+    onEkle({ id: crypto.randomUUID(), tarih, saat: saat || undefined, salon: salon || undefined, hakim: hakim || undefined });
+    setTarih(''); setSaat(''); setSalon(''); setHakim('');
+    setAcik(false);
+  }
+
+  if (!acik) {
+    return (
+      <button type="button" onClick={() => setAcik(true)} className="flex items-center gap-1.5 text-xs text-gold hover:text-gold-light transition-colors">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+        Duruşma Ekle
+      </button>
+    );
+  }
+
+  return (
+    <div className="p-3 bg-surface2/50 border border-border rounded-xl space-y-2">
+      <div className="grid grid-cols-4 gap-2">
+        <div>
+          <label className="text-[10px] text-text-muted block mb-1">Tarih *</label>
+          <FormInput type="date" value={tarih} onChange={(e) => setTarih(e.target.value)} />
+        </div>
+        <div>
+          <label className="text-[10px] text-text-muted block mb-1">Saat</label>
+          <FormInput type="time" value={saat} onChange={(e) => setSaat(e.target.value)} />
+        </div>
+        <div>
+          <label className="text-[10px] text-text-muted block mb-1">Salon</label>
+          <FormInput value={salon} onChange={(e) => setSalon(e.target.value)} placeholder="Salon" />
+        </div>
+        <div>
+          <label className="text-[10px] text-text-muted block mb-1">Hakim</label>
+          <FormInput value={hakim} onChange={(e) => setHakim(e.target.value)} placeholder="Hakim" />
+        </div>
+      </div>
+      <div className="flex justify-end gap-2">
+        <BtnOutline onClick={() => setAcik(false)}>İptal</BtnOutline>
+        <BtnGold onClick={ekle} disabled={!tarih}>Ekle</BtnGold>
+      </div>
+    </div>
   );
 }

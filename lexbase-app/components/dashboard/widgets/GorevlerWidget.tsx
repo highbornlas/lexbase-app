@@ -24,8 +24,29 @@ export function GorevlerWidget({ gorevler }: GorevlerWidgetProps) {
 
   const buHaftaGorevler = useMemo(() => {
     if (!gorevler) return [];
+
+    // Bu haftanın Pazartesi ve Pazar tarihlerini hesapla
+    const bugun = new Date();
+    const gunSirasi = bugun.getDay(); // 0=Pazar, 1=Pazartesi...
+    const pazartesiFark = gunSirasi === 0 ? -6 : 1 - gunSirasi;
+    const pazartesi = new Date(bugun);
+    pazartesi.setDate(bugun.getDate() + pazartesiFark);
+    pazartesi.setHours(0, 0, 0, 0);
+    const pazar = new Date(pazartesi);
+    pazar.setDate(pazartesi.getDate() + 6);
+    pazar.setHours(23, 59, 59, 999);
+
+    const pazartesiStr = pazartesi.toISOString().split('T')[0];
+    const pazarStr = pazar.toISOString().split('T')[0];
+
     return gorevler
-      .filter((g) => g.durum !== 'Tamamlandı' && g.durum !== 'İptal')
+      .filter((g) => {
+        if (g.durum === 'Tamamlandı' || g.durum === 'İptal') return false;
+        const sonTarih = g.sonTarih as string | undefined;
+        // Son tarihi bu hafta içinde olan veya gecikmis (son tarihi pazartesiden once) gorevler
+        if (!sonTarih) return false;
+        return sonTarih <= pazarStr;
+      })
       .sort((a, b) => {
         if (a.oncelik === 'Yüksek' && b.oncelik !== 'Yüksek') return -1;
         if (b.oncelik === 'Yüksek' && a.oncelik !== 'Yüksek') return 1;

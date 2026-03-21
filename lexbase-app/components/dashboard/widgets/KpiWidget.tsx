@@ -54,11 +54,20 @@ export function KpiWidget({ muvekkillar, davalar, icralar, danismanliklar, arabu
     const bugun = new Date();
     const haftaSonu = new Date(bugun);
     haftaSonu.setDate(bugun.getDate() + 7);
-    const buHaftaDurusma = davalar?.filter((d) => {
-      if (!d.durusma) return false;
-      const t = new Date(d.durusma as string);
-      return t >= bugun && t <= haftaSonu;
-    }).length ?? 0;
+    let buHaftaDurusma = 0;
+    davalar?.forEach((d) => {
+      const durusmalar = d.durusmalar as Array<{ tarih: string }> | undefined;
+      if (durusmalar?.length) {
+        durusmalar.forEach((dur) => {
+          if (!dur.tarih) return;
+          const t = new Date(dur.tarih);
+          if (t >= bugun && t <= haftaSonu) buHaftaDurusma++;
+        });
+      } else if (d.durusma) {
+        const t = new Date(d.durusma as string);
+        if (t >= bugun && t <= haftaSonu) buHaftaDurusma++;
+      }
+    });
 
     // Bu ay tahsilat (tüm kaynaklardan)
     const buAy = bugun.getMonth();
@@ -106,14 +115,14 @@ export function KpiWidget({ muvekkillar, davalar, icralar, danismanliklar, arabu
       if (td.getMonth() === buAy && td.getFullYear() === buYil) buAyTahsilat += tutar;
     });
 
-    // Bekleyen alacak (masraf - tahsilat toplamı, pozitif = alacak)
-    let toplamMasraf = 0;
-    let toplamTahsilat = 0;
-    [...(davalar || []), ...(icralar || [])].forEach((d) => {
-      (d.tahsilatlar as Array<{ tutar: number }> | undefined)?.forEach((t) => { toplamTahsilat += (t.tutar || 0); });
-      (d.harcamalar as Array<{ tutar: number }> | undefined)?.forEach((h) => { toplamMasraf += (h.tutar || 0); });
+    // Bekleyen alacak: müvekkillerdeki cari bakiye toplamı (pozitif = alacak)
+    let bekleyenAlacak = 0;
+    (muvekkillar || []).forEach((m) => {
+      const bakiye = m.bakiye as Record<string, number> | undefined;
+      if (bakiye?.genelBakiye) {
+        bekleyenAlacak += bakiye.genelBakiye;
+      }
     });
-    const bekleyenAlacak = toplamMasraf - toplamTahsilat;
 
     return { muvSayi, muvGercek, muvTuzel, aktifDava, davaSayi, aktifIcra, icraSayi, buHaftaDurusma, buAyTahsilat, bekleyenAlacak };
   }, [muvekkillar, davalar, icralar, danismanliklar, arabuluculuklar, ihtarnameler]);

@@ -471,7 +471,7 @@ export default function IcraDetayPage({ params }: { params: Promise<{ id: string
 
         {/* Sekme İçeriği */}
         <div className="p-5">
-          {aktifTab === 'ozet' && <OzetTab icra={icra} muvAd={muvAd} daireAdi={daireAdi} taraflar={taraflar} esasNo={esasNo} hesap={hesap} itirazBilgi={itirazBilgi} iliskiliDava={iliskiliDava} onDuzenle={() => setDuzenleModu(true)} />}
+          {aktifTab === 'ozet' && <OzetTab icra={icra} muvAd={muvAd} daireAdi={daireAdi} taraflar={taraflar} esasNo={esasNo} hesap={hesap} itirazBilgi={itirazBilgi} iliskiliDava={iliskiliDava} onDuzenle={() => setDuzenleModu(true)} onUpdate={(guncel) => icraKaydet.mutate(guncel)} />}
           {aktifTab === 'evrak' && <DosyaEvrakTab dosyaId={id} dosyaTipi="icra" muvId={icra.muvId} />}
           {aktifTab === 'tebligatlar' && <TebligatlarTab icra={icra} onUpdate={(guncel) => icraKaydet.mutate(guncel)} />}
           {aktifTab === 'harcama' && (
@@ -548,7 +548,7 @@ export default function IcraDetayPage({ params }: { params: Promise<{ id: string
 // ══════════════════════════════════════════════════════════════
 
 function OzetTab({
-  icra, muvAd, daireAdi, taraflar, esasNo: esas, hesap, itirazBilgi, iliskiliDava, onDuzenle,
+  icra, muvAd, daireAdi, taraflar, esasNo: esas, hesap, itirazBilgi, iliskiliDava, onDuzenle, onUpdate,
 }: {
   icra: import('@/lib/hooks/useIcra').Icra;
   muvAd: string;
@@ -559,6 +559,7 @@ function OzetTab({
   itirazBilgi: { kalanGun: number; sonTarih: string; gecmis: boolean; acil: boolean } | null;
   iliskiliDava: import('@/lib/hooks/useDavalar').Dava | null;
   onDuzenle: () => void;
+  onUpdate: (icra: import('@/lib/hooks/useIcra').Icra) => void;
 }) {
   return (
     <div className="space-y-6">
@@ -625,6 +626,9 @@ function OzetTab({
         </div>
       )}
 
+      {/* Alacak Kalemleri */}
+      <AlacakKalemleriSection icra={icra} hesap={hesap} onUpdate={onUpdate} />
+
       {/* Finansal özet çizelgesi */}
       <div>
         <SectionHeader title="Finansal Durum" />
@@ -651,6 +655,15 @@ function OzetTab({
           </div>
         </div>
       </div>
+
+      {/* Haciz Takibi */}
+      <HacizTakibiSection icra={icra} onUpdate={onUpdate} />
+
+      {/* Odeme Plani */}
+      <OdemePlaniSection icra={icra} onUpdate={onUpdate} />
+
+      {/* Borclu Bilgileri */}
+      <BorcluBilgileriSection icra={icra} onUpdate={onUpdate} />
 
       {/* Notlar önizleme */}
       {icra.not && (
@@ -1383,6 +1396,599 @@ function TebligatlarTab({ icra, onUpdate }: { icra: import('@/lib/hooks/useIcra'
               {t.not && <div className="text-[11px] text-text-muted italic">{t.not}</div>}
             </div>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+//  ALACAK KALEMLERİ SEKSİYONU
+// ══════════════════════════════════════════════════════════════
+function AlacakKalemleriSection({ icra, hesap, onUpdate }: {
+  icra: import('@/lib/hooks/useIcra').Icra;
+  hesap: { tahsilat: number };
+  onUpdate: (icra: import('@/lib/hooks/useIcra').Icra) => void;
+}) {
+  const [duzenle, setDuzenle] = useState(false);
+  const k = icra.alacakKalemleri || {};
+  const [form, setForm] = useState({
+    asilAlacak: String(k.asilAlacak || ''),
+    islemisiFaiz: String(k.islemisiFaiz || ''),
+    davaMasrafi: String(k.davaMasrafi || ''),
+    vekaletUcreti: String(k.vekaletUcreti || ''),
+    icraHarci: String(k.icraHarci || ''),
+    digerMasraflar: String(k.digerMasraflar || ''),
+  });
+
+  useEffect(() => {
+    const kk = icra.alacakKalemleri || {};
+    setForm({
+      asilAlacak: String(kk.asilAlacak || ''),
+      islemisiFaiz: String(kk.islemisiFaiz || ''),
+      davaMasrafi: String(kk.davaMasrafi || ''),
+      vekaletUcreti: String(kk.vekaletUcreti || ''),
+      icraHarci: String(kk.icraHarci || ''),
+      digerMasraflar: String(kk.digerMasraflar || ''),
+    });
+  }, [icra.alacakKalemleri]);
+
+  const toplam = (Number(form.asilAlacak) || 0) + (Number(form.islemisiFaiz) || 0) + (Number(form.davaMasrafi) || 0) +
+    (Number(form.vekaletUcreti) || 0) + (Number(form.icraHarci) || 0) + (Number(form.digerMasraflar) || 0);
+  const mevcutToplam = (k.asilAlacak || 0) + (k.islemisiFaiz || 0) + (k.davaMasrafi || 0) +
+    (k.vekaletUcreti || 0) + (k.icraHarci || 0) + (k.digerMasraflar || 0);
+  const kalan = mevcutToplam - hesap.tahsilat;
+  const tahsilOran = mevcutToplam > 0 ? Math.min((hesap.tahsilat / mevcutToplam) * 100, 100) : 0;
+  const hasData = Object.values(k).some((v) => typeof v === 'number' && v > 0);
+
+  function handleKaydet() {
+    const yeni: typeof k = {};
+    if (form.asilAlacak) yeni.asilAlacak = Number(form.asilAlacak);
+    if (form.islemisiFaiz) yeni.islemisiFaiz = Number(form.islemisiFaiz);
+    if (form.davaMasrafi) yeni.davaMasrafi = Number(form.davaMasrafi);
+    if (form.vekaletUcreti) yeni.vekaletUcreti = Number(form.vekaletUcreti);
+    if (form.icraHarci) yeni.icraHarci = Number(form.icraHarci);
+    if (form.digerMasraflar) yeni.digerMasraflar = Number(form.digerMasraflar);
+    onUpdate({ ...icra, alacakKalemleri: yeni });
+    setDuzenle(false);
+  }
+
+  const KALEMLER: { key: keyof typeof form; label: string }[] = [
+    { key: 'asilAlacak', label: 'Asil Alacak' },
+    { key: 'islemisiFaiz', label: 'Islemis Faiz' },
+    { key: 'davaMasrafi', label: 'Dava Masrafi' },
+    { key: 'vekaletUcreti', label: 'Vekalet Ucreti' },
+    { key: 'icraHarci', label: 'Icra Harci' },
+    { key: 'digerMasraflar', label: 'Diger Masraflar' },
+  ];
+
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <SectionHeader title="Alacak Kalemleri" />
+        <button onClick={() => setDuzenle(!duzenle)} className="text-xs px-3 py-1.5 rounded-lg bg-gold/10 text-gold border border-gold/20 hover:bg-gold/20 transition-colors flex items-center gap-1.5">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          {duzenle ? 'Iptal' : 'Duzenle'}
+        </button>
+      </div>
+      <div className="mt-3 bg-surface2/50 rounded-xl border border-border/50 p-4">
+        {duzenle ? (
+          <div className="space-y-3">
+            <div className="grid grid-cols-3 gap-3">
+              {KALEMLER.map((kl) => (
+                <div key={kl.key}>
+                  <label className="text-[10px] text-text-muted block mb-1">{kl.label} (TL)</label>
+                  <input type="number" value={form[kl.key]} onChange={(e) => setForm((p) => ({ ...p, [kl.key]: e.target.value }))}
+                    placeholder="0" className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold" />
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between pt-2 border-t border-border/50">
+              <div className="text-xs text-text-muted">Toplam: <span className="font-bold text-gold">{fmt(toplam)}</span></div>
+              <button onClick={handleKaydet} className="px-4 py-1.5 bg-gold text-bg text-xs font-semibold rounded-lg hover:bg-gold-light transition-colors">Kaydet</button>
+            </div>
+          </div>
+        ) : hasData ? (
+          <div className="space-y-3">
+            <div className="grid grid-cols-3 gap-3">
+              {k.asilAlacak ? <InfoRow label="Asil Alacak" value={fmt(k.asilAlacak)} /> : null}
+              {k.islemisiFaiz ? <InfoRow label="Islemis Faiz" value={fmt(k.islemisiFaiz)} /> : null}
+              {k.davaMasrafi ? <InfoRow label="Dava Masrafi" value={fmt(k.davaMasrafi)} /> : null}
+              {k.vekaletUcreti ? <InfoRow label="Vekalet Ucreti" value={fmt(k.vekaletUcreti)} /> : null}
+              {k.icraHarci ? <InfoRow label="Icra Harci" value={fmt(k.icraHarci)} /> : null}
+              {k.digerMasraflar ? <InfoRow label="Diger Masraflar" value={fmt(k.digerMasraflar)} /> : null}
+            </div>
+            <div className="border-t border-border/50 pt-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-text-muted">Toplam Alacak: <span className="font-bold text-gold">{fmt(mevcutToplam)}</span></span>
+                <span className="text-xs text-text-muted">Tahsil: <span className="font-bold text-green">{fmt(hesap.tahsilat)}</span> / Kalan: <span className="font-bold text-red">{fmt(Math.max(kalan, 0))}</span></span>
+              </div>
+              <div className="h-2 bg-surface2 rounded-full overflow-hidden">
+                <div className={`h-full rounded-full transition-all ${tahsilOran >= 100 ? 'bg-green' : tahsilOran > 50 ? 'bg-gold' : 'bg-red'}`}
+                  style={{ width: `${Math.min(tahsilOran, 100)}%` }} />
+              </div>
+              <div className="text-right mt-1 text-[10px] text-text-dim">%{tahsilOran.toFixed(1)} tahsil edildi</div>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-4 text-xs text-text-dim">
+            Alacak kalemleri henuz girilmemis.
+            <button onClick={() => setDuzenle(true)} className="text-gold hover:underline ml-1">Ekle</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+//  HACİZ TAKİBİ SEKSİYONU
+// ══════════════════════════════════════════════════════════════
+const HACIZ_TUR_IKON: Record<string, string> = {
+  banka: '\u{1F3E6}', maas: '\u{1F4B0}', tasinir: '\u{1F4E6}', tasinmaz: '\u{1F3E0}', arac: '\u{1F697}', diger: '\u{1F4CB}',
+};
+const HACIZ_TUR_LABEL: Record<string, string> = {
+  banka: 'Banka Haczi', maas: 'Maas Haczi', tasinir: 'Tasinir Haczi', tasinmaz: 'Tasinmaz Haczi', arac: 'Arac Haczi', diger: 'Diger',
+};
+const HACIZ_DURUM_RENK: Record<string, string> = {
+  talep_edildi: 'bg-yellow-400/10 text-yellow-400 border-yellow-400/20',
+  uygulandi: 'bg-green-dim text-green border-green/20',
+  kaldirildi: 'bg-surface2 text-text-dim border-border',
+  sonucsuz: 'bg-red-dim text-red border-red/20',
+};
+const HACIZ_DURUM_LABEL: Record<string, string> = {
+  talep_edildi: 'Talep Edildi', uygulandi: 'Uygulandi', kaldirildi: 'Kaldirildi', sonucsuz: 'Sonucsuz',
+};
+
+type HacizKaydi = NonNullable<import('@/lib/hooks/useIcra').Icra['hacizler']>[number];
+
+function HacizTakibiSection({ icra, onUpdate }: {
+  icra: import('@/lib/hooks/useIcra').Icra;
+  onUpdate: (icra: import('@/lib/hooks/useIcra').Icra) => void;
+}) {
+  const [formAcik, setFormAcik] = useState(false);
+  const [yeni, setYeni] = useState<Partial<HacizKaydi>>({
+    tur: 'banka', tarih: new Date().toISOString().split('T')[0], aciklama: '', kurum: '', durum: 'talep_edildi',
+  });
+
+  const hacizler = icra.hacizler || [];
+
+  function handleEkle() {
+    if (!yeni.aciklama?.trim()) return;
+    const kayit: HacizKaydi = {
+      id: crypto.randomUUID(),
+      tarih: yeni.tarih || new Date().toISOString().split('T')[0],
+      tur: (yeni.tur as HacizKaydi['tur']) || 'diger',
+      aciklama: yeni.aciklama || '',
+      kurum: yeni.kurum || undefined,
+      tutar: yeni.tutar || undefined,
+      durum: (yeni.durum as HacizKaydi['durum']) || 'talep_edildi',
+    };
+    onUpdate({ ...icra, hacizler: [...hacizler, kayit] });
+    setYeni({ tur: 'banka', tarih: new Date().toISOString().split('T')[0], aciklama: '', kurum: '', durum: 'talep_edildi' });
+    setFormAcik(false);
+  }
+
+  function handleDurumDegistir(hacizId: string, yeniDurum: HacizKaydi['durum']) {
+    onUpdate({ ...icra, hacizler: hacizler.map((h) => h.id === hacizId ? { ...h, durum: yeniDurum } : h) });
+  }
+
+  function handleSil(hacizId: string) {
+    onUpdate({ ...icra, hacizler: hacizler.filter((h) => h.id !== hacizId) });
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <SectionHeader title="Haciz Takibi" />
+        <button onClick={() => setFormAcik(!formAcik)} className="px-3 py-1.5 bg-gold text-bg font-semibold rounded-lg text-xs hover:bg-gold-light transition-colors">
+          {formAcik ? 'Iptal' : '+ Yeni Haciz Ekle'}
+        </button>
+      </div>
+
+      {formAcik && (
+        <div className="mt-3 bg-surface2/50 border border-border rounded-xl p-4 space-y-3">
+          <div className="text-[11px] font-bold text-text-muted uppercase tracking-wider">Yeni Haciz Kaydi</div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-[10px] text-text-muted block mb-1">Haciz Turu *</label>
+              <select value={yeni.tur || 'banka'} onChange={(e) => setYeni((p) => ({ ...p, tur: e.target.value as HacizKaydi['tur'] }))}
+                className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold">
+                {Object.entries(HACIZ_TUR_LABEL).map(([v, l]) => <option key={v} value={v}>{HACIZ_TUR_IKON[v]} {l}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] text-text-muted block mb-1">Tarih</label>
+              <input type="date" value={yeni.tarih || ''} onChange={(e) => setYeni((p) => ({ ...p, tarih: e.target.value }))}
+                className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold" />
+            </div>
+            <div>
+              <label className="text-[10px] text-text-muted block mb-1">Durum</label>
+              <select value={yeni.durum || 'talep_edildi'} onChange={(e) => setYeni((p) => ({ ...p, durum: e.target.value as HacizKaydi['durum'] }))}
+                className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold">
+                {Object.entries(HACIZ_DURUM_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] text-text-muted block mb-1">Kurum / Banka</label>
+              <input type="text" value={yeni.kurum || ''} onChange={(e) => setYeni((p) => ({ ...p, kurum: e.target.value }))}
+                placeholder="Banka adi, isveren vs." className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text placeholder:text-text-dim focus:outline-none focus:border-gold" />
+            </div>
+            <div>
+              <label className="text-[10px] text-text-muted block mb-1">Tutar (TL)</label>
+              <input type="number" value={yeni.tutar || ''} onChange={(e) => setYeni((p) => ({ ...p, tutar: Number(e.target.value) || undefined }))}
+                placeholder="0" className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold" />
+            </div>
+            <div>
+              <label className="text-[10px] text-text-muted block mb-1">Aciklama *</label>
+              <input type="text" value={yeni.aciklama || ''} onChange={(e) => setYeni((p) => ({ ...p, aciklama: e.target.value }))}
+                placeholder="Haciz aciklamasi" className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text placeholder:text-text-dim focus:outline-none focus:border-gold" />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <button onClick={handleEkle} disabled={!yeni.aciklama?.trim()} className="px-4 py-1.5 bg-gold text-bg text-xs font-semibold rounded-lg hover:bg-gold-light transition-colors disabled:opacity-40">Kaydet</button>
+          </div>
+        </div>
+      )}
+
+      <div className="mt-3">
+        {hacizler.length === 0 && !formAcik ? (
+          <div className="text-center py-6 bg-surface2/30 rounded-xl border border-border/30">
+            <div className="text-2xl mb-2">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-text-dim mx-auto"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            </div>
+            <div className="text-xs text-text-dim">Henuz haciz kaydi yok</div>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {hacizler.map((h) => (
+              <div key={h.id} className="flex items-center gap-3 p-3 bg-surface2/50 rounded-lg text-xs group hover:bg-surface2 transition-colors">
+                <span className="text-lg flex-shrink-0" title={HACIZ_TUR_LABEL[h.tur] || h.tur}>{HACIZ_TUR_IKON[h.tur] || '\u{1F4CB}'}</span>
+                <span className="text-text-dim w-20 flex-shrink-0">{fmtTarih(h.tarih)}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-text font-medium truncate">{h.aciklama}</div>
+                  {h.kurum && <div className="text-[10px] text-text-muted">{h.kurum}</div>}
+                </div>
+                {h.tutar != null && h.tutar > 0 && <span className="font-bold text-text flex-shrink-0">{fmt(h.tutar)}</span>}
+                <select value={h.durum} onChange={(e) => handleDurumDegistir(h.id, e.target.value as HacizKaydi['durum'])}
+                  className={`text-[10px] font-bold px-2 py-1 rounded-full border flex-shrink-0 bg-transparent cursor-pointer focus:outline-none ${HACIZ_DURUM_RENK[h.durum] || ''}`}>
+                  {Object.entries(HACIZ_DURUM_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+                <button onClick={() => handleSil(h.id)} className="text-text-dim hover:text-red transition-colors opacity-0 group-hover:opacity-100 p-1 flex-shrink-0" title="Sil">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+//  ODEME PLANI SEKSİYONU
+// ══════════════════════════════════════════════════════════════
+function OdemePlaniSection({ icra, onUpdate }: {
+  icra: import('@/lib/hooks/useIcra').Icra;
+  onUpdate: (icra: import('@/lib/hooks/useIcra').Icra) => void;
+}) {
+  const plan = icra.odemePlani;
+  const [setupAcik, setSetupAcik] = useState(false);
+  const [form, setForm] = useState({
+    toplamTutar: String(plan?.toplamTutar || icra.alacak || ''),
+    taksitSayisi: String(plan?.taksitSayisi || '6'),
+    baslangicTarihi: plan?.baslangicTarihi || new Date().toISOString().split('T')[0],
+  });
+
+  function handlePlanOlustur() {
+    const toplamTutar = Number(form.toplamTutar) || 0;
+    const taksitSayisi = Number(form.taksitSayisi) || 1;
+    if (toplamTutar <= 0 || taksitSayisi <= 0) return;
+    const taksitTutar = Math.round((toplamTutar / taksitSayisi) * 100) / 100;
+    const taksitler: NonNullable<import('@/lib/hooks/useIcra').Icra['odemePlani']>['taksitler'] = [];
+    const baslangic = new Date(form.baslangicTarihi);
+    for (let i = 0; i < taksitSayisi; i++) {
+      const vade = new Date(baslangic);
+      vade.setMonth(vade.getMonth() + i);
+      const tutar = i === taksitSayisi - 1 ? Math.round((toplamTutar - taksitTutar * (taksitSayisi - 1)) * 100) / 100 : taksitTutar;
+      taksitler.push({
+        id: crypto.randomUUID(),
+        no: i + 1,
+        vadeTarihi: vade.toISOString().split('T')[0],
+        tutar,
+        odpiYapildiMi: false,
+      });
+    }
+    onUpdate({
+      ...icra,
+      odemePlani: { aktif: true, toplamTutar, taksitSayisi, baslangicTarihi: form.baslangicTarihi, taksitler },
+    });
+    setSetupAcik(false);
+  }
+
+  function handleToggleAktif() {
+    if (plan) {
+      onUpdate({ ...icra, odemePlani: { ...plan, aktif: !plan.aktif } });
+    }
+  }
+
+  function handleTaksitOde(taksitId: string, odendi: boolean) {
+    if (!plan) return;
+    const guncelTaksitler = plan.taksitler.map((t) =>
+      t.id === taksitId ? { ...t, odpiYapildiMi: odendi, odemeTarihi: odendi ? new Date().toISOString().split('T')[0] : undefined } : t
+    );
+    onUpdate({ ...icra, odemePlani: { ...plan, taksitler: guncelTaksitler } });
+  }
+
+  function handlePlanSil() {
+    onUpdate({ ...icra, odemePlani: undefined });
+  }
+
+  const odenmisTaksit = plan?.taksitler.filter((t) => t.odpiYapildiMi).length || 0;
+  const toplamTaksit = plan?.taksitler.length || 0;
+  const bugun = new Date().toISOString().split('T')[0];
+
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <SectionHeader title="Odeme Plani" />
+        {!plan ? (
+          <button onClick={() => setSetupAcik(!setupAcik)} className="px-3 py-1.5 bg-gold text-bg font-semibold rounded-lg text-xs hover:bg-gold-light transition-colors">
+            {setupAcik ? 'Iptal' : '+ Odeme Plani Olustur'}
+          </button>
+        ) : (
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-2 text-xs text-text-muted cursor-pointer">
+              <input type="checkbox" checked={plan.aktif} onChange={handleToggleAktif}
+                className="rounded border-border text-gold focus:ring-gold" />
+              Aktif
+            </label>
+            <button onClick={handlePlanSil} className="text-xs text-red hover:underline">Plani Sil</button>
+          </div>
+        )}
+      </div>
+
+      {setupAcik && !plan && (
+        <div className="mt-3 bg-surface2/50 border border-border rounded-xl p-4 space-y-3">
+          <div className="text-[11px] font-bold text-text-muted uppercase tracking-wider">Yeni Odeme Plani</div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-[10px] text-text-muted block mb-1">Toplam Tutar (TL) *</label>
+              <input type="number" value={form.toplamTutar} onChange={(e) => setForm((p) => ({ ...p, toplamTutar: e.target.value }))}
+                className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold" />
+            </div>
+            <div>
+              <label className="text-[10px] text-text-muted block mb-1">Taksit Sayisi *</label>
+              <input type="number" value={form.taksitSayisi} onChange={(e) => setForm((p) => ({ ...p, taksitSayisi: e.target.value }))}
+                className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold" />
+            </div>
+            <div>
+              <label className="text-[10px] text-text-muted block mb-1">Baslangic Tarihi</label>
+              <input type="date" value={form.baslangicTarihi} onChange={(e) => setForm((p) => ({ ...p, baslangicTarihi: e.target.value }))}
+                className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold" />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <button onClick={handlePlanOlustur} disabled={!form.toplamTutar || !form.taksitSayisi}
+              className="px-4 py-1.5 bg-gold text-bg text-xs font-semibold rounded-lg hover:bg-gold-light transition-colors disabled:opacity-40">Plan Olustur</button>
+          </div>
+        </div>
+      )}
+
+      {plan && (
+        <div className="mt-3 bg-surface2/50 rounded-xl border border-border/50 p-4 space-y-3">
+          {/* İlerleme */}
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-text-muted">Toplam: <span className="font-bold text-gold">{fmt(plan.toplamTutar)}</span></span>
+            <span className="text-text-muted">{odenmisTaksit}/{toplamTaksit} taksit odendi</span>
+          </div>
+          <div className="h-2 bg-surface2 rounded-full overflow-hidden">
+            <div className={`h-full rounded-full transition-all ${odenmisTaksit >= toplamTaksit ? 'bg-green' : 'bg-gold'}`}
+              style={{ width: `${toplamTaksit > 0 ? (odenmisTaksit / toplamTaksit) * 100 : 0}%` }} />
+          </div>
+
+          {/* Taksit listesi */}
+          <div className="space-y-1.5 max-h-[300px] overflow-y-auto">
+            {plan.taksitler.map((t) => {
+              const gecmis = !t.odpiYapildiMi && t.vadeTarihi < bugun;
+              const siradaki = !t.odpiYapildiMi && !gecmis && t.vadeTarihi >= bugun &&
+                !plan.taksitler.some((x) => !x.odpiYapildiMi && x.vadeTarihi < t.vadeTarihi && x.vadeTarihi >= bugun);
+              return (
+                <div key={t.id} className={`flex items-center gap-3 p-2.5 rounded-lg text-xs transition-colors ${
+                  t.odpiYapildiMi ? 'bg-green/5 border border-green/10' :
+                  gecmis ? 'bg-red/5 border border-red/20' :
+                  siradaki ? 'bg-gold/5 border border-gold/20' :
+                  'bg-surface border border-border/30'
+                }`}>
+                  <label className="flex items-center gap-2 cursor-pointer flex-shrink-0">
+                    <input type="checkbox" checked={t.odpiYapildiMi} onChange={(e) => handleTaksitOde(t.id, e.target.checked)}
+                      className="rounded border-border text-gold focus:ring-gold" />
+                    <span className="text-text-dim w-6 text-right font-mono">{t.no}.</span>
+                  </label>
+                  <span className="text-text-muted w-24 flex-shrink-0">{fmtTarih(t.vadeTarihi)}</span>
+                  <span className="font-bold text-text flex-1">{fmt(t.tutar)}</span>
+                  {t.odpiYapildiMi && t.odemeTarihi && (
+                    <span className="text-[10px] text-green flex-shrink-0">Odeme: {fmtTarih(t.odemeTarihi)}</span>
+                  )}
+                  {gecmis && <span className="text-[10px] font-bold text-red flex-shrink-0">Gecikti</span>}
+                  {siradaki && <span className="text-[10px] font-bold text-gold flex-shrink-0">Siradaki</span>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {!plan && !setupAcik && (
+        <div className="mt-3 text-center py-6 bg-surface2/30 rounded-xl border border-border/30">
+          <div className="text-xs text-text-dim">Odeme plani tanimlanmamis</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
+//  BORCLU BİLGİLERİ SEKSİYONU
+// ══════════════════════════════════════════════════════════════
+function BorcluBilgileriSection({ icra, onUpdate }: {
+  icra: import('@/lib/hooks/useIcra').Icra;
+  onUpdate: (icra: import('@/lib/hooks/useIcra').Icra) => void;
+}) {
+  const [acik, setAcik] = useState(false);
+  const [duzenle, setDuzenle] = useState(false);
+  const det = icra.borcluDetay || {};
+  const [form, setForm] = useState({
+    tcVkn: det.tcVkn || '',
+    adres: det.adres || '',
+    isveren: det.isveren || '',
+    isverenAdres: det.isverenAdres || '',
+    bankaHesaplari: (det.bankaHesaplari || []).join('\n'),
+    aracPlakalari: (det.aracPlakalari || []).join('\n'),
+    tasinmazlar: (det.tasinmazlar || []).join('\n'),
+  });
+
+  useEffect(() => {
+    const d = icra.borcluDetay || {};
+    setForm({
+      tcVkn: d.tcVkn || '',
+      adres: d.adres || '',
+      isveren: d.isveren || '',
+      isverenAdres: d.isverenAdres || '',
+      bankaHesaplari: (d.bankaHesaplari || []).join('\n'),
+      aracPlakalari: (d.aracPlakalari || []).join('\n'),
+      tasinmazlar: (d.tasinmazlar || []).join('\n'),
+    });
+  }, [icra.borcluDetay]);
+
+  const hasData = det.tcVkn || det.adres || det.isveren || (det.bankaHesaplari || []).length > 0 || (det.aracPlakalari || []).length > 0 || (det.tasinmazlar || []).length > 0;
+
+  function handleKaydet() {
+    const yeni: NonNullable<import('@/lib/hooks/useIcra').Icra['borcluDetay']> = {};
+    if (form.tcVkn.trim()) yeni.tcVkn = form.tcVkn.trim();
+    if (form.adres.trim()) yeni.adres = form.adres.trim();
+    if (form.isveren.trim()) yeni.isveren = form.isveren.trim();
+    if (form.isverenAdres.trim()) yeni.isverenAdres = form.isverenAdres.trim();
+    const bh = form.bankaHesaplari.split('\n').map((s) => s.trim()).filter(Boolean);
+    if (bh.length) yeni.bankaHesaplari = bh;
+    const ap = form.aracPlakalari.split('\n').map((s) => s.trim()).filter(Boolean);
+    if (ap.length) yeni.aracPlakalari = ap;
+    const tm = form.tasinmazlar.split('\n').map((s) => s.trim()).filter(Boolean);
+    if (tm.length) yeni.tasinmazlar = tm;
+    onUpdate({ ...icra, borcluDetay: yeni });
+    setDuzenle(false);
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <button onClick={() => setAcik(!acik)} className="flex items-center gap-2 group">
+          <SectionHeader title="Borclu Bilgileri" />
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+            className={`text-text-dim transition-transform ${acik ? 'rotate-180' : ''}`}><path d="M6 9l6 6 6-6"/></svg>
+          {hasData && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gold/10 text-gold border border-gold/20">Bilgi var</span>}
+        </button>
+        {acik && (
+          <button onClick={() => setDuzenle(!duzenle)} className="text-xs px-3 py-1.5 rounded-lg bg-gold/10 text-gold border border-gold/20 hover:bg-gold/20 transition-colors flex items-center gap-1.5">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            {duzenle ? 'Iptal' : 'Duzenle'}
+          </button>
+        )}
+      </div>
+
+      {acik && (
+        <div className="mt-3 bg-surface2/50 rounded-xl border border-border/50 p-4">
+          {duzenle ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] text-text-muted block mb-1">TC / VKN</label>
+                  <input type="text" value={form.tcVkn} onChange={(e) => setForm((p) => ({ ...p, tcVkn: e.target.value }))}
+                    placeholder="TC Kimlik No veya VKN" className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text placeholder:text-text-dim focus:outline-none focus:border-gold" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-text-muted block mb-1">Isveren</label>
+                  <input type="text" value={form.isveren} onChange={(e) => setForm((p) => ({ ...p, isveren: e.target.value }))}
+                    placeholder="Isveren adi" className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text placeholder:text-text-dim focus:outline-none focus:border-gold" />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-[10px] text-text-muted block mb-1">Adres</label>
+                  <input type="text" value={form.adres} onChange={(e) => setForm((p) => ({ ...p, adres: e.target.value }))}
+                    placeholder="Borclu adresi" className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text placeholder:text-text-dim focus:outline-none focus:border-gold" />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-[10px] text-text-muted block mb-1">Isveren Adres</label>
+                  <input type="text" value={form.isverenAdres} onChange={(e) => setForm((p) => ({ ...p, isverenAdres: e.target.value }))}
+                    placeholder="Isveren adresi" className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text placeholder:text-text-dim focus:outline-none focus:border-gold" />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-[10px] text-text-muted block mb-1">Banka Hesaplari (satir satir)</label>
+                  <textarea value={form.bankaHesaplari} onChange={(e) => setForm((p) => ({ ...p, bankaHesaplari: e.target.value }))}
+                    rows={3} placeholder="Her satira bir hesap..." className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text placeholder:text-text-dim focus:outline-none focus:border-gold resize-none" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-text-muted block mb-1">Arac Plakalari (satir satir)</label>
+                  <textarea value={form.aracPlakalari} onChange={(e) => setForm((p) => ({ ...p, aracPlakalari: e.target.value }))}
+                    rows={3} placeholder="Her satira bir plaka..." className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text placeholder:text-text-dim focus:outline-none focus:border-gold resize-none" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-text-muted block mb-1">Tasinmazlar (satir satir)</label>
+                  <textarea value={form.tasinmazlar} onChange={(e) => setForm((p) => ({ ...p, tasinmazlar: e.target.value }))}
+                    rows={3} placeholder="Her satira bir tasinmaz..." className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text placeholder:text-text-dim focus:outline-none focus:border-gold resize-none" />
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <button onClick={handleKaydet} className="px-4 py-1.5 bg-gold text-bg text-xs font-semibold rounded-lg hover:bg-gold-light transition-colors">Kaydet</button>
+              </div>
+            </div>
+          ) : hasData ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                {det.tcVkn && <InfoRow label="TC / VKN" value={det.tcVkn} />}
+                {det.isveren && <InfoRow label="Isveren" value={det.isveren} />}
+                {det.adres && <InfoRow label="Adres" value={det.adres} />}
+                {det.isverenAdres && <InfoRow label="Isveren Adres" value={det.isverenAdres} />}
+              </div>
+              {(det.bankaHesaplari || []).length > 0 && (
+                <div>
+                  <div className="text-[10px] text-text-dim uppercase tracking-wider mb-1">Banka Hesaplari</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {det.bankaHesaplari!.map((h, i) => (
+                      <span key={i} className="px-2 py-0.5 bg-surface rounded text-[10px] text-text-muted border border-border/50">{h}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {(det.aracPlakalari || []).length > 0 && (
+                <div>
+                  <div className="text-[10px] text-text-dim uppercase tracking-wider mb-1">Arac Plakalari</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {det.aracPlakalari!.map((p, i) => (
+                      <span key={i} className="px-2 py-0.5 bg-surface rounded text-[10px] text-text-muted border border-border/50">{p}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {(det.tasinmazlar || []).length > 0 && (
+                <div>
+                  <div className="text-[10px] text-text-dim uppercase tracking-wider mb-1">Tasinmazlar</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {det.tasinmazlar!.map((t, i) => (
+                      <span key={i} className="px-2 py-0.5 bg-surface rounded text-[10px] text-text-muted border border-border/50">{t}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-4 text-xs text-text-dim">
+              Borclu detay bilgisi girilmemis.
+              <button onClick={() => setDuzenle(true)} className="text-gold hover:underline ml-1">Bilgi Ekle</button>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -1,17 +1,18 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { use, useState, useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { usePersoneller, type Personel } from '@/lib/hooks/usePersonel';
+import { usePersonel, usePersoneller, usePersonelSil, type Personel } from '@/lib/hooks/usePersonel';
 import { useTodolar, type Todo } from '@/lib/hooks/useTodolar';
 import { useDavalar } from '@/lib/hooks/useDavalar';
+import { useIcralar } from '@/lib/hooks/useIcra';
 import { useYetki } from '@/lib/hooks/useRol';
 import { PersonelModal } from '@/components/modules/PersonelModal';
+import { fmtTarih } from '@/lib/utils';
 
 /* ══════════════════════════════════════════════════════════════
-   Personel Detay Sayfası — FAZ P3
-   Sekmeler: Özet, Dosyalar, Görevler, Yetkiler
+   Personel Detay Sayfasi
    ══════════════════════════════════════════════════════════════ */
 
 const ROL_RENK: Record<string, { bg: string; text: string; label: string; icon: string }> = {
@@ -28,25 +29,36 @@ const DURUM_BADGE: Record<string, { label: string; renk: string; bg: string }> =
   pasif: { label: 'Pasif', renk: 'text-text-dim', bg: 'bg-surface2 border-border' },
 };
 
-type Sekme = 'ozet' | 'dosyalar' | 'gorevler' | 'yetkiler';
+const ONCELIK_RENK: Record<string, string> = {
+  'Yüksek': 'text-red bg-red-dim border-red/20',
+  'Orta': 'text-gold bg-gold-dim border-gold/20',
+  'Düşük': 'text-blue-400 bg-blue-400/10 border-blue-400/20',
+};
 
-export default function PersonelDetayPage() {
-  const { id } = useParams<{ id: string }>();
+type GorevFiltre = 'aktif' | 'gecikmis' | 'tamamlanan';
+
+export default function PersonelDetayPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const router = useRouter();
-  const { data: personeller, isLoading } = usePersoneller();
+
+  /* ── Veri Hook'lari ── */
+  const { data: personel, isLoading } = usePersonel(id);
   const { data: gorevler } = useTodolar();
   const { data: davalar } = useDavalar();
+  const { data: icralar } = useIcralar();
   const { yetkili: yoneticiMi } = useYetki('kullanici:yonet');
-  const [sekme, setSekme] = useState<Sekme>('ozet');
+  const silMut = usePersonelSil();
+
+  /* ── UI State ── */
   const [modalAcik, setModalAcik] = useState(false);
+  const [gorevFiltre, setGorevFiltre] = useState<GorevFiltre>('aktif');
 
-  const personel = useMemo(() => personeller?.find((p) => p.id === id), [personeller, id]);
-
+  /* ── Title ── */
   useEffect(() => {
     if (personel) document.title = `${personel.ad || 'Personel'} | LexBase`;
   }, [personel]);
 
-  // Personelin görevleri
+  /* ── Personelin Gorevleri ── */
   const personelGorevleri = useMemo(() => {
     if (!gorevler || !personel) return [];
     const ad = (personel.ad || '').toLocaleLowerCase('tr');
@@ -55,34 +67,99 @@ export default function PersonelDetayPage() {
     );
   }, [gorevler, personel, id]);
 
-  // Personelin dosyaları
-  const personelDosyalari = useMemo(() => {
+  /* ── Personelin Dosyalari (Dava + Icra) ── */
+  const personelDavalari = useMemo(() => {
     if (!davalar || !personel) return [];
     const ad = (personel.ad || '').toLocaleLowerCase('tr');
     return davalar.filter((d) => {
       const sorumlu = ((d as Record<string, unknown>).sorumlu_avukat || (d as Record<string, unknown>).sorumlu || '') as string;
-      return sorumlu === id || sorumlu.toLocaleLowerCase('tr') === ad;
+      // Vekiller dizisinde de kontrol et
+      const vekiller = (d.vekiller || []) as Array<{ id: string; ad: string }>;
+      const vekilMatch = vekiller.some((v) => v.id === id || v.ad.toLocaleLowerCase('tr') === ad);
+      return sorumlu === id || sorumlu.toLocaleLowerCase('tr') === ad || vekilMatch;
     });
   }, [davalar, personel, id]);
 
-  // İstatistikler
+  const personelIcralari = useMemo(() => {
+    if (!icralar || !personel) return [];
+    const ad = (personel.ad || '').toLocaleLowerCase('tr');
+    return (icralar as Record<string, unknown>[]).filter((ic) => {
+      const sorumlu = ((ic).sorumlu_avukat || (ic).sorumlu || '') as string;
+      return sorumlu === id || sorumlu.toLocaleLowerCase('tr') === ad;
+    });
+  }, [icralar, personel, id]);
+
+  /* ── Istatistikler ── */
   const stats = useMemo(() => {
     const aktifGorev = personelGorevleri.filter((g) => g.durum !== 'Tamamlandı' && g.durum !== 'İptal');
-    const gecikmiş = aktifGorev.filter((g) => g.sonTarih && new Date(g.sonTarih) < new Date());
-    const tamamlanan = personelGorevleri.filter((g) => g.durum === 'Tamamlandı');
-    const aktifDosya = personelDosyalari.filter((d) => d.durum === 'Derdest' || d.durum === 'Aktif' || d.durum === 'Devam Ediyor');
+    const gecikmisSayisi = aktifGorev.filter((g) => g.sonTarih && new Date(g.sonTarih) < new Date()).length;
+    const tamamlananSayisi = personelGorevleri.filter((g) => g.durum === 'Tamamlandı').length;
+    const toplamGorev = personelGorevleri.length;
+    const tamamlanmaOrani = toplamGorev > 0 ? Math.round((tamamlananSayisi / toplamGorev) * 100) : 0;
+
+    const aktifDosya = personelDavalari.filter((d) =>
+      ['Derdest', 'Aktif', 'Devam Ediyor'].includes(d.durum || '')
+    ).length + personelIcralari.filter((ic) =>
+      ['Aktif', 'Devam Ediyor'].includes((ic.durum as string) || '')
+    ).length;
+
+    const toplamDosya = personelDavalari.length + personelIcralari.length;
 
     return {
       aktifGorev: aktifGorev.length,
-      gecikmiş: gecikmiş.length,
-      tamamlanan: tamamlanan.length,
-      toplamGorev: personelGorevleri.length,
-      aktifDosya: aktifDosya.length,
-      toplamDosya: personelDosyalari.length,
+      gecikmisSayisi,
+      tamamlananSayisi,
+      toplamGorev,
+      tamamlanmaOrani,
+      aktifDosya,
+      toplamDosya,
     };
-  }, [personelGorevleri, personelDosyalari]);
+  }, [personelGorevleri, personelDavalari, personelIcralari]);
 
-  // Kıdem hesapla
+  /* ── Performans Ozeti (bu ay) ── */
+  const performans = useMemo(() => {
+    const buAy = new Date();
+    const buAyStr = `${buAy.getFullYear()}-${String(buAy.getMonth() + 1).padStart(2, '0')}`;
+    const buAyTamamlanan = personelGorevleri.filter((g) => {
+      if (g.durum !== 'Tamamlandı') return false;
+      return (g.tamamlanmaTarih || '').startsWith(buAyStr);
+    });
+
+    // Ort. tamamlanma suresi (gun)
+    let toplamGun = 0;
+    let sayac = 0;
+    for (const g of personelGorevleri.filter((g) => g.durum === 'Tamamlandı')) {
+      if (g.olusturmaTarih && g.tamamlanmaTarih) {
+        const diff = new Date(g.tamamlanmaTarih).getTime() - new Date(g.olusturmaTarih).getTime();
+        toplamGun += diff / (1000 * 60 * 60 * 24);
+        sayac++;
+      }
+    }
+    const ortTamamlanma = sayac > 0 ? Math.round(toplamGun / sayac) : null;
+
+    return {
+      buAyTamamlanan: buAyTamamlanan.length,
+      ortTamamlanma,
+    };
+  }, [personelGorevleri]);
+
+  /* ── Gorev Filtreleme ── */
+  const filtrelenmisGorevler = useMemo(() => {
+    switch (gorevFiltre) {
+      case 'aktif':
+        return personelGorevleri.filter((g) => g.durum !== 'Tamamlandı' && g.durum !== 'İptal');
+      case 'gecikmis':
+        return personelGorevleri.filter(
+          (g) => g.durum !== 'Tamamlandı' && g.durum !== 'İptal' && g.sonTarih && new Date(g.sonTarih) < new Date()
+        );
+      case 'tamamlanan':
+        return personelGorevleri.filter((g) => g.durum === 'Tamamlandı');
+      default:
+        return personelGorevleri;
+    }
+  }, [personelGorevleri, gorevFiltre]);
+
+  /* ── Kidem Hesaplama ── */
   const kidem = useMemo(() => {
     if (!personel?.baslama) return null;
     const baslama = new Date(personel.baslama);
@@ -95,16 +172,23 @@ export default function PersonelDetayPage() {
     return 'Yeni başladı';
   }, [personel]);
 
+  /* ── Loading / Not Found ── */
   if (isLoading) {
-    return <div className="text-center py-12 text-text-muted text-sm">Yükleniyor...</div>;
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-text-muted text-sm">Yükleniyor...</div>
+      </div>
+    );
   }
 
   if (!personel) {
     return (
-      <div className="text-center py-16">
-        <div className="text-4xl mb-3">🔍</div>
-        <p className="text-sm text-text-muted">Personel bulunamadı</p>
-        <Link href="/personel" className="text-xs text-gold hover:text-gold-light mt-2 inline-block">Personel listesine dön</Link>
+      <div className="flex flex-col items-center justify-center h-64 gap-4">
+        <div className="text-4xl">🔍</div>
+        <div className="text-text-muted text-sm">Personel bulunamadı</div>
+        <Link href="/personel" className="text-gold text-sm hover:text-gold-light">
+          ← Personel Listesine Dön
+        </Link>
       </div>
     );
   }
@@ -112,264 +196,331 @@ export default function PersonelDetayPage() {
   const rol = ROL_RENK[personel.rol || ''] || ROL_RENK.avukat;
   const durum = DURUM_BADGE[personel.durum || 'aktif'] || DURUM_BADGE.aktif;
 
-  const sekmeler: { key: Sekme; label: string; icon: string; badge?: number }[] = [
-    { key: 'ozet', label: 'Özet', icon: '📄' },
-    { key: 'dosyalar', label: 'Dosyalar', icon: '📁', badge: stats.toplamDosya },
-    { key: 'gorevler', label: 'Görevler', icon: '✅', badge: stats.aktifGorev },
-    { key: 'yetkiler', label: 'Yetkiler', icon: '🔐' },
-  ];
-
   return (
     <div className="flex flex-col min-h-[calc(100vh-8rem)]">
-      {/* Breadcrumb */}
+      {/* ── Breadcrumb ── */}
       <div className="flex items-center gap-2 text-[11px] text-text-dim mb-4">
         <Link href="/personel" className="hover:text-gold transition-colors">Personel</Link>
         <span>/</span>
         <span className="text-text-muted">{personel.ad || 'Detay'}</span>
       </div>
 
-      {/* Profil Başlığı */}
+      {/* ═══════════ HEADER: Profil Kartı ═══════════ */}
       <div className="bg-surface border border-border rounded-lg p-5 mb-5">
         <div className="flex items-start gap-4">
+          {/* Avatar Placeholder */}
           <div className={`w-16 h-16 rounded-full ${rol.bg} flex items-center justify-center text-2xl flex-shrink-0`}>
             {rol.icon}
           </div>
+
           <div className="flex-1 min-w-0">
+            {/* Ad + Durum + Rol */}
             <div className="flex items-center gap-3 mb-1">
               <h1 className="font-[var(--font-playfair)] text-xl text-text font-bold">{personel.ad || '—'}</h1>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${durum.bg} ${durum.renk}`}>
                 {durum.label}
               </span>
-            </div>
-            <div className="flex items-center gap-4 text-xs text-text-muted mb-2">
-              <span className={`font-medium ${rol.text}`}>{rol.label}</span>
-              {personel.baroSicil && <span>Baro Sicil: {personel.baroSicil}</span>}
-              {kidem && <span>Kıdem: {kidem}</span>}
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${rol.bg} ${rol.text}`}>
+                {rol.label}
+              </span>
             </div>
             <div className="flex items-center gap-4 text-[11px] text-text-dim">
               {personel.email && <span>✉️ {personel.email}</span>}
               {personel.tel && <span>📞 {personel.tel}</span>}
-              {personel.tc && <span>🆔 TC: ****{personel.tc.slice(-4)}</span>}
+              {personel.baroSicil && <span>Baro Sicil: {personel.baroSicil}</span>}
+              {kidem && <span>Kıdem: {kidem}</span>}
             </div>
           </div>
-          {yoneticiMi && (
-            <button
-              onClick={() => setModalAcik(true)}
-              className="px-4 py-2 bg-gold text-bg font-semibold rounded-lg text-xs hover:bg-gold-light transition-colors flex-shrink-0"
-            >
-              Düzenle
-            </button>
+
+          {/* Aksiyonlar */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {yoneticiMi && (
+              <>
+                <button
+                  onClick={() => setModalAcik(true)}
+                  className="px-4 py-2 bg-gold text-bg font-semibold rounded-lg text-xs hover:bg-gold-light transition-colors"
+                >
+                  Düzenle
+                </button>
+                <button
+                  onClick={async () => {
+                    if (confirm(`"${personel.ad || 'Bu personel'}" silinecek. Emin misiniz?`)) {
+                      await silMut.mutateAsync(id);
+                      router.push('/personel');
+                    }
+                  }}
+                  className="px-3 py-2 border border-red/30 text-red rounded-lg text-xs hover:bg-red/10 transition-colors"
+                >
+                  Sil
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ═══════════ KISISEL BILGILER ═══════════ */}
+      <div className="bg-surface border border-border rounded-lg p-5 mb-5">
+        <h3 className="text-sm font-semibold text-text mb-4 flex items-center gap-2">
+          <span>📄</span> Kişisel Bilgiler
+        </h3>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-3">
+          <InfoField label="E-posta" value={personel.email} />
+          <InfoField label="Telefon" value={personel.tel} />
+          <InfoField label="Baro Sicil No" value={personel.baroSicil} />
+          <InfoField label="İşe Başlama Tarihi" value={personel.baslama ? new Date(personel.baslama).toLocaleDateString('tr-TR') : null} />
+          {personel.tc && <InfoField label="TC Kimlik No" value={`****${personel.tc.slice(-4)}`} />}
+          {personel.baro && <InfoField label="Baro" value={personel.baro} />}
+          {kidem && <InfoField label="Kıdem" value={kidem} />}
+          {personel.notlar && <InfoField label="Notlar" value={personel.notlar} />}
+        </div>
+      </div>
+
+      {/* ═══════════ ISTATISTIKLER CARDS ROW ═══════════ */}
+      <div className="grid grid-cols-4 gap-3 mb-5">
+        <StatCard
+          label="Aktif Dosya Sayısı"
+          value={stats.aktifDosya.toString()}
+          icon="📁"
+          color="text-blue-400"
+          desc={`Toplam: ${stats.toplamDosya}`}
+        />
+        <StatCard
+          label="Aktif Görev Sayısı"
+          value={stats.aktifGorev.toString()}
+          icon="📋"
+          color={stats.aktifGorev >= 5 ? 'text-red' : 'text-gold'}
+          desc={stats.gecikmisSayisi > 0 ? `${stats.gecikmisSayisi} gecikmiş` : undefined}
+        />
+        <StatCard
+          label="Tamamlanan Görev"
+          value={stats.tamamlananSayisi.toString()}
+          icon="✅"
+          color="text-green"
+        />
+        <StatCard
+          label="Tamamlanma Oranı"
+          value={`%${stats.tamamlanmaOrani}`}
+          icon="📊"
+          color="text-purple-400"
+          progress={stats.tamamlanmaOrani}
+        />
+      </div>
+
+      {/* ═══════════ ATANAN GOREVLER ═══════════ */}
+      <div className="bg-surface border border-border rounded-lg mb-5">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-border">
+          <h3 className="text-sm font-semibold text-text flex items-center gap-2">
+            <span>✅</span> Atanan Görevler
+            <span className="text-[10px] text-text-dim font-normal ml-1">({personelGorevleri.length} toplam)</span>
+          </h3>
+          {/* Filtre Tablari */}
+          <div className="flex gap-1">
+            {([
+              { key: 'aktif' as GorevFiltre, label: 'Aktif', count: personelGorevleri.filter((g) => g.durum !== 'Tamamlandı' && g.durum !== 'İptal').length },
+              { key: 'gecikmis' as GorevFiltre, label: 'Gecikmiş', count: personelGorevleri.filter((g) => g.durum !== 'Tamamlandı' && g.durum !== 'İptal' && g.sonTarih && new Date(g.sonTarih) < new Date()).length },
+              { key: 'tamamlanan' as GorevFiltre, label: 'Tamamlandı', count: personelGorevleri.filter((g) => g.durum === 'Tamamlandı').length },
+            ]).map((f) => (
+              <button
+                key={f.key}
+                onClick={() => setGorevFiltre(f.key)}
+                className={`px-3 py-1.5 text-[11px] rounded-lg transition-colors ${
+                  gorevFiltre === f.key ? 'bg-gold-dim text-gold font-semibold' : 'text-text-muted hover:bg-surface2'
+                }`}
+              >
+                {f.label} ({f.count})
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="p-4">
+          {personelGorevleri.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-3xl mb-2">✅</div>
+              <div className="text-xs text-text-muted">Bu personele atanmış görev yok</div>
+            </div>
+          ) : filtrelenmisGorevler.length === 0 ? (
+            <div className="text-center py-8 text-text-dim text-xs">Bu filtrede görev bulunamadı</div>
+          ) : (
+            <div className="space-y-2">
+              {filtrelenmisGorevler.map((g) => {
+                const gecikmis = g.durum !== 'Tamamlandı' && g.sonTarih && new Date(g.sonTarih) < new Date();
+                return (
+                  <div key={g.id} className={`flex items-center justify-between px-4 py-3 rounded-lg border ${
+                    gecikmis ? 'border-red/30 bg-red/[0.03]' : 'border-border hover:bg-surface2/50'
+                  } transition-colors`}>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className={`text-sm ${g.durum === 'Tamamlandı' ? 'line-through text-text-dim' : 'text-text'}`}>
+                        {g.baslik || '—'}
+                      </span>
+                      {gecikmis && (
+                        <span className="text-[9px] text-red font-bold bg-red-dim px-1.5 py-0.5 rounded flex-shrink-0">GECİKMİŞ</span>
+                      )}
+                      {g.oncelik && (
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border flex-shrink-0 ${ONCELIK_RENK[g.oncelik] || ''}`}>
+                          {g.oncelik}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 text-[11px] text-text-dim flex-shrink-0">
+                      {g.sonTarih && <span>{fmtTarih(g.sonTarih)}</span>}
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                        g.durum === 'Tamamlandı' ? 'bg-green-dim text-green' :
+                        g.durum === 'Devam Ediyor' ? 'bg-blue-400/10 text-blue-400' :
+                        'bg-surface2 text-text-muted'
+                      }`}>{g.durum || 'Bekliyor'}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
+      </div>
 
-        {/* Mini KPI şeridi */}
-        <div className="grid grid-cols-4 gap-3 mt-4 pt-4 border-t border-border/50">
-          <div className="text-center">
-            <div className="font-[var(--font-playfair)] text-lg font-bold text-blue-400">{stats.aktifGorev}</div>
-            <div className="text-[10px] text-text-muted">Aktif Görev</div>
-          </div>
-          <div className="text-center">
-            <div className={`font-[var(--font-playfair)] text-lg font-bold ${stats.gecikmiş > 0 ? 'text-red' : 'text-green'}`}>{stats.gecikmiş}</div>
-            <div className="text-[10px] text-text-muted">Gecikmiş</div>
-          </div>
-          <div className="text-center">
-            <div className="font-[var(--font-playfair)] text-lg font-bold text-green">{stats.tamamlanan}</div>
-            <div className="text-[10px] text-text-muted">Tamamlanan</div>
-          </div>
-          <div className="text-center">
-            <div className="font-[var(--font-playfair)] text-lg font-bold text-gold">{stats.aktifDosya}</div>
-            <div className="text-[10px] text-text-muted">Aktif Dosya</div>
+      {/* ═══════════ ATANAN DOSYALAR ═══════════ */}
+      <div className="bg-surface border border-border rounded-lg mb-5">
+        <div className="px-5 py-3 border-b border-border">
+          <h3 className="text-sm font-semibold text-text flex items-center gap-2">
+            <span>📁</span> Atanan Dosyalar
+            <span className="text-[10px] text-text-dim font-normal ml-1">({stats.toplamDosya} toplam)</span>
+          </h3>
+        </div>
+        <div className="p-4">
+          {stats.toplamDosya === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-3xl mb-2">📁</div>
+              <div className="text-xs text-text-muted">Bu personele atanmış dosya yok</div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left px-3 py-2.5 font-medium text-text-muted">Dosya</th>
+                    <th className="text-left px-3 py-2.5 font-medium text-text-muted">Tür</th>
+                    <th className="text-left px-3 py-2.5 font-medium text-text-muted">Durum</th>
+                    <th className="text-right px-3 py-2.5 font-medium text-text-muted">İşlem</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {personelDavalari.map((d) => (
+                    <tr key={d.id} className="border-b border-border/50 hover:bg-surface2/50 transition-colors">
+                      <td className="px-3 py-2.5 font-medium text-text">{d.konu || d.no || '—'}</td>
+                      <td className="px-3 py-2.5 text-text-muted">{d.davaTuru || 'Dava'}</td>
+                      <td className="px-3 py-2.5">
+                        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                          d.durum === 'Derdest' || d.durum === 'Aktif' || d.durum === 'Devam Ediyor'
+                            ? 'bg-green-dim text-green' : 'bg-surface2 text-text-dim'
+                        }`}>{d.durum || '—'}</span>
+                      </td>
+                      <td className="px-3 py-2.5 text-right">
+                        <Link href={`/davalar/${d.id}`} className="text-[10px] text-gold hover:text-gold-light">Görüntüle</Link>
+                      </td>
+                    </tr>
+                  ))}
+                  {personelIcralari.map((ic) => (
+                    <tr key={ic.id as string} className="border-b border-border/50 hover:bg-surface2/50 transition-colors">
+                      <td className="px-3 py-2.5 font-medium text-text">{(ic.konu as string) || (ic.no as string) || '—'}</td>
+                      <td className="px-3 py-2.5 text-text-muted">İcra</td>
+                      <td className="px-3 py-2.5">
+                        <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                          (ic.durum as string) === 'Aktif' || (ic.durum as string) === 'Devam Ediyor'
+                            ? 'bg-green-dim text-green' : 'bg-surface2 text-text-dim'
+                        }`}>{(ic.durum as string) || '—'}</span>
+                      </td>
+                      <td className="px-3 py-2.5 text-right">
+                        <Link href={`/icra/${ic.id}`} className="text-[10px] text-gold hover:text-gold-light">Görüntüle</Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ═══════════ PERFORMANS OZETI ═══════════ */}
+      <div className="bg-surface border border-border rounded-lg mb-5">
+        <div className="px-5 py-3 border-b border-border">
+          <h3 className="text-sm font-semibold text-text flex items-center gap-2">
+            <span>📊</span> Performans Özeti
+          </h3>
+        </div>
+        <div className="p-5">
+          <div className="grid grid-cols-3 gap-6">
+            <div className="text-center">
+              <div className="text-[10px] text-text-dim uppercase tracking-wider mb-1">Bu Ay Tamamlanan</div>
+              <div className="font-[var(--font-playfair)] text-2xl font-bold text-green">{performans.buAyTamamlanan}</div>
+              <div className="text-[10px] text-text-dim">görev</div>
+            </div>
+            <div className="text-center">
+              <div className="text-[10px] text-text-dim uppercase tracking-wider mb-1">Ort. Tamamlanma Süresi</div>
+              <div className="font-[var(--font-playfair)] text-2xl font-bold text-blue-400">
+                {performans.ortTamamlanma !== null ? `${performans.ortTamamlanma}` : '—'}
+              </div>
+              <div className="text-[10px] text-text-dim">{performans.ortTamamlanma !== null ? 'gün' : 'veri yok'}</div>
+            </div>
+            <div className="text-center">
+              <div className="text-[10px] text-text-dim uppercase tracking-wider mb-1">Genel Tamamlanma</div>
+              <div className="font-[var(--font-playfair)] text-2xl font-bold text-gold">%{stats.tamamlanmaOrani}</div>
+              <div className="w-full h-1.5 bg-surface2 rounded-full mt-2">
+                <div
+                  className="h-full bg-gold rounded-full transition-all"
+                  style={{ width: `${stats.tamamlanmaOrani}%` }}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Sekmeler */}
-      <div className="flex gap-1 mb-4 bg-surface border border-border rounded-lg p-1">
-        {sekmeler.map((s) => (
-          <button
-            key={s.key}
-            onClick={() => setSekme(s.key)}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-all ${
-              sekme === s.key ? 'bg-gold-dim text-gold shadow-sm' : 'text-text-muted hover:text-text hover:bg-surface2'
-            }`}
-          >
-            <span>{s.icon}</span>
-            <span>{s.label}</span>
-            {s.badge !== undefined && s.badge > 0 && (
-              <span className="ml-1 min-w-[16px] h-[16px] flex items-center justify-center rounded-full bg-surface2 text-[9px] font-bold text-text-muted px-1">
-                {s.badge}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+      {/* ── Yetkiler Bilgi Kutusu ── */}
+      <YetkilerCard rol={personel.rol || 'avukat'} />
 
-      {/* Sekme İçerikleri */}
-      {sekme === 'ozet' && <OzetSekmesi personel={personel} kidem={kidem} />}
-      {sekme === 'dosyalar' && <DosyalarSekmesi dosyalar={personelDosyalari} />}
-      {sekme === 'gorevler' && <GorevlerSekmesi gorevler={personelGorevleri} />}
-      {sekme === 'yetkiler' && <YetkilerSekmesi rol={personel.rol || 'avukat'} />}
-
+      {/* ── Modal ── */}
       <PersonelModal open={modalAcik} onClose={() => setModalAcik(false)} personel={personel} />
     </div>
   );
 }
 
-/* ── Özet Sekmesi ──────────────────────────────────────────── */
-function OzetSekmesi({ personel, kidem }: { personel: Personel; kidem: string | null }) {
-  const bilgiler = [
-    { label: 'Ad Soyad', value: personel.ad },
-    { label: 'E-posta', value: personel.email },
-    { label: 'Telefon', value: personel.tel },
-    { label: 'TC Kimlik No', value: personel.tc ? `****${personel.tc.slice(-4)}` : null },
-    { label: 'Baro Sicil No', value: personel.baroSicil },
-    { label: 'Başlama Tarihi', value: personel.baslama ? new Date(personel.baslama).toLocaleDateString('tr-TR') : null },
-    { label: 'Kıdem', value: kidem },
-    { label: 'Notlar', value: personel.notlar },
-  ];
+/* ══════════════════════════════════════════════════════════════
+   Yardimci Bilesenler
+   ══════════════════════════════════════════════════════════════ */
 
+function StatCard({ label, value, icon, color, desc, progress }: {
+  label: string; value: string; icon: string; color: string; desc?: string; progress?: number;
+}) {
   return (
-    <div className="bg-surface border border-border rounded-lg p-5">
-      <h3 className="text-sm font-semibold text-text mb-4">Kişisel Bilgiler</h3>
-      <div className="grid grid-cols-2 gap-x-8 gap-y-3">
-        {bilgiler.filter((b) => b.value).map((b) => (
-          <div key={b.label}>
-            <div className="text-[10px] text-text-dim uppercase tracking-wider mb-0.5">{b.label}</div>
-            <div className="text-sm text-text">{b.value}</div>
-          </div>
-        ))}
-      </div>
+    <div className="bg-surface border border-border rounded-lg p-4 text-center">
+      <div className="text-lg mb-1">{icon}</div>
+      <div className={`font-[var(--font-playfair)] text-xl font-bold ${color}`}>{value}</div>
+      <div className="text-[10px] text-text-muted uppercase tracking-wider mt-0.5">{label}</div>
+      {desc && <div className="text-[9px] text-text-dim mt-0.5">{desc}</div>}
+      {progress !== undefined && (
+        <div className="w-full h-1 bg-surface2 rounded-full mt-2">
+          <div
+            className="h-full bg-purple-400 rounded-full transition-all"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      )}
     </div>
   );
 }
 
-/* ── Dosyalar Sekmesi ──────────────────────────────────────── */
-function DosyalarSekmesi({ dosyalar }: { dosyalar: Array<Record<string, unknown>> }) {
-  if (dosyalar.length === 0) {
-    return (
-      <div className="text-center py-12 bg-surface border border-border rounded-lg">
-        <div className="text-3xl mb-2">📁</div>
-        <p className="text-sm text-text-muted">Bu personele atanmış dosya yok</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-surface border border-border rounded-lg overflow-hidden">
-      <table className="w-full text-xs">
-        <thead>
-          <tr className="border-b border-border bg-surface2">
-            <th className="text-left px-4 py-2.5 font-medium text-text-muted">Dosya</th>
-            <th className="text-left px-3 py-2.5 font-medium text-text-muted">Tür</th>
-            <th className="text-left px-3 py-2.5 font-medium text-text-muted">Durum</th>
-            <th className="text-right px-4 py-2.5 font-medium text-text-muted">İşlem</th>
-          </tr>
-        </thead>
-        <tbody>
-          {dosyalar.map((d) => {
-            const ad = (d.dosyaAd || d.ad || d.baslik || '—') as string;
-            const tur = (d.dosyaTuru || d.tur || '—') as string;
-            const durum = (d.durum || '—') as string;
-            const id = d.id as string;
-            return (
-              <tr key={id} className="border-b border-border/50 hover:bg-surface2/50">
-                <td className="px-4 py-2.5 font-medium text-text">{ad}</td>
-                <td className="px-3 py-2.5 text-text-muted">{tur}</td>
-                <td className="px-3 py-2.5">
-                  <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                    durum === 'Derdest' || durum === 'Aktif' || durum === 'Devam Ediyor' ? 'bg-green-dim text-green' : 'bg-surface2 text-text-dim'
-                  }`}>{durum}</span>
-                </td>
-                <td className="px-4 py-2.5 text-right">
-                  <Link href={`/davalar/${id}`} className="text-[10px] text-gold hover:text-gold-light">Görüntüle</Link>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-/* ── Görevler Sekmesi ──────────────────────────────────────── */
-function GorevlerSekmesi({ gorevler }: { gorevler: Todo[] }) {
-  const [filtre, setFiltre] = useState<'hepsi' | 'aktif' | 'tamamlanan' | 'gecikmis'>('aktif');
-
-  const filtrelenmis = useMemo(() => {
-    switch (filtre) {
-      case 'aktif': return gorevler.filter((g) => g.durum !== 'Tamamlandı' && g.durum !== 'İptal');
-      case 'tamamlanan': return gorevler.filter((g) => g.durum === 'Tamamlandı');
-      case 'gecikmis': return gorevler.filter((g) => g.durum !== 'Tamamlandı' && g.durum !== 'İptal' && g.sonTarih && new Date(g.sonTarih) < new Date());
-      default: return gorevler;
-    }
-  }, [gorevler, filtre]);
-
-  if (gorevler.length === 0) {
-    return (
-      <div className="text-center py-12 bg-surface border border-border rounded-lg">
-        <div className="text-3xl mb-2">✅</div>
-        <p className="text-sm text-text-muted">Bu personele atanmış görev yok</p>
-      </div>
-    );
-  }
-
+function InfoField({ label, value }: { label: string; value?: string | null }) {
+  if (!value) return null;
   return (
     <div>
-      {/* Filtre */}
-      <div className="flex gap-1 mb-3">
-        {([
-          { key: 'aktif', label: 'Aktif' },
-          { key: 'gecikmis', label: 'Gecikmiş' },
-          { key: 'tamamlanan', label: 'Tamamlanan' },
-          { key: 'hepsi', label: 'Tümü' },
-        ] as { key: typeof filtre; label: string }[]).map((f) => (
-          <button
-            key={f.key}
-            onClick={() => setFiltre(f.key)}
-            className={`px-3 py-1.5 text-[11px] rounded-lg transition-colors ${
-              filtre === f.key ? 'bg-gold-dim text-gold font-semibold' : 'text-text-muted hover:bg-surface2'
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="space-y-2">
-        {filtrelenmis.map((g) => {
-          const gecikmis = g.durum !== 'Tamamlandı' && g.sonTarih && new Date(g.sonTarih) < new Date();
-          return (
-            <div key={g.id} className={`bg-surface border rounded-lg px-4 py-3 ${gecikmis ? 'border-red/30' : 'border-border'}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className={`text-sm ${g.durum === 'Tamamlandı' ? 'line-through text-text-dim' : 'text-text'}`}>
-                    {g.baslik || '—'}
-                  </span>
-                  {gecikmis && <span className="text-[9px] text-red font-bold bg-red-dim px-1.5 py-0.5 rounded">GECİKMİŞ</span>}
-                </div>
-                <div className="flex items-center gap-3 text-[11px] text-text-dim">
-                  {g.sonTarih && <span>{new Date(g.sonTarih).toLocaleDateString('tr-TR')}</span>}
-                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                    g.durum === 'Tamamlandı' ? 'bg-green-dim text-green' :
-                    g.durum === 'Devam Ediyor' ? 'bg-blue-400/10 text-blue-400' :
-                    'bg-surface2 text-text-muted'
-                  }`}>{g.durum || 'Bekliyor'}</span>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-        {filtrelenmis.length === 0 && (
-          <div className="text-center py-8 text-text-dim text-xs">Bu filtrede görev bulunamadı</div>
-        )}
-      </div>
+      <div className="text-[10px] text-text-dim uppercase tracking-wider mb-0.5">{label}</div>
+      <div className="text-sm text-text">{value}</div>
     </div>
   );
 }
 
-/* ── Yetkiler Sekmesi ──────────────────────────────────────── */
-function YetkilerSekmesi({ rol }: { rol: string }) {
+function YetkilerCard({ rol }: { rol: string }) {
   const moduller = [
     { modul: 'Müvekkiller/Rehber', yetki: 'muvekkil', icon: '📒' },
     { modul: 'Davalar/Dosyalar', yetki: 'dosya', icon: '📁' },
@@ -384,7 +535,6 @@ function YetkilerSekmesi({ rol }: { rol: string }) {
     { modul: 'Raporlar', yetki: 'rapor', icon: '📊' },
   ];
 
-  // Basit yetki kontrolü (useRol'dan YETKI_HARITASI kullanamayız direkt, gösterim amaçlı)
   const yetkiMap: Record<string, Record<string, Set<string>>> = {
     sahip: { oku: new Set(['muvekkil','dosya','finans','gorev','takvim','belge','danismanlik','iletisim','kullanici','ayarlar','rapor']), yaz: new Set(['muvekkil','dosya','finans','gorev','takvim','belge','danismanlik','iletisim','kullanici','ayarlar','rapor']) },
     yonetici: { oku: new Set(['muvekkil','dosya','finans','gorev','takvim','belge','danismanlik','iletisim','kullanici','ayarlar','rapor']), yaz: new Set(['muvekkil','dosya','finans','gorev','takvim','belge','danismanlik','iletisim','kullanici','ayarlar','rapor']) },
@@ -396,10 +546,10 @@ function YetkilerSekmesi({ rol }: { rol: string }) {
   const rolYetki = yetkiMap[rol] || yetkiMap.avukat;
 
   return (
-    <div className="bg-surface border border-border rounded-lg overflow-hidden">
-      <div className="px-4 py-3 border-b border-border bg-surface2">
-        <h3 className="text-xs font-semibold text-text">
-          Yetki Matrisi — <span className={ROL_RENK[rol]?.text || 'text-text'}>{ROL_RENK[rol]?.label || rol}</span>
+    <div className="bg-surface border border-border rounded-lg overflow-hidden mb-5">
+      <div className="px-5 py-3 border-b border-border">
+        <h3 className="text-sm font-semibold text-text flex items-center gap-2">
+          <span>🔐</span> Yetki Matrisi — <span className={ROL_RENK[rol]?.text || 'text-text'}>{ROL_RENK[rol]?.label || rol}</span>
         </h3>
         <p className="text-[10px] text-text-dim mt-0.5">Bu rol için modül bazlı erişim izinleri</p>
       </div>

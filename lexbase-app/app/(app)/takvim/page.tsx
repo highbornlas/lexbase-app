@@ -295,7 +295,10 @@ export default function TakvimPage() {
     if (!suruklenen) return;
     const etkinlik = filtrelenmis.find((e) => e.id === suruklenen);
     if (!etkinlik || etkinlik.sanal) { setSuruklenen(null); return; }
-    try { await etkinlikKaydet.mutateAsync({ ...etkinlik, tarih: hedefTarih }); } catch { /* ignore */ }
+    try { await etkinlikKaydet.mutateAsync({ ...etkinlik, tarih: hedefTarih }); } catch (err) {
+      console.warn('Etkinlik taşıma hatası:', err);
+      alert('Etkinlik taşınırken bir hata oluştu. Lütfen tekrar deneyin.');
+    }
     setSuruklenen(null);
   }
 

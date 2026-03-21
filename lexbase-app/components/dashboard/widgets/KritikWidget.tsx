@@ -21,7 +21,17 @@ export function KritikWidget({ davalar, icralar }: KritikWidgetProps) {
     sinir.setDate(bugun.getDate() + 30);
 
     davalar?.forEach((d) => {
-      if (d.durusma) {
+      const durusmalar = d.durusmalar as Array<{ id: string; tarih: string; saat?: string }> | undefined;
+      if (durusmalar?.length) {
+        durusmalar.forEach((dur) => {
+          if (!dur.tarih) return;
+          const t = new Date(dur.tarih);
+          if (t >= bugun && t <= sinir) {
+            const gun = Math.ceil((t.getTime() - bugun.getTime()) / 86400000);
+            items.push({ tip: 'Duruşma', baslik: `${d.no || d.konu || '—'}`, tarih: dur.tarih, gun, icon: '📅' });
+          }
+        });
+      } else if (d.durusma) {
         const t = new Date(d.durusma as string);
         if (t >= bugun && t <= sinir) {
           const gun = Math.ceil((t.getTime() - bugun.getTime()) / 86400000);

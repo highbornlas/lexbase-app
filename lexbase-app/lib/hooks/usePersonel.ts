@@ -39,6 +39,28 @@ export function usePersoneller() {
   });
 }
 
+export function usePersonel(id: string | null) {
+  const buroId = useBuroId();
+
+  return useQuery<Personel | null>({
+    queryKey: ['personel-detay', id, buroId],
+    queryFn: async () => {
+      if (!buroId || !id) return null;
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('personel')
+        .select('id, data')
+        .eq('buro_id', buroId)
+        .eq('id', id)
+        .single();
+      if (error) throw error;
+      if (!data) return null;
+      return { id: data.id, ...(data.data as object) } as Personel;
+    },
+    enabled: !!buroId && !!id,
+  });
+}
+
 export function usePersonelKaydet() {
   const buroId = useBuroId();
   const queryClient = useQueryClient();

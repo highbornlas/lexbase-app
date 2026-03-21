@@ -73,6 +73,31 @@ export function useIhtarnameler() {
   });
 }
 
+/* Tek İhtarname (detay) */
+export function useIhtarname(id: string | null) {
+  const buroId = useBuroId();
+
+  return useQuery<Ihtarname | null>({
+    queryKey: ['ihtarname-detay', id, buroId],
+    queryFn: async () => {
+      if (!buroId || !id) return null;
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('ihtarnameler')
+        .select('id, data')
+        .eq('buro_id', buroId)
+        .eq('id', id)
+        .single();
+      if (error) throw error;
+      if (!data) return null;
+      const kayit = { id: data.id, ...(data.data as object) } as Ihtarname;
+      if (kayit._silindi) return null;
+      return kayit;
+    },
+    enabled: !!buroId && !!id,
+  });
+}
+
 /* Arşivlenmiş ihtarnameler */
 export function useArsivIhtarnameler() {
   const { data: tumu } = useIhtarnameler();

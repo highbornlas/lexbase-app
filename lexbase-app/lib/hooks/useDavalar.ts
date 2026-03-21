@@ -55,6 +55,27 @@ export interface Dava {
   deger?: number;
   // Süreler
   sureler?: Array<{ id: string; tip: string; baslangic: string; gun: number }>;
+  // Duruşmalar (çoklu)
+  durusmalar?: Array<{
+    id: string;
+    tarih: string;
+    saat?: string;
+    salon?: string;
+    hakim?: string;
+    sonuc?: 'erteleme' | 'kesif' | 'bilirkisi' | 'karar' | 'sozlu_savunma' | 'delil_inceleme' | 'diger';
+    sonucAciklama?: string;
+    katildiMi?: boolean;
+  }>;
+  // Karar detayları
+  karar?: {
+    tarih?: string;
+    no?: string;
+    sonuc?: 'lehte' | 'aleyhte' | 'kismenLehte' | 'dusme' | 'feragat' | 'sulh';
+    ozet?: string;
+    kesinlestiMi?: boolean;
+    kesinlesmeTarihi?: string;
+    temyizEdildiMi?: boolean;
+  };
   // Alt veriler
   evraklar?: Record<string, unknown>[];
   notlar?: Record<string, unknown>[];

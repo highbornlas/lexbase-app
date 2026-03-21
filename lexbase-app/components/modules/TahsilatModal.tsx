@@ -87,7 +87,13 @@ export function TahsilatModal({ open, onClose, onKaydet, tahsilat }: TahsilatMod
       return;
     }
     setHata('');
-    onKaydet(form);
+    // Makbuz kesilmediyse KDV/stopaj oranlarını sıfırla
+    const kaydedilecek = { ...form };
+    if (!kaydedilecek.makbuzKesildi) {
+      kaydedilecek.kdvOrani = 0;
+      kaydedilecek.stopajOrani = 0;
+    }
+    onKaydet(kaydedilecek);
     clearDraft();
     onClose();
   }

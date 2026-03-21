@@ -21,9 +21,20 @@ import { DosyaEvrakTab } from '@/components/modules/DosyaEvrakTab';
 import { TahsilatModal, type TahsilatKaydi } from '@/components/modules/TahsilatModal';
 import { useSonErisim } from '@/lib/hooks/useSonErisim';
 
+// ── Legacy duruşma sync yardımcısı ─────────────────────────
+function legacyDurusmaSync(durusmalar: Array<{ tarih: string; saat?: string }>) {
+  if (!durusmalar.length) return { durusma: '', durusmaSaati: '' };
+  const bugun = new Date().toISOString().split('T')[0];
+  const gelecek = durusmalar.filter((d) => d.tarih >= bugun).sort((a, b) => a.tarih.localeCompare(b.tarih));
+  const sonraki = gelecek[0] || durusmalar.sort((a, b) => b.tarih.localeCompare(a.tarih))[0];
+  return { durusma: sonraki.tarih, durusmaSaati: sonraki.saat || '' };
+}
+
 // ── Sekme tanımları ──────────────────────────────────────────
 const TABS = [
   { key: 'ozet', label: 'Özet', svg: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg> },
+  { key: 'durusmalar', label: 'Duruşmalar', svg: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> },
+  { key: 'karar', label: 'Karar', svg: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> },
   { key: 'evrak', label: 'Evraklar', svg: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg> },
   { key: 'harcama', label: 'Harcamalar', svg: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg> },
   { key: 'tahsilat', label: 'Tahsilat', svg: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6"/></svg> },
@@ -99,10 +110,24 @@ export default function DavaDetay({ params }: { params: Promise<{ id: string }> 
     return davaciBelirle(dava.taraf, muvAd, dava.karsi || '—');
   }, [dava, muvAd]);
 
-  const durusmaKalan = useMemo(() => {
-    if (!dava?.durusma) return null;
-    return durusmayaKalanGun(dava.durusma);
+  // Sonraki duruşmayı bul (durusmalar[] → fallback durusma)
+  const sonrakiDurusma = useMemo(() => {
+    if (!dava) return null;
+    const bugun = new Date().toISOString().split('T')[0];
+    if (dava.durusmalar?.length) {
+      const gelecek = dava.durusmalar
+        .filter((d) => d.tarih >= bugun)
+        .sort((a, b) => a.tarih.localeCompare(b.tarih));
+      if (gelecek.length > 0) return gelecek[0];
+    }
+    if (dava.durusma) return { id: '_legacy', tarih: dava.durusma, saat: dava.durusmaSaati };
+    return null;
   }, [dava]);
+
+  const durusmaKalan = useMemo(() => {
+    if (!sonrakiDurusma) return null;
+    return durusmayaKalanGun(sonrakiDurusma.tarih);
+  }, [sonrakiDurusma]);
 
   const iliskiliIcra = useMemo(() => {
     if (!dava?.iliskiliIcraId || !icralar) return null;
@@ -306,16 +331,19 @@ export default function DavaDetay({ params }: { params: Promise<{ id: string }> 
               <SureBadge kalanGun={durusmaKalan} label="duruşma" compact />
             )}
           </div>
-          {dava.durusma ? (
+          {sonrakiDurusma ? (
             <div>
-              <div className="text-sm font-bold text-text">{durusmaTarihSaatGoster(dava.durusma, dava.durusmaSaati)}</div>
+              <div className="text-sm font-bold text-text">{durusmaTarihSaatGoster(sonrakiDurusma.tarih, sonrakiDurusma.saat)}</div>
               {durusmaKalan !== null && durusmaKalan >= 0 && (
                 <div className="text-[10px] text-text-muted mt-1">{durusmaKalan} gün kaldı</div>
+              )}
+              {(dava.durusmalar?.length || 0) > 1 && (
+                <button onClick={() => setAktifTab('durusmalar')} className="text-[10px] text-gold hover:underline mt-1">{dava.durusmalar!.length} duruşma kayıtlı</button>
               )}
             </div>
           ) : (
             <button
-              onClick={() => setDuzenleModu(true)}
+              onClick={() => setAktifTab('durusmalar')}
               className="flex items-center gap-1.5 text-xs text-text-dim hover:text-gold transition-colors group"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="group-hover:text-gold"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l2 2"/></svg>
@@ -417,7 +445,11 @@ export default function DavaDetay({ params }: { params: Promise<{ id: string }> 
         <div className="flex overflow-x-auto scrollbar-none border-b border-border">
           {TABS.map((tab) => {
             const isActive = aktifTab === tab.key;
-            const badge = tab.key === 'sureler' && (dava.sureler || []).length > 0
+            const badge = tab.key === 'durusmalar' && (dava.durusmalar || []).length > 0
+              ? (dava.durusmalar || []).length
+              : tab.key === 'karar' && dava.karar?.sonuc
+              ? 1
+              : tab.key === 'sureler' && (dava.sureler || []).length > 0
               ? (dava.sureler || []).length
               : tab.key === 'evrak' && hesap.evrakSayisi > 0
               ? hesap.evrakSayisi
@@ -455,7 +487,24 @@ export default function DavaDetay({ params }: { params: Promise<{ id: string }> 
 
         {/* Sekme İçeriği */}
         <div className="p-5">
-          {aktifTab === 'ozet' && <OzetTab dava={dava} muvAd={muvAd} mahkeme={mahkemeAdi} taraflar={taraflar} esasNo={esasNo} hesap={hesap} iliskiliIcra={iliskiliIcra} onDuzenle={() => setDuzenleModu(true)} />}
+          {aktifTab === 'ozet' && <OzetTab dava={dava} muvAd={muvAd} mahkeme={mahkemeAdi} taraflar={taraflar} esasNo={esasNo} hesap={hesap} iliskiliIcra={iliskiliIcra} sonrakiDurusma={sonrakiDurusma} onDuzenle={() => setDuzenleModu(true)} />}
+          {aktifTab === 'durusmalar' && (
+            <DurusmalarTab
+              durusmalar={dava.durusmalar || []}
+              legacyDurusma={dava.durusma}
+              legacySaat={dava.durusmaSaati}
+              onEkle={(d) => { const yeniListe = [...(dava.durusmalar || []), d]; davaKaydet.mutate({ ...dava, durusmalar: yeniListe, ...legacyDurusmaSync(yeniListe) }); }}
+              onGuncelle={(d) => { const yeniListe = (dava.durusmalar || []).map((x) => x.id === d.id ? d : x); davaKaydet.mutate({ ...dava, durusmalar: yeniListe, ...legacyDurusmaSync(yeniListe) }); }}
+              onSil={(dId) => { const yeniListe = (dava.durusmalar || []).filter((x) => x.id !== dId); davaKaydet.mutate({ ...dava, durusmalar: yeniListe, ...legacyDurusmaSync(yeniListe) }); }}
+            />
+          )}
+          {aktifTab === 'karar' && (
+            <KararTab
+              karar={dava.karar}
+              durum={dava.durum}
+              onKaydet={(k) => { davaKaydet.mutate({ ...dava, karar: k }); }}
+            />
+          )}
           {aktifTab === 'evrak' && <DosyaEvrakTab dosyaId={id} dosyaTipi="dava" muvId={dava.muvId} />}
           {aktifTab === 'harcama' && (
             <HarcamaTab
@@ -526,7 +575,7 @@ export default function DavaDetay({ params }: { params: Promise<{ id: string }> 
 // ══════════════════════════════════════════════════════════════
 
 function OzetTab({
-  dava, muvAd, mahkeme, taraflar, esasNo: esas, hesap, iliskiliIcra, onDuzenle,
+  dava, muvAd, mahkeme, taraflar, esasNo: esas, hesap, iliskiliIcra, sonrakiDurusma, onDuzenle,
 }: {
   dava: import('@/lib/hooks/useDavalar').Dava;
   muvAd: string;
@@ -535,6 +584,7 @@ function OzetTab({
   esasNo: string;
   hesap: { masraf: number; tahsilat: number; hakedis: number; vekalet: number; evrakSayisi: number; net: number };
   iliskiliIcra: import('@/lib/hooks/useIcra').Icra | null;
+  sonrakiDurusma: { id: string; tarih: string; saat?: string } | null;
   onDuzenle: () => void;
 }) {
   return (
@@ -592,7 +642,7 @@ function OzetTab({
       </div>
 
       {/* Duruşma vurgu kartı */}
-      {dava.durusma && (
+      {sonrakiDurusma && (
         <div className="bg-gold/5 border border-gold/20 rounded-xl p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center flex-shrink-0">
@@ -600,10 +650,10 @@ function OzetTab({
             </div>
             <div>
               <div className="text-[10px] text-gold uppercase tracking-wider font-bold">Sonraki Duruşma</div>
-              <div className="text-sm font-bold text-text">{durusmaTarihSaatGoster(dava.durusma, dava.durusmaSaati)}</div>
+              <div className="text-sm font-bold text-text">{durusmaTarihSaatGoster(sonrakiDurusma.tarih, sonrakiDurusma.saat)}</div>
             </div>
           </div>
-          <DurusmaBadge tarih={dava.durusma} saat={dava.durusmaSaati} />
+          <DurusmaBadge tarih={sonrakiDurusma.tarih} saat={sonrakiDurusma.saat} />
         </div>
       )}
 
@@ -1114,6 +1164,497 @@ function AnlasmaTab({ anlasma, onKaydet }: {
       </div>
       {typeof anlasma?.aciklama === 'string' && anlasma.aciklama && (
         <div className="p-3 bg-surface2/30 rounded-lg text-xs text-text-muted border border-border/30">{anlasma.aciklama}</div>
+      )}
+    </div>
+  );
+}
+
+// ── Duruşmalar Sekmesi ────────────────────────────────────────
+type DurusmaKaydi = {
+  id: string;
+  tarih: string;
+  saat?: string;
+  salon?: string;
+  hakim?: string;
+  sonuc?: 'erteleme' | 'kesif' | 'bilirkisi' | 'karar' | 'sozlu_savunma' | 'delil_inceleme' | 'diger';
+  sonucAciklama?: string;
+  katildiMi?: boolean;
+};
+
+const DURUSMA_SONUC_LABELS: Record<string, string> = {
+  erteleme: 'Erteleme',
+  kesif: 'Keşif',
+  bilirkisi: 'Bilirkişi',
+  karar: 'Karar',
+  sozlu_savunma: 'Sözlü Savunma',
+  delil_inceleme: 'Delil İnceleme',
+  diger: 'Diğer',
+};
+
+const DURUSMA_SONUC_RENK: Record<string, string> = {
+  erteleme: 'bg-gold-dim text-gold border-gold/20',
+  kesif: 'bg-blue-400/10 text-blue-400 border-blue-400/20',
+  bilirkisi: 'bg-purple-400/10 text-purple-400 border-purple-400/20',
+  karar: 'bg-green-dim text-green border-green/20',
+  sozlu_savunma: 'bg-orange-400/10 text-orange-400 border-orange-400/20',
+  delil_inceleme: 'bg-blue-400/10 text-blue-400 border-blue-400/20',
+  diger: 'bg-surface2 text-text-muted border-border',
+};
+
+function DurusmalarTab({ durusmalar, legacyDurusma, legacySaat, onEkle, onGuncelle, onSil }: {
+  durusmalar: DurusmaKaydi[];
+  legacyDurusma?: string;
+  legacySaat?: string;
+  onEkle: (d: DurusmaKaydi) => void;
+  onGuncelle: (d: DurusmaKaydi) => void;
+  onSil: (id: string) => void;
+}) {
+  const [form, setForm] = useState(false);
+  const [duzenleId, setDuzenleId] = useState<string | null>(null);
+  const [yeni, setYeni] = useState({ tarih: '', saat: '', salon: '', hakim: '' });
+  const [sonucDuzenle, setSonucDuzenle] = useState<string | null>(null);
+  const [sonucForm, setSonucForm] = useState<{ sonuc: string; sonucAciklama: string; katildiMi: boolean }>({ sonuc: '', sonucAciklama: '', katildiMi: true });
+
+  const bugun = new Date().toISOString().split('T')[0];
+
+  // Legacy duruşmayı listeye dahil et (eğer durusmalar dizisinde yoksa)
+  const tumDurusmalar = useMemo(() => {
+    const liste = [...durusmalar];
+    if (legacyDurusma && !durusmalar.some((d) => d.tarih === legacyDurusma)) {
+      liste.push({ id: '_legacy', tarih: legacyDurusma, saat: legacySaat });
+    }
+    return liste.sort((a, b) => a.tarih.localeCompare(b.tarih));
+  }, [durusmalar, legacyDurusma, legacySaat]);
+
+  const gelecek = tumDurusmalar.filter((d) => d.tarih >= bugun);
+  const gecmis = tumDurusmalar.filter((d) => d.tarih < bugun);
+
+  function handleKaydet() {
+    if (!yeni.tarih) return;
+    if (duzenleId) {
+      const mevcut = durusmalar.find((d) => d.id === duzenleId);
+      if (mevcut) {
+        onGuncelle({ ...mevcut, tarih: yeni.tarih, saat: yeni.saat || undefined, salon: yeni.salon || undefined, hakim: yeni.hakim || undefined });
+      }
+      setDuzenleId(null);
+    } else {
+      onEkle({ id: crypto.randomUUID(), tarih: yeni.tarih, saat: yeni.saat || undefined, salon: yeni.salon || undefined, hakim: yeni.hakim || undefined });
+    }
+    setYeni({ tarih: '', saat: '', salon: '', hakim: '' });
+    setForm(false);
+  }
+
+  function handleDuzenle(d: DurusmaKaydi) {
+    setYeni({ tarih: d.tarih, saat: d.saat || '', salon: d.salon || '', hakim: d.hakim || '' });
+    setDuzenleId(d.id);
+    setForm(true);
+  }
+
+  function handleSonucKaydet(id: string) {
+    const mevcut = durusmalar.find((d) => d.id === id);
+    if (!mevcut) return;
+    onGuncelle({
+      ...mevcut,
+      sonuc: (sonucForm.sonuc as DurusmaKaydi['sonuc']) || undefined,
+      sonucAciklama: sonucForm.sonucAciklama || undefined,
+      katildiMi: sonucForm.katildiMi,
+    });
+    setSonucDuzenle(null);
+    setSonucForm({ sonuc: '', sonucAciklama: '', katildiMi: true });
+  }
+
+  function durusmaRenk(d: DurusmaKaydi): string {
+    if (d.tarih === bugun) return 'bg-gold-dim border-gold/30 shadow-[0_0_8px_rgba(201,168,76,0.1)]';
+    if (d.tarih > bugun) return 'bg-blue-400/5 border-blue-400/20';
+    return 'bg-surface2/50 border-border/50';
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-xs text-text-muted">
+          {tumDurusmalar.length > 0 && <>{tumDurusmalar.length} duruşma &middot; {gelecek.length} gelecek</>}
+        </span>
+        <button onClick={() => { setForm(!form); setDuzenleId(null); setYeni({ tarih: '', saat: '', salon: '', hakim: '' }); }}
+          className="px-3 py-1.5 bg-gold text-bg font-semibold rounded-lg text-xs hover:bg-gold-light transition-colors">
+          {form ? 'İptal' : '+ Yeni Duruşma Ekle'}
+        </button>
+      </div>
+
+      {form && (
+        <div className="bg-surface2/50 border border-border rounded-xl p-4 mb-4 space-y-3">
+          <div className="text-[11px] font-bold text-text-muted uppercase tracking-wider">{duzenleId ? 'Duruşma Düzenle' : 'Yeni Duruşma'}</div>
+          <div className="grid grid-cols-4 gap-3">
+            <div>
+              <label className="text-[10px] text-text-muted block mb-1">Tarih *</label>
+              <input type="date" value={yeni.tarih} onChange={(e) => setYeni((p) => ({ ...p, tarih: e.target.value }))} className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold" />
+            </div>
+            <div>
+              <label className="text-[10px] text-text-muted block mb-1">Saat</label>
+              <input type="time" value={yeni.saat} onChange={(e) => setYeni((p) => ({ ...p, saat: e.target.value }))} className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold" />
+            </div>
+            <div>
+              <label className="text-[10px] text-text-muted block mb-1">Salon</label>
+              <input type="text" value={yeni.salon} onChange={(e) => setYeni((p) => ({ ...p, salon: e.target.value }))} placeholder="Ör: Salon 3" className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text placeholder:text-text-dim focus:outline-none focus:border-gold" />
+            </div>
+            <div>
+              <label className="text-[10px] text-text-muted block mb-1">Hakim</label>
+              <input type="text" value={yeni.hakim} onChange={(e) => setYeni((p) => ({ ...p, hakim: e.target.value }))} placeholder="Hakim adı" className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text placeholder:text-text-dim focus:outline-none focus:border-gold" />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <button onClick={handleKaydet} disabled={!yeni.tarih} className="px-4 py-1.5 bg-gold text-bg text-xs font-semibold rounded-lg hover:bg-gold-light transition-colors disabled:opacity-40">{duzenleId ? 'Güncelle' : 'Kaydet'}</button>
+          </div>
+        </div>
+      )}
+
+      {tumDurusmalar.length === 0 && !form ? (
+        <EmptyTab
+          icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-text-dim"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>}
+          message="Henüz duruşma kaydı yok"
+          action="+ Yeni Duruşma Ekle"
+          onAction={() => setForm(true)}
+        />
+      ) : (
+        <div className="space-y-4">
+          {/* Gelecek duruşmalar */}
+          {gelecek.length > 0 && (
+            <div>
+              <SectionHeader title="Gelecek Duruşmalar" />
+              <div className="space-y-2 mt-2">
+                {gelecek.map((d) => {
+                  const kalan = Math.ceil((new Date(d.tarih).getTime() - new Date().getTime()) / 86400000);
+                  return (
+                    <div key={d.id} className={`rounded-xl p-3 border transition-colors ${durusmaRenk(d)} group`}>
+                      <div className="flex items-center gap-3">
+                        <div className="flex-shrink-0 w-12 text-center">
+                          <div className={`text-lg font-bold ${d.tarih === bugun ? 'text-gold' : 'text-blue-400'}`}>
+                            {new Date(d.tarih + 'T00:00:00').getDate()}
+                          </div>
+                          <div className="text-[9px] text-text-muted uppercase">
+                            {new Date(d.tarih + 'T00:00:00').toLocaleDateString('tr-TR', { month: 'short' })}
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-text">{fmtTarih(d.tarih)}</span>
+                            {d.saat && <span className="text-xs text-text-muted font-mono">{d.saat}</span>}
+                            {d.tarih === bugun && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gold/20 text-gold border border-gold/30">BUGUN</span>}
+                          </div>
+                          <div className="flex items-center gap-3 mt-0.5 text-[11px] text-text-muted">
+                            {d.salon && <span>Salon: {d.salon}</span>}
+                            {d.hakim && <span>Hakim: {d.hakim}</span>}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            kalan <= 3 ? 'bg-red/15 text-red' : kalan <= 7 ? 'bg-gold/15 text-gold' : 'bg-blue-400/10 text-blue-400'
+                          }`}>
+                            {kalan === 0 ? 'Bugün' : `${kalan} gün`}
+                          </span>
+                          {d.id !== '_legacy' && (
+                            <div className="opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
+                              <button onClick={() => handleDuzenle(d)} className="text-text-dim hover:text-gold p-1" title="Düzenle">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                              </button>
+                              <button onClick={() => onSil(d.id)} className="text-text-dim hover:text-red p-1" title="Sil">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Geçmiş duruşmalar */}
+          {gecmis.length > 0 && (
+            <div>
+              <SectionHeader title="Geçmiş Duruşmalar" />
+              <div className="space-y-2 mt-2">
+                {gecmis.slice().reverse().map((d) => (
+                  <div key={d.id} className={`rounded-xl p-3 border ${durusmaRenk(d)} group`}>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-shrink-0 w-12 text-center opacity-60">
+                        <div className="text-lg font-bold text-text-dim">
+                          {new Date(d.tarih + 'T00:00:00').getDate()}
+                        </div>
+                        <div className="text-[9px] text-text-dim uppercase">
+                          {new Date(d.tarih + 'T00:00:00').toLocaleDateString('tr-TR', { month: 'short' })}
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium text-text-muted">{fmtTarih(d.tarih)}</span>
+                          {d.saat && <span className="text-xs text-text-dim font-mono">{d.saat}</span>}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {d.sonuc && (
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${DURUSMA_SONUC_RENK[d.sonuc] || 'bg-surface2 text-text-muted border-border'}`}>
+                              {DURUSMA_SONUC_LABELS[d.sonuc] || d.sonuc}
+                            </span>
+                          )}
+                          {d.katildiMi === false && (
+                            <span className="text-[10px] text-red">Katılınmadı</span>
+                          )}
+                          {d.sonucAciklama && (
+                            <span className="text-[11px] text-text-dim truncate">{d.sonucAciklama}</span>
+                          )}
+                          {d.salon && <span className="text-[11px] text-text-dim">Salon: {d.salon}</span>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {d.id !== '_legacy' && !d.sonuc && (
+                          <button
+                            onClick={() => { setSonucDuzenle(d.id); setSonucForm({ sonuc: d.sonuc || '', sonucAciklama: d.sonucAciklama || '', katildiMi: d.katildiMi !== false }); }}
+                            className="text-[10px] px-2 py-1 rounded-lg bg-gold/10 text-gold border border-gold/20 hover:bg-gold/20 transition-colors"
+                          >
+                            Sonuç Gir
+                          </button>
+                        )}
+                        {d.id !== '_legacy' && d.sonuc && (
+                          <button
+                            onClick={() => { setSonucDuzenle(d.id); setSonucForm({ sonuc: d.sonuc || '', sonucAciklama: d.sonucAciklama || '', katildiMi: d.katildiMi !== false }); }}
+                            className="text-text-dim hover:text-gold p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Sonucu Düzenle"
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                          </button>
+                        )}
+                        {d.id !== '_legacy' && (
+                          <button onClick={() => onSil(d.id)} className="text-text-dim hover:text-red p-1 opacity-0 group-hover:opacity-100 transition-opacity" title="Sil">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Sonuç düzenleme formu */}
+                    {sonucDuzenle === d.id && (
+                      <div className="mt-3 pt-3 border-t border-border/50 space-y-3">
+                        <div className="grid grid-cols-3 gap-3">
+                          <div>
+                            <label className="text-[10px] text-text-muted block mb-1">Sonuç</label>
+                            <select value={sonucForm.sonuc} onChange={(e) => setSonucForm((p) => ({ ...p, sonuc: e.target.value }))}
+                              className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold">
+                              <option value="">Seçiniz...</option>
+                              {Object.entries(DURUSMA_SONUC_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-text-muted block mb-1">Açıklama</label>
+                            <input type="text" value={sonucForm.sonucAciklama} onChange={(e) => setSonucForm((p) => ({ ...p, sonucAciklama: e.target.value }))}
+                              placeholder="Kısa not..." className="w-full px-2 py-1.5 text-xs bg-surface border border-border rounded-lg text-text placeholder:text-text-dim focus:outline-none focus:border-gold" />
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-text-muted block mb-1">Katılım</label>
+                            <div className="flex items-center gap-3 mt-1">
+                              <label className="flex items-center gap-1.5 text-xs text-text cursor-pointer">
+                                <input type="checkbox" checked={sonucForm.katildiMi} onChange={(e) => setSonucForm((p) => ({ ...p, katildiMi: e.target.checked }))}
+                                  className="rounded border-border text-gold focus:ring-gold" />
+                                Katıldım
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <button onClick={() => setSonucDuzenle(null)} className="px-3 py-1 text-xs text-text-muted hover:text-text transition-colors">İptal</button>
+                          <button onClick={() => handleSonucKaydet(d.id)} className="px-4 py-1.5 bg-gold text-bg text-xs font-semibold rounded-lg hover:bg-gold-light transition-colors">Kaydet</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Karar Sekmesi ────────────────────────────────────────────
+const KARAR_SONUC_LABELS: Record<string, string> = {
+  lehte: 'Lehte',
+  aleyhte: 'Aleyhte',
+  kismenLehte: 'Kısmen Lehte',
+  dusme: 'Düşme',
+  feragat: 'Feragat',
+  sulh: 'Sulh',
+};
+
+const KARAR_SONUC_RENK: Record<string, string> = {
+  lehte: 'bg-green-dim text-green border-green/20',
+  aleyhte: 'bg-red/10 text-red border-red/20',
+  kismenLehte: 'bg-gold-dim text-gold border-gold/20',
+  dusme: 'bg-surface2 text-text-muted border-border',
+  feragat: 'bg-surface2 text-text-dim border-border',
+  sulh: 'bg-blue-400/10 text-blue-400 border-blue-400/20',
+};
+
+type KararData = {
+  tarih?: string;
+  no?: string;
+  sonuc?: 'lehte' | 'aleyhte' | 'kismenLehte' | 'dusme' | 'feragat' | 'sulh';
+  ozet?: string;
+  kesinlestiMi?: boolean;
+  kesinlesmeTarihi?: string;
+  temyizEdildiMi?: boolean;
+};
+
+function KararTab({ karar, durum, onKaydet }: {
+  karar?: KararData;
+  durum?: string;
+  onKaydet: (k: KararData) => void;
+}) {
+  const [duzenle, setDuzenle] = useState(false);
+  const [form, setForm] = useState<KararData>({
+    tarih: karar?.tarih || '',
+    no: karar?.no || '',
+    sonuc: karar?.sonuc,
+    ozet: karar?.ozet || '',
+    kesinlestiMi: karar?.kesinlestiMi || false,
+    kesinlesmeTarihi: karar?.kesinlesmeTarihi || '',
+    temyizEdildiMi: karar?.temyizEdildiMi || false,
+  });
+
+  const hasKarar = karar && (karar.sonuc || karar.tarih || karar.no);
+
+  function handleKaydet() {
+    const yeni: KararData = {};
+    if (form.tarih) yeni.tarih = form.tarih;
+    if (form.no) yeni.no = form.no;
+    if (form.sonuc) yeni.sonuc = form.sonuc;
+    if (form.ozet) yeni.ozet = form.ozet;
+    yeni.kesinlestiMi = form.kesinlestiMi;
+    if (form.kesinlesmeTarihi) yeni.kesinlesmeTarihi = form.kesinlesmeTarihi;
+    yeni.temyizEdildiMi = form.temyizEdildiMi;
+    onKaydet(yeni);
+    setDuzenle(false);
+  }
+
+  function handleDuzenleBasla() {
+    if (hasKarar) {
+      setForm({
+        tarih: karar?.tarih || '',
+        no: karar?.no || '',
+        sonuc: karar?.sonuc,
+        ozet: karar?.ozet || '',
+        kesinlestiMi: karar?.kesinlestiMi || false,
+        kesinlesmeTarihi: karar?.kesinlesmeTarihi || '',
+        temyizEdildiMi: karar?.temyizEdildiMi || false,
+      });
+    }
+    setDuzenle(true);
+  }
+
+  if (duzenle) {
+    return (
+      <div className="space-y-4">
+        <div className="text-[11px] font-bold text-text-muted uppercase tracking-wider">{hasKarar ? 'Karar Düzenle' : 'Karar Bilgisi Gir'}</div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-[10px] text-text-muted block mb-1">Karar Tarihi</label>
+            <input type="date" value={form.tarih || ''} onChange={(e) => setForm((p) => ({ ...p, tarih: e.target.value }))}
+              className="w-full px-3 py-2 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold" />
+          </div>
+          <div>
+            <label className="text-[10px] text-text-muted block mb-1">Karar No</label>
+            <input type="text" value={form.no || ''} onChange={(e) => setForm((p) => ({ ...p, no: e.target.value }))} placeholder="Ör: 2026/123"
+              className="w-full px-3 py-2 text-xs bg-surface border border-border rounded-lg text-text placeholder:text-text-dim focus:outline-none focus:border-gold" />
+          </div>
+          <div>
+            <label className="text-[10px] text-text-muted block mb-1">Sonuç</label>
+            <select value={form.sonuc || ''} onChange={(e) => setForm((p) => ({ ...p, sonuc: (e.target.value || undefined) as KararData['sonuc'] }))}
+              className="w-full px-3 py-2 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold">
+              <option value="">Seçiniz...</option>
+              {Object.entries(KARAR_SONUC_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] text-text-muted block mb-1">Kesinleşme Tarihi</label>
+            <input type="date" value={form.kesinlesmeTarihi || ''} onChange={(e) => setForm((p) => ({ ...p, kesinlesmeTarihi: e.target.value }))}
+              className="w-full px-3 py-2 text-xs bg-surface border border-border rounded-lg text-text focus:outline-none focus:border-gold" />
+          </div>
+          <div className="col-span-2">
+            <label className="text-[10px] text-text-muted block mb-1">Karar Özeti</label>
+            <textarea value={form.ozet || ''} onChange={(e) => setForm((p) => ({ ...p, ozet: e.target.value }))} rows={3} placeholder="Karar ile ilgili özet bilgi..."
+              className="w-full px-3 py-2 text-xs bg-surface border border-border rounded-lg text-text placeholder:text-text-dim focus:outline-none focus:border-gold resize-none" />
+          </div>
+          <div className="flex items-center gap-6">
+            <label className="flex items-center gap-1.5 text-xs text-text cursor-pointer">
+              <input type="checkbox" checked={form.kesinlestiMi || false} onChange={(e) => setForm((p) => ({ ...p, kesinlestiMi: e.target.checked }))}
+                className="rounded border-border text-gold focus:ring-gold" />
+              Kesinleşti
+            </label>
+            <label className="flex items-center gap-1.5 text-xs text-text cursor-pointer">
+              <input type="checkbox" checked={form.temyizEdildiMi || false} onChange={(e) => setForm((p) => ({ ...p, temyizEdildiMi: e.target.checked }))}
+                className="rounded border-border text-gold focus:ring-gold" />
+              Temyiz Edildi
+            </label>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2">
+          <button onClick={() => setDuzenle(false)} className="px-4 py-1.5 bg-surface border border-border text-xs text-text-muted rounded-lg hover:text-text transition-colors">İptal</button>
+          <button onClick={handleKaydet} className="px-4 py-1.5 bg-gold text-bg text-xs font-semibold rounded-lg hover:bg-gold-light transition-colors">Kaydet</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasKarar) {
+    return (
+      <EmptyTab
+        icon={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-text-dim"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>}
+        message="Henüz karar bilgisi girilmemiş"
+        action="+ Karar Bilgisi Gir"
+        onAction={handleDuzenleBasla}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="text-[11px] font-bold text-text-muted uppercase tracking-wider">Karar Bilgileri</div>
+        <button onClick={handleDuzenleBasla} className="text-xs px-3 py-1.5 rounded-lg bg-gold/10 text-gold border border-gold/20 hover:bg-gold/20 transition-colors flex items-center gap-1.5">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Düzenle
+        </button>
+      </div>
+
+      {/* Sonuç vurgu kartı */}
+      {karar?.sonuc && (
+        <div className={`rounded-xl p-4 border ${KARAR_SONUC_RENK[karar.sonuc] || 'bg-surface2 border-border'}`}>
+          <div className="flex items-center gap-3">
+            <div className="text-2xl">
+              {karar.sonuc === 'lehte' ? '✅' : karar.sonuc === 'aleyhte' ? '❌' : karar.sonuc === 'kismenLehte' ? '⚖️' : karar.sonuc === 'sulh' ? '🤝' : '📋'}
+            </div>
+            <div>
+              <div className="text-xs font-bold">{KARAR_SONUC_LABELS[karar.sonuc]}</div>
+              {karar.tarih && <div className="text-[11px] opacity-80 mt-0.5">{fmtTarih(karar.tarih)}</div>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-3">
+        {karar?.tarih && <InfoRow label="Karar Tarihi" value={fmtTarih(karar.tarih)} />}
+        {karar?.no && <InfoRow label="Karar No" value={karar.no} />}
+        <InfoRow label="Kesinleşme" value={karar?.kesinlestiMi ? (karar.kesinlesmeTarihi ? `Kesinleşti (${fmtTarih(karar.kesinlesmeTarihi)})` : 'Kesinleşti') : 'Henüz kesinleşmedi'} />
+        <InfoRow label="Temyiz" value={karar?.temyizEdildiMi ? 'Temyiz edildi' : 'Temyiz edilmedi'} />
+      </div>
+
+      {karar?.ozet && (
+        <div>
+          <div className="text-[10px] text-text-dim uppercase tracking-wider mb-1">Karar Özeti</div>
+          <div className="p-3 bg-surface2/30 rounded-lg text-xs text-text border border-border/30 whitespace-pre-wrap">{karar.ozet}</div>
+        </div>
       )}
     </div>
   );

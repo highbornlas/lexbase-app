@@ -228,13 +228,20 @@ export function Topbar({ onToggleSidebar }: TopbarProps) {
               </div>
 
               {/* Footer */}
-              <div className="px-4 py-2 border-t border-border/50 text-center">
+              <div className="px-4 py-2 border-t border-border/50 flex items-center justify-between">
+                <Link
+                  href="/bildirimler"
+                  onClick={() => setBildirimOpen(false)}
+                  className="text-[11px] text-text-muted hover:text-gold transition-colors"
+                >
+                  Tüm Bildirimleri Gör
+                </Link>
                 <Link
                   href="/ayarlar"
                   onClick={() => setBildirimOpen(false)}
                   className="text-[11px] text-text-muted hover:text-gold transition-colors"
                 >
-                  ⚙️ Bildirim Ayarları
+                  ⚙️ Ayarlar
                 </Link>
               </div>
             </div>

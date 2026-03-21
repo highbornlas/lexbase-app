@@ -171,9 +171,12 @@ export function MuvekkilModal({ open, onClose, muvekkil, onCreated }: MuvekkilMo
     if (form.tel) formatHata = telefonDogrula(form.tel);
     if (!formatHata && form.mail) formatHata = epostaDogrula(form.mail);
     if (formatHata) { setHata(formatHata); return false; }
-    // Telefon formatla
-    if (form.tel) form.tel = telefonFormatla(form.tel);
-    if (form.yetkiliTel) form.yetkiliTel = telefonFormatla(form.yetkiliTel);
+    // Telefon formatla (state'i mutasyona uğratmadan güncelle)
+    setForm(prev => ({
+      ...prev,
+      tel: telefonFormatla(prev.tel || ''),
+      yetkiliTel: telefonFormatla(prev.yetkiliTel || ''),
+    }));
     setHata('');
     return true;
   }

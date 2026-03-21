@@ -71,6 +71,50 @@ export interface Icra {
     pttSonuc?: string;
     not?: string;
   }>;
+  // Alacak kalemleri
+  alacakKalemleri?: {
+    asilAlacak?: number;
+    islemisiFaiz?: number;
+    davaMasrafi?: number;
+    vekaletUcreti?: number;
+    icraHarci?: number;
+    digerMasraflar?: number;
+  };
+  // Haciz kayıtları
+  hacizler?: Array<{
+    id: string;
+    tarih: string;
+    tur: 'banka' | 'maas' | 'tasinir' | 'tasinmaz' | 'arac' | 'diger';
+    aciklama: string;
+    kurum?: string;
+    tutar?: number;
+    durum: 'talep_edildi' | 'uygulandi' | 'kaldirildi' | 'sonucsuz';
+  }>;
+  // Ödeme planı
+  odemePlani?: {
+    aktif: boolean;
+    toplamTutar: number;
+    taksitSayisi: number;
+    baslangicTarihi: string;
+    taksitler: Array<{
+      id: string;
+      no: number;
+      vadeTarihi: string;
+      tutar: number;
+      odpiYapildiMi: boolean;
+      odemeTarihi?: string;
+    }>;
+  };
+  // Borçlu detay bilgileri
+  borcluDetay?: {
+    tcVkn?: string;
+    adres?: string;
+    isveren?: string;
+    isverenAdres?: string;
+    bankaHesaplari?: string[];
+    aracPlakalari?: string[];
+    tasinmazlar?: string[];
+  };
   // Alt veriler
   evraklar?: Record<string, unknown>[];
   notlar?: Record<string, unknown>[];

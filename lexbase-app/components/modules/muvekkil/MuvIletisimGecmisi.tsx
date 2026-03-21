@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useMuvIletisimler, useIletisimKaydet, useIletisimSil, KANALLAR, type Iletisim } from '@/lib/hooks/useIletisimler';
 import { Modal, FormGroup, FormInput, FormSelect, FormTextarea, BtnGold, BtnOutline } from '@/components/ui/Modal';
 
@@ -161,7 +161,26 @@ function IletisimEkleModal({
 
   const set = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
 
-  // Reset form when modal opens
+  // Pre-fill form when editing an existing iletisim
+  useEffect(() => {
+    if (open && iletisim) {
+      setForm({
+        tarih: iletisim.tarih || new Date().toISOString().slice(0, 10),
+        saat: iletisim.saat || new Date().toTimeString().slice(0, 5),
+        kanal: iletisim.kanal || 'Telefon',
+        konu: iletisim.konu || '',
+        ozet: iletisim.ozet || '',
+      });
+    } else if (open && !iletisim) {
+      setForm({
+        tarih: new Date().toISOString().slice(0, 10),
+        saat: new Date().toTimeString().slice(0, 5),
+        kanal: 'Telefon',
+        konu: '',
+        ozet: '',
+      });
+    }
+  }, [open, iletisim]);
   const handleSubmit = () => {
     if (!form.konu.trim()) return;
     onKaydet({

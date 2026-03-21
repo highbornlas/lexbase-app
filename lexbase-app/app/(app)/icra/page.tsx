@@ -52,9 +52,14 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
 const DEFAULT_PAGE_SIZE = 10;
 
 /* ── Süre gün sayisi (tür bazli) ── */
-function itirazGunSayisi(tur?: string): number {
-  if (tur === 'Kambiyo') return 5;
-  return 7;
+function itirazGunSayisi(takipTuru?: string): number {
+  switch (takipTuru) {
+    case 'Kambiyo': return 5;
+    case 'İlamlı': return 0; // İlamlı icrada itiraz yok, şikayet 7 gün
+    case 'İpotekli': return 7;
+    case 'Rehinin Paraya Çevrilmesi': return 7;
+    default: return 7; // Genel haciz yolu
+  }
 }
 
 /* ── Satir vurgulama (süre bazli) ── */

@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useOnayTalepleri, useOnayIslem, useOnayAyarlari, useOnayAyarlariGuncelle, ISLEM_ETIKETLERI, type OnayTalebi } from '@/lib/hooks/useOnay';
 import { useYetki } from '@/lib/hooks/useRol';
+import { createClient } from '@/lib/supabase/client';
 
 /* ══════════════════════════════════════════════════════════════
    Onaylar Sayfası — Maker/Checker Onay Mekanizması
@@ -24,31 +25,42 @@ export default function OnaylarPage() {
 
   const { yetkili } = useYetki('kullanici:yonet');
   const [sekme, setSekme] = useState<Sekme>('beklemede');
+  const [authId, setAuthId] = useState<string | null>(null);
+
+  // Mevcut kullanıcının auth_id'sini al
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setAuthId(user.id);
+    });
+  }, []);
 
   const { data: bekleyenler } = useOnayTalepleri({ durum: 'beklemede' });
   const { data: onaylananlar } = useOnayTalepleri({ durum: 'onaylandi' });
   const { data: reddedilenler } = useOnayTalepleri({ durum: 'reddedildi' });
 
-  const sekmeSayilari: Record<string, number> = {
-    beklemede: bekleyenler?.length ?? 0,
-    onaylandi: onaylananlar?.length ?? 0,
-    reddedildi: reddedilenler?.length ?? 0,
+  // Yönetici değilse sadece kendi taleplerini göster
+  const filtrele = (liste: OnayTalebi[] | undefined) => {
+    if (!liste) return [];
+    if (yetkili) return liste;
+    if (!authId) return [];
+    return liste.filter((t) => t.talep_eden_auth_id === authId);
   };
 
-  const aktifListe = sekme === 'beklemede' ? bekleyenler
-    : sekme === 'onaylandi' ? onaylananlar
-    : sekme === 'reddedildi' ? reddedilenler
-    : [];
+  const filtreliBekleyenler = filtrele(bekleyenler);
+  const filtreliOnaylananlar = filtrele(onaylananlar);
+  const filtreliReddedilenler = filtrele(reddedilenler);
 
-  if (!yetkili) {
-    return (
-      <div className="text-center py-16">
-        <div className="text-4xl mb-3">🔒</div>
-        <p className="text-sm text-text-muted">Bu sayfaya erişim yetkiniz yok</p>
-        <p className="text-[11px] text-text-dim mt-1">Onay yönetimi yalnızca büro sahibi ve yöneticilere açıktır</p>
-      </div>
-    );
-  }
+  const sekmeSayilari: Record<string, number> = {
+    beklemede: filtreliBekleyenler.length,
+    onaylandi: filtreliOnaylananlar.length,
+    reddedildi: filtreliReddedilenler.length,
+  };
+
+  const aktifListe = sekme === 'beklemede' ? filtreliBekleyenler
+    : sekme === 'onaylandi' ? filtreliOnaylananlar
+    : sekme === 'reddedildi' ? filtreliReddedilenler
+    : [];
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-8rem)]">
@@ -82,7 +94,9 @@ export default function OnaylarPage() {
 
       {/* Sekmeler */}
       <div className="flex gap-1 mb-4 bg-surface border border-border rounded-lg p-1">
-        {(Object.entries(SEKME_LABELS) as [Sekme, { label: string; icon: string }][]).map(([key, val]) => (
+        {(Object.entries(SEKME_LABELS) as [Sekme, { label: string; icon: string }][])
+          .filter(([key]) => key !== 'ayarlar' || yetkili)
+          .map(([key, val]) => (
           <button
             key={key}
             onClick={() => setSekme(key)}
@@ -112,6 +126,7 @@ export default function OnaylarPage() {
         <OnayListesi
           talepler={aktifListe || []}
           sekme={sekme}
+          yonetici={yetkili}
         />
       )}
     </div>
@@ -121,7 +136,7 @@ export default function OnaylarPage() {
 /* ══════════════════════════════════════════════════════════════
    Onay Listesi
    ══════════════════════════════════════════════════════════════ */
-function OnayListesi({ talepler, sekme }: { talepler: OnayTalebi[]; sekme: string }) {
+function OnayListesi({ talepler, sekme, yonetici }: { talepler: OnayTalebi[]; sekme: string; yonetici: boolean }) {
   const onayIslem = useOnayIslem();
   const [redModalId, setRedModalId] = useState<string | null>(null);
   const [redNedeni, setRedNedeni] = useState('');
@@ -203,8 +218,8 @@ function OnayListesi({ talepler, sekme }: { talepler: OnayTalebi[]; sekme: strin
                 )}
               </div>
 
-              {/* Aksiyonlar — sadece beklemede */}
-              {sekme === 'beklemede' && (
+              {/* Aksiyonlar — sadece beklemede ve yöneticiler */}
+              {sekme === 'beklemede' && yonetici && (
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   <button
                     onClick={() => handleOnayla(t.id)}

@@ -60,6 +60,8 @@ const bos: Partial<Icra> = {
   kapanisSebebi: '',
   kapanisTarih: '',
   not: '',
+  alacakKalemleri: {},
+  borcluDetay: {},
 };
 
 type Adim = 1 | 2 | 3;
@@ -366,6 +368,19 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
               vekilEklenebilir
             />
 
+            {/* Borçlu detay bilgileri (temel) */}
+            <div className="border-t border-border/50 pt-3">
+              <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-2">Borclu Detay</div>
+              <div className="grid grid-cols-2 gap-3">
+                <FormGroup label="TC / VKN">
+                  <FormInput value={(form.borcluDetay as Record<string, string | undefined>)?.tcVkn || ''} onChange={(e) => setForm((prev) => ({ ...prev, borcluDetay: { ...prev.borcluDetay, tcVkn: e.target.value } }))} placeholder="TC Kimlik No veya VKN" />
+                </FormGroup>
+                <FormGroup label="Borclu Adresi">
+                  <FormInput value={(form.borcluDetay as Record<string, string | undefined>)?.adres || ''} onChange={(e) => setForm((prev) => ({ ...prev, borcluDetay: { ...prev.borcluDetay, adres: e.target.value } }))} placeholder="Adres" />
+                </FormGroup>
+              </div>
+            </div>
+
             <div className="grid grid-cols-3 gap-4">
               <FormGroup label="Takip Türü" required>
                 <FormSelect value={form.tur || ''} onChange={(e) => handleChange('tur', e.target.value)}>
@@ -534,6 +549,22 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
                 </FormGroup>
                 <FormGroup label="Faiz (%)">
                   <FormInput type="number" value={form.faiz || ''} onChange={(e) => handleChange('faiz', Number(e.target.value))} placeholder="0" />
+                </FormGroup>
+              </div>
+            </div>
+
+            {/* Alacak Kalemleri */}
+            <div className="border-t border-border/50 pt-4">
+              <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-3">Alacak Kalemleri</div>
+              <div className="grid grid-cols-3 gap-3">
+                <FormGroup label="Asil Alacak (TL)">
+                  <FormInput type="number" value={(form.alacakKalemleri as Record<string, number | undefined>)?.asilAlacak || ''} onChange={(e) => setForm((prev) => ({ ...prev, alacakKalemleri: { ...prev.alacakKalemleri, asilAlacak: Number(e.target.value) || undefined } }))} placeholder="0" />
+                </FormGroup>
+                <FormGroup label="Islemis Faiz (TL)">
+                  <FormInput type="number" value={(form.alacakKalemleri as Record<string, number | undefined>)?.islemisiFaiz || ''} onChange={(e) => setForm((prev) => ({ ...prev, alacakKalemleri: { ...prev.alacakKalemleri, islemisiFaiz: Number(e.target.value) || undefined } }))} placeholder="0" />
+                </FormGroup>
+                <FormGroup label="Vekalet Ucreti (TL)">
+                  <FormInput type="number" value={(form.alacakKalemleri as Record<string, number | undefined>)?.vekaletUcreti || ''} onChange={(e) => setForm((prev) => ({ ...prev, alacakKalemleri: { ...prev.alacakKalemleri, vekaletUcreti: Number(e.target.value) || undefined } }))} placeholder="0" />
                 </FormGroup>
               </div>
             </div>

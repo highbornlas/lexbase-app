@@ -138,28 +138,54 @@ export function useEtkinlikSil() {
 function davaSanalEtkinlikler(davalar: Dava[]): Etkinlik[] {
   const liste: Etkinlik[] = [];
   for (const d of davalar) {
-    // Duruşma tarihi
-    if (d.durusma && d.durum !== 'Kapalı') {
+    if (d.durum === 'Kapalı') {
+      // Kapalı davalar için sadece süreleri işle, duruşmaları atla
+    } else {
       const mahkeme = [d.mtur, d.mno].filter(Boolean).join(' ') || d.mahkeme;
       const yer = [d.adliye, mahkeme].filter(Boolean).join(' — ');
-      const e: Etkinlik = {
-        id: `sanal-durusma-${d.id}`,
-        baslik: `Duruşma: ${d.konu || d.no || 'Dava'}`,
-        tarih: d.durusma,
-        saat: d.durusmaSaati,
-        tur: 'Duruşma',
-        muvId: d.muvId,
-        davNo: d.no,
-        yer,
-        sanal: true,
-        kaynak: 'dava',
-        kaynakId: d.id,
-        kaynakUrl: `/davalar/${d.id}`,
-      };
-      // Adli tatil uzaması kontrolü
-      const uzama = adliTatilSureUzamasi(d.durusma);
-      if (uzama) e.adliTatilUzama = uzama;
-      liste.push(e);
+
+      // Çoklu duruşma desteği: durusmalar[] dizisinden etkinlik oluştur
+      if (d.durusmalar?.length) {
+        for (const dur of d.durusmalar) {
+          if (!dur.tarih) continue;
+          const e: Etkinlik = {
+            id: `sanal-durusma-${d.id}-${dur.id}`,
+            baslik: `Duruşma: ${d.konu || d.no || 'Dava'}`,
+            tarih: dur.tarih,
+            saat: dur.saat,
+            tur: 'Duruşma',
+            muvId: d.muvId,
+            davNo: d.no,
+            yer: dur.salon ? `${yer} (${dur.salon})` : yer,
+            sanal: true,
+            kaynak: 'dava',
+            kaynakId: d.id,
+            kaynakUrl: `/davalar/${d.id}`,
+          };
+          const uzama = adliTatilSureUzamasi(dur.tarih);
+          if (uzama) e.adliTatilUzama = uzama;
+          liste.push(e);
+        }
+      } else if (d.durusma) {
+        // Geriye uyumluluk: tekli duruşma alanından etkinlik oluştur
+        const e: Etkinlik = {
+          id: `sanal-durusma-${d.id}`,
+          baslik: `Duruşma: ${d.konu || d.no || 'Dava'}`,
+          tarih: d.durusma,
+          saat: d.durusmaSaati,
+          tur: 'Duruşma',
+          muvId: d.muvId,
+          davNo: d.no,
+          yer,
+          sanal: true,
+          kaynak: 'dava',
+          kaynakId: d.id,
+          kaynakUrl: `/davalar/${d.id}`,
+        };
+        const uzama = adliTatilSureUzamasi(d.durusma);
+        if (uzama) e.adliTatilUzama = uzama;
+        liste.push(e);
+      }
     }
 
     // Dava süreleri
