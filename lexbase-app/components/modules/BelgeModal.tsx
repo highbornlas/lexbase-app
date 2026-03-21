@@ -110,8 +110,38 @@ export function BelgeModal({ open, onClose, onKaydet, yukleniyor }: Props) {
 
   const MAX_BOYUT = 5 * 1024 * 1024;
 
+  // İzin verilen dosya türleri
+  const IZINLI_TIPLER: Record<string, string[]> = {
+    'application/pdf': ['.pdf'],
+    'image/jpeg': ['.jpg', '.jpeg'],
+    'image/png': ['.png'],
+    'image/tiff': ['.tif', '.tiff'],
+    'application/msword': ['.doc'],
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+    'application/vnd.ms-excel': ['.xls'],
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+    'text/plain': ['.txt'],
+  };
+
+  const IZINLI_UZANTILAR = new Set(Object.values(IZINLI_TIPLER).flat());
+  const IZINLI_MIME_TIPLERI = new Set(Object.keys(IZINLI_TIPLER));
+
   const handleDosyaSec = (file: File | null) => {
     if (!file) return;
+
+    // Dosya türü kontrolü (uzantı + MIME)
+    const uzanti = ('.' + (file.name.split('.').pop() || '')).toLowerCase();
+    if (!IZINLI_UZANTILAR.has(uzanti)) {
+      setBoyutHata('Desteklenmeyen dosya türü. İzin verilen: PDF, Word, Excel, resim dosyaları.');
+      return;
+    }
+    // MIME tip kontrolü (boş MIME kabul edilir — bazı OS'ler MIME vermez)
+    if (file.type && !IZINLI_MIME_TIPLERI.has(file.type)) {
+      setBoyutHata('Desteklenmeyen dosya türü. İzin verilen: PDF, Word, Excel, resim dosyaları.');
+      return;
+    }
+
+    // Boyut kontrolü
     if (file.size > MAX_BOYUT) {
       setBoyutHata('Dosya boyutu 5MB\'dan büyük olamaz');
       return;
@@ -231,14 +261,14 @@ export function BelgeModal({ open, onClose, onKaydet, yukleniyor }: Props) {
           <div>
             <div className="text-3xl mb-2">📎</div>
             <div className="text-sm text-text-muted">Dosyayı sürükleyip bırakın</div>
-            <div className="text-xs text-text-dim mt-1">.pdf .doc .docx .jpg .png .xls .xlsx .tiff .bmp .udf (maks. 5MB)</div>
+            <div className="text-xs text-text-dim mt-1">.pdf .doc .docx .jpg .png .xls .xlsx .tif .tiff .txt (maks. 5MB)</div>
           </div>
         )}
         <input
           id="belge-file-input"
           type="file"
           className="hidden"
-          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.tiff,.bmp,.xls,.xlsx,.udf"
+          accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/jpeg,image/png,image/tiff,text/plain,.pdf,.doc,.docx,.jpg,.jpeg,.png,.tif,.tiff,.xls,.xlsx,.txt"
           onChange={(e) => handleDosyaSec(e.target.files?.[0] || null)}
         />
       </div>
