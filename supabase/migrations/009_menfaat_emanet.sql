@@ -1,5 +1,5 @@
 -- ================================================================
--- EMD HUKUK — Faz 3: Menfaat Kontrolü RPC + Emanet Kasa
+-- LEXBASE — Faz 3: Menfaat Kontrolü RPC + Emanet Kasa
 -- ================================================================
 
 

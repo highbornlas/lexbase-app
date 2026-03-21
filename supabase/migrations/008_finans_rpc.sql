@@ -1,5 +1,5 @@
 -- ================================================================
--- EMD HUKUK — Faz 2: FinansMotoru → Supabase RPC
+-- LEXBASE — Faz 2: FinansMotoru → Supabase RPC
 -- Client-side 771 satır hesaplama → Server-side PostgreSQL
 -- ================================================================
 

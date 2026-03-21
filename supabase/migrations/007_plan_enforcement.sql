@@ -1,5 +1,5 @@
 -- ================================================================
--- EMD HUKUK — Faz 1: Backend Güvenlik Temeli
+-- LEXBASE — Faz 1: Backend Güvenlik Temeli
 -- Plan Enforcement + Oto-Numaralama + TC Doğrulama
 -- ================================================================
 
