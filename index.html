@@ -776,8 +776,8 @@
         </button>
       </div>
       <div class="gm-divider"><span>veya</span></div>
-      <div class="gm-ig"><label>E-posta</label><input type="email" id="gm-email" placeholder="ornek@mail.com" autocomplete="email" onkeydown="if(event.key==='Enter')gmGiris()"></div>
-      <div class="gm-ig"><label>Şifre</label><input type="password" id="gm-sifre" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')gmGiris()"></div>
+      <div class="gm-ig"><label for="gm-email">E-posta</label><input type="email" id="gm-email" placeholder="ornek@mail.com" autocomplete="email" required onkeydown="if(event.key==='Enter')gmGiris()"></div>
+      <div class="gm-ig"><label for="gm-sifre">Şifre</label><input type="password" id="gm-sifre" placeholder="••••••••" autocomplete="current-password" required onkeydown="if(event.key==='Enter')gmGiris()"></div>
       <button class="gm-submit" onclick="gmGiris()">Giriş Yap</button>
       <div class="gm-forgot"><a onclick="sifreSifirla()">Şifremi unuttum</a></div>
       <div class="gm-magic-link"><a onclick="gmMagicLink()">🔗 Bağlantı ile giriş (şifresiz)</a></div>
@@ -790,11 +790,11 @@
         </button>
       </div>
       <div class="gm-divider"><span>veya</span></div>
-      <div class="gm-ig"><label>Ad Soyad *</label><input id="gm-kad" placeholder="Ad Soyad"></div>
-      <div class="gm-ig"><label>E-posta *</label><input type="email" id="gm-kemail" placeholder="ornek@mail.com" autocomplete="email"></div>
+      <div class="gm-ig"><label for="gm-kad">Ad Soyad *</label><input id="gm-kad" placeholder="Ad Soyad" required></div>
+      <div class="gm-ig"><label for="gm-kemail">E-posta *</label><input type="email" id="gm-kemail" placeholder="ornek@mail.com" autocomplete="email" required></div>
       <div class="gm-row">
-        <div class="gm-ig"><label>Şifre *</label><input type="password" id="gm-ksifre" placeholder="En az 8 karakter" autocomplete="new-password"></div>
-        <div class="gm-ig"><label>Şifre Tekrar *</label><input type="password" id="gm-ksifre2" placeholder="••••••••" autocomplete="new-password"></div>
+        <div class="gm-ig"><label for="gm-ksifre">Şifre *</label><input type="password" id="gm-ksifre" placeholder="En az 8 karakter" autocomplete="new-password" required></div>
+        <div class="gm-ig"><label for="gm-ksifre2">Şifre Tekrar *</label><input type="password" id="gm-ksifre2" placeholder="••••••••" autocomplete="new-password" required></div>
       </div>
       <label class="gm-kvkk-label" for="gm-kvkk">
         <input type="checkbox" id="gm-kvkk">
@@ -1017,7 +1017,7 @@
     <div class="section">
       <div class="section-header">
         <div class="section-title">Müvekkil Listesi</div>
-        <div style="display:flex;gap:8px"><input class="search-bar" placeholder="🔍 Ara..." oninput="filterMuvekkillar(this.value)"><button class="btn btn-gold" onclick="openModal('m-modal')">+ Yeni Müvekkil</button></div>
+        <div style="display:flex;gap:8px"><input class="search-bar" placeholder="🔍 Ara..." aria-label="Müvekkil ara" oninput="filterMuvekkillar(this.value)"><button class="btn btn-gold" onclick="openModal('m-modal')">+ Yeni Müvekkil</button></div>
       </div>
       <div class="section-body"><div id="muv-list"></div><div class="empty" id="muv-empty" style="display:none"><div class="empty-icon">👤</div><p>Henüz müvekkil yok</p></div></div>
     </div>
@@ -1028,7 +1028,7 @@
     <div class="section">
       <div class="section-header">
         <div class="section-title">Karşı Taraf Listesi</div>
-        <div style="display:flex;gap:8px"><input class="search-bar" placeholder="🔍 Ara..." oninput="filterKarsiTaraflar(this.value)" id="kt-ara-input"><button class="btn btn-gold" onclick="openYeniKT()">+ Yeni Karşı Taraf</button></div>
+        <div style="display:flex;gap:8px"><input class="search-bar" placeholder="🔍 Ara..." aria-label="Karşı taraf ara" oninput="filterKarsiTaraflar(this.value)" id="kt-ara-input"><button class="btn btn-gold" onclick="openYeniKT()">+ Yeni Karşı Taraf</button></div>
       </div>
       <div class="section-body"><div id="kt-list"></div><div class="empty" id="kt-empty" style="display:none"><div class="empty-icon">⚖️</div><p>Henüz kayıt yok</p></div></div>
     </div>
@@ -1039,7 +1039,7 @@
     <div class="section">
       <div class="section-header">
         <div class="section-title">Avukat / Vekil Listesi</div>
-        <div style="display:flex;gap:8px"><input class="search-bar" placeholder="🔍 Ara..." oninput="filterVekillar(this.value)" id="vek-ara-input"><button class="btn btn-gold" onclick="openYeniVek()">+ Yeni Avukat</button></div>
+        <div style="display:flex;gap:8px"><input class="search-bar" placeholder="🔍 Ara..." aria-label="Avukat ara" oninput="filterVekillar(this.value)" id="vek-ara-input"><button class="btn btn-gold" onclick="openYeniVek()">+ Yeni Avukat</button></div>
       </div>
       <div class="section-body"><div id="vek-list"></div><div class="empty" id="vek-empty" style="display:none"><div class="empty-icon">👔</div><p>Henüz kayıt yok</p></div></div>
     </div>
