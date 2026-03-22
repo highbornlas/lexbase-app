@@ -166,7 +166,11 @@ export function CokluRehberSecici({
               )}
               {/* Inline vekil ekleme */}
               {vekilEklenebilir && vekilAcikIdx === idx && (
-                <div className="ml-8 mt-1.5">
+                <div className="ml-8 mt-1.5 space-y-1.5">
+                  <BuroVekilHizliEkle
+                    mevcutVekilIds={new Set((kisi.vekiller || []).filter((v) => v.id).map((v) => v.id))}
+                    onEkle={(vekil) => handleVekilEkle(idx, vekil)}
+                  />
                   <KisiAramaEkle
                     tip="avukat"
                     seciliIds={new Set((kisi.vekiller || []).filter((v) => v.id).map((v) => v.id))}
@@ -428,5 +432,46 @@ function KisiAramaEkle({
         />
       )}
     </>
+  );
+}
+
+/* ── Büro Avukatlarını Hızlıca Vekil Olarak Ekle ── */
+function BuroVekilHizliEkle({
+  mevcutVekilIds,
+  onEkle,
+}: {
+  mevcutVekilIds: Set<string>;
+  onEkle: (vekil: SeciliKisi) => void;
+}) {
+  const { data: personeller } = usePersoneller();
+
+  const buroAvukatlari = useMemo(() => {
+    return (personeller || []).filter(
+      (p) =>
+        (p.rol === 'avukat' || p.rol === 'yonetici' || p.rol === 'sahip') &&
+        p.durum === 'aktif' &&
+        !mevcutVekilIds.has(p.id)
+    );
+  }, [personeller, mevcutVekilIds]);
+
+  if (buroAvukatlari.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {buroAvukatlari.map((p) => (
+        <button
+          key={p.id}
+          type="button"
+          onClick={() => onEkle({ id: p.id, ad: p.ad || '' })}
+          className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium text-gold
+                     bg-gold/5 border border-gold/20 rounded-md hover:bg-gold/15 transition-colors"
+          title={`${p.ad} - Büro avukatı olarak vekil ekle`}
+        >
+          <span className="text-[10px]">+</span>
+          {p.ad}
+          <span className="text-[9px] text-text-dim ml-0.5">(Büro)</span>
+        </button>
+      ))}
+    </div>
   );
 }
