@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Modal, FormGroup, FormInput, FormSelect, FormTextarea, BtnGold, BtnOutline } from '@/components/ui/Modal';
 import { useModalDraft } from '@/lib/hooks/useModalDraft';
 import { useIcralar, useIcraKaydet, type Icra } from '@/lib/hooks/useIcra';
@@ -672,28 +672,47 @@ function AlacakKalemleriAdim({ alacakDetay, onChange, alacakKalemleri, onLegacyC
   const bugun = new Date().toISOString().slice(0, 10);
 
   // Auto-calculate işlemiş faiz (vade → takip arası)
-  // takipTarihi veya ilgili form alanları değiştiğinde her zaman yeniden hesaplar
+  // Hesaplama fonksiyonu — form state dışında, her zaman güncel değerlerle çalışır
+  const hesaplaIslemiFaiz = useCallback((vade: string, tutar: string, faizTuru: string, kalemTuru: string, ozelOran: string, takip: string): string => {
+    if (!vade || !tutar || !faizTuru || faizTuru === 'yok' || !takip) return '';
+    if (vade >= takip) return ''; // Vade tarihi takip tarihinden sonra → işlemiş faiz yok
+    const tempKalem: AlacakKalemi = {
+      id: 'temp',
+      kalemTuru: kalemTuru as AlacakKalemi['kalemTuru'],
+      aciklama: '',
+      asilTutar: Number(tutar),
+      vadeTarihi: vade,
+      faizTuru: faizTuru as FaizTuru,
+      ozelFaizOrani: ozelOran ? Number(ozelOran) : undefined,
+    };
+    const faiz = hesaplaKalemFaiz(tempKalem, takip);
+    return faiz > 0 ? faiz.toFixed(2) : '';
+  }, []);
+
+  // Form alanları veya takipTarihi değiştiğinde işlemiş faizi yeniden hesapla
   useEffect(() => {
-    if (form.vadeTarihi && form.asilTutar && form.faizTuru && form.faizTuru !== 'yok' && takipTarihi) {
-      if (form.vadeTarihi >= takipTarihi) {
-        // Vade tarihi takip tarihinden sonraysa işlemiş faiz yok
-        setForm((prev) => ({ ...prev, islemiFaiz: '' }));
-        return;
-      }
-      const tempKalem: AlacakKalemi = {
-        id: 'temp',
-        kalemTuru: form.kalemTuru,
-        aciklama: '',
-        asilTutar: Number(form.asilTutar),
-        vadeTarihi: form.vadeTarihi,
-        faizTuru: form.faizTuru,
-        ozelFaizOrani: form.ozelFaizOrani ? Number(form.ozelFaizOrani) : undefined,
-      };
-      // İşlemiş faiz = vade tarihinden takip tarihine kadar (baslangicTarihiOverride yok — vade'den hesaplar)
-      const faiz = hesaplaKalemFaiz(tempKalem, takipTarihi);
-      setForm((prev) => ({ ...prev, islemiFaiz: faiz > 0 ? faiz.toFixed(2) : '' }));
+    const yeni = hesaplaIslemiFaiz(form.vadeTarihi, form.asilTutar, form.faizTuru, form.kalemTuru, form.ozelFaizOrani, takipTarihi);
+    setForm((prev) => {
+      if (prev.islemiFaiz === yeni) return prev; // gereksiz re-render önle
+      return { ...prev, islemiFaiz: yeni };
+    });
+  }, [form.vadeTarihi, form.faizTuru, form.asilTutar, form.ozelFaizOrani, form.kalemTuru, takipTarihi, hesaplaIslemiFaiz]);
+
+  // Takip tarihi değiştiğinde mevcut kaydedilmiş kalemlerin işlemiş faizlerini de güncelle
+  const sonTakipRef = useRef(takipTarihi);
+  useEffect(() => {
+    if (takipTarihi && takipTarihi !== sonTakipRef.current && alacakDetay.length > 0) {
+      sonTakipRef.current = takipTarihi;
+      const guncellenmis = alacakDetay.map((k) => {
+        if (!k.vadeTarihi || k.vadeTarihi >= takipTarihi) {
+          return { ...k, islemiFaiz: undefined };
+        }
+        const faiz = hesaplaKalemFaiz(k, takipTarihi);
+        return { ...k, islemiFaiz: faiz > 0 ? Math.round(faiz * 100) / 100 : undefined };
+      });
+      onChange(guncellenmis);
     }
-  }, [form.vadeTarihi, form.faizTuru, form.asilTutar, form.ozelFaizOrani, takipTarihi, form.kalemTuru]);
+  }, [takipTarihi, alacakDetay, onChange]);
 
   // Toplam hesapları
   // İşleyen faiz: takip tarihinden bugüne kadar (takipTarihi override ile)

@@ -825,10 +825,24 @@ export interface MahsupSonucu {
 // HESAPLAMA FONKSİYONLARI
 // ══════════════════════════════════════════════════════════════
 
+/** YYYY-MM-DD string → lokal tarih (timezone-safe) */
+function parseTarih(s: string): Date {
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+/** Date → YYYY-MM-DD string (timezone-safe) */
+function tarihStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 /** İki tarih arasındaki gün sayısı */
 function gunFarki(baslangic: string, bitis: string): number {
-  const b = new Date(baslangic).getTime();
-  const s = new Date(bitis).getTime();
+  const b = parseTarih(baslangic).getTime();
+  const s = parseTarih(bitis).getTime();
   return Math.max(0, Math.ceil((s - b) / 86400000));
 }
 
@@ -901,7 +915,7 @@ export function hesaplaFaizDetayli(
   return hesaplaFaizDonemseel(anapara, basTarih, bitTarih, oranlar, ad);
 }
 
-/** Dönem bazlı faiz hesaplama (iç fonksiyon) */
+/** Dönem bazlı faiz hesaplama (iç fonksiyon) — timezone-safe */
 function hesaplaFaizDonemseel(
   anapara: number,
   basTarih: string,
@@ -909,16 +923,13 @@ function hesaplaFaizDonemseel(
   oranlar: OranGirdi[],
   faizTuruAd: string,
 ): FaizDetaySonuc {
-  const bas = new Date(basTarih);
-  bas.setHours(0, 0, 0, 0);
-  const bit = new Date(bitTarih);
-  bit.setHours(0, 0, 0, 0);
+  const bas = parseTarih(basTarih);
+  const bit = parseTarih(bitTarih);
 
-  // Dönem kırılım noktalarını oluştur
+  // Dönem kırılım noktalarını oluştur (lokal tarih olarak)
   const noktalar = new Set([bas.getTime(), bit.getTime()]);
   for (const o of oranlar) {
-    const oT = new Date(o.b);
-    oT.setHours(0, 0, 0, 0);
+    const oT = parseTarih(o.b);
     if (oT.getTime() > bas.getTime() && oT.getTime() < bit.getTime()) {
       noktalar.add(oT.getTime());
     }
@@ -935,8 +946,8 @@ function hesaplaFaizDonemseel(
     const gun = Math.round((dBit.getTime() - dBas.getTime()) / 86400000);
     if (gun <= 0) continue;
 
-    // O dönem için geçerli oranı bul
-    const dBasStr = dBas.toISOString().split('T')[0];
+    // O dönem için geçerli oranı bul (timezone-safe string karşılaştırma)
+    const dBasStr = tarihStr(dBas);
     let oran = oranlar[0]?.o || 0;
     for (let j = oranlar.length - 1; j >= 0; j--) {
       if (dBasStr >= oranlar[j].b) {
@@ -950,7 +961,7 @@ function hesaplaFaizDonemseel(
     toplamGun += gun;
     detay.push({
       baslangic: dBasStr,
-      bitis: dBit.toISOString().split('T')[0],
+      bitis: tarihStr(dBit),
       gun,
       oran,
       faiz: dilimFaiz,
@@ -969,15 +980,18 @@ function hesaplaFaizDonemseel(
 }
 
 /**
- * Tek bir alacak kalemi için faiz hesapla (eski API uyumlu)
+ * Tek bir alacak kalemi için faiz hesapla
+ * Tüm faiz türleri (yasal, ticari, UYAP) tek tutarlı motor ile hesaplanır
  * İcra modülü ve AlacakKalemleriPanel tarafından kullanılır
+ *
+ * @param baslangicTarihiOverride - Takip sonrası faiz hesabında takipTarihi gönderilir
+ *   Böylece işleyen faiz takip tarihinden itibaren hesaplanır (çift sayım önlenir)
  */
 export function hesaplaKalemFaiz(
   kalem: AlacakKalemi,
   hesapTarihi: string,
-  yasalOranlar: FaizDonemi[] = VARSAYILAN_YASAL_FAIZ,
-  ticariOranlar: FaizDonemi[] = VARSAYILAN_TICARI_FAIZ,
-  /** Faiz başlangıç tarihini override et (takip sonrası faiz hesabı için takipTarihi gönderilir) */
+  _yasalOranlar?: FaizDonemi[],
+  _ticariOranlar?: FaizDonemi[],
   baslangicTarihiOverride?: string,
 ): number {
   if (kalem.faizTuru === 'yok') return 0;
@@ -988,53 +1002,21 @@ export function hesaplaKalemFaiz(
   const faizBaslangic = baslangicTarihiOverride || kalem.vadeTarihi;
   if (faizBaslangic >= hesapTarihi) return 0;
 
-  // Yeni UYAP türleri — detaylı hesaplama kullan
-  const eskiTurler: FaizTuru[] = ['yasal', 'ticari', 'sozlesmeli', 'yok'];
-  if (!eskiTurler.includes(kalem.faizTuru)) {
-    const sonuc = hesaplaFaizDetayli(
-      kalem.asilTutar,
-      faizBaslangic,
-      hesapTarihi,
-      kalem.faizTuru,
-      kalem.ozelFaizOrani,
-    );
-    return sonuc.toplamFaiz;
-  }
-
   // Sözleşmeli faiz — sabit oran
   if (kalem.faizTuru === 'sozlesmeli' && kalem.ozelFaizOrani != null) {
     const gun = gunFarki(faizBaslangic, hesapTarihi);
     return yuvarla(kalem.asilTutar * (kalem.ozelFaizOrani / 100) * (gun / 365));
   }
 
-  // Yasal veya ticari faiz — dönem bazlı (eski format)
-  const oranlar = kalem.faizTuru === 'ticari' ? ticariOranlar : yasalOranlar;
-  let toplamFaiz = 0;
-  let mevcutTarih = faizBaslangic;
-  const siralanmis = [...oranlar].sort((a, b) => a.baslangic.localeCompare(b.baslangic));
-
-  for (const donem of siralanmis) {
-    if (mevcutTarih >= hesapTarihi) break;
-    if (donem.bitis < mevcutTarih) continue;
-
-    const donemBaslangic = mevcutTarih > donem.baslangic ? mevcutTarih : donem.baslangic;
-    const donemBitis = hesapTarihi < donem.bitis ? hesapTarihi : donem.bitis;
-
-    if (donemBaslangic >= donemBitis) continue;
-
-    const gun = gunFarki(donemBaslangic, donemBitis);
-    toplamFaiz += kalem.asilTutar * (donem.yillikOran / 100) * (gun / 365);
-    mevcutTarih = donemBitis;
-  }
-
-  // Son dönemden sonrası
-  if (mevcutTarih < hesapTarihi && siralanmis.length > 0) {
-    const sonOran = siralanmis[siralanmis.length - 1].yillikOran;
-    const gun = gunFarki(mevcutTarih, hesapTarihi);
-    toplamFaiz += kalem.asilTutar * (sonOran / 100) * (gun / 365);
-  }
-
-  return yuvarla(toplamFaiz);
+  // Tüm faiz türleri — hesaplaFaizDetayli ile timezone-safe dönemsel hesaplama
+  const sonuc = hesaplaFaizDetayli(
+    kalem.asilTutar,
+    faizBaslangic,
+    hesapTarihi,
+    kalem.faizTuru,
+    kalem.ozelFaizOrani,
+  );
+  return sonuc.toplamFaiz;
 }
 
 /**
