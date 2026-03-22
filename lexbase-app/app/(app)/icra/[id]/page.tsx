@@ -18,6 +18,9 @@ import { IcraModal } from '@/components/modules/IcraModal';
 import { DosyaEvrakTab } from '@/components/modules/DosyaEvrakTab';
 import { TahsilatModal, type TahsilatKaydi } from '@/components/modules/TahsilatModal';
 import { useSonErisim } from '@/lib/hooks/useSonErisim';
+import { AlacakKalemleriPanel } from '@/components/modules/icra/AlacakKalemleriPanel';
+import { KapakHesabiPanel } from '@/components/modules/icra/KapakHesabi';
+import type { AlacakKalemi } from '@/lib/utils/faiz';
 
 // ── Sekme tanımları ──────────────────────────────────────────
 const TABS = [
@@ -28,6 +31,8 @@ const TABS = [
   { key: 'tahsilat', label: 'Tahsilat', svg: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6"/></svg> },
   { key: 'sureler', label: 'Süreler', svg: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> },
   { key: 'notlar', label: 'Notlar', svg: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> },
+  { key: 'alacak', label: 'Alacak Kalemleri', svg: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg> },
+  { key: 'kapak', label: 'Kapak Hesabı', svg: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 7V4a2 2 0 012-2h8.5L20 7.5V20a2 2 0 01-2 2H6a2 2 0 01-2-2v-3"/><path d="M14 2v6h6"/><path d="M3 15h6l2-2 2 2h6"/></svg> },
   { key: 'anlasma', label: 'Anlaşma', svg: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg> },
 ];
 
@@ -504,6 +509,15 @@ export default function IcraDetayPage({ params }: { params: Promise<{ id: string
               onEkle={(n) => { icraKaydet.mutate({ ...icra, notlar: [...(icra.notlar || []), n] }); }}
               onSil={(nId) => { icraKaydet.mutate({ ...icra, notlar: (icra.notlar || []).filter((x) => (x.id as string) !== nId) }); }}
             />
+          )}
+          {aktifTab === 'alacak' && (
+            <AlacakKalemleriPanel
+              kalemler={(icra.alacakDetay || []) as AlacakKalemi[]}
+              onChange={(kalemler) => { icraKaydet.mutate({ ...icra, alacakDetay: kalemler }); }}
+            />
+          )}
+          {aktifTab === 'kapak' && (
+            <KapakHesabiPanel icra={icra} />
           )}
           {aktifTab === 'anlasma' && (
             <AnlasmaTab

@@ -33,6 +33,7 @@ export const WIDGET_TANIMLARI: WidgetTanim[] = [
   { id: 'hizmetler', label: 'Devam Eden Hizmetler', icon: '⚖️', varsayilanGorunur: false },
   { id: 'hizli-erisim', label: 'Hızlı Erişim', icon: '⭐', varsayilanGorunur: true },
   { id: 'vekaletname-sure', label: 'Vekaletname Süreleri', icon: '📜', varsayilanGorunur: false },
+  { id: 'avans-kasa', label: 'Avans Kasaları', icon: '🏦', varsayilanGorunur: true },
 ];
 
 // Varsayılan gizli widget ID'leri

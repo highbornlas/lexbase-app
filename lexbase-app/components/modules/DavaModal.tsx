@@ -43,6 +43,7 @@ const bos: Partial<Dava> = {
   durusmaSaati: '',
   durusmalar: [],
   deger: 0,
+  ucret: 0,
   karsi: '',
   karsiId: '',
   karsav: '',
@@ -686,9 +687,12 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 gap-4 mt-3">
+              <div className="grid grid-cols-2 gap-4 mt-3">
                 <FormGroup label="Dava Değeri (TL)">
                   <FormInput type="number" value={form.deger || ''} onChange={(e) => handleChange('deger', Number(e.target.value))} placeholder="0" />
+                </FormGroup>
+                <FormGroup label="Vekalet Ücreti (TL)">
+                  <FormInput type="number" value={form.ucret || ''} onChange={(e) => handleChange('ucret', Number(e.target.value))} placeholder="Sözleşme bedeli" />
                 </FormGroup>
               </div>
             </div>

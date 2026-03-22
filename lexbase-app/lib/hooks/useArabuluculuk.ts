@@ -54,6 +54,17 @@ export interface Arabuluculuk {
   makbuzKesildi?: boolean;
   makbuzNo?: string;
   makbuzTarih?: string;
+  // Taksitli ödeme planı
+  odemePlani?: {
+    aktif: boolean;
+    toplamTutar: number;
+    taksitSayisi: number;
+    baslangicTarihi: string;
+    taksitler: Array<{
+      id: string; no: number; vadeTarihi: string; tutar: number;
+      odpiYapildiMi: boolean; odemeTarihi?: string;
+    }>;
+  };
   oturumSayisi?: number;
   aciklama?: string;
   evraklar?: Record<string, unknown>[];

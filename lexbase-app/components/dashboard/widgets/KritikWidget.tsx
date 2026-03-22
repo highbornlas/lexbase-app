@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { fmtTarih } from '@/lib/utils';
 import { EmptyState, GunBadge } from '../WidgetWrapper';
 
@@ -14,8 +15,9 @@ interface KritikWidgetProps {
 }
 
 export function KritikWidget({ davalar, icralar }: KritikWidgetProps) {
+  const router = useRouter();
   const kritikSureler = useMemo(() => {
-    const items: Array<{ tip: string; baslik: string; tarih: string; gun: number; icon: string }> = [];
+    const items: Array<{ tip: string; baslik: string; tarih: string; gun: number; icon: string; href: string }> = [];
     const bugun = new Date();
     const sinir = new Date(bugun);
     sinir.setDate(bugun.getDate() + 30);
@@ -28,14 +30,14 @@ export function KritikWidget({ davalar, icralar }: KritikWidgetProps) {
           const t = new Date(dur.tarih);
           if (t >= bugun && t <= sinir) {
             const gun = Math.ceil((t.getTime() - bugun.getTime()) / 86400000);
-            items.push({ tip: 'Duruşma', baslik: `${d.no || d.konu || '—'}`, tarih: dur.tarih, gun, icon: '📅' });
+            items.push({ tip: 'Duruşma', baslik: `${d.no || d.konu || '—'}`, tarih: dur.tarih, gun, icon: '📅', href: `/davalar/${d.id}` });
           }
         });
       } else if (d.durusma) {
         const t = new Date(d.durusma as string);
         if (t >= bugun && t <= sinir) {
           const gun = Math.ceil((t.getTime() - bugun.getTime()) / 86400000);
-          items.push({ tip: 'Duruşma', baslik: `${d.no || d.konu || '—'}`, tarih: d.durusma as string, gun, icon: '📅' });
+          items.push({ tip: 'Duruşma', baslik: `${d.no || d.konu || '—'}`, tarih: d.durusma as string, gun, icon: '📅', href: `/davalar/${d.id}` });
         }
       }
     });
@@ -47,7 +49,7 @@ export function KritikWidget({ davalar, icralar }: KritikWidgetProps) {
         const t = new Date(itirazTarih);
         if (t >= bugun && t <= sinir) {
           const gun = Math.ceil((t.getTime() - bugun.getTime()) / 86400000);
-          items.push({ tip: 'İtiraz Süresi', baslik: `${i.no || '—'}`, tarih: itirazTarih, gun, icon: '⏰' });
+          items.push({ tip: 'İtiraz Süresi', baslik: `${i.no || '—'}`, tarih: itirazTarih, gun, icon: '⏰', href: `/icra/${i.id}` });
         }
       }
     });
@@ -62,7 +64,14 @@ export function KritikWidget({ davalar, icralar }: KritikWidgetProps) {
   return (
     <div className="space-y-1.5 mt-1">
       {kritikSureler.map((s, i) => (
-        <div key={i} className={`flex items-center gap-2.5 px-2 py-2 rounded-lg ${s.gun <= 3 ? 'bg-red-dim/40' : s.gun <= 7 ? 'bg-gold-dim/40' : 'bg-surface2/50'}`}>
+        <div
+          key={i}
+          className={`flex items-center gap-2.5 px-2 py-2 rounded-lg cursor-pointer hover:brightness-90 transition-all ${s.gun <= 3 ? 'bg-red-dim/40' : s.gun <= 7 ? 'bg-gold-dim/40' : 'bg-surface2/50'}`}
+          onClick={() => router.push(s.href)}
+          role="link"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') router.push(s.href); }}
+        >
           <span className="text-base flex-shrink-0">{s.icon}</span>
           <div className="flex-1 min-w-0">
             <div className="text-[12px] font-semibold text-text truncate">{s.baslik}</div>

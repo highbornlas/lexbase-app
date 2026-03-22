@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { fmt } from '@/lib/utils';
+import { safeNum, tahsilatToplam } from '@/lib/utils/finans';
 
 interface AlacakSatir {
   dosyaId: string;
@@ -78,8 +79,10 @@ export function MuvAlacak({ davalar, icralar, arabuluculuklar, ihtarnameler, fin
           anlasmaToplam = parseFloat(String(ucret)) || 0;
         }
 
-        const tahsilEdilen = tahsilatlar.reduce((s, t) => s + (parseFloat(t.tutar) || 0), 0)
-          + (parseFloat(String(d.tahsilEdildi || 0)) || 0);
+        // Tek kaynak: tahsilatlar[] varsa onu kullan, yoksa tahsilEdildi
+        const tahsilEdilen = tahsilatlar.length > 0
+          ? tahsilatToplam(tahsilatlar.map((t) => ({ tutar: parseFloat(t.tutar) || 0 })))
+          : safeNum(d.tahsilEdildi);
 
         if (anlasmaToplam > 0 || tahsilEdilen > 0) {
           result.push({

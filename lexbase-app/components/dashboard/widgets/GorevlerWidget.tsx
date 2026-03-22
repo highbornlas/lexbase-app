@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { fmtTarih } from '@/lib/utils';
 import { EmptyState } from '../WidgetWrapper';
 
@@ -20,6 +21,7 @@ function badgeCls(gecikmi: boolean, oncelik: unknown): string {
 }
 
 export function GorevlerWidget({ gorevler }: GorevlerWidgetProps) {
+  const router = useRouter();
   const bugunStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
   const buHaftaGorevler = useMemo(() => {
@@ -64,7 +66,14 @@ export function GorevlerWidget({ gorevler }: GorevlerWidgetProps) {
       {buHaftaGorevler.map((g) => {
         const gecikmi = !!(g.sonTarih && (g.sonTarih as string) < bugunStr && g.durum !== 'Tamamlandı' && g.durum !== 'İptal');
         return (
-          <div key={g.id as string} className={`flex items-center gap-2 px-2 py-2 rounded-lg ${gecikmi ? 'bg-red-dim/30' : 'bg-surface2/50'}`}>
+          <div
+            key={g.id as string}
+            className={`flex items-center gap-2 px-2 py-2 rounded-lg cursor-pointer hover:brightness-90 transition-all ${gecikmi ? 'bg-red-dim/30' : 'bg-surface2/50'}`}
+            onClick={() => router.push('/gorevler')}
+            role="link"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') router.push('/gorevler'); }}
+          >
             <div className="flex-1 min-w-0">
               <div className="text-[12px] font-semibold text-text truncate">{(g.baslik as string) || '—'}</div>
               <div className="text-[10px] text-text-dim">{g.sonTarih ? fmtTarih(g.sonTarih as string) : ''}</div>

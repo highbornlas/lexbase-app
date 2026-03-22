@@ -43,6 +43,17 @@ export interface Danismanlik {
   makbuzKesildi?: boolean;
   makbuzNo?: string;
   makbuzTarih?: string;
+  // Taksitli ödeme planı
+  odemePlani?: {
+    aktif: boolean;
+    toplamTutar: number;
+    taksitSayisi: number;
+    baslangicTarihi: string;
+    taksitler: Array<{
+      id: string; no: number; vadeTarihi: string; tutar: number;
+      odpiYapildiMi: boolean; odemeTarihi?: string;
+    }>;
+  };
   // No
   no?: string;
   // Arşiv & Soft delete

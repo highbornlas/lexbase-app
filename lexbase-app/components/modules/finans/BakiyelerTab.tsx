@@ -9,6 +9,7 @@ import { useDanismanliklar } from '@/lib/hooks/useDanismanlik';
 import { useArabuluculuklar } from '@/lib/hooks/useArabuluculuk';
 import { useIhtarnameler } from '@/lib/hooks/useIhtarname';
 import { fmt } from '@/lib/utils';
+import { safeNum, tahsilatToplam } from '@/lib/utils/finans';
 import { EmptyState, MiniKpi } from './shared';
 
 /* ══════════════════════════════════════════════════════════════
@@ -53,12 +54,13 @@ export function BakiyelerTab() {
           anlasilanToplam += parseFloat(String(ucret)) || 0;
         }
 
-        // Tahsilat: tahsilatlar dizisi + flat tahsilEdildi
-        const tahsilatlar = (dosya.tahsilatlar || []) as Array<Record<string, unknown>>;
-        tahsilatlar.forEach((th) => {
-          tahsilEdilenToplam += parseFloat(String(th.tutar || 0)) || 0;
-        });
-        tahsilEdilenToplam += parseFloat(String(dosya.tahsilEdildi || 0)) || 0;
+        // Tahsilat: tek kaynak — tahsilatlar[] varsa onu kullan, yoksa tahsilEdildi
+        const tahArr = (dosya.tahsilatlar || []) as Array<{ tutar?: number }>;
+        if (tahArr.length > 0) {
+          tahsilEdilenToplam += tahsilatToplam(tahArr);
+        } else {
+          tahsilEdilenToplam += safeNum(dosya.tahsilEdildi);
+        }
 
         // Masraflar: harcamalar dizisi
         const harcamalar = (dosya.harcamalar || []) as Array<Record<string, unknown>>;
@@ -69,24 +71,24 @@ export function BakiyelerTab() {
 
       // ── Danışmanlık ──
       muvDanismanlik.forEach((d) => {
-        const ucret = Number(d.ucret || d.aylikUcret || 0);
+        const ucret = safeNum(d.ucret || d.aylikUcret);
         if (ucret > 0) anlasilanToplam += ucret;
-        tahsilEdilenToplam += Number(d.tahsilEdildi || 0);
+        tahsilEdilenToplam += safeNum(d.tahsilEdildi);
       });
 
       // ── Arabuluculuk ──
       muvArabuluculuk.forEach((a) => {
-        const ucret = Number(a.ucret || 0);
+        const ucret = safeNum(a.ucret);
         if (ucret > 0) anlasilanToplam += ucret;
-        tahsilEdilenToplam += Number(a.tahsilEdildi || 0);
+        tahsilEdilenToplam += safeNum(a.tahsilEdildi);
       });
 
       // ── İhtarname ──
       muvIhtarname.forEach((ih) => {
-        const ucret = Number(ih.ucret || 0);
+        const ucret = safeNum(ih.ucret);
         if (ucret > 0) anlasilanToplam += ucret;
-        tahsilEdilenToplam += Number(ih.tahsilEdildi || 0);
-        masrafToplam += Number(ih.noterMasrafi || 0);
+        tahsilEdilenToplam += safeNum(ih.tahsilEdildi);
+        masrafToplam += safeNum(ih.noterMasrafi);
       });
 
       const kalanAlacak = anlasilanToplam - tahsilEdilenToplam;

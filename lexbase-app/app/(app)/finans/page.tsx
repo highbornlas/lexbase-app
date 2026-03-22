@@ -35,6 +35,10 @@ const VergiOzetTab = dynamic(
   () => import('@/components/modules/finans/VergiOzetTab').then((m) => m.VergiOzetTab),
   { ssr: false },
 );
+const AvansKasaTab = dynamic(
+  () => import('@/components/modules/finans/AvansKasaTab').then((m) => m.AvansKasaTab),
+  { ssr: false },
+);
 
 const TABS = [
   { key: 'bakiye', label: 'Bakiyeler', icon: '💳' },
@@ -44,6 +48,7 @@ const TABS = [
   { key: 'vergi', label: 'Vergi Özeti', icon: '🧾' },
   { key: 'karlilik', label: 'Kârlılık', icon: '🎯' },
   { key: 'beklenen', label: 'Beklenen Gelir', icon: '📅' },
+  { key: 'avans', label: 'Avans Kasası', icon: '🏦' },
   { key: 'uyari', label: 'Uyarılar', icon: '⚠️' },
 ];
 
@@ -85,6 +90,7 @@ export default function FinansPage() {
       {aktifTab === 'vergi' && <VergiOzetTab />}
       {aktifTab === 'karlilik' && <KarlilikTab />}
       {aktifTab === 'beklenen' && <BeklenenGelirTab />}
+      {aktifTab === 'avans' && <AvansKasaTab />}
       {aktifTab === 'uyari' && <UyarilarTab />}
     </div>
   );

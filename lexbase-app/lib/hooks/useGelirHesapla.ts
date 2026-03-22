@@ -30,7 +30,7 @@ export interface GelirKaydi {
 }
 
 // ── SMM Hesaplama Yardımcıları (merkezi utils'den import + re-export) ──
-import { bruttenNete, nettenBrute } from '@/lib/utils/finans';
+import { bruttenNete, nettenBrute, safeNum } from '@/lib/utils/finans';
 export { bruttenNete, nettenBrute };
 
 // ── Gelir Hesaplama Hook'u ────────────────────────────────────
@@ -60,11 +60,11 @@ export function useGelirHesapla() {
         const dosyaNo = (dosya.no as string) || (dosya.esasNo as string) || (dosya.dosyaNo as string) || '';
 
         tahsilatlar.forEach((th) => {
-          const tutar = Number(th.tutar || 0);
+          const tutar = safeNum(th.tutar);
           if (tutar <= 0) return;
 
-          const kdvOrani = Number(th.kdvOrani || 0);
-          const stopajOrani = Number(th.stopajOrani || 0);
+          const kdvOrani = safeNum(th.kdvOrani);
+          const stopajOrani = safeNum(th.stopajOrani);
           const makbuzKesildi = th.makbuzKesildi === true;
 
           // Makbuz kesilmediyse KDV/Stopaj sıfır kabul et
@@ -97,11 +97,11 @@ export function useGelirHesapla() {
 
     // ── Danışmanlık ──
     (danismanliklar || []).forEach((d) => {
-      const tutar = Number(d.tahsilEdildi || 0);
+      const tutar = safeNum(d.tahsilEdildi);
       if (tutar <= 0) return;
 
-      const kdvOrani = Number(d.kdvOrani || 0);
-      const stopajOrani = Number(d.stopajOrani || 0);
+      const kdvOrani = safeNum(d.kdvOrani);
+      const stopajOrani = safeNum(d.stopajOrani);
       const makbuzKesildi = (d as Record<string, unknown>).makbuzKesildi === true;
       const efektifKdv = makbuzKesildi ? kdvOrani : 0;
       const efektifStopaj = makbuzKesildi ? stopajOrani : 0;
@@ -126,11 +126,11 @@ export function useGelirHesapla() {
 
     // ── Arabuluculuk ──
     (arabuluculuklar || []).forEach((a) => {
-      const tutar = Number(a.tahsilEdildi || 0);
+      const tutar = safeNum(a.tahsilEdildi);
       if (tutar <= 0) return;
 
-      const kdvOrani = Number(a.kdvOrani || 0);
-      const stopajOrani = Number(a.stopajOrani || 0);
+      const kdvOrani = safeNum(a.kdvOrani);
+      const stopajOrani = safeNum(a.stopajOrani);
       const makbuzKesildi = (a as Record<string, unknown>).makbuzKesildi === true;
       const efektifKdv = makbuzKesildi ? kdvOrani : 0;
       const efektifStopaj = makbuzKesildi ? stopajOrani : 0;
@@ -155,11 +155,11 @@ export function useGelirHesapla() {
 
     // ── İhtarname ──
     (ihtarnameler || []).forEach((ih) => {
-      const tutar = Number(ih.tahsilEdildi || 0);
+      const tutar = safeNum(ih.tahsilEdildi);
       if (tutar <= 0) return;
 
-      const kdvOrani = Number(ih.kdvOrani || 0);
-      const stopajOrani = Number(ih.stopajOrani || 0);
+      const kdvOrani = safeNum(ih.kdvOrani);
+      const stopajOrani = safeNum(ih.stopajOrani);
       const makbuzKesildi = (ih as Record<string, unknown>).makbuzKesildi === true;
       const efektifKdv = makbuzKesildi ? kdvOrani : 0;
       const efektifStopaj = makbuzKesildi ? stopajOrani : 0;

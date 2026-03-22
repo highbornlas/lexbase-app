@@ -45,6 +45,7 @@ export default function IhtarnamePage() {
   const arsivleMut = useIhtarnameArsivle();
   const [arama, setArama] = useState('');
   const [durumFiltre, setDurumFiltre] = useState('hepsi');
+  const [kpiFiltre, setKpiFiltre] = useState<string | null>(null);
   const [yonFiltre, setYonFiltre] = useState<YonFiltre>('hepsi');
   const [modalAcik, setModalAcik] = useState(false);
   const [secili, setSecili] = useState<Ihtarname | null>(null);
@@ -126,14 +127,21 @@ export default function IhtarnamePage() {
       if (yonFiltre !== 'hepsi' && (i.yon || 'giden') !== yonFiltre) return false;
       if (arama) {
         const q = arama.toLocaleLowerCase('tr');
-        return (
+        if (!(
           (i.no || '').toLocaleLowerCase('tr').includes(q) ||
           (i.konu || '').toLocaleLowerCase('tr').includes(q) ||
           (i.alici || '').toLocaleLowerCase('tr').includes(q) ||
           (i.gonderen || '').toLocaleLowerCase('tr').includes(q) ||
           (i.noterAd || '').toLocaleLowerCase('tr').includes(q) ||
           (muvAdMap[i.muvId || ''] || '').toLocaleLowerCase('tr').includes(q)
-        );
+        )) return false;
+      }
+      // KPI filtre
+      if (kpiFiltre) {
+        const bugun = new Date().toISOString().split('T')[0];
+        if (kpiFiltre === 'tebligBekleyen' && !(i.tebligDurum === "PTT'de Bekliyor" || i.durum === 'Gönderildi')) return false;
+        if (kpiFiltre === 'tebligEdilen' && !(i.tebligDurum === 'Tebliğ Edildi' || i.durum === 'Tebliğ Edildi' || i.durum === 'Cevap Geldi' || i.durum === 'Sonuçlandı')) return false;
+        if (kpiFiltre === 'suresi' && !(i.sureSonu && i.sureSonu <= bugun && i.durum !== 'Sonuçlandı' && i.durum !== 'Cevap Geldi')) return false;
       }
       return true;
     });
@@ -161,10 +169,10 @@ export default function IhtarnamePage() {
     });
 
     return filtered;
-  }, [ihtarnameler, arama, durumFiltre, yonFiltre, muvAdMap, sortKey, sortDir]);
+  }, [ihtarnameler, arama, durumFiltre, kpiFiltre, yonFiltre, muvAdMap, sortKey, sortDir]);
 
   // Filtre değişince sayfa 1'e dön
-  useEffect(() => { setSayfa(1); }, [arama, durumFiltre, yonFiltre]);
+  useEffect(() => { setSayfa(1); }, [arama, durumFiltre, kpiFiltre, yonFiltre]);
 
   // Sayfalama
   const toplamSayfa = Math.max(1, Math.ceil(filtrelenmis.length / sayfaBoyutu));
@@ -258,11 +266,25 @@ export default function IhtarnamePage() {
       {/* KPI Strip */}
       <div className="grid grid-cols-5 gap-3 mb-5">
         <KpiCard label="Toplam" value={kpis.toplam.toString()} icon="📨" />
-        <KpiCard label="Tebliğ Bekleyen" value={kpis.tebligBekleyen.toString()} icon="📬" color="text-orange-400" />
-        <KpiCard label="Tebliğ Edilen" value={kpis.tebligEdilen.toString()} icon="✅" color="text-green" />
-        <KpiCard label="Süresi Dolan" value={kpis.suresiDolan.toString()} icon="🚨" color={kpis.suresiDolan > 0 ? 'text-red' : 'text-text-dim'} />
+        <KpiCard label="Tebliğ Bekleyen" value={kpis.tebligBekleyen.toString()} icon="📬" color="text-orange-400" active={kpiFiltre === 'tebligBekleyen'} onClick={() => setKpiFiltre(kpiFiltre === 'tebligBekleyen' ? null : 'tebligBekleyen')} />
+        <KpiCard label="Tebliğ Edilen" value={kpis.tebligEdilen.toString()} icon="✅" color="text-green" active={kpiFiltre === 'tebligEdilen'} onClick={() => setKpiFiltre(kpiFiltre === 'tebligEdilen' ? null : 'tebligEdilen')} />
+        <KpiCard label="Süresi Dolan" value={kpis.suresiDolan.toString()} icon="🚨" color={kpis.suresiDolan > 0 ? 'text-red' : 'text-text-dim'} active={kpiFiltre === 'suresi'} onClick={() => setKpiFiltre(kpiFiltre === 'suresi' ? null : 'suresi')} />
         <KpiCard label="Toplam Ücret" value={fmt(kpis.toplamUcret)} icon="💰" color="text-gold" />
       </div>
+
+      {/* KPI Filtre Göstergesi */}
+      {kpiFiltre && (
+        <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-gold/10 border border-gold/20 rounded-lg text-xs text-gold">
+          <span>🔍</span>
+          <span className="font-medium">
+            {kpiFiltre === 'tebligBekleyen' && 'Tebliğ bekleyenler gösteriliyor'}
+            {kpiFiltre === 'tebligEdilen' && 'Tebliğ edilenler gösteriliyor'}
+            {kpiFiltre === 'suresi' && 'Süresi dolanlar gösteriliyor'}
+          </span>
+          <span className="text-text-dim">({filtrelenmis.length} dosya)</span>
+          <button onClick={() => setKpiFiltre(null)} className="ml-auto text-text-dim hover:text-text transition-colors">✕ Temizle</button>
+        </div>
+      )}
 
       {/* Arama + Filtreler */}
       <div className="flex items-center gap-3 mb-5 flex-wrap">
@@ -476,14 +498,21 @@ export default function IhtarnamePage() {
   );
 }
 
-function KpiCard({ label, value, icon, color }: { label: string; value: string; icon: string; color?: string }) {
+function KpiCard({ label, value, icon, color, active, onClick }: { label: string; value: string; icon: string; color?: string; active?: boolean; onClick?: () => void }) {
   return (
-    <div className="bg-surface border border-border rounded-lg p-3">
+    <div
+      className={`bg-surface border rounded-lg p-3 transition-all ${onClick ? 'cursor-pointer hover:scale-[1.02] hover:border-gold/30' : ''} ${active ? 'border-gold ring-1 ring-gold/30 shadow-md' : 'border-border'}`}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') onClick(); } : undefined}
+    >
       <div className="flex items-center gap-1.5 mb-1">
         <span className="text-sm">{icon}</span>
         <span className="text-[10px] text-text-muted uppercase tracking-wider">{label}</span>
       </div>
       <div className={`font-[var(--font-playfair)] text-lg font-bold ${color || 'text-gold'}`}>{value}</div>
+      {active && <div className="w-full h-0.5 bg-gold rounded-full mt-1.5" />}
     </div>
   );
 }

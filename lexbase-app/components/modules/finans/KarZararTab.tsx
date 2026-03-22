@@ -9,6 +9,7 @@ import { useArabuluculuklar } from '@/lib/hooks/useArabuluculuk';
 import { useIhtarnameler } from '@/lib/hooks/useIhtarname';
 import { useBuroGiderleri } from '@/lib/hooks/useBuroGiderleri';
 import { fmt } from '@/lib/utils';
+import { safeNum } from '@/lib/utils/finans';
 import { AYLAR, KzRow } from './shared';
 
 interface KarZararTabProps {
@@ -62,7 +63,7 @@ function useKarZararFallback(yil: number, ay?: number) {
     (danismanliklar || []).forEach((d) => {
       const tarih = (d as Record<string, unknown>).sonucTarih as string || (d as Record<string, unknown>).tarih as string;
       if (tarihIcindeMi(tarih)) {
-        danismanlikGeliri += Number(d.tahsilEdildi || 0);
+        danismanlikGeliri += safeNum(d.tahsilEdildi);
       }
     });
 
@@ -70,14 +71,14 @@ function useKarZararFallback(yil: number, ay?: number) {
     (arabuluculuklar || []).forEach((a) => {
       const tarih = a.sonucTarih || a.basvuruTarih;
       if (tarihIcindeMi(tarih)) {
-        arabuluculukGeliri += Number(a.tahsilEdildi || 0);
+        arabuluculukGeliri += safeNum(a.tahsilEdildi);
       }
     });
 
     // İhtarname
     (ihtarnameler || []).forEach((ih) => {
       if (tarihIcindeMi(ih.tarih)) {
-        ihtarnameGeliri += Number(ih.tahsilEdildi || 0);
+        ihtarnameGeliri += safeNum(ih.tahsilEdildi);
       }
     });
 

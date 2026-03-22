@@ -185,6 +185,7 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
           arabSayisi={arabArr.length}
           ihtSayisi={ihtArr.length}
           finansOzet={finansOzet}
+          onNavigate={(tab) => setAktifTab(tab as TabKey)}
         />
       </div>
 

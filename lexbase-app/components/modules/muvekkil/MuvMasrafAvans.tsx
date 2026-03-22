@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { fmt } from '@/lib/utils';
+import { useAvansHareketKaydet, type AvansHareket } from '@/lib/hooks/useAvansKasasi';
 
 /* ── Masraf kategorileri ── */
 const KATEGORILER = ['Harçlar', 'Posta/Tebligat', 'Bilirkişi', 'Tanık', 'Yol/Konaklama', 'Vekaletname Harcı', 'Keşif', 'Fotokopi/Baskı', 'Haciz Masrafı', 'Diğer'] as const;
@@ -25,6 +26,7 @@ interface DosyaSecenegi {
 }
 
 interface Props {
+  muvId: string;
   davalar: Record<string, unknown>[];
   icralar: Record<string, unknown>[];
   arabuluculuklar: Record<string, unknown>[];
@@ -33,10 +35,12 @@ interface Props {
   onMasrafKaydet: (dosyaId: string, dosyaTur: string, harcama: { id: string; kat: string; acik: string; tarih: string; tutar: number }) => void;
 }
 
-export function MuvMasrafAvans({ davalar, icralar, arabuluculuklar, ihtarnameler, finansOzet, onMasrafKaydet }: Props) {
+export function MuvMasrafAvans({ muvId, davalar, icralar, arabuluculuklar, ihtarnameler, finansOzet, onMasrafKaydet }: Props) {
   const [katFiltre, setKatFiltre] = useState<string>('');
   const [formAcik, setFormAcik] = useState(false);
+  const [avansaDus, setAvansaDus] = useState(true); // Avans kasasından otomatik düşme
   const [yeni, setYeni] = useState({ dosyaKey: '', kat: '', acik: '', tarih: new Date().toISOString().slice(0, 10), tutar: '' });
+  const avansKaydet = useAvansHareketKaydet();
 
   /* ── Müvekkile ait tüm dosyalar (seçenek listesi) ── */
   const dosyaSecenekleri = useMemo(() => {
@@ -121,13 +125,34 @@ export function MuvMasrafAvans({ davalar, icralar, arabuluculuklar, ihtarnameler
     const secilenDosya = dosyaSecenekleri.find((d) => `${d.tur}::${d.id}` === yeni.dosyaKey);
     if (!secilenDosya || !yeni.tutar) return;
 
+    const tutar = Number(yeni.tutar);
+    const kat = yeni.kat || 'Diğer';
+
+    // Dosya masrafını kaydet
     onMasrafKaydet(secilenDosya.id, secilenDosya.tur, {
       id: crypto.randomUUID(),
-      kat: yeni.kat || 'Diğer',
+      kat,
       acik: yeni.acik,
       tarih: yeni.tarih,
-      tutar: Number(yeni.tutar),
+      tutar,
     });
+
+    // Avans kasasına da masraf olarak düş
+    if (avansaDus && muvId) {
+      const avansHareket: AvansHareket = {
+        id: crypto.randomUUID(),
+        muvId,
+        tip: 'masraf',
+        tarih: yeni.tarih,
+        tutar,
+        aciklama: `${kat}${yeni.acik ? ' — ' + yeni.acik : ''} (${secilenDosya.tur} ${secilenDosya.no})`,
+        kategori: kat,
+        dosyaId: secilenDosya.id,
+        dosyaTur: secilenDosya.tur,
+        dosyaNo: secilenDosya.no,
+      };
+      avansKaydet.mutate(avansHareket);
+    }
 
     setYeni({ dosyaKey: '', kat: '', acik: '', tarih: new Date().toISOString().slice(0, 10), tutar: '' });
     setFormAcik(false);
@@ -234,6 +259,17 @@ export function MuvMasrafAvans({ davalar, icralar, arabuluculuklar, ihtarnameler
                   className="w-full text-xs px-3 py-2 bg-surface border border-border rounded-lg text-text focus:border-gold focus:outline-none"
                 />
               </div>
+
+              {/* Avans kasasından düşme toggle */}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={avansaDus}
+                  onChange={(e) => setAvansaDus(e.target.checked)}
+                  className="accent-gold w-3.5 h-3.5"
+                />
+                <span className="text-[11px] text-text-muted">Bu masrafı avans kasasından otomatik düş</span>
+              </label>
 
               {/* Butonlar */}
               <div className="flex items-center gap-2 pt-1">

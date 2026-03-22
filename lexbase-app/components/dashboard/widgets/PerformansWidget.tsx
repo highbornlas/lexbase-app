@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { fmt } from '@/lib/utils';
+import { safeNum } from '@/lib/utils/finans';
 
 /* ══════════════════════════════════════════════════════════════
    Aylık Performans Widget — Gelir/Gider bar chart + kaynak dağılımı
@@ -73,7 +74,7 @@ export function PerformansWidget({ davalar, icralar, danismanliklar, arabuluculu
 
     // Danışmanlık gelirleri
     (danismanliklar || []).forEach((d) => {
-      const tutar = Number(d.tahsilEdildi || 0);
+      const tutar = safeNum(d.tahsilEdildi);
       if (tutar > 0) {
         const tarih = (d.sonucTarih as string) || (d.tarih as string);
         ayaEkle(tarih, tutar, gelirler);
@@ -86,7 +87,7 @@ export function PerformansWidget({ davalar, icralar, danismanliklar, arabuluculu
 
     // Arabuluculuk gelirleri
     (arabuluculuklar || []).forEach((a) => {
-      const tutar = Number(a.tahsilEdildi || 0);
+      const tutar = safeNum(a.tahsilEdildi);
       if (tutar > 0) {
         const tarih = (a.sonucTarih as string) || (a.basvuruTarih as string);
         ayaEkle(tarih, tutar, gelirler);
@@ -99,7 +100,7 @@ export function PerformansWidget({ davalar, icralar, danismanliklar, arabuluculu
 
     // İhtarname gelirleri
     (ihtarnameler || []).forEach((ih) => {
-      const tutar = Number(ih.tahsilEdildi || 0);
+      const tutar = safeNum(ih.tahsilEdildi);
       if (tutar > 0) {
         ayaEkle(ih.tarih as string, tutar, gelirler);
         if (ih.tarih) {
@@ -107,7 +108,7 @@ export function PerformansWidget({ davalar, icralar, danismanliklar, arabuluculu
           if (dt.getFullYear() === buYil) kaynaklar['İhtarname'] += tutar;
         }
       }
-      const noter = Number(ih.noterMasrafi || 0);
+      const noter = safeNum(ih.noterMasrafi);
       if (noter > 0) ayaEkle(ih.tarih as string, noter, giderler);
     });
 

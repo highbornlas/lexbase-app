@@ -13,6 +13,7 @@ import { DAVA_DURUMLARI, YARGI_TURLERI, YARGI_BIRIMLERI } from '@/lib/constants/
 import { exportDavaListeUYAPXLS } from '@/lib/export/excelExport';
 import { exportDavaListePDF } from '@/lib/export/pdfExport';
 import { SkeletonTable, SkeletonKPI } from '@/components/ui/SkeletonTable';
+import { safeNum, tahsilatToplam } from '@/lib/utils/finans';
 import { CopyNo } from '@/components/ui/CopyNo';
 import { ASAMA_RENK, DURUM_RENK } from '@/lib/constants/ui';
 
@@ -89,6 +90,7 @@ export default function DavalarPage() {
   const [seciliDava, setSeciliDava] = useState<Dava | null>(null);
   const [sorguPaneliAcik, setSorguPaneliAcik] = useState(true);
   const [aksiyonMenuId, setAksiyonMenuId] = useState<string | null>(null);
+  const [kpiFiltre, setKpiFiltre] = useState<string | null>(null);
 
   // Yargı Türü değişince birimi resetle
   const mevcutBirimler = yargiTuru !== 'hepsi' ? (YARGI_BIRIMLERI[yargiTuru] || []) : [];
@@ -200,8 +202,12 @@ export default function DavalarPage() {
       const topHarcama = (d.harcamalar || []).reduce((t: number, h: { tutar: number }) => t + (h.tutar || 0), 0);
       const topTahsilat = (d.tahsilatlar || []).reduce((t: number, h: { tutar: number }) => t + (h.tutar || 0), 0);
       if (topHarcama > 0 && topTahsilat <= topHarcama) avansBiten++;
-      // Bekleyen tahsilat
-      if (topHarcama > topTahsilat) bekleyenTahsilat += (topHarcama - topTahsilat);
+      // Ücret alacağı: sözleşme bedeli - tahsil edilen (tek kaynak: tahsilatlar[])
+      const sozlesme = safeNum(d.ucret);
+      if (sozlesme > 0) {
+        const tahsil = d.tahsilatlar?.length ? tahsilatToplam(d.tahsilatlar) : safeNum(d.tahsilEdildi);
+        if (sozlesme > tahsil) bekleyenTahsilat += (sozlesme - tahsil);
+      }
       // Hareketsiz dosya (60 gün)
       const sonIslem = d.tarih || d.durusma || '';
       if (sonIslem) {
@@ -248,7 +254,7 @@ export default function DavalarPage() {
         const muvAd = muvAdMap[d.muvId || ''] || '';
         const esasStr = esasNoGoster(d.esasYil, d.esasNo);
         const mahkemeStr = tamMahkemeAdi(d.il, d.mno, d.mtur, d.adliye);
-        return (
+        if (!(
           esasStr.toLocaleLowerCase('tr').includes(q) ||
           mahkemeStr.toLocaleLowerCase('tr').includes(q) ||
           muvAd.toLocaleLowerCase('tr').includes(q) ||
@@ -256,11 +262,49 @@ export default function DavalarPage() {
           (d.konu || '').toLocaleLowerCase('tr').includes(q) ||
           (d.davaTuru || '').toLocaleLowerCase('tr').includes(q) ||
           (d.no || '').toLocaleLowerCase('tr').includes(q)
-        );
+        )) return false;
+      }
+      // KPI filtre
+      if (kpiFiltre) {
+        const simdi = Date.now();
+        const gun15 = 15 * 86400000;
+        const gun7 = 7 * 86400000;
+        const gun60 = 60 * 86400000;
+        if (kpiFiltre === 'aktif' && d.durum === 'Kapalı') return false;
+        if (kpiFiltre === 'durusma') {
+          if (!d.durusma) return false;
+          const fark = new Date(d.durusma).getTime() - simdi;
+          if (!(fark >= 0 && fark <= gun15)) return false;
+        }
+        if (kpiFiltre === 'sure') {
+          let hasSure = false;
+          if (d.sureler && Array.isArray(d.sureler)) {
+            d.sureler.forEach((s: { baslangic: string; gun: number }) => {
+              const bitis = new Date(s.baslangic).getTime() + s.gun * 86400000;
+              if (bitis - simdi >= 0 && bitis - simdi <= gun7) hasSure = true;
+            });
+          }
+          if (!hasSure) return false;
+        }
+        if (kpiFiltre === 'avans') {
+          const topH = (d.harcamalar || []).reduce((t: number, h: { tutar: number }) => t + (h.tutar || 0), 0);
+          const topT = (d.tahsilatlar || []).reduce((t: number, h: { tutar: number }) => t + (h.tutar || 0), 0);
+          if (!(topH > 0 && topT <= topH)) return false;
+        }
+        if (kpiFiltre === 'hareketsiz') {
+          const sonIslem = d.tarih || d.durusma || '';
+          if (!sonIslem || !(simdi - new Date(sonIslem).getTime() > gun60)) return false;
+        }
+        if (kpiFiltre === 'tahsilat') {
+          const sozlesme = safeNum(d.ucret);
+          if (sozlesme <= 0) return false;
+          const tahsil = d.tahsilatlar?.length ? tahsilatToplam(d.tahsilatlar) : safeNum(d.tahsilEdildi);
+          if (!(sozlesme > tahsil)) return false;
+        }
       }
       return true;
     });
-  }, [davalar, arama, dosyaDurumu, yargiTuru, yargiBirimi, esasYilFiltre, esasNoFiltre, tarihBaslangic, tarihBitis, muvAdMap]);
+  }, [davalar, arama, dosyaDurumu, yargiTuru, yargiBirimi, esasYilFiltre, esasNoFiltre, tarihBaslangic, tarihBitis, muvAdMap, kpiFiltre]);
 
   // ── Sıralama ───────────────────────────────────────────────
   const sirali = useMemo(() => {
@@ -291,7 +335,7 @@ export default function DavalarPage() {
   }, [sirali, sayfa, sayfaBoyutu]);
 
   // Filtre değişince sayfa 1'e dön
-  useEffect(() => { setSayfa(1); }, [arama, dosyaDurumu, yargiTuru, yargiBirimi, esasYilFiltre, esasNoFiltre, tarihBaslangic, tarihBitis]);
+  useEffect(() => { setSayfa(1); }, [arama, dosyaDurumu, yargiTuru, yargiBirimi, esasYilFiltre, esasNoFiltre, tarihBaslangic, tarihBitis, kpiFiltre]);
 
   // ── Sıralama toggle ──────────────────────────────────────
   function toggleSort(key: SortKey) {
@@ -486,13 +530,30 @@ export default function DavalarPage() {
 
       {/* ── Actionable KPI Strip ───────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
-        <KpiCard label="Aktif Dosyalar" value={kpis.aktifDosya} icon={svgBriefcase} color="text-blue-400" />
-        <KpiCard label="Yaklaşan Duruşma" value={kpis.yaklasanDurusma} icon={svgCalendar} color="text-gold" pulse={kpis.yaklasanDurusma > 0} />
-        <KpiCard label="Kesin Süreler" value={kpis.kesinSure} icon={svgHourglass} color={kpis.kesinSure > 0 ? 'text-red' : 'text-text-muted'} pulse={kpis.kesinSure > 0} />
-        <KpiCard label="Avansı Bitenler" value={kpis.avansBiten} icon={svgWallet} color={kpis.avansBiten > 0 ? 'text-orange-400' : 'text-text-muted'} />
-        <KpiCard label="Hareketsiz Dosya" value={kpis.hareketsiz} icon={svgSleep} color={kpis.hareketsiz > 0 ? 'text-yellow-500' : 'text-text-muted'} />
-        <KpiCard label="Bekleyen Tahsilat" value={kpis.bekleyenTahsilat > 0 ? new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(kpis.bekleyenTahsilat) : '₺0'} icon={svgMoney} color={kpis.bekleyenTahsilat > 0 ? 'text-red' : 'text-green'} />
+        <KpiCard label="Aktif Dosyalar" value={kpis.aktifDosya} icon={svgBriefcase} color="text-blue-400" active={kpiFiltre === 'aktif'} onClick={() => setKpiFiltre(kpiFiltre === 'aktif' ? null : 'aktif')} />
+        <KpiCard label="Yaklaşan Duruşma" value={kpis.yaklasanDurusma} icon={svgCalendar} color="text-gold" pulse={kpis.yaklasanDurusma > 0} active={kpiFiltre === 'durusma'} onClick={() => setKpiFiltre(kpiFiltre === 'durusma' ? null : 'durusma')} />
+        <KpiCard label="Kesin Süreler" value={kpis.kesinSure} icon={svgHourglass} color={kpis.kesinSure > 0 ? 'text-red' : 'text-text-muted'} pulse={kpis.kesinSure > 0} active={kpiFiltre === 'sure'} onClick={() => setKpiFiltre(kpiFiltre === 'sure' ? null : 'sure')} />
+        <KpiCard label="Avansı Bitenler" value={kpis.avansBiten} icon={svgWallet} color={kpis.avansBiten > 0 ? 'text-orange-400' : 'text-text-muted'} active={kpiFiltre === 'avans'} onClick={() => setKpiFiltre(kpiFiltre === 'avans' ? null : 'avans')} />
+        <KpiCard label="Hareketsiz Dosya" value={kpis.hareketsiz} icon={svgSleep} color={kpis.hareketsiz > 0 ? 'text-yellow-500' : 'text-text-muted'} active={kpiFiltre === 'hareketsiz'} onClick={() => setKpiFiltre(kpiFiltre === 'hareketsiz' ? null : 'hareketsiz')} />
+        <KpiCard label="Ücret Alacağı" value={kpis.bekleyenTahsilat > 0 ? new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(kpis.bekleyenTahsilat) : '₺0'} icon={svgMoney} color={kpis.bekleyenTahsilat > 0 ? 'text-orange-400' : 'text-green'} active={kpiFiltre === 'tahsilat'} onClick={() => setKpiFiltre(kpiFiltre === 'tahsilat' ? null : 'tahsilat')} />
       </div>
+
+      {/* ── KPI Filtre Göstergesi ────────────────────────────── */}
+      {kpiFiltre && (
+        <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-gold/10 border border-gold/20 rounded-lg text-xs text-gold">
+          <span>🔍</span>
+          <span className="font-medium">
+            {kpiFiltre === 'aktif' && 'Aktif dosyalar gösteriliyor'}
+            {kpiFiltre === 'durusma' && 'Yaklaşan duruşması olanlar gösteriliyor'}
+            {kpiFiltre === 'sure' && 'Kesin süre yaklaşanlar gösteriliyor'}
+            {kpiFiltre === 'avans' && 'Avansı bitenler gösteriliyor'}
+            {kpiFiltre === 'hareketsiz' && 'Hareketsiz dosyalar gösteriliyor'}
+            {kpiFiltre === 'tahsilat' && 'Ücret alacağı olanlar gösteriliyor'}
+          </span>
+          <span className="text-text-dim">({filtrelenmis.length} dosya)</span>
+          <button onClick={() => setKpiFiltre(null)} className="ml-auto text-text-dim hover:text-text transition-colors">✕ Temizle</button>
+        </div>
+      )}
 
       {/* ── UYAP Dosya Sorgulama Paneli ──────────────────────── */}
       <div className="bg-surface border border-border rounded-lg mb-5 overflow-hidden">
@@ -775,9 +836,15 @@ const svgMoney = <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fil
 //  KPI Kartı (Arka plan SVG ikonlu)
 // ══════════════════════════════════════════════════════════════
 
-function KpiCard({ label, value, icon, color, pulse }: { label: string; value: number | string; icon: React.ReactNode; color?: string; pulse?: boolean }) {
+function KpiCard({ label, value, icon, color, pulse, active, onClick }: { label: string; value: number | string; icon: React.ReactNode; color?: string; pulse?: boolean; active?: boolean; onClick?: () => void }) {
   return (
-    <div className="relative bg-surface border border-border rounded-xl px-4 py-3 overflow-hidden group hover:border-gold/30 transition-colors">
+    <div
+      className={`relative bg-surface border rounded-xl px-4 py-3 overflow-hidden group transition-all ${onClick ? 'cursor-pointer hover:border-gold/30 hover:scale-[1.02]' : ''} ${active ? 'border-gold ring-1 ring-gold/30 shadow-md' : 'border-border'}`}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') onClick(); } : undefined}
+    >
       {/* Arka plan ikon */}
       <div className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 opacity-[0.07] text-text pointer-events-none">
         {icon}
@@ -788,6 +855,7 @@ function KpiCard({ label, value, icon, color, pulse }: { label: string; value: n
           {value}
         </div>
       </div>
+      {active && <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-gold" />}
     </div>
   );
 }

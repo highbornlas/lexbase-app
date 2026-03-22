@@ -13,6 +13,7 @@ import { ICRA_TURLERI, ICRA_DURUMLARI, ICRA_YARGI_BIRIMLERI } from '@/lib/consta
 import { exportIcraListeUYAPXLS } from '@/lib/export/excelExport';
 import { exportIcraListePDF } from '@/lib/export/pdfExport';
 import { SkeletonTable, SkeletonKPI } from '@/components/ui/SkeletonTable';
+import { safeNum, tahsilatToplam } from '@/lib/utils/finans';
 import { CopyNo } from '@/components/ui/CopyNo';
 
 /* ── Durum renk haritasi ── */
@@ -146,6 +147,8 @@ export default function IcraPage() {
   // Satır seçimi
   const [seciliIdler, setSeciliIdler] = useState<Set<string>>(new Set());
 
+  const [kpiFiltre, setKpiFiltre] = useState<string | null>(null);
+
   // Kayıtlı filtreler
   const [kayitliFiltreMenuAcik, setKayitliFiltreMenuAcik] = useState(false);
   const [filtreAdi, setFiltreAdi] = useState('');
@@ -208,9 +211,12 @@ export default function IcraPage() {
       const topHarcama = (ic.harcamalar || []).reduce((t: number, h: { tutar: number }) => t + (h.tutar || 0), 0);
       const topTahsilat = (ic.tahsilatlar || []).reduce((t: number, h: { tutar: number }) => t + (h.tutar || 0), 0);
       if (topHarcama > 0 && topTahsilat <= topHarcama) avansBiten++;
-      // Bekleyen alacak (alacak - tahsil)
-      const kalan = (ic.alacak || 0) - (ic.tahsil || 0);
-      if (kalan > 0) bekleyenTahsilat += kalan;
+      // Ücret alacağı: vekalet ücreti - tahsil edilen (tek kaynak: tahsilatlar[])
+      const sozlesme = safeNum(ic.vekaletUcreti);
+      if (sozlesme > 0) {
+        const tahsil = ic.tahsilatlar?.length ? tahsilatToplam(ic.tahsilatlar) : safeNum(ic.tahsil);
+        if (sozlesme > tahsil) bekleyenTahsilat += (sozlesme - tahsil);
+      }
       // Hareketsiz dosya
       const sonIslem = ic.tarih || '';
       if (sonIslem) {
@@ -251,7 +257,33 @@ export default function IcraPage() {
         const muvAd = muvAdMap[ic.muvId || ''] || '';
         const esasStr = esasNoGoster(ic.esasYil, ic.esasNo) || ic.esas || '';
         const daireStr = tamIcraDairesiAdi(ic.il, ic.daire);
-        return (ic.no || '').toLocaleLowerCase('tr').includes(q) || esasStr.toLocaleLowerCase('tr').includes(q) || (ic.borclu || '').toLocaleLowerCase('tr').includes(q) || muvAd.toLocaleLowerCase('tr').includes(q) || daireStr.toLocaleLowerCase('tr').includes(q) || (ic.tur || '').toLocaleLowerCase('tr').includes(q);
+        if (!((ic.no || '').toLocaleLowerCase('tr').includes(q) || esasStr.toLocaleLowerCase('tr').includes(q) || (ic.borclu || '').toLocaleLowerCase('tr').includes(q) || muvAd.toLocaleLowerCase('tr').includes(q) || daireStr.toLocaleLowerCase('tr').includes(q) || (ic.tur || '').toLocaleLowerCase('tr').includes(q))) return false;
+      }
+      // KPI filtre
+      if (kpiFiltre) {
+        const simdi = Date.now();
+        const gun60 = 60 * 86400000;
+        if (kpiFiltre === 'aktif' && ic.durum === 'Kapandı') return false;
+        if (kpiFiltre === 'kritik') {
+          const s = sureMap[ic.id];
+          if (!(s && !s.gecmis && s.kalanGun <= 7)) return false;
+        }
+        if (kpiFiltre === 'haciz' && ic.durum !== 'Haciz Aşaması') return false;
+        if (kpiFiltre === 'avans') {
+          const topH = (ic.harcamalar || []).reduce((t: number, h: { tutar: number }) => t + (h.tutar || 0), 0);
+          const topT = (ic.tahsilatlar || []).reduce((t: number, h: { tutar: number }) => t + (h.tutar || 0), 0);
+          if (!(topH > 0 && topT <= topH)) return false;
+        }
+        if (kpiFiltre === 'hareketsiz') {
+          const sonIslem = ic.tarih || '';
+          if (!sonIslem || !(simdi - new Date(sonIslem).getTime() > gun60)) return false;
+        }
+        if (kpiFiltre === 'tahsilat') {
+          const sozlesme = safeNum(ic.vekaletUcreti);
+          if (sozlesme <= 0) return false;
+          const tahsil = ic.tahsilatlar?.length ? tahsilatToplam(ic.tahsilatlar) : safeNum(ic.tahsil);
+          if (!(sozlesme > tahsil)) return false;
+        }
       }
       return true;
     });
@@ -414,13 +446,30 @@ export default function IcraPage() {
 
       {/* ── Actionable KPI Strip ── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
-        <KpiCard label="Aktif Takip" value={kpis.aktifTakip} icon={svgBriefcase} color="text-blue-400" />
-        <KpiCard label="Kritik Süreler" value={kpis.kritikSure} icon={svgHourglass} color={kpis.kritikSure > 0 ? 'text-red' : 'text-text-muted'} pulse={kpis.kritikSure > 0} />
-        <KpiCard label="Haciz Aşaması" value={kpis.hacizAsamasi} icon={svgGavel} color="text-orange-400" />
-        <KpiCard label="Avansı Bitenler" value={kpis.avansBiten} icon={svgWallet} color={kpis.avansBiten > 0 ? 'text-orange-400' : 'text-text-muted'} />
-        <KpiCard label="Hareketsiz Dosya" value={kpis.hareketsiz} icon={svgSleep} color={kpis.hareketsiz > 0 ? 'text-yellow-500' : 'text-text-muted'} />
-        <KpiCard label="Bekleyen Tahsilat" value={kpis.bekleyenTahsilat > 0 ? new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(kpis.bekleyenTahsilat) : '₺0'} icon={svgMoney} color={kpis.bekleyenTahsilat > 0 ? 'text-red' : 'text-green'} />
+        <KpiCard label="Aktif Takip" value={kpis.aktifTakip} icon={svgBriefcase} color="text-blue-400" active={kpiFiltre === 'aktif'} onClick={() => setKpiFiltre(kpiFiltre === 'aktif' ? null : 'aktif')} />
+        <KpiCard label="Kritik Süreler" value={kpis.kritikSure} icon={svgHourglass} color={kpis.kritikSure > 0 ? 'text-red' : 'text-text-muted'} pulse={kpis.kritikSure > 0} active={kpiFiltre === 'kritik'} onClick={() => setKpiFiltre(kpiFiltre === 'kritik' ? null : 'kritik')} />
+        <KpiCard label="Haciz Aşaması" value={kpis.hacizAsamasi} icon={svgGavel} color="text-orange-400" active={kpiFiltre === 'haciz'} onClick={() => setKpiFiltre(kpiFiltre === 'haciz' ? null : 'haciz')} />
+        <KpiCard label="Avansı Bitenler" value={kpis.avansBiten} icon={svgWallet} color={kpis.avansBiten > 0 ? 'text-orange-400' : 'text-text-muted'} active={kpiFiltre === 'avans'} onClick={() => setKpiFiltre(kpiFiltre === 'avans' ? null : 'avans')} />
+        <KpiCard label="Hareketsiz Dosya" value={kpis.hareketsiz} icon={svgSleep} color={kpis.hareketsiz > 0 ? 'text-yellow-500' : 'text-text-muted'} active={kpiFiltre === 'hareketsiz'} onClick={() => setKpiFiltre(kpiFiltre === 'hareketsiz' ? null : 'hareketsiz')} />
+        <KpiCard label="Ücret Alacağı" value={kpis.bekleyenTahsilat > 0 ? new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: 0 }).format(kpis.bekleyenTahsilat) : '₺0'} icon={svgMoney} color={kpis.bekleyenTahsilat > 0 ? 'text-orange-400' : 'text-green'} active={kpiFiltre === 'tahsilat'} onClick={() => setKpiFiltre(kpiFiltre === 'tahsilat' ? null : 'tahsilat')} />
       </div>
+
+      {/* ── KPI Filtre Göstergesi ── */}
+      {kpiFiltre && (
+        <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-gold/10 border border-gold/20 rounded-lg text-xs text-gold">
+          <span>🔍</span>
+          <span className="font-medium">
+            {kpiFiltre === 'aktif' && 'Aktif takipler gösteriliyor'}
+            {kpiFiltre === 'kritik' && 'Kritik süresi olanlar gösteriliyor'}
+            {kpiFiltre === 'haciz' && 'Haciz aşamasındakiler gösteriliyor'}
+            {kpiFiltre === 'avans' && 'Avansı bitenler gösteriliyor'}
+            {kpiFiltre === 'hareketsiz' && 'Hareketsiz dosyalar gösteriliyor'}
+            {kpiFiltre === 'tahsilat' && 'Ücret alacağı olanlar gösteriliyor'}
+          </span>
+          <span className="text-text-dim">({filtrelenmis.length} dosya)</span>
+          <button onClick={() => setKpiFiltre(null)} className="ml-auto text-text-dim hover:text-text transition-colors">✕ Temizle</button>
+        </div>
+      )}
 
       {/* ── UYAP Dosya Sorgulama Paneli ──────────────────────── */}
       <div className="bg-surface border border-border rounded-lg mb-5 overflow-hidden">
@@ -703,9 +752,15 @@ const svgSleep = <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fil
 const svgMoney = <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 100 7h5a3.5 3.5 0 110 7H6"/></svg>;
 
 /* ── KPI Kartı ── */
-function KpiCard({ label, value, icon, color, pulse }: { label: string; value: number | string; icon: React.ReactNode; color?: string; pulse?: boolean }) {
+function KpiCard({ label, value, icon, color, pulse, active, onClick }: { label: string; value: number | string; icon: React.ReactNode; color?: string; pulse?: boolean; active?: boolean; onClick?: () => void }) {
   return (
-    <div className="relative bg-surface border border-border rounded-xl px-4 py-3 overflow-hidden group hover:border-gold/30 transition-colors">
+    <div
+      className={`relative bg-surface border rounded-xl px-4 py-3 overflow-hidden group transition-all ${onClick ? 'cursor-pointer hover:border-gold/30 hover:scale-[1.02]' : ''} ${active ? 'border-gold ring-1 ring-gold/30 shadow-md' : 'border-border'}`}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') onClick(); } : undefined}
+    >
       <div className="absolute right-2 top-1/2 -translate-y-1/2 w-12 h-12 opacity-[0.07] text-text pointer-events-none">
         {icon}
       </div>
@@ -715,6 +770,7 @@ function KpiCard({ label, value, icon, color, pulse }: { label: string; value: n
           {value}
         </div>
       </div>
+      {active && <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-gold" />}
     </div>
   );
 }

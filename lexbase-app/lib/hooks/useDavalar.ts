@@ -53,6 +53,8 @@ export interface Dava {
   vekiller?: Array<{ id: string; ad: string }>;
   // Finansal
   deger?: number;
+  ucret?: number; // Vekalet ücreti (sözleşme bedeli)
+  tahsilEdildi?: number; // Tahsil edilen toplam ücret
   // Süreler
   sureler?: Array<{ id: string; tip: string; baslangic: string; gun: number }>;
   // Duruşmalar (çoklu)
@@ -81,6 +83,21 @@ export interface Dava {
   notlar?: Record<string, unknown>[];
   harcamalar?: Array<{ id: string; kat?: string; acik?: string; tarih?: string; tutar: number }>;
   tahsilatlar?: Array<{ id: string; tur: string; tutar: number; tarih?: string; acik?: string; kdvOrani?: number; stopajOrani?: number; makbuzKesildi?: boolean; makbuzNo?: string; makbuzTarih?: string }>;
+  // Taksitli ödeme planı
+  odemePlani?: {
+    aktif: boolean;
+    toplamTutar: number;
+    taksitSayisi: number;
+    baslangicTarihi: string;
+    taksitler: Array<{
+      id: string;
+      no: number;
+      vadeTarihi: string;
+      tutar: number;
+      odpiYapildiMi: boolean;
+      odemeTarihi?: string;
+    }>;
+  };
   anlasma?: Record<string, unknown>;
   not?: string;
   // Arşiv & Soft delete

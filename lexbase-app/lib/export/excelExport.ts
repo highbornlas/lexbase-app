@@ -210,3 +210,163 @@ export async function exportIcraListeUYAPXLS(
   XLSX.utils.book_append_sheet(wb, ws, 'İcra Dosyaları');
   XLSX.writeFile(wb, `icra-listesi-${new Date().toISOString().slice(0, 10)}.xlsx`);
 }
+
+// ── Kapak Hesabı Excel ──────────────────────────────────────
+export async function exportKapakHesabiXLS(data: {
+  dosyaAdi: string;
+  hesapTarihi: string;
+  kalemler: Array<{
+    aciklama: string;
+    vadeTarihi: string;
+    asilAlacak: number;
+    islemizFaiz: number;
+    toplamKalem: number;
+  }>;
+  toplamAsilAlacak: number;
+  toplamIsleyenFaiz: number;
+  icraVekaletUcreti: number;
+  icraMasraflari: number;
+  toplamDosyaDegeri: number;
+  tahsilEdilen: number;
+  kalanBorc: number;
+}) {
+  const XLSX = await import('xlsx');
+  const wb = XLSX.utils.book_new();
+
+  // Alacak kalemleri
+  const kalemData = data.kalemler.map((k, i) => ({
+    '#': i + 1,
+    'Kalem': k.aciklama,
+    'Vade Tarihi': k.vadeTarihi,
+    'Asıl Alacak': k.asilAlacak,
+    'İşlemiş Faiz': k.islemizFaiz,
+    'Toplam': k.toplamKalem,
+  }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(kalemData), 'Alacak Kalemleri');
+
+  // Özet
+  const ozetData = [
+    { 'Kalem': 'Toplam Asıl Alacak', 'Tutar': data.toplamAsilAlacak },
+    { 'Kalem': 'Toplam İşlemiş Faiz', 'Tutar': data.toplamIsleyenFaiz },
+    { 'Kalem': 'İcra Vekalet Ücreti', 'Tutar': data.icraVekaletUcreti },
+    { 'Kalem': 'İcra Masrafları', 'Tutar': data.icraMasraflari },
+    { 'Kalem': 'TOPLAM DOSYA DEĞERİ', 'Tutar': data.toplamDosyaDegeri },
+    { 'Kalem': 'Tahsil Edilen', 'Tutar': data.tahsilEdilen },
+    { 'Kalem': 'KALAN BORÇ', 'Tutar': data.kalanBorc },
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(ozetData), 'Dosya Özeti');
+
+  XLSX.writeFile(wb, `kapak-hesabi-${data.dosyaAdi.replace(/\s+/g, '-')}-${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
+// ── Faiz Hesaplama Detay Excel ──────────────────────────────
+export async function exportFaizHesapXLS(data: {
+  faizTuru: string;
+  anapara: number;
+  baslangic: string;
+  bitis: string;
+  toplamFaiz: number;
+  genelToplam: number;
+  toplamGun: number;
+  detay: Array<{
+    baslangic: string;
+    bitis: string;
+    gun: number;
+    oran: number;
+    faiz: number;
+  }>;
+}) {
+  const XLSX = await import('xlsx');
+  const wb = XLSX.utils.book_new();
+
+  // Dönemsel detay
+  const detayData = data.detay.map((d, i) => ({
+    '#': i + 1,
+    'Dönem Başlangıç': d.baslangic,
+    'Dönem Bitiş': d.bitis,
+    'Gün': d.gun,
+    'Oran (%)': d.oran,
+    'Faiz Tutarı': d.faiz,
+  }));
+  detayData.push({
+    '#': 0,
+    'Dönem Başlangıç': 'TOPLAM',
+    'Dönem Bitiş': '',
+    'Gün': data.toplamGun,
+    'Oran (%)': 0,
+    'Faiz Tutarı': data.toplamFaiz,
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detayData), 'Faiz Detayı');
+
+  // Özet
+  const ozetData = [
+    { 'Parametre': 'Faiz Türü', 'Değer': data.faizTuru },
+    { 'Parametre': 'Anapara', 'Değer': data.anapara },
+    { 'Parametre': 'Başlangıç', 'Değer': data.baslangic },
+    { 'Parametre': 'Bitiş', 'Değer': data.bitis },
+    { 'Parametre': 'Toplam Gün', 'Değer': data.toplamGun },
+    { 'Parametre': 'Toplam Faiz', 'Değer': data.toplamFaiz },
+    { 'Parametre': 'Genel Toplam', 'Değer': data.genelToplam },
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(ozetData), 'Özet');
+
+  XLSX.writeFile(wb, `faiz-hesap-${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
+// ── Avans Kasası Excel ──────────────────────────────────────
+export async function exportAvansKasaXLS(kasalar: Array<{
+  muvAd: string;
+  toplamAlim: number;
+  toplamMasraf: number;
+  toplamIade: number;
+  bakiye: number;
+}>) {
+  const XLSX = await import('xlsx');
+
+  const data = kasalar.map((k, i) => ({
+    '#': i + 1,
+    'Müvekkil': k.muvAd,
+    'Alınan': k.toplamAlim,
+    'Harcanan': k.toplamMasraf,
+    'İade': k.toplamIade,
+    'Bakiye': k.bakiye,
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Avans Kasası');
+  XLSX.writeFile(wb, `avans-kasasi-${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
+// ── Kar/Zarar Raporu Excel ──────────────────────────────────
+export async function exportKarZararXLS(data: {
+  yil: number;
+  ay?: string;
+  gelir: number;
+  gider: number;
+  net: number;
+  satirlar: Array<{ kalem: string; tutar: number; tur: 'gelir' | 'gider' }>;
+}) {
+  const XLSX = await import('xlsx');
+  const wb = XLSX.utils.book_new();
+
+  // Detay satırları
+  const satirData = data.satirlar.map((s, i) => ({
+    '#': i + 1,
+    'Kalem': s.kalem,
+    'Tür': s.tur === 'gelir' ? 'Gelir' : 'Gider',
+    'Tutar': s.tutar,
+  }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(satirData), 'Detay');
+
+  // Özet
+  const ozetData = [
+    { 'Kalem': 'Toplam Gelir', 'Tutar': data.gelir },
+    { 'Kalem': 'Toplam Gider', 'Tutar': data.gider },
+    { 'Kalem': 'Net Kâr / Zarar', 'Tutar': data.net },
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(ozetData), 'Özet');
+
+  const donem = data.ay ? `${data.ay}-${data.yil}` : `${data.yil}`;
+  XLSX.writeFile(wb, `kar-zarar-${donem}-${new Date().toISOString().slice(0, 10)}.xlsx`);
+}

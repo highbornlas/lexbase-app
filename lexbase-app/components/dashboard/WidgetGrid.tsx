@@ -65,6 +65,10 @@ const PersonelOzetWidget = dynamic(
   () => import('./widgets/PersonelOzetWidget').then((m) => m.PersonelOzetWidget),
   { ssr: false },
 );
+const AvansKasaWidget = dynamic(
+  () => import('./widgets/AvansKasaWidget').then((m) => m.AvansKasaWidget),
+  { ssr: false },
+);
 
 /* ══════════════════════════════════════════════════════════════
    Widget Grid — react-grid-layout ile sürükle-bırak dashboard
@@ -86,6 +90,7 @@ const WIDGET_CONFIG: Record<string, { title: string; icon: string; linkText?: st
   'aktivite': { title: '📋 Son Aktiviteler', icon: '📋', color: 'blue' },
   'hizli-erisim': { title: '⭐ Hızlı Erişim', icon: '⭐', color: 'purple' },
   'vekaletname-sure': { title: '📜 Vekaletname Süreleri', icon: '📜', color: 'gold' },
+  'avans-kasa': { title: '🏦 Avans Kasaları', icon: '🏦', linkText: 'Finans ›', linkHref: '/finans', color: 'green' },
 };
 
 const BREAKPOINTS = { lg: 1100, md: 768, sm: 0 };
@@ -168,6 +173,8 @@ export function WidgetGrid({
         return <HizliErisimWidget />;
       case 'vekaletname-sure':
         return <VekaletnameSureWidget belgeler={belgeler} muvAdMap={muvAdMap} />;
+      case 'avans-kasa':
+        return <AvansKasaWidget />;
       default:
         return <div className="text-text-dim text-sm p-4">Widget bulunamadı</div>;
     }

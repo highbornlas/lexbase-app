@@ -1,6 +1,15 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import {
+  type FaizTuru as FaizTuruId,
+  type FaizDetaySonuc,
+  UYAP_FAIZ_TURLERI,
+  faizTurleriGruplu,
+  hesaplaFaizDetayli,
+} from '@/lib/utils/faiz';
+import { exportFaizHesapPDF } from '@/lib/export/pdfExport';
+import { exportFaizHesapXLS } from '@/lib/export/excelExport';
 
 /* ══════════════════════════════════════════════════════════════
    YARDIMCI FONKSİYONLAR
@@ -64,80 +73,8 @@ function validateVKN(vkn: string): { gecerli: boolean; mesaj: string } {
   return { gecerli: false, mesaj: 'Kontrol hanesi doğrulaması başarısız.' };
 }
 
-/* ── Faiz Hesaplama (Dönemsel Oran Destekli) ──────────────── */
-type FaizTuru = {
-  id: string; ad: string; oranKey: string; madde: string; aciklama: string;
-};
-
-const FAIZ_TURLERI: FaizTuru[] = [
-  { id: 'yasal', ad: 'Yasal Faiz', oranKey: 'yasal', madde: '3095 s.K. m.1', aciklama: 'Tüm hukuk davalarında varsayılan faiz oranı' },
-  { id: 'ticari', ad: 'Ticari Faiz (Avans)', oranKey: 'ticari', madde: '3095 s.K. m.2', aciklama: 'Ticari işlerde uygulanan TCMB avans faizi' },
-  { id: 'temerr_yasal', ad: 'Temerrüt Faizi (Yasal)', oranKey: 'yasal', madde: 'TBK m.120', aciklama: 'Borçlunun temerrüde düşmesi — yasal oran' },
-  { id: 'temerr_ticari', ad: 'Temerrüt Faizi (Ticari)', oranKey: 'ticari', madde: 'TBK m.120 / TTK', aciklama: 'Ticari işlemlerde temerrüt — avans oranı' },
-  { id: 'reeskont', ad: 'Reeskont Faizi', oranKey: 'reeskont', madde: 'TCMB', aciklama: 'TCMB reeskont işlemlerine uygulanan oran' },
-  { id: 'mevduat', ad: 'En Yüksek Mevduat Faizi', oranKey: 'mevduat', madde: '3095 s.K. m.2', aciklama: 'Bankaların uyguladığı en yüksek mevduat faizi' },
-  { id: 'kidem', ad: 'Kıdem Tazminatı Faizi', oranKey: 'mevduat', madde: '1475 s.K. m.14', aciklama: 'Mevduata uygulanan en yüksek faiz oranında' },
-  { id: 'kamuLastirma', ad: 'Kamulaştırma Bedeli Faizi', oranKey: 'mevduat', madde: '2942 s.K. m.10', aciklama: 'Kamulaştırma bedelinin geç ödenmesi' },
-  { id: 'kamu_gecikme', ad: 'Kamu Alacakları Gecikme Zammı', oranKey: 'kamu_gecikme', madde: '6183 s.K. m.51', aciklama: 'Vergi ve kamu alacaklarında gecikme zammı' },
-  { id: 'vergi_gecikme', ad: 'Vergi Gecikme Faizi', oranKey: 'vergi_gecikme', madde: 'VUK m.112', aciklama: 'Vergi borçlarına uygulanan gecikme faizi' },
-  { id: 'sgk_gecikme', ad: 'SGK Gecikme Zammı', oranKey: 'sgk_gecikme', madde: '5510 s.K. m.89', aciklama: 'SGK prim borçlarına uygulanan gecikme zammı' },
-  { id: 'nafaka', ad: 'Nafaka Faizi', oranKey: 'yasal', madde: 'TBK m.120 / TMK', aciklama: 'Nafaka alacağına yasal faiz uygulanır' },
-  { id: 'kira', ad: 'Kira Alacağı Faizi', oranKey: 'yasal', madde: 'TBK m.120', aciklama: 'Kira alacağına yasal faiz oranı' },
-  { id: 'is_kazasi', ad: 'İş Kazası / Meslek Hastalığı Faizi', oranKey: 'yasal', madde: 'TBK m.120 / 5510', aciklama: 'Rücuen alacaklarda yasal faiz' },
-  { id: 'sigorta', ad: 'Sigorta Tazminatı Faizi', oranKey: 'yasal', madde: 'TTK m.1427', aciklama: 'Temerrüt tarihinden itibaren yasal/ticari' },
-];
-
-const FAIZ_ORAN_DB: Record<string, { b: string; o: number }[]> = {
-  yasal: [{ b: '2006-01-01', o: 9 }, { b: '2024-07-01', o: 24 }],
-  ticari: [{ b: '2020-06-01', o: 9.75 }, { b: '2023-09-01', o: 34.25 }, { b: '2024-01-01', o: 49 }, { b: '2024-04-01', o: 54 }, { b: '2025-01-01', o: 49 }, { b: '2025-04-01', o: 44 }],
-  reeskont: [{ b: '2024-01-01', o: 45.5 }, { b: '2025-01-01', o: 45.5 }, { b: '2025-04-01', o: 40.5 }],
-  kamu_gecikme: [{ b: '2023-11-01', o: 42 }, { b: '2024-07-01', o: 48 }],
-  vergi_gecikme: [{ b: '2023-11-01', o: 42 }, { b: '2024-07-01', o: 36 }],
-  sgk_gecikme: [{ b: '2023-11-01', o: 42 }, { b: '2024-07-01', o: 48 }],
-  mevduat: [{ b: '2024-01-01', o: 50 }, { b: '2024-07-01', o: 52 }, { b: '2025-01-01', o: 45 }],
-};
-
-type FaizDilim = { baslangic: string; bitis: string; gun: number; oran: number; faiz: number };
-type FaizSonuc = { anapara: number; toplamFaiz: number; genelToplam: number; toplamGun: number; dilimSayisi: number; detay: FaizDilim[]; faizTuru: string };
-
-function hesaplaFaizDetayli(anapara: number, basTarih: string, bitTarih: string, faizTuruId: string): FaizSonuc {
-  const turObj = FAIZ_TURLERI.find(t => t.id === faizTuruId);
-  const oranKey = turObj?.oranKey || 'yasal';
-  const oranlar = (FAIZ_ORAN_DB[oranKey] || [{ b: '2006-01-01', o: 9 }]).map(r => ({ baslangic: r.b, oran: r.o }));
-
-  const bas = new Date(basTarih); bas.setHours(0, 0, 0, 0);
-  const bit = new Date(bitTarih); bit.setHours(0, 0, 0, 0);
-  if (bas >= bit) return { anapara, toplamFaiz: 0, genelToplam: anapara, toplamGun: 0, dilimSayisi: 0, detay: [], faizTuru: turObj?.ad || '' };
-
-  // Dönem noktaları
-  const noktalar = new Set([bas.getTime(), bit.getTime()]);
-  for (const o of oranlar) {
-    const oT = new Date(o.baslangic); oT.setHours(0, 0, 0, 0);
-    if (oT.getTime() > bas.getTime() && oT.getTime() < bit.getTime()) noktalar.add(oT.getTime());
-  }
-  const sorted = Array.from(noktalar).sort((a, b) => a - b);
-
-  const detay: FaizDilim[] = [];
-  let toplamFaiz = 0, toplamGun = 0;
-  for (let i = 0; i < sorted.length - 1; i++) {
-    const dBas = new Date(sorted[i]);
-    const dBit = new Date(sorted[i + 1]);
-    const gun = Math.round((dBit.getTime() - dBas.getTime()) / 86400000);
-    if (gun <= 0) continue;
-
-    let oran = 0;
-    for (let o = oranlar.length - 1; o >= 0; o--) {
-      if (new Date(oranlar[o].baslangic) <= dBas) { oran = oranlar[o].oran; break; }
-    }
-
-    const dilimFaiz = Math.round(anapara * (oran / 100) / 365 * gun * 100) / 100;
-    toplamFaiz += dilimFaiz;
-    toplamGun += gun;
-    detay.push({ baslangic: dBas.toISOString().split('T')[0], bitis: dBit.toISOString().split('T')[0], gun, oran, faiz: dilimFaiz });
-  }
-
-  return { anapara, toplamFaiz: Math.round(toplamFaiz * 100) / 100, genelToplam: Math.round((anapara + toplamFaiz) * 100) / 100, toplamGun, dilimSayisi: detay.length, detay, faizTuru: turObj?.ad || '' };
-}
+/* ── Faiz Hesaplama — UYAP uyumlu tüm türler faiz.ts'den gelir ── */
+// UYAP_FAIZ_TURLERI, faizTurleriGruplu, hesaplaFaizDetayli import edildi
 
 /* ── Yasal Süre Hesaplayıcı ────────────────────────────────── */
 type SureTipi = { kat: string; ad: string; gun: number; madde: string };
@@ -506,7 +443,7 @@ const ARACLAR: { kategori: string; renkClass: string; items: AracItem[] }[] = [
     kategori: 'Hesaplama Araçları',
     renkClass: 'text-gold',
     items: [
-      { icon: IkonFaiz, ad: 'Faiz Hesaplama', aciklama: 'Yasal, ticari ve temerrüt faizi', aracId: 'faiz', renk: 'gold' },
+      { icon: IkonFaiz, ad: 'Faiz Hesaplama', aciklama: 'UYAP uyumlu 37 faiz türü', aracId: 'faiz', renk: 'gold' },
       { icon: IkonHarc, ad: 'Harç Hesaplama', aciklama: 'Dava ve icra harçları', aracId: 'harc', renk: 'gold' },
       { icon: IkonTerazi, ad: 'Vekalet Ücreti', aciklama: 'AAÜT asgari tarife hesaplama', aracId: 'vekalet', renk: 'gold' },
       { icon: IkonTazminat, ad: 'Tazminat Hesaplama', aciklama: 'Kıdem ve ihbar tazminatı', aracId: 'tazminat', renk: 'gold' },
@@ -619,8 +556,9 @@ export default function AracKutusuPage() {
   const [sureSonuc, setSureSonuc] = useState<{ sonTarih: string; kalan: number } | null>(null);
 
   // === Detaylı Faiz ===
-  const [faizTuru, setFaizTuru] = useState('yasal');
-  const [faizDetaySonuc, setFaizDetaySonuc] = useState<FaizSonuc | null>(null);
+  const [faizTuru, setFaizTuru] = useState<FaizTuruId>('yasal');
+  const [faizOzelOran, setFaizOzelOran] = useState('');
+  const [faizDetaySonuc, setFaizDetaySonuc] = useState<FaizDetaySonuc | null>(null);
 
   // === AAÜT Vekalet ===
   const [aautTur, setAautTur] = useState(AAUT_2024[0].ad);
@@ -755,26 +693,18 @@ export default function AracKutusuPage() {
         );
 
       case 'faiz': {
-        const seciliFaizTuru = FAIZ_TURLERI.find(t => t.id === faizTuru);
-        // Kategori bazlı grupla
-        const faizGruplari: Record<string, FaizTuru[]> = {};
-        FAIZ_TURLERI.forEach(t => {
-          const kat = t.id.includes('gecikme') ? 'Kamu / Vergi / SGK' :
-            t.id.includes('temerr') ? 'Temerrüt' :
-            ['kidem', 'is_kazasi', 'nafaka', 'kira', 'kamuLastirma', 'sigorta'].includes(t.id) ? 'Özel Alacak Türleri' :
-            'Temel Faiz Oranları';
-          if (!faizGruplari[kat]) faizGruplari[kat] = [];
-          faizGruplari[kat].push(t);
-        });
+        const seciliFaizTuru = UYAP_FAIZ_TURLERI.find(t => t.id === faizTuru);
+        const faizGruplari = faizTurleriGruplu();
+        const manuelOranTurleri: FaizTuruId[] = ['sozlesmeli', 'diger'];
 
         return (
           <div className="space-y-4">
             <div className="bg-gold/5 border border-gold/15 rounded-lg px-3 py-2 text-[11px] text-text-muted">
-              <span className="font-bold text-gold">Dönemsel oran destekli.</span> Oran değişiklikleri ayrı dilim olarak hesaplanır.
+              <span className="font-bold text-gold">UYAP uyumlu {UYAP_FAIZ_TURLERI.length} faiz türü.</span> Dönemsel oran değişiklikleri ayrı dilim olarak hesaplanır.
             </div>
             <div>
-              <FormLabel required>Faiz Türü (15 tür)</FormLabel>
-              <Select value={faizTuru} onChange={(e) => { setFaizTuru(e.target.value); setFaizDetaySonuc(null); }}>
+              <FormLabel required>Faiz Türü ({UYAP_FAIZ_TURLERI.length} tür)</FormLabel>
+              <Select value={faizTuru} onChange={(e) => { setFaizTuru(e.target.value as FaizTuruId); setFaizDetaySonuc(null); }}>
                 {Object.entries(faizGruplari).map(([kat, turler]) => (
                   <optgroup key={kat} label={kat}>
                     {turler.map(t => <option key={t.id} value={t.id}>{t.ad}</option>)}
@@ -785,6 +715,15 @@ export default function AracKutusuPage() {
             {seciliFaizTuru && (
               <div className="bg-surface2 rounded-lg px-3 py-2 text-[11px] text-text-muted">
                 <span className="font-bold text-text">{seciliFaizTuru.madde}</span> — {seciliFaizTuru.aciklama}
+                {seciliFaizTuru.paraBirimi && <span className="ml-2 text-gold font-semibold">({seciliFaizTuru.paraBirimi})</span>}
+              </div>
+            )}
+            {manuelOranTurleri.includes(faizTuru) && (
+              <div>
+                <FormLabel required>Yıllık Faiz Oranı (%)</FormLabel>
+                <Input type="number" step="0.01" min="0" value={faizOzelOran}
+                  onChange={(e) => { setFaizOzelOran(e.target.value); setFaizDetaySonuc(null); }}
+                  placeholder="Ör: 24.00" />
               </div>
             )}
             <div>
@@ -804,7 +743,8 @@ export default function AracKutusuPage() {
             <HesaplaBtn onClick={() => {
               const ap = parseFloat(faizAnapara);
               if (ap > 0 && faizBaslangic && faizBitis && faizBaslangic < faizBitis) {
-                setFaizDetaySonuc(hesaplaFaizDetayli(ap, faizBaslangic, faizBitis, faizTuru));
+                const ozelOran = manuelOranTurleri.includes(faizTuru) ? parseFloat(faizOzelOran) || undefined : undefined;
+                setFaizDetaySonuc(hesaplaFaizDetayli(ap, faizBaslangic, faizBitis, faizTuru, ozelOran));
               }
             }}>Hesapla</HesaplaBtn>
             {faizDetaySonuc && (
@@ -862,6 +802,17 @@ export default function AracKutusuPage() {
                       </tr>
                     </tbody>
                   </table>
+                </div>
+                {/* Export butonları */}
+                <div className="flex gap-2 mt-3">
+                  <button
+                    onClick={() => exportFaizHesapPDF({ ...faizDetaySonuc, baslangic: faizBaslangic, bitis: faizBitis })}
+                    className="flex-1 py-1.5 text-[11px] font-medium text-text-muted bg-surface2 border border-border rounded-lg hover:text-gold hover:border-gold/30 transition-colors"
+                  >PDF İndir</button>
+                  <button
+                    onClick={() => exportFaizHesapXLS({ ...faizDetaySonuc, baslangic: faizBaslangic, bitis: faizBitis })}
+                    className="flex-1 py-1.5 text-[11px] font-medium text-text-muted bg-surface2 border border-border rounded-lg hover:text-gold hover:border-gold/30 transition-colors"
+                  >Excel İndir</button>
                 </div>
               </>
             )}

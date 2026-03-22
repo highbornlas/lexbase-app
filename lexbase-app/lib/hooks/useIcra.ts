@@ -71,7 +71,7 @@ export interface Icra {
     pttSonuc?: string;
     not?: string;
   }>;
-  // Alacak kalemleri
+  // Alacak kalemleri (eski flat yapı — geriye uyumlu)
   alacakKalemleri?: {
     asilAlacak?: number;
     islemisiFaiz?: number;
@@ -80,6 +80,20 @@ export interface Icra {
     icraHarci?: number;
     digerMasraflar?: number;
   };
+  // Çoklu alacak kalemleri (yeni yapı — her biri ayrı faiz hesabı)
+  alacakDetay?: Array<{
+    id: string;
+    kalemTuru: 'asil_alacak' | 'kira' | 'fatura' | 'cek' | 'senet' | 'diger';
+    aciklama: string;
+    asilTutar: number;
+    paraBirimi?: string;
+    vadeTarihi: string;
+    faizTuru: string; // FaizTuru — UYAP uyumlu tüm türler
+    ozelFaizOrani?: number;
+  }>;
+  // İcra vekalet ücreti (manuel veya otomatik)
+  vekaletUcretiManuel?: number;
+  vekaletUcretiOtomatik?: boolean; // true ise AAÜT'den hesapla
   // Haciz kayıtları
   hacizler?: Array<{
     id: string;

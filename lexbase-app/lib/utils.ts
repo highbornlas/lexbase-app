@@ -1,15 +1,25 @@
 import { type ClassValue, clsx } from 'clsx';
 
 // ── Para formatı (Türk Lirası) ────────────────────────────────
-export function fmt(value: number | string | null | undefined): string {
+export function fmt(value: number | string | null | undefined, birim: string = 'TRY'): string {
   const num = typeof value === 'string' ? parseFloat(value) : (value ?? 0);
   if (isNaN(num)) return '₺0';
-  return new Intl.NumberFormat('tr-TR', {
-    style: 'currency',
-    currency: 'TRY',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(num);
+  try {
+    return new Intl.NumberFormat('tr-TR', {
+      style: 'currency',
+      currency: birim,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(num);
+  } catch {
+    // Geçersiz para birimi kodu durumunda TRY'ye fallback
+    return new Intl.NumberFormat('tr-TR', {
+      style: 'currency',
+      currency: 'TRY',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(num);
+  }
 }
 
 // ── Tarih formatı ─────────────────────────────────────────────

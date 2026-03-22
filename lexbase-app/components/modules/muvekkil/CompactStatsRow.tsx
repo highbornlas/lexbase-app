@@ -10,6 +10,7 @@ interface Props {
   arabSayisi: number;
   ihtSayisi: number;
   finansOzet: Record<string, unknown> | null | undefined;
+  onNavigate?: (tab: string) => void;
 }
 
 export function CompactStatsRow({
@@ -20,6 +21,7 @@ export function CompactStatsRow({
   arabSayisi,
   ihtSayisi,
   finansOzet,
+  onNavigate,
 }: Props) {
   const masraflar = finansOzet?.masraflar as Record<string, number> | undefined;
   const avanslar = finansOzet?.avanslar as Record<string, number> | undefined;
@@ -29,7 +31,13 @@ export function CompactStatsRow({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-5">
       {/* Sol: Dosya Özeti */}
-      <div className="bg-surface border border-border rounded-xl p-4">
+      <div
+        className={`bg-surface border border-border rounded-xl p-4 ${onNavigate ? 'cursor-pointer hover:border-gold/30 hover:shadow-sm transition-all' : ''}`}
+        onClick={onNavigate ? () => onNavigate('dosyalar') : undefined}
+        role={onNavigate ? 'button' : undefined}
+        tabIndex={onNavigate ? 0 : undefined}
+        onKeyDown={onNavigate ? (e) => { if (e.key === 'Enter' || e.key === ' ') onNavigate('dosyalar'); } : undefined}
+      >
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-[10px] font-bold text-text-dim uppercase tracking-wider">Dosya Özeti</h3>
           <div className="flex items-center gap-2">
@@ -48,7 +56,13 @@ export function CompactStatsRow({
       </div>
 
       {/* Sag: Finansal Özet */}
-      <div className="bg-surface border border-border rounded-xl p-4">
+      <div
+        className={`bg-surface border border-border rounded-xl p-4 ${onNavigate ? 'cursor-pointer hover:border-gold/30 hover:shadow-sm transition-all' : ''}`}
+        onClick={onNavigate ? () => onNavigate('finans') : undefined}
+        role={onNavigate ? 'button' : undefined}
+        tabIndex={onNavigate ? 0 : undefined}
+        onKeyDown={onNavigate ? (e) => { if (e.key === 'Enter' || e.key === ' ') onNavigate('finans'); } : undefined}
+      >
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-[10px] font-bold text-text-dim uppercase tracking-wider">Finansal Özet</h3>
           <div className="flex items-center gap-2">

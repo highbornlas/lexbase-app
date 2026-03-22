@@ -12,6 +12,7 @@ import { fmt, fmtTarih } from '@/lib/utils';
 import Link from 'next/link';
 import { SkeletonTable, SkeletonKPI } from '@/components/ui/SkeletonTable';
 import { CopyNo } from '@/components/ui/CopyNo';
+import { safeNum } from '@/lib/utils/finans';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100] as const;
 const DEFAULT_PAGE_SIZE = 10;
@@ -46,6 +47,7 @@ export default function ArabuluculukPage() {
   const arsivleMut = useArabuluculukArsivle();
   const [arama, setArama] = useState('');
   const [durumFiltre, setDurumFiltre] = useState('hepsi');
+  const [kpiFiltre, setKpiFiltre] = useState<string | null>(null);
   const [modalAcik, setModalAcik] = useState(false);
   const [secili, setSecili] = useState<Arabuluculuk | null>(null);
   const [sayfa, setSayfa] = useState(1);
@@ -98,10 +100,15 @@ export default function ArabuluculukPage() {
       return kalanGun <= 7;
     }).length;
 
-    // Bekleyen tahsilat
+    // Ücret alacağı: ucret (sözleşme bedeli) - tahsilEdildi
     const bekleyenTahsilat = arabuluculuklar
-      .filter((a) => a.durum === 'Anlaşma')
-      .reduce((t, a) => t + ((a.anlasmaUcret || 0) - (a.tahsilEdildi || 0)), 0);
+      .reduce((t, a) => {
+        const sozlesme = safeNum(a.ucret);
+        if (sozlesme <= 0) return t;
+        const tahsil = safeNum(a.tahsilEdildi);
+        const kalan = sozlesme - tahsil;
+        return kalan > 0 ? t + kalan : t;
+      }, 0);
 
     return { toplam: arabuluculuklar.length, aktif, anlasma, anlasmaOran, anlasmamaOran: anlasamama, suresiDolan, bekleyenTahsilat, toplamTalep };
   }, [arabuluculuklar]);
@@ -113,13 +120,30 @@ export default function ArabuluculukPage() {
       if (durumFiltre !== 'hepsi' && a.durum !== durumFiltre) return false;
       if (arama) {
         const q = arama.toLocaleLowerCase('tr');
-        return (
+        if (!(
           (a.no || '').toLocaleLowerCase('tr').includes(q) ||
           (a.konu || '').toLocaleLowerCase('tr').includes(q) ||
           (a.arabulucu || '').toLocaleLowerCase('tr').includes(q) ||
           (a.karsiTaraf || '').toLocaleLowerCase('tr').includes(q) ||
           (muvAdMap[a.muvId || ''] || '').toLocaleLowerCase('tr').includes(q)
-        );
+        )) return false;
+      }
+      // KPI filtre
+      if (kpiFiltre) {
+        if (kpiFiltre === 'aktif' && !['Başvuru', 'Arabulucu Atandı', 'Görüşme'].includes(a.durum || '')) return false;
+        if (kpiFiltre === 'suresi') {
+          if (!['Başvuru', 'Arabulucu Atandı', 'Görüşme'].includes(a.durum || '')) return false;
+          const bitis = hesaplaYasalSureBitis(a.tur, a.ilkOturumTarih, a.sureUzatmaHafta || 0);
+          if (!bitis) return false;
+          const kalanGun = Math.ceil((new Date(bitis).getTime() - new Date().getTime()) / 86400000);
+          if (kalanGun > 7) return false;
+        }
+        if (kpiFiltre === 'anlasma' && a.durum !== 'Anlaşma') return false;
+        if (kpiFiltre === 'anlasamama' && a.durum !== 'Anlaşamama') return false;
+        if (kpiFiltre === 'tahsilat') {
+          if (a.durum !== 'Anlaşma') return false;
+          if (!((a.anlasmaUcret || 0) - (a.tahsilEdildi || 0) > 0)) return false;
+        }
       }
       return true;
     });
@@ -145,9 +169,9 @@ export default function ArabuluculukPage() {
       return dir * va.localeCompare(vb, 'tr');
     });
     return filtered;
-  }, [arabuluculuklar, arama, durumFiltre, muvAdMap, sortKey, sortDir]);
+  }, [arabuluculuklar, arama, durumFiltre, kpiFiltre, muvAdMap, sortKey, sortDir]);
 
-  useEffect(() => { setSayfa(1); }, [arama, durumFiltre]);
+  useEffect(() => { setSayfa(1); }, [arama, durumFiltre, kpiFiltre]);
 
   const toplamSayfa = Math.max(1, Math.ceil(filtrelenmis.length / sayfaBoyutu));
   const sayfadakiler = useMemo(() => {
@@ -204,13 +228,29 @@ export default function ArabuluculukPage() {
 
       {/* KPI Strip */}
       <div className="grid grid-cols-6 gap-3 mb-5">
-        <KpiCard label="Aktif Dosya" value={kpis.aktif.toString()} icon="🤝" color="text-blue-400" />
-        <KpiCard label="Süresi Dolan" value={kpis.suresiDolan.toString()} icon="🚨" color={kpis.suresiDolan > 0 ? 'text-red' : 'text-text-dim'} />
-        <KpiCard label="Anlaşma Oranı" value={`%${kpis.anlasmaOran}`} icon="📊" color="text-green" />
-        <KpiCard label="Anlaşamama" value={kpis.anlasmamaOran.toString()} icon="⚠️" color="text-orange-400" />
+        <KpiCard label="Aktif Dosya" value={kpis.aktif.toString()} icon="🤝" color="text-blue-400" active={kpiFiltre === 'aktif'} onClick={() => setKpiFiltre(kpiFiltre === 'aktif' ? null : 'aktif')} />
+        <KpiCard label="Süresi Dolan" value={kpis.suresiDolan.toString()} icon="🚨" color={kpis.suresiDolan > 0 ? 'text-red' : 'text-text-dim'} active={kpiFiltre === 'suresi'} onClick={() => setKpiFiltre(kpiFiltre === 'suresi' ? null : 'suresi')} />
+        <KpiCard label="Anlaşma Oranı" value={`%${kpis.anlasmaOran}`} icon="📊" color="text-green" active={kpiFiltre === 'anlasma'} onClick={() => setKpiFiltre(kpiFiltre === 'anlasma' ? null : 'anlasma')} />
+        <KpiCard label="Anlaşamama" value={kpis.anlasmamaOran.toString()} icon="⚠️" color="text-orange-400" active={kpiFiltre === 'anlasamama'} onClick={() => setKpiFiltre(kpiFiltre === 'anlasamama' ? null : 'anlasamama')} />
         <KpiCard label="Toplam Talep" value={fmt(kpis.toplamTalep)} icon="💰" />
-        <KpiCard label="Bekleyen Tahsilat" value={fmt(kpis.bekleyenTahsilat)} icon="💸" color={kpis.bekleyenTahsilat > 0 ? 'text-red' : 'text-green'} />
+        <KpiCard label="Ücret Alacağı" value={fmt(kpis.bekleyenTahsilat)} icon="💸" color={kpis.bekleyenTahsilat > 0 ? 'text-orange-400' : 'text-green'} active={kpiFiltre === 'tahsilat'} onClick={() => setKpiFiltre(kpiFiltre === 'tahsilat' ? null : 'tahsilat')} />
       </div>
+
+      {/* KPI Filtre Göstergesi */}
+      {kpiFiltre && (
+        <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-gold/10 border border-gold/20 rounded-lg text-xs text-gold">
+          <span>🔍</span>
+          <span className="font-medium">
+            {kpiFiltre === 'aktif' && 'Aktif dosyalar gösteriliyor'}
+            {kpiFiltre === 'suresi' && 'Süresi dolanlar gösteriliyor'}
+            {kpiFiltre === 'anlasma' && 'Anlaşma ile sonuçlananlar gösteriliyor'}
+            {kpiFiltre === 'anlasamama' && 'Anlaşamama ile sonuçlananlar gösteriliyor'}
+            {kpiFiltre === 'tahsilat' && 'Ücret alacağı olanlar gösteriliyor'}
+          </span>
+          <span className="text-text-dim">({filtrelenmis.length} dosya)</span>
+          <button onClick={() => setKpiFiltre(null)} className="ml-auto text-text-dim hover:text-text transition-colors">✕ Temizle</button>
+        </div>
+      )}
 
       {/* Arama + Filtre */}
       <div className="flex items-center gap-3 mb-5 flex-wrap">
@@ -388,14 +428,21 @@ export default function ArabuluculukPage() {
   );
 }
 
-function KpiCard({ label, value, icon, color }: { label: string; value: string; icon: string; color?: string }) {
+function KpiCard({ label, value, icon, color, active, onClick }: { label: string; value: string; icon: string; color?: string; active?: boolean; onClick?: () => void }) {
   return (
-    <div className="bg-surface border border-border rounded-lg p-3">
+    <div
+      className={`bg-surface border rounded-lg p-3 transition-all ${onClick ? 'cursor-pointer hover:scale-[1.02] hover:border-gold/30' : ''} ${active ? 'border-gold ring-1 ring-gold/30 shadow-md' : 'border-border'}`}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') onClick(); } : undefined}
+    >
       <div className="flex items-center gap-1.5 mb-1">
         <span className="text-sm">{icon}</span>
         <span className="text-[10px] text-text-muted uppercase tracking-wider">{label}</span>
       </div>
       <div className={`font-[var(--font-playfair)] text-lg font-bold ${color || 'text-gold'}`}>{value}</div>
+      {active && <div className="w-full h-0.5 bg-gold rounded-full mt-1.5" />}
     </div>
   );
 }
