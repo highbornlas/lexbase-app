@@ -671,9 +671,15 @@ function AlacakKalemleriAdim({ alacakDetay, onChange, alacakKalemleri, onLegacyC
 
   const bugun = new Date().toISOString().slice(0, 10);
 
-  // Auto-calculate işlemiş faiz
+  // Auto-calculate işlemiş faiz (vade → takip arası)
+  // takipTarihi veya ilgili form alanları değiştiğinde her zaman yeniden hesaplar
   useEffect(() => {
     if (form.vadeTarihi && form.asilTutar && form.faizTuru && form.faizTuru !== 'yok' && takipTarihi) {
+      if (form.vadeTarihi >= takipTarihi) {
+        // Vade tarihi takip tarihinden sonraysa işlemiş faiz yok
+        setForm((prev) => ({ ...prev, islemiFaiz: '' }));
+        return;
+      }
       const tempKalem: AlacakKalemi = {
         id: 'temp',
         kalemTuru: form.kalemTuru,
@@ -683,17 +689,17 @@ function AlacakKalemleriAdim({ alacakDetay, onChange, alacakKalemleri, onLegacyC
         faizTuru: form.faizTuru,
         ozelFaizOrani: form.ozelFaizOrani ? Number(form.ozelFaizOrani) : undefined,
       };
+      // İşlemiş faiz = vade tarihinden takip tarihine kadar (baslangicTarihiOverride yok — vade'den hesaplar)
       const faiz = hesaplaKalemFaiz(tempKalem, takipTarihi);
-      if (faiz > 0 && !form.islemiFaiz) {
-        setForm((prev) => ({ ...prev, islemiFaiz: faiz.toFixed(2) }));
-      }
+      setForm((prev) => ({ ...prev, islemiFaiz: faiz > 0 ? faiz.toFixed(2) : '' }));
     }
-  }, [form.vadeTarihi, form.faizTuru, form.asilTutar, form.ozelFaizOrani, takipTarihi]);
+  }, [form.vadeTarihi, form.faizTuru, form.asilTutar, form.ozelFaizOrani, takipTarihi, form.kalemTuru]);
 
   // Toplam hesapları
+  // İşleyen faiz: takip tarihinden bugüne kadar (takipTarihi override ile)
   const toplamAsil = alacakDetay.reduce((t, k) => t + k.asilTutar, 0);
   const toplamIslemiFaiz = alacakDetay.reduce((t, k) => t + (k.islemiFaiz || 0), 0);
-  const toplamIsleyenFaiz = alacakDetay.reduce((t, k) => t + hesaplaKalemFaiz(k, bugun), 0);
+  const toplamIsleyenFaiz = alacakDetay.reduce((t, k) => t + hesaplaKalemFaiz(k, bugun, undefined, undefined, takipTarihi || undefined), 0);
 
   function handleKaydet() {
     if (!form.asilTutar || !form.vadeTarihi) return;
@@ -938,7 +944,7 @@ function AlacakKalemleriAdim({ alacakDetay, onChange, alacakKalemleri, onLegacyC
             </thead>
             <tbody>
               {alacakDetay.map((k) => {
-                const isleyenFaiz = hesaplaKalemFaiz(k, bugun);
+                const isleyenFaiz = hesaplaKalemFaiz(k, bugun, undefined, undefined, takipTarihi || undefined);
                 const islemiFaiz = k.islemiFaiz || 0;
                 const toplam = k.asilTutar + islemiFaiz + isleyenFaiz;
                 const faizGrup = faizTurleriGruplu();

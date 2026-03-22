@@ -514,6 +514,7 @@ export default function IcraDetayPage({ params }: { params: Promise<{ id: string
             <AlacakKalemleriPanel
               kalemler={(icra.alacakDetay || []) as AlacakKalemi[]}
               onChange={(kalemler) => { icraKaydet.mutate({ ...icra, alacakDetay: kalemler }); }}
+              takipTarihi={icra.tarih || ''}
             />
           )}
           {aktifTab === 'kapak' && (

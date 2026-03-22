@@ -20,6 +20,8 @@ import {
 interface AlacakKalemleriPanelProps {
   kalemler: AlacakKalemi[];
   onChange: (kalemler: AlacakKalemi[]) => void;
+  /** Takip tarihi — işleyen faiz bu tarihten itibaren hesaplanır */
+  takipTarihi?: string;
 }
 
 const PARA_BIRIMLERI = [
@@ -40,7 +42,7 @@ const BOS_KALEM = {
   islemiFaiz: '',
 };
 
-export function AlacakKalemleriPanel({ kalemler, onChange }: AlacakKalemleriPanelProps) {
+export function AlacakKalemleriPanel({ kalemler, onChange, takipTarihi }: AlacakKalemleriPanelProps) {
   const [formAcik, setFormAcik] = useState(false);
   const [duzenleId, setDuzenleId] = useState<string | null>(null);
   const [form, setForm] = useState(BOS_KALEM);
@@ -94,7 +96,7 @@ export function AlacakKalemleriPanel({ kalemler, onChange }: AlacakKalemleriPane
 
   const toplamAsil = kalemler.reduce((t, k) => t + k.asilTutar, 0);
   const toplamIslemiFaiz = kalemler.reduce((t, k) => t + (k.islemiFaiz || 0), 0);
-  const toplamIsleyenFaiz = kalemler.reduce((t, k) => t + hesaplaKalemFaiz(k, bugun), 0);
+  const toplamIsleyenFaiz = kalemler.reduce((t, k) => t + hesaplaKalemFaiz(k, bugun, undefined, undefined, takipTarihi), 0);
 
   return (
     <div className="space-y-3">
@@ -214,7 +216,7 @@ export function AlacakKalemleriPanel({ kalemler, onChange }: AlacakKalemleriPane
             </thead>
             <tbody>
               {kalemler.map((k) => {
-                const isleyenFaiz = hesaplaKalemFaiz(k, bugun);
+                const isleyenFaiz = hesaplaKalemFaiz(k, bugun, undefined, undefined, takipTarihi);
                 const islemiFaiz = k.islemiFaiz || 0;
                 const toplam = k.asilTutar + islemiFaiz + isleyenFaiz;
                 const faizLabel = UYAP_FAIZ_TURLERI.find((f) => f.id === k.faizTuru)?.ad || k.faizTuru;

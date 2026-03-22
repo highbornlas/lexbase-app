@@ -76,6 +76,9 @@ export function KapakHesabiPanel({ icra }: KapakHesabiProps) {
     ? undefined // otomatik hesapla
     : icra.vekaletUcretiManuel || Number(icra.alacakKalemleri?.vekaletUcreti || 0);
 
+  // Takip tarihi (icra dosyasının açılış tarihi)
+  const takipTarihi = icra.tarih || '';
+
   // Kapak hesabı
   const kapak = useMemo<KapakHesabiSonuc>(() => {
     return hesaplaKapakHesabi(
@@ -84,8 +87,11 @@ export function KapakHesabiPanel({ icra }: KapakHesabiProps) {
       tahsilEdilen,
       vekaletUcreti,
       hesapTarihi,
+      undefined, // yasalOranlar
+      undefined, // ticariOranlar
+      takipTarihi || undefined,
     );
-  }, [alacakKalemleri, icraMasraflari, tahsilEdilen, vekaletUcreti, hesapTarihi]);
+  }, [alacakKalemleri, icraMasraflari, tahsilEdilen, vekaletUcreti, hesapTarihi, takipTarihi]);
 
   // Kısmi ödeme mahsubu
   function handleMahsup() {

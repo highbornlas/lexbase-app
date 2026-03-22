@@ -977,18 +977,23 @@ export function hesaplaKalemFaiz(
   hesapTarihi: string,
   yasalOranlar: FaizDonemi[] = VARSAYILAN_YASAL_FAIZ,
   ticariOranlar: FaizDonemi[] = VARSAYILAN_TICARI_FAIZ,
+  /** Faiz başlangıç tarihini override et (takip sonrası faiz hesabı için takipTarihi gönderilir) */
+  baslangicTarihiOverride?: string,
 ): number {
   if (kalem.faizTuru === 'yok') return 0;
   if (!kalem.vadeTarihi || !hesapTarihi) return 0;
-  if (kalem.vadeTarihi >= hesapTarihi) return 0;
   if (kalem.asilTutar <= 0) return 0;
+
+  // Faiz başlangıç tarihi: override verilmişse onu kullan, yoksa vade tarihi
+  const faizBaslangic = baslangicTarihiOverride || kalem.vadeTarihi;
+  if (faizBaslangic >= hesapTarihi) return 0;
 
   // Yeni UYAP türleri — detaylı hesaplama kullan
   const eskiTurler: FaizTuru[] = ['yasal', 'ticari', 'sozlesmeli', 'yok'];
   if (!eskiTurler.includes(kalem.faizTuru)) {
     const sonuc = hesaplaFaizDetayli(
       kalem.asilTutar,
-      kalem.vadeTarihi,
+      faizBaslangic,
       hesapTarihi,
       kalem.faizTuru,
       kalem.ozelFaizOrani,
@@ -998,14 +1003,14 @@ export function hesaplaKalemFaiz(
 
   // Sözleşmeli faiz — sabit oran
   if (kalem.faizTuru === 'sozlesmeli' && kalem.ozelFaizOrani != null) {
-    const gun = gunFarki(kalem.vadeTarihi, hesapTarihi);
+    const gun = gunFarki(faizBaslangic, hesapTarihi);
     return yuvarla(kalem.asilTutar * (kalem.ozelFaizOrani / 100) * (gun / 365));
   }
 
   // Yasal veya ticari faiz — dönem bazlı (eski format)
   const oranlar = kalem.faizTuru === 'ticari' ? ticariOranlar : yasalOranlar;
   let toplamFaiz = 0;
-  let mevcutTarih = kalem.vadeTarihi;
+  let mevcutTarih = faizBaslangic;
   const siralanmis = [...oranlar].sort((a, b) => a.baslangic.localeCompare(b.baslangic));
 
   for (const donem of siralanmis) {
@@ -1066,13 +1071,16 @@ export function hesaplaKapakHesabi(
   hesapTarihi?: string,
   yasalOranlar?: FaizDonemi[],
   ticariOranlar?: FaizDonemi[],
+  /** Takip tarihi — işleyen faiz bu tarihten itibaren hesaplanır (takip öncesi işlemiş faiz ayrı) */
+  takipTarihi?: string,
 ): KapakHesabiSonuc {
   const tarih = hesapTarihi || new Date().toISOString().slice(0, 10);
 
   const kalemler = alacakKalemleri.map((k) => {
     // Takip sonrası faiz yalnızca asıl alacağa (asilTutar) işler
     // İşlemiş faiz (islemiFaiz) ayrı kalem olarak eklenir, üzerine faiz işlemez
-    const isleyenFaiz = hesaplaKalemFaiz(k, tarih, yasalOranlar, ticariOranlar);
+    // İşleyen faiz: takipTarihi verilmişse takipTarihinden hesapTarihine, yoksa vadeTarihinden hesapTarihine
+    const isleyenFaiz = hesaplaKalemFaiz(k, tarih, yasalOranlar, ticariOranlar, takipTarihi);
     const islemiFaiz = k.islemiFaiz || 0;
     return {
       kalemId: k.id,
