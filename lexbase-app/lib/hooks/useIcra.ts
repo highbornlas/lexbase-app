@@ -90,6 +90,7 @@ export interface Icra {
     vadeTarihi: string;
     faizTuru: string; // FaizTuru — UYAP uyumlu tüm türler
     ozelFaizOrani?: number;
+    islemiFaiz?: number; // Takip öncesi işlemiş faiz
   }>;
   // İcra vekalet ücreti (manuel veya otomatik)
   vekaletUcretiManuel?: number;

@@ -37,6 +37,7 @@ const BOS_KALEM = {
   faizTuru: 'yasal' as FaizTuru,
   ozelFaizOrani: '',
   paraBirimi: 'TRY',
+  islemiFaiz: '',
 };
 
 export function AlacakKalemleriPanel({ kalemler, onChange }: AlacakKalemleriPanelProps) {
@@ -58,6 +59,7 @@ export function AlacakKalemleriPanel({ kalemler, onChange }: AlacakKalemleriPane
       vadeTarihi: form.vadeTarihi,
       faizTuru: form.faizTuru,
       ozelFaizOrani: (form.faizTuru === 'sozlesmeli' || form.faizTuru === 'diger') ? Number(form.ozelFaizOrani) || undefined : undefined,
+      islemiFaiz: Number(form.islemiFaiz) || undefined,
     };
 
     if (duzenleId) {
@@ -80,6 +82,7 @@ export function AlacakKalemleriPanel({ kalemler, onChange }: AlacakKalemleriPane
       faizTuru: k.faizTuru,
       ozelFaizOrani: k.ozelFaizOrani?.toString() || '',
       paraBirimi: k.paraBirimi || 'TRY',
+      islemiFaiz: k.islemiFaiz?.toString() || '',
     });
     setDuzenleId(k.id);
     setFormAcik(true);
@@ -90,7 +93,8 @@ export function AlacakKalemleriPanel({ kalemler, onChange }: AlacakKalemleriPane
   }
 
   const toplamAsil = kalemler.reduce((t, k) => t + k.asilTutar, 0);
-  const toplamFaiz = kalemler.reduce((t, k) => t + hesaplaKalemFaiz(k, bugun), 0);
+  const toplamIslemiFaiz = kalemler.reduce((t, k) => t + (k.islemiFaiz || 0), 0);
+  const toplamIsleyenFaiz = kalemler.reduce((t, k) => t + hesaplaKalemFaiz(k, bugun), 0);
 
   return (
     <div className="space-y-3">
@@ -145,9 +149,16 @@ export function AlacakKalemleriPanel({ kalemler, onChange }: AlacakKalemleriPane
               <input type="date" value={form.vadeTarihi} onChange={(e) => setForm({ ...form, vadeTarihi: e.target.value })}
                 className="w-full text-xs px-3 py-2 bg-surface border border-border rounded-lg text-text focus:border-gold focus:outline-none" />
             </div>
-            {/* Faiz Türü */}
+            {/* Takip Öncesi İşlemiş Faiz */}
             <div>
-              <label className="text-[11px] text-text-muted block mb-1">Faiz Türü</label>
+              <label className="text-[11px] text-text-muted block mb-1">Takip Öncesi İşlemiş Faiz (₺)</label>
+              <input type="number" step="0.01" min="0" value={form.islemiFaiz}
+                onChange={(e) => setForm({ ...form, islemiFaiz: e.target.value })} placeholder="0.00"
+                className="w-full text-xs px-3 py-2 bg-surface border border-border rounded-lg text-text focus:border-gold focus:outline-none" />
+            </div>
+            {/* Takip Sonrası Faiz Türü */}
+            <div>
+              <label className="text-[11px] text-text-muted block mb-1">Takip Sonrası Faiz Türü</label>
               <select value={form.faizTuru} onChange={(e) => setForm({ ...form, faizTuru: e.target.value as FaizTuru })}
                 className="w-full text-xs px-3 py-2 bg-surface border border-border rounded-lg text-text focus:border-gold focus:outline-none">
                 {Object.entries(faizTurleriGruplu()).map(([kat, turler]) => (
@@ -193,16 +204,19 @@ export function AlacakKalemleriPanel({ kalemler, onChange }: AlacakKalemleriPane
               <tr className="border-b border-border bg-surface2">
                 <th className="px-3 py-2 text-left text-[10px] text-text-muted font-medium">Kalem</th>
                 <th className="px-3 py-2 text-left text-[10px] text-text-muted font-medium">Vade</th>
-                <th className="px-3 py-2 text-left text-[10px] text-text-muted font-medium">Faiz</th>
+                <th className="px-3 py-2 text-left text-[10px] text-text-muted font-medium">Faiz Türü</th>
                 <th className="px-3 py-2 text-right text-[10px] text-text-muted font-medium">Asıl Tutar</th>
                 <th className="px-3 py-2 text-right text-[10px] text-text-muted font-medium">İşlemiş Faiz</th>
+                <th className="px-3 py-2 text-right text-[10px] text-text-muted font-medium">İşleyen Faiz</th>
                 <th className="px-3 py-2 text-right text-[10px] text-text-muted font-medium">Toplam</th>
                 <th className="px-2 py-2 w-16"></th>
               </tr>
             </thead>
             <tbody>
               {kalemler.map((k) => {
-                const faiz = hesaplaKalemFaiz(k, bugun);
+                const isleyenFaiz = hesaplaKalemFaiz(k, bugun);
+                const islemiFaiz = k.islemiFaiz || 0;
+                const toplam = k.asilTutar + islemiFaiz + isleyenFaiz;
                 const faizLabel = UYAP_FAIZ_TURLERI.find((f) => f.id === k.faizTuru)?.ad || k.faizTuru;
                 return (
                   <tr key={k.id} className="border-b border-border/50 hover:bg-surface2 transition-colors group">
@@ -218,8 +232,9 @@ export function AlacakKalemleriPanel({ kalemler, onChange }: AlacakKalemleriPane
                       </span>
                     </td>
                     <td className="px-3 py-2 text-right font-semibold text-text">{fmt(k.asilTutar, k.paraBirimi)}</td>
-                    <td className="px-3 py-2 text-right text-orange-400">{faiz > 0 ? fmt(faiz) : '—'}</td>
-                    <td className="px-3 py-2 text-right font-bold text-text">{fmt(k.asilTutar + faiz)}</td>
+                    <td className="px-3 py-2 text-right text-orange-400">{islemiFaiz > 0 ? fmt(islemiFaiz) : '—'}</td>
+                    <td className="px-3 py-2 text-right text-orange-300">{isleyenFaiz > 0 ? fmt(isleyenFaiz) : '—'}</td>
+                    <td className="px-3 py-2 text-right font-bold text-text">{fmt(toplam)}</td>
                     <td className="px-2 py-2">
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => handleDuzenle(k)} className="text-[10px] text-gold hover:underline">Düzenle</button>
@@ -234,8 +249,9 @@ export function AlacakKalemleriPanel({ kalemler, onChange }: AlacakKalemleriPane
               <tr className="bg-surface2 font-bold">
                 <td colSpan={3} className="px-3 py-2 text-text-muted text-right">TOPLAM:</td>
                 <td className="px-3 py-2 text-right text-text">{fmt(toplamAsil)}</td>
-                <td className="px-3 py-2 text-right text-orange-400">{fmt(toplamFaiz)}</td>
-                <td className="px-3 py-2 text-right text-gold text-sm">{fmt(toplamAsil + toplamFaiz)}</td>
+                <td className="px-3 py-2 text-right text-orange-400">{fmt(toplamIslemiFaiz)}</td>
+                <td className="px-3 py-2 text-right text-orange-300">{fmt(toplamIsleyenFaiz)}</td>
+                <td className="px-3 py-2 text-right text-gold text-sm">{fmt(toplamAsil + toplamIslemiFaiz + toplamIsleyenFaiz)}</td>
                 <td></td>
               </tr>
             </tfoot>

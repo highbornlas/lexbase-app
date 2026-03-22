@@ -155,6 +155,7 @@ export function KapakHesabiPanel({ icra }: KapakHesabiProps) {
               <th className="px-3 py-2 text-left text-[10px] text-text-muted font-medium">Vade</th>
               <th className="px-3 py-2 text-right text-[10px] text-text-muted font-medium">Asıl Alacak</th>
               <th className="px-3 py-2 text-right text-[10px] text-text-muted font-medium">İşlemiş Faiz</th>
+              <th className="px-3 py-2 text-right text-[10px] text-text-muted font-medium">İşleyen Faiz</th>
               <th className="px-3 py-2 text-right text-[10px] text-text-muted font-medium">Toplam</th>
             </tr>
           </thead>
@@ -166,7 +167,8 @@ export function KapakHesabiPanel({ icra }: KapakHesabiProps) {
                   {fmtTarih(alacakKalemleri.find((ak) => ak.id === k.kalemId)?.vadeTarihi || '')}
                 </td>
                 <td className="px-3 py-2 text-right font-semibold text-text">{fmt(k.asilAlacak)}</td>
-                <td className="px-3 py-2 text-right text-orange-400">{fmt(k.islemizFaiz)}</td>
+                <td className="px-3 py-2 text-right text-orange-400">{k.islemiFaiz > 0 ? fmt(k.islemiFaiz) : '—'}</td>
+                <td className="px-3 py-2 text-right text-orange-300">{fmt(k.islemizFaiz)}</td>
                 <td className="px-3 py-2 text-right font-bold text-text">{fmt(k.toplamKalem)}</td>
               </tr>
             ))}
@@ -175,14 +177,18 @@ export function KapakHesabiPanel({ icra }: KapakHesabiProps) {
       </div>
 
       {/* Dosya Değeri Kartları */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
         <div className="bg-surface border border-border rounded-lg px-3 py-2 text-center">
           <div className="text-[9px] text-text-muted uppercase tracking-wider">Asıl Alacak</div>
           <div className="text-sm font-bold text-text">{fmt(kapak.toplamAsilAlacak)}</div>
         </div>
         <div className="bg-surface border border-border rounded-lg px-3 py-2 text-center">
           <div className="text-[9px] text-text-muted uppercase tracking-wider">İşlemiş Faiz</div>
-          <div className="text-sm font-bold text-orange-400">{fmt(kapak.toplamIsleyenFaiz)}</div>
+          <div className="text-sm font-bold text-orange-400">{fmt(kapak.toplamIslemiFaiz)}</div>
+        </div>
+        <div className="bg-surface border border-border rounded-lg px-3 py-2 text-center">
+          <div className="text-[9px] text-text-muted uppercase tracking-wider">İşleyen Faiz</div>
+          <div className="text-sm font-bold text-orange-300">{fmt(kapak.toplamIsleyenFaiz)}</div>
         </div>
         <div className="bg-surface border border-border rounded-lg px-3 py-2 text-center">
           <div className="text-[9px] text-text-muted uppercase tracking-wider">Vekalet Ücreti</div>

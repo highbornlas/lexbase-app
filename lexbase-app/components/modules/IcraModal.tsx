@@ -16,6 +16,14 @@ import {
 } from '@/lib/constants/uyap';
 import { ADLIYELER } from '@/lib/constants/adliyeler';
 import { tamIcraDairesiAdi, esasNoGoster, tamMahkemeAdi } from '@/lib/utils/uyapHelpers';
+import { fmt } from '@/lib/utils';
+import {
+  type AlacakKalemi,
+  type FaizTuru,
+  KALEM_TURLERI,
+  faizTurleriGruplu,
+  hesaplaKalemFaiz,
+} from '@/lib/utils/faiz';
 
 interface IcraModalProps {
   open: boolean;
@@ -64,12 +72,20 @@ const bos: Partial<Icra> = {
   borcluDetay: {},
 };
 
-type Adim = 1 | 2 | 3;
+type Adim = 1 | 2 | 3 | 4;
 const ADIM_BASLIKLAR: Record<Adim, string> = {
   1: 'Temel Bilgiler',
   2: 'Daire & Tarihler',
-  3: 'Bağlantı & Notlar',
+  3: 'Alacak Kalemleri',
+  4: 'Bağlantı & Notlar',
 };
+
+const PARA_BIRIMLERI = [
+  { value: 'TRY', label: '₺ TRY' },
+  { value: 'USD', label: '$ USD' },
+  { value: 'EUR', label: '€ EUR' },
+  { value: 'GBP', label: '£ GBP' },
+];
 
 export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraModalProps) {
   const [form, setForm] = useState<Partial<Icra>>({ ...bos });
@@ -211,12 +227,14 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
   function ileri() {
     if (adim === 1 && adim1Dogrula()) setAdim(2);
     else if (adim === 2 && adim2Dogrula()) setAdim(3);
+    else if (adim === 3) setAdim(4);
   }
 
   function geri() {
     setHata('');
     if (adim === 2) setAdim(1);
     else if (adim === 3) setAdim(2);
+    else if (adim === 4) setAdim(3);
   }
 
   // Özel alacak türü ekleme
@@ -291,7 +309,7 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
           <div>{adim > 1 && <BtnOutline onClick={geri}>← Geri</BtnOutline>}</div>
           <div className="flex gap-2">
             <BtnOutline onClick={onClose}>İptal</BtnOutline>
-            {adim < 3 ? (
+            {adim < 4 ? (
               <BtnGold onClick={ileri}>İleri →</BtnGold>
             ) : (
               <BtnGold onClick={handleSubmit} disabled={kaydet.isPending}>
@@ -305,7 +323,7 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
       <div className="space-y-4">
         {/* ═══ ADIM İNDİKATÖRÜ ═══ */}
         <div className="flex items-center gap-2 mb-2">
-          {([1, 2, 3] as Adim[]).map((a) => (
+          {([1, 2, 3, 4] as Adim[]).map((a) => (
             <button
               key={a}
               type="button"
@@ -313,6 +331,7 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
                 if (a < adim) { setHata(''); setAdim(a); }
                 else if (a === adim + 1 && adim === 1 && adim1Dogrula()) setAdim(a);
                 else if (a === adim + 1 && adim === 2 && adim2Dogrula()) setAdim(a);
+                else if (a === adim + 1 && adim === 3) setAdim(a);
               }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all ${
                 a === adim
@@ -555,22 +574,6 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
               </div>
             </div>
 
-            {/* Alacak Kalemleri */}
-            <div className="border-t border-border/50 pt-4">
-              <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-3">Alacak Kalemleri</div>
-              <div className="grid grid-cols-3 gap-3">
-                <FormGroup label="Asil Alacak (TL)">
-                  <FormInput type="number" value={(form.alacakKalemleri as Record<string, number | undefined>)?.asilAlacak || ''} onChange={(e) => setForm((prev) => ({ ...prev, alacakKalemleri: { ...prev.alacakKalemleri, asilAlacak: Number(e.target.value) || undefined } }))} placeholder="0" />
-                </FormGroup>
-                <FormGroup label="Islemis Faiz (TL)">
-                  <FormInput type="number" value={(form.alacakKalemleri as Record<string, number | undefined>)?.islemisiFaiz || ''} onChange={(e) => setForm((prev) => ({ ...prev, alacakKalemleri: { ...prev.alacakKalemleri, islemisiFaiz: Number(e.target.value) || undefined } }))} placeholder="0" />
-                </FormGroup>
-                <FormGroup label="Vekalet Ucreti (TL)">
-                  <FormInput type="number" value={(form.alacakKalemleri as Record<string, number | undefined>)?.vekaletUcreti || ''} onChange={(e) => setForm((prev) => ({ ...prev, alacakKalemleri: { ...prev.alacakKalemleri, vekaletUcreti: Number(e.target.value) || undefined } }))} placeholder="0" />
-                </FormGroup>
-              </div>
-            </div>
-
             {/* Karşı Taraflar — çoklu seçim + vekil atama */}
             <CokluRehberSecici
               tip="karsiTaraf"
@@ -583,8 +586,18 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
           </>
         )}
 
-        {/* ═══ ADIM 3: BAĞLANTI & NOTLAR ═══ */}
+        {/* ═══ ADIM 3: ALACAK KALEMLERİ ═══ */}
         {adim === 3 && (
+          <AlacakKalemleriAdim
+            alacakDetay={(form.alacakDetay as AlacakKalemi[]) || []}
+            onChange={(v) => setForm((prev) => ({ ...prev, alacakDetay: v }))}
+            alacakKalemleri={form.alacakKalemleri}
+            onLegacyChange={(v) => setForm((prev) => ({ ...prev, alacakKalemleri: v }))}
+          />
+        )}
+
+        {/* ═══ ADIM 4: BAĞLANTI & NOTLAR ═══ */}
+        {adim === 4 && (
           <>
             {/* İlişkili Dava */}
             {davalar && davalar.length > 0 && (
@@ -627,5 +640,300 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
         )}
       </div>
     </Modal>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ADIM 3: ALACAK KALEMLERİ — Kapsamlı alacak kalemi girişi
+   Her kalem: asıl tutar, tarih, işlemiş faiz, takip sonrası faiz türü
+   NOT: Takip sonrası faiz yalnızca asıl alacağa işler,
+        işlemiş faize tekrar faiz işlemez
+   ══════════════════════════════════════════════════════════════ */
+
+interface AlacakKalemleriAdimProps {
+  alacakDetay: AlacakKalemi[];
+  onChange: (kalemler: AlacakKalemi[]) => void;
+  alacakKalemleri?: Record<string, unknown>;
+  onLegacyChange: (v: Record<string, unknown>) => void;
+}
+
+const BOS_KALEM_FORM = {
+  kalemTuru: 'asil_alacak' as AlacakKalemi['kalemTuru'],
+  aciklama: '',
+  asilTutar: '',
+  paraBirimi: 'TRY',
+  vadeTarihi: '',
+  faizTuru: 'yasal' as FaizTuru,
+  ozelFaizOrani: '',
+  islemiFaiz: '',
+};
+
+function AlacakKalemleriAdim({ alacakDetay, onChange, alacakKalemleri, onLegacyChange }: AlacakKalemleriAdimProps) {
+  const [formAcik, setFormAcik] = useState(false);
+  const [duzenleId, setDuzenleId] = useState<string | null>(null);
+  const [form, setForm] = useState(BOS_KALEM_FORM);
+
+  const bugun = new Date().toISOString().slice(0, 10);
+
+  // Toplam hesapları
+  const toplamAsil = alacakDetay.reduce((t, k) => t + k.asilTutar, 0);
+  const toplamIslemiFaiz = alacakDetay.reduce((t, k) => t + (k.islemiFaiz || 0), 0);
+  const toplamIsleyenFaiz = alacakDetay.reduce((t, k) => t + hesaplaKalemFaiz(k, bugun), 0);
+
+  function handleKaydet() {
+    if (!form.asilTutar || !form.vadeTarihi) return;
+
+    const yeniKalem: AlacakKalemi = {
+      id: duzenleId || crypto.randomUUID(),
+      kalemTuru: form.kalemTuru,
+      aciklama: form.aciklama || KALEM_TURLERI.find((k) => k.value === form.kalemTuru)?.label || 'Alacak',
+      asilTutar: Number(form.asilTutar),
+      paraBirimi: form.paraBirimi || 'TRY',
+      vadeTarihi: form.vadeTarihi,
+      faizTuru: form.faizTuru,
+      ozelFaizOrani: (form.faizTuru === 'sozlesmeli' || form.faizTuru === 'diger') ? Number(form.ozelFaizOrani) || undefined : undefined,
+      islemiFaiz: Number(form.islemiFaiz) || undefined,
+    };
+
+    if (duzenleId) {
+      onChange(alacakDetay.map((k) => k.id === duzenleId ? yeniKalem : k));
+    } else {
+      onChange([...alacakDetay, yeniKalem]);
+    }
+
+    // Legacy alacakKalemleri alanını da güncelle (geriye uyumluluk)
+    const tumKalemler = duzenleId
+      ? alacakDetay.map((k) => k.id === duzenleId ? yeniKalem : k)
+      : [...alacakDetay, yeniKalem];
+    const topAsil = tumKalemler.reduce((t, k) => t + k.asilTutar, 0);
+    const topIslemis = tumKalemler.reduce((t, k) => t + (k.islemiFaiz || 0), 0);
+    onLegacyChange({
+      ...(alacakKalemleri || {}),
+      asilAlacak: topAsil || undefined,
+      islemisiFaiz: topIslemis || undefined,
+    });
+
+    setForm(BOS_KALEM_FORM);
+    setFormAcik(false);
+    setDuzenleId(null);
+  }
+
+  function handleDuzenle(k: AlacakKalemi) {
+    setForm({
+      kalemTuru: k.kalemTuru,
+      aciklama: k.aciklama,
+      asilTutar: k.asilTutar.toString(),
+      paraBirimi: k.paraBirimi || 'TRY',
+      vadeTarihi: k.vadeTarihi,
+      faizTuru: k.faizTuru,
+      ozelFaizOrani: k.ozelFaizOrani?.toString() || '',
+      islemiFaiz: k.islemiFaiz?.toString() || '',
+    });
+    setDuzenleId(k.id);
+    setFormAcik(true);
+  }
+
+  function handleSil(id: string) {
+    const yeniListe = alacakDetay.filter((k) => k.id !== id);
+    onChange(yeniListe);
+    // Legacy güncelle
+    const topAsil = yeniListe.reduce((t, k) => t + k.asilTutar, 0);
+    const topIslemis = yeniListe.reduce((t, k) => t + (k.islemiFaiz || 0), 0);
+    onLegacyChange({
+      ...(alacakKalemleri || {}),
+      asilAlacak: topAsil || undefined,
+      islemisiFaiz: topIslemis || undefined,
+    });
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Bilgi notu */}
+      <div className="flex items-start gap-2 px-3 py-2.5 bg-blue-400/5 border border-blue-400/20 rounded-lg">
+        <span className="text-sm mt-0.5">ℹ️</span>
+        <div className="text-[11px] text-text-muted leading-relaxed">
+          <strong className="text-text">Takip sonrası faiz yalnızca asıl alacağa işler.</strong>{' '}
+          İşlemiş faize tekrar faiz işlenmez. Her kalemi ayrı faiz türüyle tanımlayabilirsiniz.
+        </div>
+      </div>
+
+      {/* Başlık + Ekle butonu */}
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-semibold text-text">Alacak Kalemleri ({alacakDetay.length})</h4>
+        <button
+          type="button"
+          onClick={() => { setFormAcik(!formAcik); setDuzenleId(null); setForm(BOS_KALEM_FORM); }}
+          className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+            formAcik ? 'bg-gold/10 text-gold border border-gold/30' : 'text-gold border border-gold/30 hover:bg-gold-dim'
+          }`}
+        >
+          {formAcik ? '✕ Kapat' : '+ Kalem Ekle'}
+        </button>
+      </div>
+
+      {/* Ekleme / Düzenleme Formu */}
+      {formAcik && (
+        <div className="bg-surface2/50 border border-gold/20 rounded-lg p-4 space-y-3">
+          <h5 className="text-xs font-semibold text-gold">{duzenleId ? 'Kalemi Düzenle' : 'Yeni Alacak Kalemi'}</h5>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {/* Kalem Türü */}
+            <div>
+              <label className="text-[11px] text-text-muted block mb-1">Kalem Türü</label>
+              <FormSelect value={form.kalemTuru} onChange={(e) => setForm({ ...form, kalemTuru: e.target.value as AlacakKalemi['kalemTuru'] })}>
+                {KALEM_TURLERI.map((k) => <option key={k.value} value={k.value}>{k.label}</option>)}
+              </FormSelect>
+            </div>
+            {/* Açıklama */}
+            <div>
+              <label className="text-[11px] text-text-muted block mb-1">Açıklama</label>
+              <FormInput value={form.aciklama} onChange={(e) => setForm({ ...form, aciklama: e.target.value })} placeholder="Ör: Kira - Ocak 2025" />
+            </div>
+            {/* Asıl Tutar + Para Birimi */}
+            <div>
+              <label className="text-[11px] text-text-muted block mb-1">Asıl Alacak Tutarı *</label>
+              <div className="flex gap-1.5">
+                <FormInput type="number" step="0.01" min="0" value={form.asilTutar}
+                  onChange={(e) => setForm({ ...form, asilTutar: e.target.value })} className="flex-1" />
+                <FormSelect value={form.paraBirimi} onChange={(e) => setForm({ ...form, paraBirimi: e.target.value })} className="!w-20">
+                  {PARA_BIRIMLERI.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+                </FormSelect>
+              </div>
+            </div>
+            {/* Vade / Temerrüt Tarihi */}
+            <div>
+              <label className="text-[11px] text-text-muted block mb-1">Vade / Temerrüt Tarihi *</label>
+              <FormInput type="date" value={form.vadeTarihi} onChange={(e) => setForm({ ...form, vadeTarihi: e.target.value })} />
+            </div>
+            {/* İşlemiş Faiz (takip öncesi) */}
+            <div>
+              <label className="text-[11px] text-text-muted block mb-1">Takip Öncesi İşlemiş Faiz (₺)</label>
+              <FormInput type="number" step="0.01" min="0" value={form.islemiFaiz}
+                onChange={(e) => setForm({ ...form, islemiFaiz: e.target.value })} placeholder="0.00" />
+            </div>
+            {/* Takip Sonrası Faiz Türü */}
+            <div>
+              <label className="text-[11px] text-text-muted block mb-1">Takip Sonrası Faiz Türü</label>
+              <FormSelect value={form.faizTuru} onChange={(e) => setForm({ ...form, faizTuru: e.target.value as FaizTuru })}>
+                {Object.entries(faizTurleriGruplu()).map(([kat, turler]) => (
+                  <optgroup key={kat} label={kat}>
+                    {turler.map((t) => <option key={t.id} value={t.id}>{t.ad}</option>)}
+                  </optgroup>
+                ))}
+              </FormSelect>
+            </div>
+            {/* Özel Faiz Oranı (sözleşmeli) */}
+            {(form.faizTuru === 'sozlesmeli' || form.faizTuru === 'diger') && (
+              <div>
+                <label className="text-[11px] text-text-muted block mb-1">Yıllık Faiz Oranı (%)</label>
+                <FormInput type="number" step="0.01" min="0" value={form.ozelFaizOrani}
+                  onChange={(e) => setForm({ ...form, ozelFaizOrani: e.target.value })} />
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-2 pt-1">
+            <BtnGold onClick={handleKaydet} disabled={!form.asilTutar || !form.vadeTarihi}>
+              {duzenleId ? 'Güncelle' : 'Ekle'}
+            </BtnGold>
+            <BtnOutline onClick={() => { setFormAcik(false); setDuzenleId(null); setForm(BOS_KALEM_FORM); }}>
+              İptal
+            </BtnOutline>
+          </div>
+        </div>
+      )}
+
+      {/* Kalem Listesi */}
+      {alacakDetay.length === 0 ? (
+        <div className="text-center py-6 bg-surface border border-border rounded-lg">
+          <div className="text-2xl mb-1">📋</div>
+          <div className="text-xs text-text-muted">Henüz alacak kalemi eklenmemiş</div>
+          <div className="text-[10px] text-text-dim mt-1">Her kalem için ayrı faiz türü ve işlemiş faiz tanımlayabilirsiniz</div>
+          {!formAcik && (
+            <button type="button" onClick={() => setFormAcik(true)}
+              className="mt-3 px-4 py-1.5 text-xs font-medium text-gold border border-gold/30 rounded-lg hover:bg-gold-dim transition-colors">
+              + İlk Kalemi Ekle
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="bg-surface border border-border rounded-lg overflow-hidden">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-border bg-surface2">
+                <th className="px-3 py-2 text-left text-[10px] text-text-muted font-medium">Kalem</th>
+                <th className="px-3 py-2 text-left text-[10px] text-text-muted font-medium">Vade</th>
+                <th className="px-3 py-2 text-left text-[10px] text-text-muted font-medium">Faiz Türü</th>
+                <th className="px-3 py-2 text-right text-[10px] text-text-muted font-medium">Asıl Alacak</th>
+                <th className="px-3 py-2 text-right text-[10px] text-text-muted font-medium">İşlemiş Faiz</th>
+                <th className="px-3 py-2 text-right text-[10px] text-text-muted font-medium">İşleyen Faiz</th>
+                <th className="px-3 py-2 text-right text-[10px] text-text-muted font-medium">Toplam</th>
+                <th className="px-2 py-2 w-16"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {alacakDetay.map((k) => {
+                const isleyenFaiz = hesaplaKalemFaiz(k, bugun);
+                const islemiFaiz = k.islemiFaiz || 0;
+                const toplam = k.asilTutar + islemiFaiz + isleyenFaiz;
+                const faizGrup = faizTurleriGruplu();
+                const faizAd = Object.values(faizGrup).flat().find((f) => f.id === k.faizTuru)?.ad || k.faizTuru;
+                return (
+                  <tr key={k.id} className="border-b border-border/50 hover:bg-surface2 transition-colors group">
+                    <td className="px-3 py-2">
+                      <div className="text-text font-medium">{k.aciklama}</div>
+                      <div className="text-[10px] text-text-dim">{KALEM_TURLERI.find((kt) => kt.value === k.kalemTuru)?.label}</div>
+                    </td>
+                    <td className="px-3 py-2 text-text-muted">{k.vadeTarihi}</td>
+                    <td className="px-3 py-2">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface2 border border-border text-text-muted truncate block max-w-[120px]">
+                        {faizAd}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-right font-semibold text-text">{fmt(k.asilTutar, k.paraBirimi)}</td>
+                    <td className="px-3 py-2 text-right text-orange-400">{islemiFaiz > 0 ? fmt(islemiFaiz) : '—'}</td>
+                    <td className="px-3 py-2 text-right text-orange-300">{isleyenFaiz > 0 ? fmt(isleyenFaiz) : '—'}</td>
+                    <td className="px-3 py-2 text-right font-bold text-text">{fmt(toplam)}</td>
+                    <td className="px-2 py-2">
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button type="button" onClick={() => handleDuzenle(k)} className="text-[10px] text-gold hover:underline">Düzenle</button>
+                        <button type="button" onClick={() => handleSil(k.id)} className="text-[10px] text-red hover:underline">Sil</button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr className="bg-surface2 font-bold">
+                <td colSpan={3} className="px-3 py-2 text-text-muted text-right">TOPLAM:</td>
+                <td className="px-3 py-2 text-right text-text">{fmt(toplamAsil)}</td>
+                <td className="px-3 py-2 text-right text-orange-400">{fmt(toplamIslemiFaiz)}</td>
+                <td className="px-3 py-2 text-right text-orange-300">{fmt(toplamIsleyenFaiz)}</td>
+                <td className="px-3 py-2 text-right text-gold text-sm">{fmt(toplamAsil + toplamIslemiFaiz + toplamIsleyenFaiz)}</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+
+      {/* Ek masraflar (legacy uyumluluk) */}
+      <div className="border-t border-border/50 pt-4">
+        <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-3">Ek Masraflar</div>
+        <div className="grid grid-cols-2 gap-3">
+          <FormGroup label="Vekalet Ücreti (₺)">
+            <FormInput type="number" step="0.01" value={(alacakKalemleri as Record<string, number | undefined>)?.vekaletUcreti || ''}
+              onChange={(e) => onLegacyChange({ ...(alacakKalemleri || {}), vekaletUcreti: Number(e.target.value) || undefined })}
+              placeholder="0" />
+          </FormGroup>
+          <FormGroup label="Diğer Masraflar (₺)">
+            <FormInput type="number" step="0.01" value={(alacakKalemleri as Record<string, number | undefined>)?.digerMasraflar || ''}
+              onChange={(e) => onLegacyChange({ ...(alacakKalemleri || {}), digerMasraflar: Number(e.target.value) || undefined })}
+              placeholder="0" />
+          </FormGroup>
+        </div>
+      </div>
+    </div>
   );
 }

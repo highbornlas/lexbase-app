@@ -742,8 +742,9 @@ export interface AlacakKalemi {
   asilTutar: number;
   paraBirimi?: string; // default: TRY
   vadeTarihi: string;  // Temerrüt başlangıç tarihi (YYYY-MM-DD)
-  faizTuru: FaizTuru;
+  faizTuru: FaizTuru;  // Takip sonrası işleyecek faiz türü
   ozelFaizOrani?: number; // sozlesmeli/diger ise sabit yıllık oran
+  islemiFaiz?: number; // Takip öncesi işlemiş faiz (yalnızca gösterim — faiz sadece asilTutar'a işler)
 }
 
 export const KALEM_TURLERI: { value: AlacakKalemi['kalemTuru']; label: string }[] = [
@@ -793,10 +794,12 @@ export interface KapakHesabiSonuc {
     kalemId: string;
     aciklama: string;
     asilAlacak: number;
-    islemizFaiz: number;
+    islemiFaiz: number;
+    islemizFaiz: number;  // takip sonrası işleyen faiz
     toplamKalem: number;
   }>;
   toplamAsilAlacak: number;
+  toplamIslemiFaiz: number;
   toplamIsleyenFaiz: number;
   icraVekaletUcreti: number;
   icraMasraflari: number;
@@ -1067,29 +1070,35 @@ export function hesaplaKapakHesabi(
   const tarih = hesapTarihi || new Date().toISOString().slice(0, 10);
 
   const kalemler = alacakKalemleri.map((k) => {
-    const faiz = hesaplaKalemFaiz(k, tarih, yasalOranlar, ticariOranlar);
+    // Takip sonrası faiz yalnızca asıl alacağa (asilTutar) işler
+    // İşlemiş faiz (islemiFaiz) ayrı kalem olarak eklenir, üzerine faiz işlemez
+    const isleyenFaiz = hesaplaKalemFaiz(k, tarih, yasalOranlar, ticariOranlar);
+    const islemiFaiz = k.islemiFaiz || 0;
     return {
       kalemId: k.id,
       aciklama: k.aciklama,
       asilAlacak: k.asilTutar,
-      islemizFaiz: faiz,
-      toplamKalem: yuvarla(k.asilTutar + faiz),
+      islemiFaiz,
+      islemizFaiz: isleyenFaiz,
+      toplamKalem: yuvarla(k.asilTutar + islemiFaiz + isleyenFaiz),
     };
   });
 
   const toplamAsilAlacak = yuvarla(kalemler.reduce((t, k) => t + k.asilAlacak, 0));
+  const toplamIslemiFaiz = yuvarla(kalemler.reduce((t, k) => t + k.islemiFaiz, 0));
   const toplamIsleyenFaiz = yuvarla(kalemler.reduce((t, k) => t + k.islemizFaiz, 0));
 
   const icraVekaletUcreti = vekaletUcretiManuel != null
     ? vekaletUcretiManuel
     : hesaplaIcraVekaletUcreti(toplamAsilAlacak);
 
-  const toplamDosyaDegeri = yuvarla(toplamAsilAlacak + toplamIsleyenFaiz + icraVekaletUcreti + icraMasraflari);
+  const toplamDosyaDegeri = yuvarla(toplamAsilAlacak + toplamIslemiFaiz + toplamIsleyenFaiz + icraVekaletUcreti + icraMasraflari);
   const kalanBorc = yuvarla(toplamDosyaDegeri - tahsilEdilen);
 
   return {
     kalemler,
     toplamAsilAlacak,
+    toplamIslemiFaiz,
     toplamIsleyenFaiz,
     icraVekaletUcreti,
     icraMasraflari,
