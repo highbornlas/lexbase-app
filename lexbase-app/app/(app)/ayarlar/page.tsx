@@ -10,6 +10,7 @@ import { BildirimlerTab } from '@/components/modules/ayarlar/BildirimlerTab';
 import { GorunumTab } from '@/components/modules/ayarlar/GorunumTab';
 import { CopKutusuTab } from '@/components/modules/ayarlar/CopKutusuTab';
 import { VeriYonetimiTab } from '@/components/modules/ayarlar/VeriYonetimiTab';
+import { FaizOranlariTab } from '@/components/modules/ayarlar/FaizOranlariTab';
 
 /* ══════════════════════════════════════════════════════════════
    Ayarlar Sayfası — Thin shell, tüm mantık tab bileşenlerinde
@@ -23,6 +24,7 @@ const TABS = [
   { key: 'bildirimler', label: 'Bildirimler', icon: '🔔' },
   { key: 'gorunum', label: 'Görünüm', icon: '🎨' },
   { key: 'cop', label: 'Çöp Kutusu', icon: '🗑️' },
+  { key: 'faiz', label: 'Faiz Oranları', icon: '📊', yetki: 'ayarlar:duzenle' },
   { key: 'veri', label: 'Veri Yönetimi', icon: '💾', yetki: 'ayarlar:duzenle' },
 ];
 
@@ -70,6 +72,7 @@ export default function AyarlarPage() {
           {aktifTab === 'bildirimler' && <BildirimlerTab />}
           {aktifTab === 'gorunum' && <GorunumTab />}
           {aktifTab === 'cop' && <CopKutusuTab />}
+          {aktifTab === 'faiz' && <FaizOranlariTab />}
           {aktifTab === 'veri' && <VeriYonetimiTab />}
         </div>
       </div>

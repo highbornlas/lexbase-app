@@ -7,6 +7,7 @@ import { AuthGuard } from '@/components/auth/AuthGuard';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { InfoModal } from '@/components/ui/InfoModal';
 import { InactivityWarning } from '@/components/auth/InactivityWarning';
+import { FaizOranProvider } from '@/components/providers/FaizOranProvider';
 import {
   KullanimKosullari, GizlilikPolitikasi, KvkkAydinlatma,
   VeriGuvenligi, CerezAyarlari,
@@ -51,7 +52,9 @@ export default function AppLayout({
           <Topbar onToggleSidebar={toggleSidebar} />
           <main className="px-3 sm:px-5 py-4 flex-1">
             <ErrorBoundary>
-              {children}
+              <FaizOranProvider>
+                {children}
+              </FaizOranProvider>
             </ErrorBoundary>
           </main>
           <footer className="border-t border-border/30 px-5 py-3">

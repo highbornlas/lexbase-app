@@ -693,10 +693,24 @@ export const FAIZ_ORAN_DB: Record<string, OranGirdi[]> = {
 };
 
 /**
+ * Supabase'den gelen güncel oranları set eder
+ * useFaizOranDB() hook'undan çağrılır — client-side'da Supabase verileri ile override
+ */
+let _supabaseOranDB: Record<string, OranGirdi[]> | null = null;
+export function setSupabaseFaizOranlari(oranDB: Record<string, OranGirdi[]> | null) {
+  _supabaseOranDB = oranDB;
+}
+
+/**
  * Bir faiz türü için oran dizisini döndürür
+ * Önce Supabase override'a bakar, yoksa hardcoded FAIZ_ORAN_DB'ye fallback
  * Manuel/sözleşmeli türlerde boş döner
  */
 export function faizOranlariniAl(faizTuru: FaizTuru): OranGirdi[] {
+  // Supabase'den gelen oranlar varsa öncelikli kullan
+  if (_supabaseOranDB && _supabaseOranDB[faizTuru]?.length) {
+    return _supabaseOranDB[faizTuru];
+  }
   return FAIZ_ORAN_DB[faizTuru] || [];
 }
 
