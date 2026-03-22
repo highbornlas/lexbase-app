@@ -358,24 +358,26 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
               vekilEklenebilir
             />
 
-            {/* Borçlular — karşı taraf rehberinden çoklu seçim + vekil atama */}
+            {/* Karşı taraf — role göre Borçlular veya Alacaklılar */}
             <CokluRehberSecici
               tip="karsiTaraf"
-              label="Borçlular"
-              ekleMetni="Borçlu Ekle"
+              label={form.muvRol === 'borclu' ? 'Alacaklılar (Karşı Taraf)' : 'Borçlular'}
+              ekleMetni={form.muvRol === 'borclu' ? 'Alacaklı Ekle' : 'Borçlu Ekle'}
               value={(form.borclular as SeciliKisi[]) || []}
               onChange={(v) => setForm((prev) => ({ ...prev, borclular: v }))}
               vekilEklenebilir
             />
 
-            {/* Borçlu detay bilgileri (temel) */}
+            {/* Karşı taraf detay bilgileri */}
             <div className="border-t border-border/50 pt-3">
-              <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-2">Borclu Detay</div>
+              <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-2">
+                {form.muvRol === 'borclu' ? 'Alacaklı Detay' : 'Borçlu Detay'}
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <FormGroup label="TC / VKN">
                   <FormInput value={(form.borcluDetay as Record<string, string | undefined>)?.tcVkn || ''} onChange={(e) => setForm((prev) => ({ ...prev, borcluDetay: { ...prev.borcluDetay, tcVkn: e.target.value } }))} placeholder="TC Kimlik No veya VKN" />
                 </FormGroup>
-                <FormGroup label="Borclu Adresi">
+                <FormGroup label={form.muvRol === 'borclu' ? 'Alacaklı Adresi' : 'Borçlu Adresi'}>
                   <FormInput value={(form.borcluDetay as Record<string, string | undefined>)?.adres || ''} onChange={(e) => setForm((prev) => ({ ...prev, borcluDetay: { ...prev.borcluDetay, adres: e.target.value } }))} placeholder="Adres" />
                 </FormGroup>
               </div>

@@ -610,7 +610,7 @@ function OzetTab({
             <OzetSatir label="Müvekkil Rolü" value={icra.muvRol === 'alacakli' ? 'Alacaklı' : icra.muvRol === 'borclu' ? 'Borçlu' : '—'} />
             <OzetSatir label="Alacaklı" value={taraflar.alacakli} />
             <OzetSatir label="Borçlu" value={taraflar.borclu} />
-            <OzetSatir label="Borçlu TC" value={icra.btc || '—'} />
+            <OzetSatir label={icra.muvRol === 'borclu' ? 'Alacaklı TC' : 'Borçlu TC'} value={icra.btc || '—'} />
             <OzetSatir label="Karşı Vekil" value={icra.karsav || '—'} />
             {iliskiliDava && (
               <div>
@@ -676,8 +676,8 @@ function OzetTab({
       {/* Odeme Plani */}
       <OdemePlaniSection icra={icra} onUpdate={onUpdate} />
 
-      {/* Borclu Bilgileri */}
-      <BorcluBilgileriSection icra={icra} onUpdate={onUpdate} />
+      {/* Karşı Taraf Bilgileri (role göre borçlu/alacaklı) */}
+      <BorcluBilgileriSection icra={icra} onUpdate={onUpdate} karsiRolLabel={icra.muvRol === 'borclu' ? 'Alacaklı' : 'Borçlu'} />
 
       {/* Notlar önizleme */}
       {icra.not && (
@@ -1846,9 +1846,10 @@ function OdemePlaniSection({ icra, onUpdate }: {
 // ══════════════════════════════════════════════════════════════
 //  BORCLU BİLGİLERİ SEKSİYONU
 // ══════════════════════════════════════════════════════════════
-function BorcluBilgileriSection({ icra, onUpdate }: {
+function BorcluBilgileriSection({ icra, onUpdate, karsiRolLabel = 'Borçlu' }: {
   icra: import('@/lib/hooks/useIcra').Icra;
   onUpdate: (icra: import('@/lib/hooks/useIcra').Icra) => void;
+  karsiRolLabel?: string;
 }) {
   const [acik, setAcik] = useState(false);
   const [duzenle, setDuzenle] = useState(false);
@@ -1898,7 +1899,7 @@ function BorcluBilgileriSection({ icra, onUpdate }: {
     <div>
       <div className="flex items-center justify-between">
         <button onClick={() => setAcik(!acik)} className="flex items-center gap-2 group">
-          <SectionHeader title="Borclu Bilgileri" />
+          <SectionHeader title={`${karsiRolLabel} Bilgileri`} />
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
             className={`text-text-dim transition-transform ${acik ? 'rotate-180' : ''}`}><path d="M6 9l6 6 6-6"/></svg>
           {hasData && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gold/10 text-gold border border-gold/20">Bilgi var</span>}
