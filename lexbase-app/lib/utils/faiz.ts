@@ -29,18 +29,28 @@ export type FaizTuru =
   | 'kamu_banka_1yil_alti_eur'  // Kamu Bankalarınca 1 Yıla Kadar (EUR)
   | 'kamu_banka_1yil_alti_tl'   // Kamu Bankalarınca 1 Yıla Kadar (TL)
   | 'kamu_banka_1yil_alti_usd'  // Kamu Bankalarınca 1 Yıla Kadar (USD)
-  | 'kredi_karti_akdi_0_50'     // Kredi Kartı Azami Akdi (0-50.000)
-  | 'kredi_karti_akdi_50_100'   // Kredi Kartı Azami Akdi (50.000-100.000)
-  | 'kredi_karti_akdi_100_250'  // Kredi Kartı Azami Akdi (100.000-250.000)
-  | 'kredi_karti_akdi_250_500'  // Kredi Kartı Azami Akdi (250.000-500.000)
-  | 'kredi_karti_akdi_500_1m'   // Kredi Kartı Azami Akdi (500.000-1.000.000)
-  | 'kredi_karti_akdi_1m_ustu'  // Kredi Kartı Azami Akdi (1.000.000+)
-  | 'kredi_karti_gecikme_0_50'     // Kredi Kartı Azami Gecikme (0-50.000)
-  | 'kredi_karti_gecikme_50_100'   // Kredi Kartı Azami Gecikme (50.000-100.000)
-  | 'kredi_karti_gecikme_100_250'  // Kredi Kartı Azami Gecikme (100.000-250.000)
-  | 'kredi_karti_gecikme_250_500'  // Kredi Kartı Azami Gecikme (250.000-500.000)
-  | 'kredi_karti_gecikme_500_1m'   // Kredi Kartı Azami Gecikme (500.000-1.000.000)
-  | 'kredi_karti_gecikme_1m_ustu'  // Kredi Kartı Azami Gecikme (1.000.000+)
+  | 'kredi_karti_akdi_0_50'     // Kredi Kartı Azami Akdi (0-50.000) [eski, 2025 öncesi]
+  | 'kredi_karti_akdi_50_100'   // Kredi Kartı Azami Akdi (50.000-100.000) [eski]
+  | 'kredi_karti_akdi_100_250'  // Kredi Kartı Azami Akdi (100.000-250.000) [eski]
+  | 'kredi_karti_akdi_250_500'  // Kredi Kartı Azami Akdi (250.000-500.000) [eski]
+  | 'kredi_karti_akdi_500_1m'   // Kredi Kartı Azami Akdi (500.000-1.000.000) [eski]
+  | 'kredi_karti_akdi_1m_ustu'  // Kredi Kartı Azami Akdi (1.000.000+) [eski]
+  | 'kredi_karti_gecikme_0_50'     // Kredi Kartı Azami Gecikme (0-50.000) [eski]
+  | 'kredi_karti_gecikme_50_100'   // Kredi Kartı Azami Gecikme (50.000-100.000) [eski]
+  | 'kredi_karti_gecikme_100_250'  // Kredi Kartı Azami Gecikme (100.000-250.000) [eski]
+  | 'kredi_karti_gecikme_250_500'  // Kredi Kartı Azami Gecikme (250.000-500.000) [eski]
+  | 'kredi_karti_gecikme_500_1m'   // Kredi Kartı Azami Gecikme (500.000-1.000.000) [eski]
+  | 'kredi_karti_gecikme_1m_ustu'  // Kredi Kartı Azami Gecikme (1.000.000+) [eski]
+  | 'kredi_karti_akdi_0_30'       // Kredi Kartı Azami Akdi (0-30.000) [2026+]
+  | 'kredi_karti_akdi_30_180'     // Kredi Kartı Azami Akdi (30.000-180.000) [2026+]
+  | 'kredi_karti_akdi_180_ustu'   // Kredi Kartı Azami Akdi (180.000+) [2026+]
+  | 'kredi_karti_gecikme_0_30'     // Kredi Kartı Azami Gecikme (0-30.000) [2026+]
+  | 'kredi_karti_gecikme_30_180'   // Kredi Kartı Azami Gecikme (30.000-180.000) [2026+]
+  | 'kredi_karti_gecikme_180_ustu' // Kredi Kartı Azami Gecikme (180.000+) [2026+]
+  | 'kredi_karti_nakit_akdi'       // Kredi Kartı Nakit Çekim Akdi [2026+]
+  | 'kredi_karti_nakit_gecikme'    // Kredi Kartı Nakit Çekim Gecikme [2026+]
+  | 'kredi_karti_yp_akdi'          // Kredi Kartı Yabancı Para Akdi [2026+]
+  | 'kredi_karti_yp_gecikme'       // Kredi Kartı Yabancı Para Gecikme [2026+]
   | 'reeskont_avans'            // Reeskont Avans
   | 'reeskont_iskonto'          // Reeskont İskonto
   | 'ttk_1530'                  // TTK 1530. Madde Temerrüt Faizi
@@ -106,21 +116,37 @@ export const UYAP_FAIZ_TURLERI: FaizTuruBilgi[] = [
   { id: 'kamu_banka_1yil_alti_usd', ad: 'Kamu Bankalarınca 1 Yıla Kadar Vadeli Mevduat Azami Faiz (USD)', kategori: 'Kamu Bankası Mevduat (1 Yıla Kadar)', madde: '3095 s.K. m.2', aciklama: 'Kamu bankası dolar kısa vadeli mevduat', paraBirimi: 'USD' },
   { id: 'kamu_banka_1yil_alti_eur', ad: 'Kamu Bankalarınca 1 Yıla Kadar Vadeli Mevduat Azami Faiz (EUR)', kategori: 'Kamu Bankası Mevduat (1 Yıla Kadar)', madde: '3095 s.K. m.2', aciklama: 'Kamu bankası euro kısa vadeli mevduat', paraBirimi: 'EUR' },
 
-  // ── Kredi Kartı Azami Akdi Faizi ──────────────────────────
-  { id: 'kredi_karti_akdi_0_50', ad: 'Kredi Kartı Azami Akdi Faizi (0 - 50.000 TL)', kategori: 'Kredi Kartı Akdi', madde: 'BDDK', aciklama: '0 - 50.000 TL arası bakiye' },
-  { id: 'kredi_karti_akdi_50_100', ad: 'Kredi Kartı Azami Akdi Faizi (50.000 - 100.000 TL)', kategori: 'Kredi Kartı Akdi', madde: 'BDDK', aciklama: '50.000 - 100.000 TL arası bakiye' },
-  { id: 'kredi_karti_akdi_100_250', ad: 'Kredi Kartı Azami Akdi Faizi (100.000 - 250.000 TL)', kategori: 'Kredi Kartı Akdi', madde: 'BDDK', aciklama: '100.000 - 250.000 TL arası bakiye' },
-  { id: 'kredi_karti_akdi_250_500', ad: 'Kredi Kartı Azami Akdi Faizi (250.000 - 500.000 TL)', kategori: 'Kredi Kartı Akdi', madde: 'BDDK', aciklama: '250.000 - 500.000 TL arası bakiye' },
-  { id: 'kredi_karti_akdi_500_1m', ad: 'Kredi Kartı Azami Akdi Faizi (500.000 - 1.000.000 TL)', kategori: 'Kredi Kartı Akdi', madde: 'BDDK', aciklama: '500.000 - 1.000.000 TL arası bakiye' },
-  { id: 'kredi_karti_akdi_1m_ustu', ad: 'Kredi Kartı Azami Akdi Faizi (1.000.000 TL üzeri)', kategori: 'Kredi Kartı Akdi', madde: 'BDDK', aciklama: '1.000.000 TL ve üzeri bakiye' },
+  // ── Kredi Kartı Azami Akdi Faizi (eski yapı, 2025 sonuna kadar) ──
+  { id: 'kredi_karti_akdi_0_50', ad: 'Kredi Kartı Azami Akdi (0-50.000 TL) [Eski]', kategori: 'Kredi Kartı Akdi (Eski)', madde: 'TCMB 2020/16', aciklama: '2025 sonuna kadar geçerli eski dilim' },
+  { id: 'kredi_karti_akdi_50_100', ad: 'Kredi Kartı Azami Akdi (50-100.000 TL) [Eski]', kategori: 'Kredi Kartı Akdi (Eski)', madde: 'TCMB 2020/16', aciklama: '2025 sonuna kadar geçerli eski dilim' },
+  { id: 'kredi_karti_akdi_100_250', ad: 'Kredi Kartı Azami Akdi (100-250.000 TL) [Eski]', kategori: 'Kredi Kartı Akdi (Eski)', madde: 'TCMB 2020/16', aciklama: '2025 sonuna kadar geçerli eski dilim' },
+  { id: 'kredi_karti_akdi_250_500', ad: 'Kredi Kartı Azami Akdi (250-500.000 TL) [Eski]', kategori: 'Kredi Kartı Akdi (Eski)', madde: 'TCMB 2020/16', aciklama: '2025 sonuna kadar geçerli eski dilim' },
+  { id: 'kredi_karti_akdi_500_1m', ad: 'Kredi Kartı Azami Akdi (500.000-1M TL) [Eski]', kategori: 'Kredi Kartı Akdi (Eski)', madde: 'TCMB 2020/16', aciklama: '2025 sonuna kadar geçerli eski dilim' },
+  { id: 'kredi_karti_akdi_1m_ustu', ad: 'Kredi Kartı Azami Akdi (1M+ TL) [Eski]', kategori: 'Kredi Kartı Akdi (Eski)', madde: 'TCMB 2020/16', aciklama: '2025 sonuna kadar geçerli eski dilim' },
 
-  // ── Kredi Kartı Azami Gecikme Faizi ───────────────────────
-  { id: 'kredi_karti_gecikme_0_50', ad: 'Kredi Kartı Azami Gecikme Faizi (0 - 50.000 TL)', kategori: 'Kredi Kartı Gecikme', madde: 'BDDK', aciklama: '0 - 50.000 TL arası bakiye' },
-  { id: 'kredi_karti_gecikme_50_100', ad: 'Kredi Kartı Azami Gecikme Faizi (50.000 - 100.000 TL)', kategori: 'Kredi Kartı Gecikme', madde: 'BDDK', aciklama: '50.000 - 100.000 TL arası bakiye' },
-  { id: 'kredi_karti_gecikme_100_250', ad: 'Kredi Kartı Azami Gecikme Faizi (100.000 - 250.000 TL)', kategori: 'Kredi Kartı Gecikme', madde: 'BDDK', aciklama: '100.000 - 250.000 TL arası bakiye' },
-  { id: 'kredi_karti_gecikme_250_500', ad: 'Kredi Kartı Azami Gecikme Faizi (250.000 - 500.000 TL)', kategori: 'Kredi Kartı Gecikme', madde: 'BDDK', aciklama: '250.000 - 500.000 TL arası bakiye' },
-  { id: 'kredi_karti_gecikme_500_1m', ad: 'Kredi Kartı Azami Gecikme Faizi (500.000 - 1.000.000 TL)', kategori: 'Kredi Kartı Gecikme', madde: 'BDDK', aciklama: '500.000 - 1.000.000 TL arası bakiye' },
-  { id: 'kredi_karti_gecikme_1m_ustu', ad: 'Kredi Kartı Azami Gecikme Faizi (1.000.000 TL üzeri)', kategori: 'Kredi Kartı Gecikme', madde: 'BDDK', aciklama: '1.000.000 TL ve üzeri bakiye' },
+  // ── Kredi Kartı Azami Gecikme Faizi (eski yapı, 2025 sonuna kadar) ──
+  { id: 'kredi_karti_gecikme_0_50', ad: 'Kredi Kartı Azami Gecikme (0-50.000 TL) [Eski]', kategori: 'Kredi Kartı Gecikme (Eski)', madde: 'TCMB 2020/16', aciklama: '2025 sonuna kadar geçerli eski dilim' },
+  { id: 'kredi_karti_gecikme_50_100', ad: 'Kredi Kartı Azami Gecikme (50-100.000 TL) [Eski]', kategori: 'Kredi Kartı Gecikme (Eski)', madde: 'TCMB 2020/16', aciklama: '2025 sonuna kadar geçerli eski dilim' },
+  { id: 'kredi_karti_gecikme_100_250', ad: 'Kredi Kartı Azami Gecikme (100-250.000 TL) [Eski]', kategori: 'Kredi Kartı Gecikme (Eski)', madde: 'TCMB 2020/16', aciklama: '2025 sonuna kadar geçerli eski dilim' },
+  { id: 'kredi_karti_gecikme_250_500', ad: 'Kredi Kartı Azami Gecikme (250-500.000 TL) [Eski]', kategori: 'Kredi Kartı Gecikme (Eski)', madde: 'TCMB 2020/16', aciklama: '2025 sonuna kadar geçerli eski dilim' },
+  { id: 'kredi_karti_gecikme_500_1m', ad: 'Kredi Kartı Azami Gecikme (500.000-1M TL) [Eski]', kategori: 'Kredi Kartı Gecikme (Eski)', madde: 'TCMB 2020/16', aciklama: '2025 sonuna kadar geçerli eski dilim' },
+  { id: 'kredi_karti_gecikme_1m_ustu', ad: 'Kredi Kartı Azami Gecikme (1M+ TL) [Eski]', kategori: 'Kredi Kartı Gecikme (Eski)', madde: 'TCMB 2020/16', aciklama: '2025 sonuna kadar geçerli eski dilim' },
+
+  // ── Kredi Kartı Azami Akdi Faizi (2026+ yeni yapı) ──────
+  { id: 'kredi_karti_akdi_0_30', ad: 'Kredi Kartı Azami Akdi (0-30.000 TL)', kategori: 'Kredi Kartı Akdi', madde: 'TCMB 2020/16', aciklama: '30.000 TL altı bakiye — otomatik TCMB' },
+  { id: 'kredi_karti_akdi_30_180', ad: 'Kredi Kartı Azami Akdi (30.000-180.000 TL)', kategori: 'Kredi Kartı Akdi', madde: 'TCMB 2020/16', aciklama: '30.000-180.000 TL arası bakiye — otomatik TCMB' },
+  { id: 'kredi_karti_akdi_180_ustu', ad: 'Kredi Kartı Azami Akdi (180.000 TL üzeri)', kategori: 'Kredi Kartı Akdi', madde: 'TCMB 2020/16', aciklama: '180.000 TL ve üzeri bakiye — otomatik TCMB' },
+
+  // ── Kredi Kartı Azami Gecikme Faizi (2026+ yeni yapı) ───
+  { id: 'kredi_karti_gecikme_0_30', ad: 'Kredi Kartı Azami Gecikme (0-30.000 TL)', kategori: 'Kredi Kartı Gecikme', madde: 'TCMB 2020/16', aciklama: '30.000 TL altı bakiye — otomatik TCMB' },
+  { id: 'kredi_karti_gecikme_30_180', ad: 'Kredi Kartı Azami Gecikme (30.000-180.000 TL)', kategori: 'Kredi Kartı Gecikme', madde: 'TCMB 2020/16', aciklama: '30.000-180.000 TL arası bakiye — otomatik TCMB' },
+  { id: 'kredi_karti_gecikme_180_ustu', ad: 'Kredi Kartı Azami Gecikme (180.000 TL üzeri)', kategori: 'Kredi Kartı Gecikme', madde: 'TCMB 2020/16', aciklama: '180.000 TL ve üzeri bakiye — otomatik TCMB' },
+
+  // ── Kredi Kartı Nakit Çekim & Yabancı Para (2026+) ─────
+  { id: 'kredi_karti_nakit_akdi', ad: 'Kredi Kartı Nakit Çekim Azami Akdi', kategori: 'Kredi Kartı Akdi', madde: 'TCMB 2020/16', aciklama: 'Nakit avans/çekim akdi faizi — otomatik TCMB' },
+  { id: 'kredi_karti_nakit_gecikme', ad: 'Kredi Kartı Nakit Çekim Azami Gecikme', kategori: 'Kredi Kartı Gecikme', madde: 'TCMB 2020/16', aciklama: 'Nakit avans/çekim gecikme faizi — otomatik TCMB' },
+  { id: 'kredi_karti_yp_akdi', ad: 'Kredi Kartı Yabancı Para Azami Akdi', kategori: 'Kredi Kartı Akdi', madde: 'TCMB 2020/16', aciklama: 'Yabancı para işlem akdi faizi — otomatik TCMB' },
+  { id: 'kredi_karti_yp_gecikme', ad: 'Kredi Kartı Yabancı Para Azami Gecikme', kategori: 'Kredi Kartı Gecikme', madde: 'TCMB 2020/16', aciklama: 'Yabancı para işlem gecikme faizi — otomatik TCMB' },
 
   // ── Enflasyon Endeksleri ──────────────────────────────────
   { id: 'tufe', ad: 'TÜFE (Tüketici Fiyat Endeksi)', kategori: 'Endeks', madde: 'TÜİK', aciklama: 'Yurt içi tüketici fiyat endeksi yıllık değişim' },
@@ -689,6 +715,49 @@ export const FAIZ_ORAN_DB: Record<string, OranGirdi[]> = {
     { b: '2024-01-01', o: 44.22 },
     { b: '2024-07-01', o: 50.02 },
     { b: '2025-01-01', o: 30.50 },
+  ],
+
+  // ── Kredi Kartı 2026+ Yeni Dilimler (aylık × 12 = yıllık) ──
+  // TCMB sayfasından: 1 Mart 2026 oranları
+  kredi_karti_akdi_0_30: [
+    { b: '2026-01-01', o: 39.00 },   // aylık %3.25
+    { b: '2026-03-01', o: 39.00 },
+  ],
+  kredi_karti_akdi_30_180: [
+    { b: '2026-01-01', o: 45.00 },   // aylık %3.75
+    { b: '2026-03-01', o: 45.00 },
+  ],
+  kredi_karti_akdi_180_ustu: [
+    { b: '2026-01-01', o: 51.00 },   // aylık %4.25
+    { b: '2026-03-01', o: 51.00 },
+  ],
+  kredi_karti_gecikme_0_30: [
+    { b: '2026-01-01', o: 42.60 },   // aylık %3.55
+    { b: '2026-03-01', o: 42.60 },
+  ],
+  kredi_karti_gecikme_30_180: [
+    { b: '2026-01-01', o: 48.60 },   // aylık %4.05
+    { b: '2026-03-01', o: 48.60 },
+  ],
+  kredi_karti_gecikme_180_ustu: [
+    { b: '2026-01-01', o: 54.60 },   // aylık %4.55
+    { b: '2026-03-01', o: 54.60 },
+  ],
+  kredi_karti_nakit_akdi: [
+    { b: '2026-01-01', o: 51.00 },   // aylık %4.25
+    { b: '2026-03-01', o: 51.00 },
+  ],
+  kredi_karti_nakit_gecikme: [
+    { b: '2026-01-01', o: 54.60 },   // aylık %4.55
+    { b: '2026-03-01', o: 54.60 },
+  ],
+  kredi_karti_yp_akdi: [
+    { b: '2026-01-01', o: 35.76 },   // aylık %2.98
+    { b: '2026-03-01', o: 35.76 },
+  ],
+  kredi_karti_yp_gecikme: [
+    { b: '2026-01-01', o: 39.36 },   // aylık %3.28
+    { b: '2026-03-01', o: 39.36 },
   ],
 };
 

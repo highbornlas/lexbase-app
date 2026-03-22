@@ -9,6 +9,12 @@ import {
   useFaizOraniSil,
   type FaizOraniKayit,
 } from '@/lib/hooks/useFaizOranlari';
+import {
+  useFaizUyarilar,
+  useUyariOkundu,
+  useTumUyarilariOkundu,
+  type FaizUyari,
+} from '@/lib/hooks/useFaizUyarilar';
 import { fmtTarih } from '@/lib/utils';
 
 /* ══════════════════════════════════════════════════════════════
@@ -22,6 +28,12 @@ const KAYNAK_ETIKETLERI: Record<string, { label: string; cls: string }> = {
   tcmb_evds: { label: 'TCMB', cls: 'text-green bg-green-dim' },
 };
 
+const UYARI_STILLERI: Record<string, { icon: string; cls: string; border: string }> = {
+  hata: { icon: '!', cls: 'text-red bg-red/10', border: 'border-red/30' },
+  uyari: { icon: '!', cls: 'text-orange bg-orange/10', border: 'border-orange/30' },
+  bilgi: { icon: 'i', cls: 'text-blue bg-blue/10', border: 'border-blue/30' },
+};
+
 export function FaizOranlariTab() {
   const [seciliTur, setSeciliTur] = useState('yasal');
   const [formAcik, setFormAcik] = useState(false);
@@ -33,6 +45,10 @@ export function FaizOranlariTab() {
   const ekle = useFaizOraniEkle();
   const guncelle = useFaizOraniGuncelle();
   const sil = useFaizOraniSil();
+  const { data: uyarilar } = useFaizUyarilar();
+  const uyariOkundu = useUyariOkundu();
+  const tumOkundu = useTumUyarilariOkundu();
+  const okunmamisUyarilar = useMemo(() => (uyarilar || []).filter((u) => !u.okundu), [uyarilar]);
 
   // Mevcut türler (DB'deki + UYAP sabit listesi birleşik)
   const turListesi = useMemo(() => {
@@ -120,6 +136,53 @@ export function FaizOranlariTab() {
           Eklediğiniz oranlar belirttiğiniz tarihten itibaren geçerli olur.
         </p>
       </div>
+
+      {/* Uyarı Paneli */}
+      {okunmamisUyarilar.length > 0 && (
+        <div className="bg-red/5 border border-red/20 rounded-lg p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-red bg-red/10 px-1.5 py-0.5 rounded">{okunmamisUyarilar.length}</span>
+              <span className="text-xs font-semibold text-text">Otomatik Güncelleme Uyarıları</span>
+            </div>
+            <button
+              onClick={() => tumOkundu.mutate()}
+              className="text-[10px] text-text-muted hover:text-text transition-colors"
+            >
+              Tümünü okundu yap
+            </button>
+          </div>
+          {okunmamisUyarilar.slice(0, 5).map((u) => {
+            const stil = UYARI_STILLERI[u.tur] || UYARI_STILLERI.bilgi;
+            return (
+              <div key={u.id} className={`flex items-start gap-2 bg-surface border ${stil.border} rounded-md px-3 py-2`}>
+                <span className={`text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${stil.cls}`}>
+                  {stil.icon}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-semibold text-text">{u.mesaj}</span>
+                    <span className="text-[9px] text-text-dim">{fmtTarih(u.created_at.slice(0, 10))}</span>
+                  </div>
+                  {u.detay && <p className="text-[10px] text-text-muted mt-0.5 truncate">{u.detay}</p>}
+                </div>
+                <button
+                  onClick={() => uyariOkundu.mutate(u.id)}
+                  className="text-[10px] text-text-dim hover:text-text flex-shrink-0"
+                  title="Okundu olarak işaretle"
+                >
+                  ✕
+                </button>
+              </div>
+            );
+          })}
+          {okunmamisUyarilar.length > 5 && (
+            <div className="text-[10px] text-text-dim text-center">
+              +{okunmamisUyarilar.length - 5} uyarı daha
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-[240px_1fr] gap-4">
         {/* Sol: Faiz Türleri Listesi */}
