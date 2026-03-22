@@ -1,13 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { MuvMasrafAvans } from './MuvMasrafAvans';
-import { MuvAvansKasasi } from './MuvAvansKasasi';
+import { MuvMasrafAvansKasa } from './MuvMasrafAvansKasa';
 import { MuvAlacak } from './MuvAlacak';
 import { MuvRapor } from './MuvRapor';
 import type { Muvekkil } from '@/lib/hooks/useMuvekkillar';
 
-type FinansAltSekme = 'masraf' | 'kasa' | 'alacak' | 'rapor';
+type FinansAltSekme = 'kasa' | 'alacak' | 'rapor';
 
 interface Props {
   muv: Muvekkil;
@@ -21,8 +20,7 @@ interface Props {
 }
 
 const ALT_SEKMELER: { key: FinansAltSekme; label: string; icon: string }[] = [
-  { key: 'kasa', label: 'Avans Kasası', icon: '🏦' },
-  { key: 'masraf', label: 'Masraflar', icon: '💸' },
+  { key: 'kasa', label: 'Masraf & Avans Kasası', icon: '🏦' },
   { key: 'alacak', label: 'Alacak', icon: '💰' },
   { key: 'rapor', label: 'Rapor', icon: '📊' },
 ];
@@ -51,22 +49,13 @@ export function FinansTab({ muv, davalar, icralar, arabuluculuklar, ihtarnameler
 
       {/* Alt Sekme İçeriği */}
       {altSekme === 'kasa' && (
-        <MuvAvansKasasi
+        <MuvMasrafAvansKasa
           muvId={muv.id}
+          muvAd={muv.ad || muv.unvan || undefined}
           davalar={davalar}
           icralar={icralar}
           arabuluculuklar={arabuluculuklar}
           ihtarnameler={ihtarnameler}
-        />
-      )}
-      {altSekme === 'masraf' && (
-        <MuvMasrafAvans
-          muvId={muv.id}
-          davalar={davalar}
-          icralar={icralar}
-          arabuluculuklar={arabuluculuklar}
-          ihtarnameler={ihtarnameler}
-          finansOzet={finansOzet}
           onMasrafKaydet={onMasrafKaydet}
         />
       )}
