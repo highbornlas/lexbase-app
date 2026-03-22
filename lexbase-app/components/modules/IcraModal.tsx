@@ -23,7 +23,9 @@ import {
   KALEM_TURLERI,
   faizTurleriGruplu,
   hesaplaKalemFaiz,
+  FAIZ_ORAN_DB,
 } from '@/lib/utils/faiz';
+import { useOzelKalemTurleri, useOzelKalemTuruKaydet } from '@/lib/hooks/useOzelKalemTurleri';
 
 interface IcraModalProps {
   open: boolean;
@@ -168,8 +170,8 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
 
   // Daire tam adı önizleme
   const daireTamAd = useMemo(() =>
-    tamIcraDairesiAdi(form.il, form.daire),
-    [form.il, form.daire]
+    tamIcraDairesiAdi(form.il, form.daire, form.adliye),
+    [form.il, form.daire, form.adliye]
   );
 
   // Esas no önizleme
@@ -367,41 +369,6 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
               </div>
             </FormGroup>
 
-            {/* Müvekkiller — çoklu seçim + vekil atama */}
-            <CokluRehberSecici
-              tip="muvekkil"
-              label="Müvekkiller"
-              ekleMetni="Müvekkil Ekle"
-              value={(form.muvekkilTaraflar as SeciliKisi[]) || []}
-              onChange={(v) => setForm((prev) => ({ ...prev, muvekkilTaraflar: v }))}
-              vekilEklenebilir
-            />
-
-            {/* Karşı taraf — role göre Borçlular veya Alacaklılar */}
-            <CokluRehberSecici
-              tip="karsiTaraf"
-              label={form.muvRol === 'borclu' ? 'Alacaklılar (Karşı Taraf)' : 'Borçlular'}
-              ekleMetni={form.muvRol === 'borclu' ? 'Alacaklı Ekle' : 'Borçlu Ekle'}
-              value={(form.borclular as SeciliKisi[]) || []}
-              onChange={(v) => setForm((prev) => ({ ...prev, borclular: v }))}
-              vekilEklenebilir
-            />
-
-            {/* Karşı taraf detay bilgileri */}
-            <div className="border-t border-border/50 pt-3">
-              <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-2">
-                {form.muvRol === 'borclu' ? 'Alacaklı Detay' : 'Borçlu Detay'}
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <FormGroup label="TC / VKN">
-                  <FormInput value={(form.borcluDetay as Record<string, string | undefined>)?.tcVkn || ''} onChange={(e) => setForm((prev) => ({ ...prev, borcluDetay: { ...prev.borcluDetay, tcVkn: e.target.value } }))} placeholder="TC Kimlik No veya VKN" />
-                </FormGroup>
-                <FormGroup label={form.muvRol === 'borclu' ? 'Alacaklı Adresi' : 'Borçlu Adresi'}>
-                  <FormInput value={(form.borcluDetay as Record<string, string | undefined>)?.adres || ''} onChange={(e) => setForm((prev) => ({ ...prev, borcluDetay: { ...prev.borcluDetay, adres: e.target.value } }))} placeholder="Adres" />
-                </FormGroup>
-              </div>
-            </div>
-
             <div className="grid grid-cols-3 gap-4">
               <FormGroup label="Takip Türü" required>
                 <FormSelect value={form.tur || ''} onChange={(e) => handleChange('tur', e.target.value)}>
@@ -465,6 +432,26 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
                 </FormGroup>
               </div>
             )}
+
+            {/* Müvekkiller — çoklu seçim + vekil atama */}
+            <CokluRehberSecici
+              tip="muvekkil"
+              label="Müvekkiller"
+              ekleMetni="Müvekkil Ekle"
+              value={(form.muvekkilTaraflar as SeciliKisi[]) || []}
+              onChange={(v) => setForm((prev) => ({ ...prev, muvekkilTaraflar: v }))}
+              vekilEklenebilir
+            />
+
+            {/* Karşı taraf — role göre Borçlular veya Alacaklılar */}
+            <CokluRehberSecici
+              tip="karsiTaraf"
+              label={form.muvRol === 'borclu' ? 'Alacaklılar (Karşı Taraf)' : 'Borçlular'}
+              ekleMetni={form.muvRol === 'borclu' ? 'Alacaklı Ekle' : 'Borçlu Ekle'}
+              value={(form.borclular as SeciliKisi[]) || []}
+              onChange={(v) => setForm((prev) => ({ ...prev, borclular: v }))}
+              vekilEklenebilir
+            />
           </>
         )}
 
@@ -552,7 +539,7 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
 
             {/* Tarihler & Tutarlar */}
             <div className="border-t border-border/50 pt-4">
-              <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-3">Tarih ve Tutar</div>
+              <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-3">Tarihler</div>
               <div className="grid grid-cols-3 gap-4">
                 <FormGroup label="Takip Tarihi">
                   <FormInput type="date" value={form.tarih || ''} onChange={(e) => handleChange('tarih', e.target.value)} />
@@ -564,25 +551,7 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
                   <FormInput type="date" value={form.tebligTarihi || ''} onChange={(e) => handleChange('tebligTarihi', e.target.value)} />
                 </FormGroup>
               </div>
-              <div className="grid grid-cols-2 gap-4 mt-3">
-                <FormGroup label="Alacak Tutarı (TL)">
-                  <FormInput type="number" value={form.alacak || ''} onChange={(e) => handleChange('alacak', Number(e.target.value))} placeholder="0" />
-                </FormGroup>
-                <FormGroup label="Faiz (%)">
-                  <FormInput type="number" value={form.faiz || ''} onChange={(e) => handleChange('faiz', Number(e.target.value))} placeholder="0" />
-                </FormGroup>
-              </div>
             </div>
-
-            {/* Karşı Taraflar — çoklu seçim + vekil atama */}
-            <CokluRehberSecici
-              tip="karsiTaraf"
-              label="Karşı Taraflar"
-              ekleMetni="Karşı Taraf Ekle"
-              value={(form.karsiTaraflar as SeciliKisi[]) || []}
-              onChange={(v) => setForm((prev) => ({ ...prev, karsiTaraflar: v }))}
-              vekilEklenebilir
-            />
           </>
         )}
 
@@ -593,6 +562,7 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
             onChange={(v) => setForm((prev) => ({ ...prev, alacakDetay: v }))}
             alacakKalemleri={form.alacakKalemleri}
             onLegacyChange={(v) => setForm((prev) => ({ ...prev, alacakKalemleri: v }))}
+            takipTarihi={form.tarih || ''}
           />
         )}
 
@@ -618,10 +588,12 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
                 }}>
                   <option value="">İlişkili dava dosyası yok</option>
                   {davalar.map((d) => {
+                    const yer = d.adliye || d.il || '';
                     const esas = esasNoGoster(d.esasYil, d.esasNo);
+                    const label = [yer, esas ? `${esas} E.` : '', d.konu ? `- ${d.konu}` : ''].filter(Boolean).join(' ');
                     return (
                       <option key={d.id} value={d.id}>
-                        {esas || d.no || '?'} — {d.konu || '?'}
+                        {label || d.no || '?'}
                       </option>
                     );
                   })}
@@ -655,6 +627,7 @@ interface AlacakKalemleriAdimProps {
   onChange: (kalemler: AlacakKalemi[]) => void;
   alacakKalemleri?: Record<string, unknown>;
   onLegacyChange: (v: Record<string, unknown>) => void;
+  takipTarihi: string;
 }
 
 const BOS_KALEM_FORM = {
@@ -668,12 +641,54 @@ const BOS_KALEM_FORM = {
   islemiFaiz: '',
 };
 
-function AlacakKalemleriAdim({ alacakDetay, onChange, alacakKalemleri, onLegacyChange }: AlacakKalemleriAdimProps) {
+function AlacakKalemleriAdim({ alacakDetay, onChange, alacakKalemleri, onLegacyChange, takipTarihi }: AlacakKalemleriAdimProps) {
   const [formAcik, setFormAcik] = useState(false);
   const [duzenleId, setDuzenleId] = useState<string | null>(null);
   const [form, setForm] = useState(BOS_KALEM_FORM);
+  const [digerKalemAciklama, setDigerKalemAciklama] = useState('');
+  const [kalemTuruEkleAcik, setKalemTuruEkleAcik] = useState(false);
+  const [yeniKalemTuru, setYeniKalemTuru] = useState('');
+
+  // Özel kalem türleri
+  const { data: ozelKalemTurleri } = useOzelKalemTurleri();
+  const ozelKalemKaydet = useOzelKalemTuruKaydet();
+
+  const tumKalemTurleri = useMemo(() => {
+    const sabitler = [...KALEM_TURLERI];
+    const ozeller = (ozelKalemTurleri || []).map((t) => ({ value: t as AlacakKalemi['kalemTuru'], label: t }));
+    return [...sabitler, ...ozeller];
+  }, [ozelKalemTurleri]);
+
+  async function handleYeniKalemTuruEkle() {
+    if (!yeniKalemTuru.trim()) return;
+    try {
+      await ozelKalemKaydet.mutateAsync(yeniKalemTuru.trim());
+      setForm((prev) => ({ ...prev, kalemTuru: yeniKalemTuru.trim() as AlacakKalemi['kalemTuru'], aciklama: yeniKalemTuru.trim() }));
+      setYeniKalemTuru('');
+      setKalemTuruEkleAcik(false);
+    } catch { /* */ }
+  }
 
   const bugun = new Date().toISOString().slice(0, 10);
+
+  // Auto-calculate işlemiş faiz
+  useEffect(() => {
+    if (form.vadeTarihi && form.asilTutar && form.faizTuru && form.faizTuru !== 'yok' && takipTarihi) {
+      const tempKalem: AlacakKalemi = {
+        id: 'temp',
+        kalemTuru: form.kalemTuru,
+        aciklama: '',
+        asilTutar: Number(form.asilTutar),
+        vadeTarihi: form.vadeTarihi,
+        faizTuru: form.faizTuru,
+        ozelFaizOrani: form.ozelFaizOrani ? Number(form.ozelFaizOrani) : undefined,
+      };
+      const faiz = hesaplaKalemFaiz(tempKalem, takipTarihi);
+      if (faiz > 0 && !form.islemiFaiz) {
+        setForm((prev) => ({ ...prev, islemiFaiz: faiz.toFixed(2) }));
+      }
+    }
+  }, [form.vadeTarihi, form.faizTuru, form.asilTutar, form.ozelFaizOrani, takipTarihi]);
 
   // Toplam hesapları
   const toplamAsil = alacakDetay.reduce((t, k) => t + k.asilTutar, 0);
@@ -686,7 +701,7 @@ function AlacakKalemleriAdim({ alacakDetay, onChange, alacakKalemleri, onLegacyC
     const yeniKalem: AlacakKalemi = {
       id: duzenleId || crypto.randomUUID(),
       kalemTuru: form.kalemTuru,
-      aciklama: form.aciklama || KALEM_TURLERI.find((k) => k.value === form.kalemTuru)?.label || 'Alacak',
+      aciklama: form.aciklama || tumKalemTurleri.find((k) => k.value === form.kalemTuru)?.label || 'Alacak',
       asilTutar: Number(form.asilTutar),
       paraBirimi: form.paraBirimi || 'TRY',
       vadeTarihi: form.vadeTarihi,
@@ -777,12 +792,53 @@ function AlacakKalemleriAdim({ alacakDetay, onChange, alacakKalemleri, onLegacyC
           <h5 className="text-xs font-semibold text-gold">{duzenleId ? 'Kalemi Düzenle' : 'Yeni Alacak Kalemi'}</h5>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {/* Kalem Türü */}
+            {/* Alacak Kalemi */}
             <div>
-              <label className="text-[11px] text-text-muted block mb-1">Kalem Türü</label>
-              <FormSelect value={form.kalemTuru} onChange={(e) => setForm({ ...form, kalemTuru: e.target.value as AlacakKalemi['kalemTuru'] })}>
-                {KALEM_TURLERI.map((k) => <option key={k.value} value={k.value}>{k.label}</option>)}
-              </FormSelect>
+              <label className="text-[11px] text-text-muted block mb-1">Alacak Kalemi</label>
+              <div className="flex gap-1">
+                <FormSelect value={form.kalemTuru} onChange={(e) => {
+                  const v = e.target.value as AlacakKalemi['kalemTuru'];
+                  setForm({ ...form, kalemTuru: v });
+                  if (v === 'diger') setDigerKalemAciklama('');
+                }} className="flex-1">
+                  {tumKalemTurleri.map((k) => <option key={k.value} value={k.value}>{k.label}</option>)}
+                </FormSelect>
+                <button
+                  type="button"
+                  onClick={() => setKalemTuruEkleAcik(!kalemTuruEkleAcik)}
+                  className="flex-shrink-0 w-8 h-10 flex items-center justify-center rounded-lg border border-gold/30 text-gold hover:bg-gold-dim transition-colors text-sm"
+                  title="Yeni kalem türü ekle"
+                >
+                  +
+                </button>
+              </div>
+              {kalemTuruEkleAcik && (
+                <div className="mt-2 flex gap-2">
+                  <FormInput
+                    value={yeniKalemTuru}
+                    onChange={(e) => setYeniKalemTuru(e.target.value)}
+                    placeholder="Yeni kalem türü..."
+                    className="flex-1 !h-8 !text-xs"
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleYeniKalemTuruEkle(); } }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleYeniKalemTuruEkle}
+                    disabled={!yeniKalemTuru.trim() || ozelKalemKaydet.isPending}
+                    className="px-3 h-8 rounded-lg text-[11px] font-semibold bg-gold text-bg disabled:opacity-50 transition-colors"
+                  >
+                    {ozelKalemKaydet.isPending ? '...' : 'Ekle'}
+                  </button>
+                </div>
+              )}
+              {form.kalemTuru === 'diger' && (
+                <FormInput
+                  value={digerKalemAciklama}
+                  onChange={(e) => { setDigerKalemAciklama(e.target.value); setForm((prev) => ({ ...prev, aciklama: e.target.value })); }}
+                  placeholder="Kalem açıklaması yazın..."
+                  className="mt-2 !h-8 !text-xs"
+                />
+              )}
             </div>
             {/* Açıklama */}
             <div>
@@ -821,6 +877,15 @@ function AlacakKalemleriAdim({ alacakDetay, onChange, alacakKalemleri, onLegacyC
                   </optgroup>
                 ))}
               </FormSelect>
+              {/* Güncel faiz oranı göstergesi */}
+              {form.faizTuru && form.faizTuru !== 'yok' && form.faizTuru !== 'sozlesmeli' && form.faizTuru !== 'diger' && (() => {
+                const oranlar = FAIZ_ORAN_DB[form.faizTuru];
+                if (!oranlar?.length) return null;
+                const guncel = oranlar[oranlar.length - 1];
+                return guncel ? (
+                  <div className="text-[10px] text-gold mt-1">Guncel oran: %{guncel.o}</div>
+                ) : null;
+              })()}
             </div>
             {/* Özel Faiz Oranı (sözleşmeli) */}
             {(form.faizTuru === 'sozlesmeli' || form.faizTuru === 'diger') && (
@@ -882,7 +947,7 @@ function AlacakKalemleriAdim({ alacakDetay, onChange, alacakKalemleri, onLegacyC
                   <tr key={k.id} className="border-b border-border/50 hover:bg-surface2 transition-colors group">
                     <td className="px-3 py-2">
                       <div className="text-text font-medium">{k.aciklama}</div>
-                      <div className="text-[10px] text-text-dim">{KALEM_TURLERI.find((kt) => kt.value === k.kalemTuru)?.label}</div>
+                      <div className="text-[10px] text-text-dim">{tumKalemTurleri.find((kt) => kt.value === k.kalemTuru)?.label || k.kalemTuru}</div>
                     </td>
                     <td className="px-3 py-2 text-text-muted">{k.vadeTarihi}</td>
                     <td className="px-3 py-2">

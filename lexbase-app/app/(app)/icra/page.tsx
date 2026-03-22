@@ -244,7 +244,7 @@ export default function IcraPage() {
       if (dosyaDurumu === 'kapali' && ic.durum !== 'Kapandı') return false;
       if (turFiltre !== 'hepsi' && ic.tur !== turFiltre) return false;
       if (yargiBirimi !== 'hepsi') {
-        const daireStr = tamIcraDairesiAdi(ic.il, ic.daire).toLocaleLowerCase('tr');
+        const daireStr = tamIcraDairesiAdi(ic.il, ic.daire, ic.adliye).toLocaleLowerCase('tr');
         if (!daireStr.includes(yargiBirimi.toLocaleLowerCase('tr'))) return false;
       }
       // Esas yıl/no filtresi
@@ -256,7 +256,7 @@ export default function IcraPage() {
         const q = arama.toLocaleLowerCase('tr');
         const muvAd = muvAdMap[ic.muvId || ''] || '';
         const esasStr = esasNoGoster(ic.esasYil, ic.esasNo) || ic.esas || '';
-        const daireStr = tamIcraDairesiAdi(ic.il, ic.daire);
+        const daireStr = tamIcraDairesiAdi(ic.il, ic.daire, ic.adliye);
         if (!((ic.no || '').toLocaleLowerCase('tr').includes(q) || esasStr.toLocaleLowerCase('tr').includes(q) || (ic.borclu || '').toLocaleLowerCase('tr').includes(q) || muvAd.toLocaleLowerCase('tr').includes(q) || daireStr.toLocaleLowerCase('tr').includes(q) || (ic.tur || '').toLocaleLowerCase('tr').includes(q))) return false;
       }
       // KPI filtre
@@ -293,7 +293,7 @@ export default function IcraPage() {
       switch (sortKey) {
         case 'kayitNo': cmp = (a.kayitNo || a.sira || 0) - (b.kayitNo || b.sira || 0); break;
         case 'esasNo': cmp = (esasNoGoster(a.esasYil, a.esasNo) || a.esas || '').localeCompare(esasNoGoster(b.esasYil, b.esasNo) || b.esas || '', 'tr'); break;
-        case 'daire': cmp = tamIcraDairesiAdi(a.il, a.daire).localeCompare(tamIcraDairesiAdi(b.il, b.daire), 'tr'); break;
+        case 'daire': cmp = tamIcraDairesiAdi(a.il, a.daire, a.adliye).localeCompare(tamIcraDairesiAdi(b.il, b.daire, b.adliye), 'tr'); break;
         case 'alacakli': cmp = alacakliBelirle(a.muvRol, muvAdMap[a.muvId || ''] || '', a.borclu || '').alacakli.localeCompare(alacakliBelirle(b.muvRol, muvAdMap[b.muvId || ''] || '', b.borclu || '').alacakli, 'tr'); break;
         case 'borclu': cmp = alacakliBelirle(a.muvRol, muvAdMap[a.muvId || ''] || '', a.borclu || '').borclu.localeCompare(alacakliBelirle(b.muvRol, muvAdMap[b.muvId || ''] || '', b.borclu || '').borclu, 'tr'); break;
         case 'acilisTarihi': cmp = (a.tarih || '9999').localeCompare(b.tarih || '9999'); break;
@@ -604,7 +604,7 @@ export default function IcraPage() {
           {sayfadakiler.map((ic, idx) => {
             const tahsilOran = ic.alacak && ic.alacak > 0 ? Math.min(((ic.tahsil || 0) / ic.alacak) * 100, 100) : 0;
             const esasStr = esasNoGoster(ic.esasYil, ic.esasNo) || ic.esas || '';
-            const daireFull = tamIcraDairesiAdi(ic.il, ic.daire);
+            const daireFull = tamIcraDairesiAdi(ic.il, ic.daire, ic.adliye);
             const muvAd = muvAdMap[ic.muvId || ''] || '';
             const borcluAd = ic.borclu || '';
             const { alacakli, borclu } = alacakliBelirle(ic.muvRol, muvAd, borcluAd);

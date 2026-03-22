@@ -81,7 +81,7 @@ export default function IcraDetayPage({ params }: { params: Promise<{ id: string
   // Tam icra dairesi adı
   const daireAdi = useMemo(() => {
     if (!icra) return '';
-    return tamIcraDairesiAdi(icra.il, icra.daire);
+    return tamIcraDairesiAdi(icra.il, icra.daire, icra.adliye);
   }, [icra]);
 
   // Esas no

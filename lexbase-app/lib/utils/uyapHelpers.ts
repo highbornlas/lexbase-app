@@ -19,11 +19,13 @@ export function tamMahkemeAdi(il?: string, mno?: string, mtur?: string, adliye?:
 
 /**
  * Tam icra dairesi adı oluştur
- * Ör: "İstanbul 5. İcra Müdürlüğü"
+ * Adliye varsa il yerine adliye kullanılır
+ * Ör: "Büyükçekmece 5. İcra Müdürlüğü"
  */
-export function tamIcraDairesiAdi(il?: string, daire?: string): string {
+export function tamIcraDairesiAdi(il?: string, daire?: string, adliye?: string): string {
   const parcalar: string[] = [];
-  if (il) parcalar.push(il);
+  const yer = adliye || il;
+  if (yer) parcalar.push(yer);
   if (daire) parcalar.push(daire);
   if (parcalar.length > 0 && !daire?.toLowerCase().includes('müdürlüğü')) {
     parcalar.push('İcra Müdürlüğü');
@@ -190,12 +192,13 @@ export function davaDosyaBaslik(dava: {
  * Ör: "Ankara 2.İcra Dairesi 2025/452 E."
  */
 export function icraDosyaBaslik(icra: {
-  il?: string; daire?: string;
+  il?: string; daire?: string; adliye?: string;
   esasYil?: string; esasNo?: string;
   esas?: string; borclu?: string; no?: string;
 }): string {
   const parcalar: string[] = [];
-  if (icra.il) parcalar.push(icra.il);
+  const yer = icra.adliye || icra.il;
+  if (yer) parcalar.push(yer);
   if (icra.daire) parcalar.push(icra.daire);
   const esas = esasNoGoster(icra.esasYil, icra.esasNo) || icra.esas || '';
   if (esas) parcalar.push(`${esas} E.`);
