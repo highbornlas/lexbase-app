@@ -1,4 +1,7 @@
 .claude/
+.DS_Store
+.mcp.json
+.wrangler/
 
 # Environment — secrets
 .env
@@ -8,4 +11,5 @@
 # Next.js
 lexbase-app/node_modules/
 lexbase-app/.next/
+lexbase-app/.tmp-dry/
 lexbase-app/.env.local

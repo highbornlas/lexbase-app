@@ -32,6 +32,7 @@ export function EkipTab() {
   const [seciliPersonel, setSeciliPersonel] = useState<Personel | null>(null);
   const [aksiyonOnay, setAksiyonOnay] = useState<{ id: string; tip: 'pasif' | 'sil' } | null>(null);
   const [davetYukleniyor, setDavetYukleniyor] = useState<string | null>(null);
+  const [davetMesaj, setDavetMesaj] = useState<{ tip: 'bilgi' | 'hata'; metin: string } | null>(null);
 
   const filtrelenmis = useMemo(() => {
     if (!personeller) return [];
@@ -107,14 +108,17 @@ export function EkipTab() {
   async function handleDavetTekrar(p: Personel) {
     if (!p.email) return;
     setDavetYukleniyor(p.id);
+    setDavetMesaj(null);
     try {
       const { createClient: cc } = await import('@/lib/supabase/client');
       const supabase = cc();
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) return;
+      if (!session?.access_token) {
+        throw new Error('Davet göndermek için oturum bulunamadı.');
+      }
 
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      await fetch(`${supabaseUrl}/functions/v1/invite-user`, {
+      const res = await fetch(`${supabaseUrl}/functions/v1/invite-user`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -126,8 +130,27 @@ export function EkipTab() {
           rol: p.rol || 'avukat',
         }),
       });
-    } catch {
-      // Hata sessizce geçilsin
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.error || 'Davet gönderilemedi.');
+      }
+
+      const yeniDurum = result.status === 'invited' ? 'davet_gonderildi' : 'aktif';
+      if ((p.durum || 'aktif') !== yeniDurum) {
+        await kaydet.mutateAsync({ ...p, durum: yeniDurum });
+      }
+
+      setDavetMesaj({
+        tip: 'bilgi',
+        metin: result.message || `${p.ad || '(adsız)'} için davet işlemi tamamlandı.`,
+      });
+    } catch (error) {
+      setDavetMesaj({
+        tip: 'hata',
+        metin: error instanceof Error ? error.message : 'Davet tekrar gönderilemedi.',
+      });
     }
     setDavetYukleniyor(null);
   }
@@ -294,6 +317,15 @@ export function EkipTab() {
               {bekleyenDavetler.length}
             </span>
           </div>
+          {davetMesaj && (
+            <div className={`mb-3 rounded-lg px-3 py-2 text-[11px] border ${
+              davetMesaj.tip === 'hata'
+                ? 'bg-red/10 border-red/20 text-red'
+                : 'bg-green/10 border-green/20 text-green'
+            }`}>
+              {davetMesaj.metin}
+            </div>
+          )}
           <div className="space-y-2">
             {bekleyenDavetler.map((p) => (
               <div

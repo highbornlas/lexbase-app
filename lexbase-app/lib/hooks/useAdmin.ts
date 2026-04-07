@@ -41,7 +41,7 @@ export function useIsAdmin(): { isAdmin: boolean; loading: boolean } {
         .from('platform_adminler')
         .select('auth_id')
         .eq('auth_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (!cancelled) {
         setIsAdmin(!!data);
@@ -71,16 +71,20 @@ export function useAdminBilgi(): { admin: AdminBilgi | null; loading: boolean } 
         return;
       }
 
-      // Auth user bilgisinden admin bilgisi oluştur
-      // Gerçek güvenlik Cloudflare Access ile sağlanır
+      const { data } = await supabase
+        .from('platform_adminler')
+        .select('auth_id, ad, email, yetki_seviye, created_at')
+        .eq('auth_id', user.id)
+        .maybeSingle();
+
       if (!cancelled) {
-        setAdmin({
-          auth_id: user.id,
-          ad: user.user_metadata?.ad || user.email?.split('@')[0] || 'Admin',
-          email: user.email || '',
-          yetki_seviye: 'super',
-          created_at: user.created_at,
-        });
+        setAdmin(data ? {
+          auth_id: data.auth_id,
+          ad: data.ad || user.user_metadata?.ad || user.email?.split('@')[0] || 'Admin',
+          email: data.email || user.email || '',
+          yetki_seviye: data.yetki_seviye,
+          created_at: data.created_at || user.created_at,
+        } : null);
         setLoading(false);
       }
     })();

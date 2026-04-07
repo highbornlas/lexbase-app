@@ -6,6 +6,22 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function resolveInviteRedirect(): string | undefined {
+  const appUrl =
+    Deno.env.get("PUBLIC_APP_URL") ||
+    Deno.env.get("APP_URL") ||
+    Deno.env.get("SITE_URL");
+
+  if (!appUrl) return undefined;
+
+  try {
+    return new URL("/auth/callback?next=/dashboard", appUrl).toString();
+  } catch {
+    console.warn("Invalid app URL for invite redirect:", appUrl);
+    return undefined;
+  }
+}
+
 Deno.serve(async (req: Request) => {
   // CORS preflight
   if (req.method === "OPTIONS") {
@@ -168,12 +184,21 @@ Deno.serve(async (req: Request) => {
       // ── SENARYO 1: Yeni kullanıcı → davet gönder ──────────
 
       // Supabase ile davet e-postası gönder
+      const redirectTo = resolveInviteRedirect();
+      const inviteOptions: {
+        data: { ad: string; rol: string; buro_id: string };
+        redirectTo?: string;
+      } = {
+        data: { ad, rol: normalizedRol, buro_id: callerBuroId },
+      };
+
+      if (redirectTo) {
+        inviteOptions.redirectTo = redirectTo;
+      }
+
       const { data: inviteData, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(
         normalizedEmail,
-        {
-          data: { ad, rol: normalizedRol, buro_id: callerBuroId },
-          redirectTo: `${supabaseUrl.replace('.supabase.co', '')}/auth/callback`,
-        }
+        inviteOptions
       );
 
       if (inviteErr) {

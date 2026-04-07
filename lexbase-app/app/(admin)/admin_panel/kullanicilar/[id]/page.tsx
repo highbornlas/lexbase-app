@@ -13,6 +13,26 @@ import { createClient } from '@/lib/supabase/client';
 
 type Sekme = 'profil' | 'burolar' | 'oturumlar' | 'aktivite';
 
+const AKSIYON_STILLERI: Record<string, string> = {
+  create: 'bg-emerald-500',
+  update: 'bg-amber-500',
+  delete: 'bg-red-500',
+  upload: 'bg-sky-500',
+  download: 'bg-violet-500',
+  login: 'bg-cyan-500',
+  logout: 'bg-zinc-500',
+};
+
+const AKSIYON_ETIKETLERI: Record<string, string> = {
+  create: 'Oluşturdu',
+  update: 'Güncelledi',
+  delete: 'Sildi',
+  upload: 'Yükledi',
+  download: 'İndirdi',
+  login: 'Giriş yaptı',
+  logout: 'Çıkış yaptı',
+};
+
 function useKullaniciDetay(authId: string) {
   return useQuery({
     queryKey: ['admin', 'kullanici', authId],
@@ -22,7 +42,7 @@ function useKullaniciDetay(authId: string) {
         supabase.from('kullanicilar').select('*').eq('auth_id', authId).single(),
         supabase.from('uyelikler').select('*, buro:buro_id(id, ad, adres)').eq('auth_id', authId),
         supabase.from('ip_loglari').select('*').eq('auth_id', authId).order('created_at', { ascending: false }).limit(20),
-        supabase.from('audit_log').select('*').eq('user_id', authId).order('created_at', { ascending: false }).limit(30),
+        supabase.from('audit_log').select('*').eq('kullanici_id', authId).order('created_at', { ascending: false }).limit(30),
       ]);
       return {
         kullanici: kulRes.data,
@@ -201,22 +221,23 @@ export default function KullaniciDetayPage() {
       {/* Aktivite */}
       {sekme === 'aktivite' && (
         <div className="space-y-1.5">
-          {data.auditLog.map((log: Record<string, unknown>) => (
-            <div key={log.id as string} className="flex items-center gap-3 px-4 py-2.5 rounded-lg border border-zinc-800/50 bg-zinc-900/20">
-              <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-                log.islem === 'CREATE' ? 'bg-emerald-500' :
-                log.islem === 'UPDATE' ? 'bg-amber-500' :
-                'bg-red-500'
-              }`} />
-              <div className="flex-1 min-w-0">
-                <span className="text-[11px] text-zinc-400">{log.islem as string}</span>
-                <span className="text-[10px] text-zinc-600 ml-2">{log.tablo as string}</span>
+          {data.auditLog.map((log: Record<string, unknown>) => {
+            const aksiyon = typeof log.aksiyon === 'string' ? log.aksiyon.toLowerCase() : '';
+            const hedefTur = typeof log.hedef_tur === 'string' ? log.hedef_tur : '';
+
+            return (
+              <div key={log.id as string} className="flex items-center gap-3 px-4 py-2.5 rounded-lg border border-zinc-800/50 bg-zinc-900/20">
+                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${AKSIYON_STILLERI[aksiyon] || 'bg-zinc-500'}`} />
+                <div className="flex-1 min-w-0">
+                  <span className="text-[11px] text-zinc-400">{AKSIYON_ETIKETLERI[aksiyon] || (log.aksiyon as string) || 'İşlem yaptı'}</span>
+                  <span className="text-[10px] text-zinc-600 ml-2">{hedefTur || 'genel'}</span>
+                </div>
+                <span className="text-[10px] text-zinc-600 flex-shrink-0">
+                  {new Date(log.created_at as string).toLocaleString('tr-TR')}
+                </span>
               </div>
-              <span className="text-[10px] text-zinc-600 flex-shrink-0">
-                {new Date(log.created_at as string).toLocaleString('tr-TR')}
-              </span>
-            </div>
-          ))}
+            );
+          })}
           {data.auditLog.length === 0 && (
             <div className="text-center py-8 text-[12px] text-zinc-600">Aktivite kaydı bulunamadı</div>
           )}

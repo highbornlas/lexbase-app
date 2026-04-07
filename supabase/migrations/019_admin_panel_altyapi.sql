@@ -75,30 +75,21 @@ $$;
 -- ── 3. Plan Limitleri ────────────────────────────────────────
 -- Her plan için modül limitleri ve açık özellikler
 -- NOT: plan_limitleri tablosu 007_plan_enforcement migration'ında oluşturuldu.
--- PK: plan_id (id değil). Aşağıdaki ALTER komutları yeni sütunları ekler.
--- Orijinal sütunlar: plan_id, ad, muvekkil_limit, dava_limit, icra_limit, personel_limit
+-- PK: plan_id. Çekirdek limit sütunları mevcut migration'larda zaten var:
+-- plan_id, ad, muvekkil_limit, dava_limit, icra_limit, personel_limit
+-- Admin paneli için gereken ek metadata alanları burada eklenir.
 ALTER TABLE plan_limitleri ADD COLUMN IF NOT EXISTS aciklama TEXT;
--- (Aşağıdaki CREATE TABLE referans olarak bırakılmıştır, çalıştırılmaz)
--- CREATE TABLE plan_limitleri (
---   plan_id TEXT PRIMARY KEY,
-  ad TEXT NOT NULL,                       -- Görünen ad
-  aciklama TEXT,                          -- Plan açıklaması
-  max_uye INT NOT NULL DEFAULT 3,
-  max_dava INT NOT NULL DEFAULT 50,
-  max_muvekkil INT NOT NULL DEFAULT 30,
-  max_icra INT NOT NULL DEFAULT 30,
-  max_depolama_mb INT NOT NULL DEFAULT 500,
-  max_belge INT NOT NULL DEFAULT 200,
-  ozellikler JSONB NOT NULL DEFAULT '{}'::jsonb,  -- { "finans": true, "raporlar": true, "api": false }
-  fiyat_aylik NUMERIC(10,2) DEFAULT 0,
-  fiyat_yillik NUMERIC(10,2) DEFAULT 0,
-  para_birimi TEXT NOT NULL DEFAULT 'TRY',
-  sirasi INT NOT NULL DEFAULT 0,          -- Sıralama (landing page vb.)
-  aktif BOOLEAN NOT NULL DEFAULT true,
-  ozel_plan BOOLEAN NOT NULL DEFAULT false, -- Kurumsal özel plan mı?
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+ALTER TABLE plan_limitleri ADD COLUMN IF NOT EXISTS max_depolama_mb INT NOT NULL DEFAULT 500;
+ALTER TABLE plan_limitleri ADD COLUMN IF NOT EXISTS max_belge INT NOT NULL DEFAULT 200;
+ALTER TABLE plan_limitleri ADD COLUMN IF NOT EXISTS ozellikler JSONB NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE plan_limitleri ADD COLUMN IF NOT EXISTS fiyat_aylik NUMERIC(10,2) DEFAULT 0;
+ALTER TABLE plan_limitleri ADD COLUMN IF NOT EXISTS fiyat_yillik NUMERIC(10,2) DEFAULT 0;
+ALTER TABLE plan_limitleri ADD COLUMN IF NOT EXISTS para_birimi TEXT NOT NULL DEFAULT 'TRY';
+ALTER TABLE plan_limitleri ADD COLUMN IF NOT EXISTS sirasi INT NOT NULL DEFAULT 0;
+ALTER TABLE plan_limitleri ADD COLUMN IF NOT EXISTS aktif BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE plan_limitleri ADD COLUMN IF NOT EXISTS ozel_plan BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE plan_limitleri ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now();
+ALTER TABLE plan_limitleri ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now();
 
 ALTER TABLE plan_limitleri ENABLE ROW LEVEL SECURITY;
 
@@ -116,8 +107,8 @@ CREATE POLICY "plan_limitleri_admin_write"
 -- ── 4. Abonelikler ───────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS abonelikler (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  buro_id UUID NOT NULL REFERENCES buro(id) ON DELETE CASCADE,
-  plan_id TEXT NOT NULL REFERENCES plan_limitleri(id),
+  buro_id UUID NOT NULL REFERENCES burolar(id) ON DELETE CASCADE,
+  plan_id TEXT NOT NULL REFERENCES plan_limitleri(plan_id),
   durum TEXT NOT NULL DEFAULT 'aktif' CHECK (durum IN ('aktif', 'read_only', 'askida', 'iptal', 'suresi_doldu')),
   baslangic TIMESTAMPTZ NOT NULL DEFAULT now(),
   bitis TIMESTAMPTZ,
@@ -150,7 +141,7 @@ CREATE POLICY "abonelikler_admin_write"
 CREATE TABLE IF NOT EXISTS lisans_kodlari (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   kod TEXT UNIQUE NOT NULL,
-  plan_id TEXT NOT NULL REFERENCES plan_limitleri(id),
+  plan_id TEXT NOT NULL REFERENCES plan_limitleri(plan_id),
   sure_gun INT NOT NULL DEFAULT 30,        -- Kaç gün geçerli
   max_kullanim INT NOT NULL DEFAULT 1,
   kullanim_sayisi INT NOT NULL DEFAULT 0,
@@ -175,7 +166,7 @@ CREATE POLICY "lisans_kodlari_verify"
 -- ── 6. Ödeme Geçmişi ────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS odemeler (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  buro_id UUID NOT NULL REFERENCES buro(id) ON DELETE CASCADE,
+  buro_id UUID NOT NULL REFERENCES burolar(id) ON DELETE CASCADE,
   abonelik_id UUID REFERENCES abonelikler(id),
   tutar NUMERIC(10,2) NOT NULL,
   para_birimi TEXT NOT NULL DEFAULT 'TRY',
@@ -233,7 +224,7 @@ CREATE POLICY "duyurular_admin_write"
 -- ── 8. Destek Talepleri ──────────────────────────────────────
 CREATE TABLE IF NOT EXISTS destek_talepleri (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  buro_id UUID REFERENCES buro(id) ON DELETE SET NULL,
+  buro_id UUID REFERENCES burolar(id) ON DELETE SET NULL,
   kullanici_auth_id UUID NOT NULL REFERENCES auth.users(id),
   konu TEXT NOT NULL,
   oncelik TEXT NOT NULL DEFAULT 'normal' CHECK (oncelik IN ('dusuk', 'normal', 'yuksek', 'acil')),
@@ -305,7 +296,7 @@ CREATE TABLE IF NOT EXISTS platform_indirimler (
   ad TEXT NOT NULL,                          -- 'Yeni Yıl Kampanyası'
   indirim_tipi TEXT NOT NULL CHECK (indirim_tipi IN ('yuzde', 'sabit')),
   indirim_degeri NUMERIC(10,2) NOT NULL,     -- %20 için 20, 100₺ için 100
-  plan_id TEXT REFERENCES plan_limitleri(id), -- NULL = tüm planlar
+  plan_id TEXT REFERENCES plan_limitleri(plan_id), -- NULL = tüm planlar
   baslangic TIMESTAMPTZ NOT NULL,
   bitis TIMESTAMPTZ NOT NULL,
   kupon_kodu TEXT UNIQUE,                    -- Opsiyonel kupon kodu
@@ -354,20 +345,74 @@ CREATE POLICY "admin_audit_insert"
   ON admin_audit_log FOR INSERT
   WITH CHECK (is_platform_admin());
 
--- ── 12. Varsayılan Plan Limitleri ────────────────────────────
-INSERT INTO plan_limitleri (id, ad, aciklama, max_uye, max_dava, max_muvekkil, max_icra, max_depolama_mb, max_belge, fiyat_aylik, fiyat_yillik, sirasi, ozellikler)
-VALUES
-  ('trial', 'Deneme', '30 gün ücretsiz deneme', 3, 25, 15, 15, 250, 100, 0, 0, 0,
-    '{"finans": true, "raporlar": false, "api": false, "toplu_islem": false}'::jsonb),
-  ('baslangic', 'Başlangıç', 'Bireysel avukatlar için', 2, 50, 30, 30, 500, 200, 199, 1990, 1,
-    '{"finans": true, "raporlar": true, "api": false, "toplu_islem": false}'::jsonb),
-  ('profesyonel', 'Profesyonel', 'Küçük-orta bürolaı için', 10, 500, 200, 200, 5000, 2000, 399, 3990, 2,
-    '{"finans": true, "raporlar": true, "api": true, "toplu_islem": true}'::jsonb),
-  ('kurumsal', 'Kurumsal', 'Büyük bürolaı için özel', 999, 99999, 99999, 99999, 50000, 99999, 0, 0, 3,
-    '{"finans": true, "raporlar": true, "api": true, "toplu_islem": true, "ozel_destek": true}'::jsonb)
-ON CONFLICT (id) DO NOTHING;
+-- ── 12. Giriş Logları ────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS ip_loglari (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  auth_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  ip TEXT,
+  konum TEXT,
+  cihaz TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
--- ── 13. İndeksler ────────────────────────────────────────────
+ALTER TABLE ip_loglari ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "ip_loglari_select"
+  ON ip_loglari FOR SELECT
+  USING (
+    auth_id = auth.uid()
+    OR is_platform_admin()
+  );
+
+CREATE POLICY "ip_loglari_insert"
+  ON ip_loglari FOR INSERT
+  WITH CHECK (auth_id = auth.uid());
+
+-- ── 13. Varsayılan Plan Limitleri ────────────────────────────
+INSERT INTO plan_limitleri (
+  plan_id,
+  ad,
+  aciklama,
+  personel_limit,
+  dava_limit,
+  muvekkil_limit,
+  icra_limit,
+  max_depolama_mb,
+  max_belge,
+  fiyat_aylik,
+  fiyat_yillik,
+  sirasi,
+  aktif,
+  ozel_plan,
+  ozellikler
+)
+VALUES
+  ('deneme', 'Başlangıç', '30 gün ücretsiz deneme', 0, 30, 25, 15, 250, 100, 0, 0, 0, true, false,
+    '{"finans": true, "raporlar": false, "api": false, "toplu_islem": false}'::jsonb),
+  ('profesyonel', 'Profesyonel', 'Tek avukat için ideal', 0, 200, 150, 100, 2000, 1000, 399, 3990, 1, true, false,
+    '{"finans": true, "raporlar": true, "api": false, "toplu_islem": false}'::jsonb),
+  ('buro', 'Büro', '2-5 kişilik bürolar için', 5, 750, 500, 400, 5000, 2000, 699, 6990, 2, true, false,
+    '{"finans": true, "raporlar": true, "api": true, "toplu_islem": true}'::jsonb),
+  ('kurumsal', 'Kurumsal', 'Büyük bürolar için özel', 999999, 999999, 999999, 999999, 50000, 99999, 999, 9990, 3, true, true,
+    '{"finans": true, "raporlar": true, "api": true, "toplu_islem": true, "ozel_destek": true}'::jsonb)
+ON CONFLICT (plan_id) DO UPDATE SET
+  ad = EXCLUDED.ad,
+  aciklama = EXCLUDED.aciklama,
+  personel_limit = EXCLUDED.personel_limit,
+  dava_limit = EXCLUDED.dava_limit,
+  muvekkil_limit = EXCLUDED.muvekkil_limit,
+  icra_limit = EXCLUDED.icra_limit,
+  max_depolama_mb = EXCLUDED.max_depolama_mb,
+  max_belge = EXCLUDED.max_belge,
+  fiyat_aylik = EXCLUDED.fiyat_aylik,
+  fiyat_yillik = EXCLUDED.fiyat_yillik,
+  sirasi = EXCLUDED.sirasi,
+  aktif = EXCLUDED.aktif,
+  ozel_plan = EXCLUDED.ozel_plan,
+  ozellikler = EXCLUDED.ozellikler,
+  updated_at = now();
+
+-- ── 14. İndeksler ────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_abonelikler_buro ON abonelikler(buro_id);
 CREATE INDEX IF NOT EXISTS idx_abonelikler_durum ON abonelikler(durum);
 CREATE INDEX IF NOT EXISTS idx_odemeler_buro ON odemeler(buro_id);
@@ -376,10 +421,12 @@ CREATE INDEX IF NOT EXISTS idx_destek_talepleri_durum ON destek_talepleri(durum)
 CREATE INDEX IF NOT EXISTS idx_destek_talepleri_kullanici ON destek_talepleri(kullanici_auth_id);
 CREATE INDEX IF NOT EXISTS idx_admin_audit_admin ON admin_audit_log(admin_auth_id);
 CREATE INDEX IF NOT EXISTS idx_admin_audit_tarih ON admin_audit_log(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ip_loglari_auth ON ip_loglari(auth_id);
+CREATE INDEX IF NOT EXISTS idx_ip_loglari_tarih ON ip_loglari(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_platform_duyurular_durum ON platform_duyurular(durum);
 CREATE INDEX IF NOT EXISTS idx_platform_indirimler_aktif ON platform_indirimler(aktif, baslangic, bitis);
 
--- ── 14. Admin İstatistik RPC ─────────────────────────────────
+-- ── 15. Admin İstatistik RPC ─────────────────────────────────
 -- Dashboard için platform geneli istatistikler
 CREATE OR REPLACE FUNCTION admin_platform_istatistik()
 RETURNS JSONB
@@ -395,11 +442,11 @@ BEGIN
   END IF;
 
   SELECT jsonb_build_object(
-    'toplam_buro', (SELECT count(*) FROM buro),
+    'toplam_buro', (SELECT count(*) FROM burolar),
     'toplam_kullanici', (SELECT count(*) FROM auth.users),
-    'toplam_dava', (SELECT count(*) FROM dava),
+    'toplam_dava', (SELECT count(*) FROM davalar),
     'toplam_icra', (SELECT count(*) FROM icra),
-    'toplam_muvekkil', (SELECT count(*) FROM muvekkil),
+    'toplam_muvekkil', (SELECT count(*) FROM muvekkillar),
     'aktif_abonelik', (SELECT count(*) FROM abonelikler WHERE durum = 'aktif'),
     'bekleyen_destek', (SELECT count(*) FROM destek_talepleri WHERE durum IN ('bekliyor', 'inceleniyor')),
     'aktif_duyuru', (SELECT count(*) FROM platform_duyurular WHERE durum = 'aktif'),

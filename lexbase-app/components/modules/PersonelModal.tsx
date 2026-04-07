@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Modal, FormGroup, FormInput, FormSelect, FormTextarea, BtnGold, BtnOutline } from '@/components/ui/Modal';
 import { useModalDraft } from '@/lib/hooks/useModalDraft';
 import { usePersonelKaydet, type Personel } from '@/lib/hooks/usePersonel';
@@ -27,37 +27,34 @@ const bos: Partial<Personel> = {
 };
 
 export function PersonelModal({ open, onClose, personel }: PersonelModalProps) {
-  const [form, setForm] = useState<Partial<Personel>>({ ...bos });
-  const [initialForm, setInitialForm] = useState<Partial<Personel>>({ ...bos });
+  const modalKey = `${personel?.id || 'yeni'}:${open ? 'acik' : 'kapali'}`;
+
+  return <PersonelModalIcerik key={modalKey} open={open} onClose={onClose} personel={personel} />;
+}
+
+function createInitialForm(personel?: Personel | null): Partial<Personel> & { _davetGonder?: boolean } {
+  if (personel) {
+    return { ...personel, _davetGonder: personel.durum === 'davet_gonderildi' };
+  }
+
+  return { ...bos, id: crypto.randomUUID(), _davetGonder: true };
+}
+
+function PersonelModalIcerik({ open, onClose, personel }: PersonelModalProps) {
+  const [initialForm] = useState<Partial<Personel> & { _davetGonder?: boolean }>(() => createInitialForm(personel));
+  const [form, setForm] = useState<Partial<Personel>>(initialForm);
   const [hata, setHata] = useState('');
   const [bilgi, setBilgi] = useState('');
   const [yukleniyor, setYukleniyor] = useState(false);
-  const [davetGonder, setDavetGonder] = useState(false);
   const kaydet = usePersonelKaydet();
   const bildirimGonder = useBildirimGonder();
-  const oncekiRef = useRef<Partial<Personel> | null>(null);
+  const oncekiRef = useRef<Partial<Personel> | null>(personel ? { ...personel } : null);
 
   const yeniKayit = !personel;
+  const davetGonder = Boolean((form as Record<string, unknown>)._davetGonder);
   // Mevcut personel daveti başarısız olmuşsa tekrar gönderebilsin
   const davetBekliyor = !yeniKayit && personel?.durum === 'davet_gonderildi';
   const davetGosterilebilir = (yeniKayit || davetBekliyor) && !!form.email?.trim();
-
-  useEffect(() => {
-    let init: Partial<Personel>;
-    if (personel) {
-      init = { ...personel };
-      oncekiRef.current = { ...personel }; // Önceki değerleri kaydet (değişiklik tespiti için)
-      setDavetGonder(personel.durum === 'davet_gonderildi');
-    } else {
-      init = { ...bos, id: crypto.randomUUID() };
-      oncekiRef.current = null;
-      setDavetGonder(true);
-    }
-    setInitialForm(init);
-    setForm(init);
-    setHata('');
-    setBilgi('');
-  }, [personel, open]);
 
   const draftKey = `personel_${form.id || 'yeni'}`;
   const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(
@@ -68,13 +65,13 @@ export function PersonelModal({ open, onClose, personel }: PersonelModalProps) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  async function davetGonderFn() {
+  async function davetGonderFn(): Promise<{ ok: boolean; status?: string; message?: string }> {
     const supabase = createClient();
     const { data: { session } } = await supabase.auth.getSession();
 
     if (!session?.access_token) {
       setHata('Davet göndermek için oturum gerekli.');
-      return false;
+      return { ok: false };
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -100,7 +97,7 @@ export function PersonelModal({ open, onClose, personel }: PersonelModalProps) {
       } else {
         setBilgi(`Davet gönderilemedi: ${errorMsg}`);
       }
-      return false;
+      return { ok: false };
     }
 
     // Başarılı senaryolar
@@ -113,7 +110,7 @@ export function PersonelModal({ open, onClose, personel }: PersonelModalProps) {
     } else {
       setBilgi(result.message || 'Davet gönderildi!');
     }
-    return true;
+    return { ok: true, status: result.status, message: result.message };
   }
 
   async function handleSubmit() {
@@ -127,12 +124,31 @@ export function PersonelModal({ open, onClose, personel }: PersonelModalProps) {
     setYukleniyor(true);
 
     try {
+      const davetIsteniyor = davetGonder && !!form.email?.trim();
+      let davetSonuc: Awaited<ReturnType<typeof davetGonderFn>> | null = null;
+
+      if (davetIsteniyor) {
+        davetSonuc = await davetGonderFn();
+        if (!davetSonuc.ok) {
+          setYukleniyor(false);
+          return;
+        }
+      }
+
+      const kaydedilecekForm = { ...(form as Partial<Personel> & { _davetGonder?: boolean }) };
+      delete kaydedilecekForm._davetGonder;
+
+      const inviteDurum =
+        davetSonuc?.status === 'invited'
+          ? 'davet_gonderildi'
+          : davetSonuc
+            ? 'aktif'
+            : kaydedilecekForm.durum;
+
       // 1. Personel tablosuna kaydet
       const personelData = {
-        ...form,
-        durum: davetGonder && (yeniKayit || davetBekliyor) && form.email
-          ? 'davet_gonderildi'
-          : form.durum,
+        ...kaydedilecekForm,
+        durum: inviteDurum,
       } as Personel;
 
       await kaydet.mutateAsync(personelData);
@@ -172,7 +188,7 @@ export function PersonelModal({ open, onClose, personel }: PersonelModalProps) {
       }
 
       // Yeni personel ekleme bildirimi
-      if (yeniKayit && !davetGonder) {
+      if (yeniKayit && !davetIsteniyor) {
         bildirimGonder.mutate({
           tip: 'sistem',
           baslik: '👤 Yeni personel eklendi',
@@ -181,17 +197,10 @@ export function PersonelModal({ open, onClose, personel }: PersonelModalProps) {
         });
       }
 
-      // 3. Davet gönder
-      if (davetGonder && form.email?.trim()) {
-        const basarili = await davetGonderFn();
-        setYukleniyor(false);
-
-        if (basarili) {
-          // Başarılı → durum 'davet_gonderildi' olarak kalır
-        }
-
+      if (davetIsteniyor) {
         clearDraft();
-        setTimeout(() => onClose(), 2000);
+        setTimeout(() => onClose(), 1200);
+        setYukleniyor(false);
         return;
       }
 
@@ -316,7 +325,7 @@ export function PersonelModal({ open, onClose, personel }: PersonelModalProps) {
                     className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 ${
                       davetGonder ? 'bg-gold' : 'bg-border'
                     }`}
-                    onClick={() => setDavetGonder(!davetGonder)}
+                    onClick={() => setForm((prev) => ({ ...prev, _davetGonder: !davetGonder }))}
                   >
                     <div
                       className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
