@@ -6,6 +6,7 @@ CREATE TEMP TABLE davalar(id text PRIMARY KEY, buro_id uuid, data jsonb);
 CREATE TEMP TABLE icra(LIKE davalar INCLUDING ALL);
 CREATE TEMP TABLE arabuluculuk(LIKE davalar INCLUDING ALL);
 CREATE TEMP TABLE ihtarnameler(LIKE davalar INCLUDING ALL);
+CREATE TEMP TABLE danismanlik(LIKE davalar INCLUDING ALL);
 CREATE TEMP TABLE avans_hareketleri(id text PRIMARY KEY, buro_id uuid, data jsonb,
   CONSTRAINT forced_ledger_failure CHECK (coalesce(data->>'aciklama', '') <> 'FAIL'));
 CREATE TEMP TABLE results(scenario text PRIMARY KEY);
@@ -28,7 +29,7 @@ CREATE POLICY fixture_cash_access ON avans_hareketleri TO authenticated
 DO $grant$ BEGIN
   EXECUTE format('GRANT USAGE ON SCHEMA %I TO authenticated, anon', pg_my_temp_schema()::regnamespace::text);
 END; $grant$;
-GRANT SELECT, INSERT, UPDATE ON uyelikler, muvekkillar, davalar, icra, arabuluculuk, ihtarnameler, avans_hareketleri, results TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON uyelikler, muvekkillar, davalar, icra, arabuluculuk, ihtarnameler, danismanlik, avans_hareketleri, results TO authenticated;
 -- CANDIDATE HERE
 SELECT set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
 SET LOCAL ROLE authenticated;
@@ -145,6 +146,60 @@ BEGIN
     RAISE EXCEPTION 'invalid date accepted';
   EXCEPTION WHEN datetime_field_overflow THEN NULL; END;
   INSERT INTO pg_temp.results VALUES ('invalid amounts and dates rejected');
+  SELECT data INTO before_case FROM pg_temp.davalar WHERE id='case';
+  PERFORM pg_temp.kayit_durum_islemi(b,'davalar','case','arsivle');
+  ASSERT (SELECT data - '_arsivlendi' = before_case FROM pg_temp.davalar WHERE id='case');
+  SELECT data INTO edited FROM pg_temp.davalar WHERE id='case';
+  PERFORM pg_temp.kayit_durum_islemi(b,'davalar','case','arsivle');
+  ASSERT (SELECT data = edited FROM pg_temp.davalar WHERE id='case');
+  INSERT INTO pg_temp.results VALUES ('archive preserves current finances and repeated timestamp');
+  PERFORM pg_temp.kayit_durum_islemi(b,'davalar','case','arsivden_cikar');
+  ASSERT (SELECT data = before_case FROM pg_temp.davalar WHERE id='case');
+  PERFORM pg_temp.kayit_durum_islemi(b,'davalar','case','sil');
+  ASSERT (SELECT data - '_silindi' = before_case FROM pg_temp.davalar WHERE id='case');
+  PERFORM pg_temp.kayit_durum_islemi(b,'davalar','case','geri_yukle');
+  ASSERT (SELECT data = before_case FROM pg_temp.davalar WHERE id='case');
+  INSERT INTO pg_temp.results VALUES ('restore removes only requested flag and retains latest expenses');
+  PERFORM pg_temp.kayit_durum_islemi(b,'davalar','case','sil');
+  BEGIN
+    PERFORM pg_temp.kayit_durum_islemi(b,'davalar','case','kalici_sil');
+    RAISE EXCEPTION 'financial history deleted';
+  EXCEPTION WHEN check_violation THEN NULL; END;
+  ASSERT EXISTS(SELECT 1 FROM pg_temp.davalar WHERE id='case');
+  INSERT INTO pg_temp.results VALUES ('cash-linked case history cannot be permanently deleted');
+  BEGIN
+    PERFORM pg_temp.kayit_durum_islemi(b,'muvekkillar','client','sil');
+    PERFORM pg_temp.kayit_durum_islemi(b,'muvekkillar','client','kalici_sil');
+    RAISE EXCEPTION 'linked client deleted';
+  EXCEPTION WHEN check_violation THEN NULL; END;
+  INSERT INTO pg_temp.results VALUES ('client with case or cash history cannot be permanently deleted');
+  PERFORM pg_temp.kayit_durum_islemi(b,'davalar','new-case','sil');
+  PERFORM pg_temp.kayit_durum_islemi(b,'davalar','new-case','kalici_sil');
+  ASSERT NOT EXISTS(SELECT 1 FROM pg_temp.davalar WHERE id='new-case');
+  INSERT INTO pg_temp.results VALUES ('nonfinancial trash record can be explicitly deleted');
+  BEGIN
+    PERFORM pg_temp.kayit_durum_islemi(b,'icra','case','kalici_sil');
+    RAISE EXCEPTION 'active record deleted';
+  EXCEPTION WHEN check_violation THEN NULL; END;
+  INSERT INTO pg_temp.results VALUES ('active records cannot be permanently deleted');
+  INSERT INTO pg_temp.danismanlik VALUES('service',b,'{"tahsilEdildi":100,"tahsilatlar":[{"tutar":100}],"odemePlani":{"toplamTutar":200}}');
+  PERFORM pg_temp.kayit_durum_islemi(b,'danismanlik','service','sil');
+  BEGIN
+    PERFORM pg_temp.kayit_durum_islemi(b,'danismanlik','service','kalici_sil');
+    RAISE EXCEPTION 'service fees deleted';
+  EXCEPTION WHEN check_violation THEN NULL; END;
+  PERFORM pg_temp.kayit_durum_islemi(b,'danismanlik','service','geri_yukle');
+  ASSERT (SELECT data->>'tahsilEdildi'='100' AND data ? 'odemePlani' FROM pg_temp.danismanlik WHERE id='service');
+  INSERT INTO pg_temp.results VALUES ('service fees and payment plan survive lifecycle changes');
+  BEGIN
+    PERFORM pg_temp.kayit_durum_islemi(b,'davalar','missing','sil');
+    RAISE EXCEPTION 'missing record recreated';
+  EXCEPTION WHEN no_data_found THEN NULL; END;
+  BEGIN
+    PERFORM pg_temp.kayit_durum_islemi('00000000-0000-0000-0000-000000000020','davalar','case','sil');
+    RAISE EXCEPTION 'cross-office lifecycle accepted';
+  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+  INSERT INTO pg_temp.results VALUES ('missing and cross-office lifecycle requests fail closed');
 END;
 $test$;
 RESET ROLE;
@@ -154,6 +209,8 @@ BEGIN
   ASSERT NOT (SELECT prosecdef FROM pg_proc WHERE oid='pg_temp.finans_kasa_islemi(uuid,text,jsonb,text,text,text,jsonb)'::regprocedure);
   ASSERT NOT has_function_privilege('anon','pg_temp.finans_dosya_kaydet(uuid,text,text,jsonb)','EXECUTE');
   ASSERT NOT (SELECT prosecdef FROM pg_proc WHERE oid='pg_temp.finans_dosya_kaydet(uuid,text,text,jsonb)'::regprocedure);
+  ASSERT NOT has_function_privilege('anon','pg_temp.kayit_durum_islemi(uuid,text,text,text)','EXECUTE');
+  ASSERT NOT (SELECT prosecdef FROM pg_proc WHERE oid='pg_temp.kayit_durum_islemi(uuid,text,text,text)'::regprocedure);
   INSERT INTO pg_temp.results VALUES ('anonymous denied and invoker security preserved');
 END;
 $test$;

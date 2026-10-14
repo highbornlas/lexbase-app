@@ -25,9 +25,19 @@ Read-only production diagnostics on 2026-10-14 found 249 client-owned file expen
 ## Remaining Release Gates
 
 - Review historical linkage and produce an explicit reconciliation report before approving a data backfill.
-- Make archive/restore status writes atomic as well; some legacy status handlers still read and replace whole JSON records and can race with expense edits.
-- Review permanent case deletion and client reassignment semantics for linked financial history.
-- Run browser tests on an isolated fixture environment, including failed requests and double submissions.
+- Verify the new lifecycle migration against the target Supabase policies before deployment. Local PostgreSQL tests use a synthetic auth identity, not hosted Auth or the exact production policies.
+- Review full table-level delete permissions and client reassignment semantics. Financial deletion protection currently applies to the application RPC paths, not every direct database operation.
+- Complete authenticated staging checks for the whole application, beyond the isolated form tests.
 - Complete frontend/live source reconciliation before publishing, and coordinate the new RPC migration with the frontend release.
 
 Production financial RPC calculations still require the matching reviewed migration. Passing helper tests does not establish end-to-end accounting parity.
+
+## Lifecycle Follow-Up
+
+Case, enforcement, consulting, mediation, notice and client lifecycle hooks now share one invoker RPC. It locks the existing row, changes only the requested flag, never recreates a missing row, and guards permanent deletion of financially linked trash records. New client trashing retains case links; restoration repairs explicit legacy `_eskiMuvId` links only when the current client field is empty, without overwriting a later reassignment.
+
+Trash listing no longer deletes expired records. It reads deleted rows only, paginates, and reports read failures rather than presenting an empty bin. Batch actions wait for results, report partial failures and keep failed selections.
+
+Validation: 50 Node tests, 29 combined local PostgreSQL scenarios and 12 focused lifecycle scenarios passed. The two SQL suites overlap; these are not 41 distinct business scenarios. TypeScript, targeted lint and production build were checked. Hosted transaction-test calls returned `Invalid or expired requestState`, while read-only queries continued to work; no permission change or API-key rotation was made.
+
+Browser fixture checks exercised the real expense component, React Query hooks and candidate SQL functions through a localhost-only transport and in-memory PostgreSQL. Create/edit, failed ledger write rollback, input preservation, successful retry, archive/unarchive, trash/restore and expense ownership changes were observed. Inputs were usable at 390px. The fixture uses minimal test styling, not the production theme; it does not establish full mobile visual parity or production Auth behavior. See `lexbase-app/tests/ui/README.md` and `CLIENT_CASH_RECONCILIATION.md`.

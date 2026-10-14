@@ -2,9 +2,9 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
+import { useRecordLifecycle } from './useRecordLifecycle';
 import { masraflariKoruyarakDosyaKaydet } from '@/lib/data/financeCashTransaction';
 import { raporKaydiGorunurMu } from '@/lib/finans/gelirKurallari';
-import { updateRecordStatus } from '@/lib/data/updateJsonRecord';
 import { useBuroId } from './useBuro';
 
 // ── Oturum Kaydı ─────────────────────────────────────────────
@@ -207,112 +207,20 @@ export function useArabuluculukKaydet() {
 
 // ── Sil (soft delete) ──────────────────────────────────────
 export function useArabuluculukSil() {
-  const buroId = useBuroId();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (kayit: Arabuluculuk) => {
-      if (!buroId) throw new Error('Büro bulunamadı');
-      const supabase = createClient();
-      await updateRecordStatus(supabase, 'arabuluculuk', kayit.id, buroId, '_silindi');
-    },
-    onMutate: async (kayit) => {
-      await queryClient.cancelQueries({ queryKey: ['arabuluculuk', buroId] });
-      const onceki = queryClient.getQueryData<Arabuluculuk[]>(['arabuluculuk', buroId]);
-      queryClient.setQueryData<Arabuluculuk[]>(['arabuluculuk', buroId], (eski) =>
-        (eski || []).filter((a) => a.id !== kayit.id)
-      );
-      return { onceki };
-    },
-    onError: (_err, _yeni, ctx) => {
-      if (ctx?.onceki) queryClient.setQueryData(['arabuluculuk', buroId], ctx.onceki);
-    },
-    onSettled: () => { queryClient.invalidateQueries({ queryKey: ['arabuluculuk'] });
-      queryClient.invalidateQueries({ queryKey: ['arabuluculuk-detay'] });
-      queryClient.invalidateQueries({ queryKey: ['finans'] }); },
-  });
+  return useRecordLifecycle('arabuluculuk', 'sil');
 }
 
 // ── Arşivle ────────────────────────────────────────────────
 export function useArabuluculukArsivle() {
-  const buroId = useBuroId();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (kayit: Arabuluculuk) => {
-      if (!buroId) throw new Error('Büro bulunamadı');
-      const supabase = createClient();
-      await updateRecordStatus(supabase, 'arabuluculuk', kayit.id, buroId, '_arsivlendi');
-    },
-    onMutate: async (kayit) => {
-      await queryClient.cancelQueries({ queryKey: ['arabuluculuk', buroId] });
-      const onceki = queryClient.getQueryData<Arabuluculuk[]>(['arabuluculuk', buroId]);
-      queryClient.setQueryData<Arabuluculuk[]>(['arabuluculuk', buroId], (eski) =>
-        (eski || []).filter((a) => a.id !== kayit.id)
-      );
-      return { onceki };
-    },
-    onError: (_err, _yeni, ctx) => {
-      if (ctx?.onceki) queryClient.setQueryData(['arabuluculuk', buroId], ctx.onceki);
-    },
-    onSettled: () => { queryClient.invalidateQueries({ queryKey: ['arabuluculuk'] });
-      queryClient.invalidateQueries({ queryKey: ['arabuluculuk-detay'] });
-      queryClient.invalidateQueries({ queryKey: ['finans'] }); },
-  });
+  return useRecordLifecycle('arabuluculuk', 'arsivle');
 }
 
 // ── Kalıcı Sil ──────────────────────────────────────────────
 export function useArabuluculukKaliciSil() {
-  const buroId = useBuroId();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      if (!buroId) throw new Error('Büro bulunamadı');
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('arabuluculuk')
-        .delete()
-        .eq('id', id)
-        .eq('buro_id', buroId);
-      if (error) throw error;
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['arabuluculuk'] });
-      queryClient.invalidateQueries({ queryKey: ['arabuluculuk-detay'] });
-      queryClient.invalidateQueries({ queryKey: ['finans'] });
-      queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
-    },
-  });
+  return useRecordLifecycle('arabuluculuk', 'kalici_sil');
 }
 
 // ── Geri Yükle ──────────────────────────────────────────────
 export function useArabuluculukGeriYukle() {
-  const buroId = useBuroId();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      if (!buroId) throw new Error('Büro bulunamadı');
-      const supabase = createClient();
-      const { data: mevcut } = await supabase
-        .from('arabuluculuk')
-        .select('data')
-        .eq('id', id)
-        .eq('buro_id', buroId)
-        .single();
-      if (!mevcut) throw new Error('Arabuluculuk bulunamadı');
-      const data = { ...(mevcut.data as Record<string, unknown>) };
-      delete data._silindi;
-      const { error } = await supabase.from('arabuluculuk').update({ data })
-        .eq('id', id).eq('buro_id', buroId);
-      if (error) throw error;
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['arabuluculuk'] });
-      queryClient.invalidateQueries({ queryKey: ['arabuluculuk-detay'] });
-      queryClient.invalidateQueries({ queryKey: ['finans'] });
-      queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
-    },
-  });
+  return useRecordLifecycle('arabuluculuk', 'geri_yukle');
 }

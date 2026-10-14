@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { useCopKutusu, getCopKutusuSuresi, setCopKutusuSuresi, SURE_SECENEKLERI } from '@/lib/hooks/useCopKutusu';
+import { useState, useMemo, useRef, useSyncExternalStore } from 'react';
+import { useCopKutusu, getCopKutusuSuresi, setCopKutusuSuresi, subscribeCopKutusuSuresi, SURE_SECENEKLERI, type SilinenKayit } from '@/lib/hooks/useCopKutusu';
+import { runRecordBatch } from '@/lib/data/runRecordBatch';
+import { kasaIslemHatasi } from '@/lib/data/financeCashTransaction';
 import { useMuvekkilGeriYukle, useMuvekkilKaliciSil } from '@/lib/hooks/useMuvekkillar';
 import { useKarsiTarafGeriYukle, useKarsiTarafKaliciSil } from '@/lib/hooks/useKarsiTaraflar';
 import { useVekilGeriYukle, useVekilKaliciSil } from '@/lib/hooks/useVekillar';
@@ -18,9 +20,11 @@ import { SectionTitle, Badge, AyarlarEmptyState } from './shared';
    ══════════════════════════════════════════════════════════════ */
 
 export function CopKutusuTab() {
-  const { data: silinenler, isLoading } = useCopKutusu();
-  const [sure, setSure] = useState(0);
-  const [tick, setTick] = useState(0);
+  const { data: silinenler, isPending, isError } = useCopKutusu();
+  const sure = useSyncExternalStore(subscribeCopKutusuSuresi,getCopKutusuSuresi,()=>86400000);
+  const [busy,setBusy] = useState(false);
+  const kilit = useRef(false);
+  const [sonucMesaji,setSonucMesaji] = useState('');
   const [filtre, setFiltre] = useState<string>('');
   const [seciliIdler, setSeciliIdler] = useState<Set<string>>(new Set());
   const [topluOnay, setTopluOnay] = useState<'sil' | 'yukle' | null>(null);
@@ -42,41 +46,31 @@ export function CopKutusuTab() {
   const danGeriYukle = useDanismanlikGeriYukle();
   const danKaliciSil = useDanismanlikKaliciSil();
 
-  useEffect(() => {
-    setSure(getCopKutusuSuresi());
-  }, []);
-
-  // Live countdown — her saniye tick artır
-  useEffect(() => {
-    const t = setInterval(() => setTick((p) => p + 1), 1000);
-    return () => clearInterval(t);
-  }, []);
-
   function handleSureDegistir(ms: number) {
     setCopKutusuSuresi(ms);
-    setSure(ms);
   }
 
-  function handleGeriYukle(tablo: string, id: string) {
-    if (tablo === 'muvekkillar') mGeriYukle.mutate(id);
-    else if (tablo === 'karsi_taraflar') ktGeriYukle.mutate(id);
-    else if (tablo === 'vekillar') vGeriYukle.mutate(id);
-    else if (tablo === 'davalar') dGeriYukle.mutate(id);
-    else if (tablo === 'icra') iGeriYukle.mutate(id);
-    else if (tablo === 'ihtarnameler') ihGeriYukle.mutate(id);
-    else if (tablo === 'arabuluculuk') arbGeriYukle.mutate(id);
-    else if (tablo === 'danismanlik') danGeriYukle.mutate(id);
+  async function islemleriUygula(hedefler: Pick<SilinenKayit,'tablo'|'id'>[], islem: 'sil'|'yukle') {
+    if (kilit.current) return;
+    kilit.current=true; setBusy(true); setSonucMesaji('');
+    try {
+      const map = islem==='sil'
+        ? {muvekkillar:mKaliciSil,karsi_taraflar:ktKaliciSil,vekillar:vKaliciSil,davalar:dKaliciSil,icra:iKaliciSil,ihtarnameler:ihKaliciSil,arabuluculuk:arbKaliciSil,danismanlik:danKaliciSil}
+        : {muvekkillar:mGeriYukle,karsi_taraflar:ktGeriYukle,vekillar:vGeriYukle,davalar:dGeriYukle,icra:iGeriYukle,ihtarnameler:ihGeriYukle,arabuluculuk:arbGeriYukle,danismanlik:danGeriYukle};
+      const result = await runRecordBatch(hedefler,h=>map[h.tablo].mutateAsync(h.id));
+      setSeciliIdler(new Set(result.failed.map(({record})=>`${record.tablo}-${record.id}`)));
+      setSonucMesaji(`${result.succeeded.length} işlem tamamlandı, ${result.failed.length} kayıt değiştirilmedi.${result.failed.length ? ' '+kasaIslemHatasi(result.failed[0].error) : ''}`);
+      setTopluOnay(null);
+    } finally { kilit.current=false; setBusy(false); }
   }
 
-  function handleKaliciSil(tablo: string, id: string) {
-    if (tablo === 'muvekkillar') mKaliciSil.mutate(id);
-    else if (tablo === 'karsi_taraflar') ktKaliciSil.mutate(id);
-    else if (tablo === 'vekillar') vKaliciSil.mutate(id);
-    else if (tablo === 'davalar') dKaliciSil.mutate(id);
-    else if (tablo === 'icra') iKaliciSil.mutate(id);
-    else if (tablo === 'ihtarnameler') ihKaliciSil.mutate(id);
-    else if (tablo === 'arabuluculuk') arbKaliciSil.mutate(id);
-    else if (tablo === 'danismanlik') danKaliciSil.mutate(id);
+  function handleGeriYukle(tablo: SilinenKayit['tablo'], id: string) {
+    return islemleriUygula([{tablo,id}],'yukle');
+  }
+
+  function handleKaliciSil(tablo: SilinenKayit['tablo'], id: string) {
+    if (window.confirm('Bu kayıt kalıcı olarak silinecek. Finans bağlantısı varsa işlem engellenecek. Onaylıyor musunuz?'))
+      return islemleriUygula([{tablo,id}],'sil');
   }
 
   // ── Çoklu seçim ────────────────────────────────────────────
@@ -97,40 +91,24 @@ export function CopKutusuTab() {
   }
 
   function handleTopluSil() {
-    const hedefler = (silinenler || []).filter((s) => seciliIdler.has(`${s.tablo}-${s.id}`));
-    hedefler.forEach((s) => handleKaliciSil(s.tablo, s.id));
-    setSeciliIdler(new Set());
-    setTopluOnay(null);
+    return islemleriUygula((silinenler||[]).filter(s=>seciliIdler.has(`${s.tablo}-${s.id}`)),'sil');
   }
-
   function handleTopluGeriYukle() {
-    const hedefler = (silinenler || []).filter((s) => seciliIdler.has(`${s.tablo}-${s.id}`));
-    hedefler.forEach((s) => handleGeriYukle(s.tablo, s.id));
-    setSeciliIdler(new Set());
-    setTopluOnay(null);
+    return islemleriUygula((silinenler||[]).filter(s=>seciliIdler.has(`${s.tablo}-${s.id}`)),'yukle');
   }
-
-  function handleTumunuSil() {
-    (filtrelenmis || []).forEach((s) => handleKaliciSil(s.tablo, s.id));
-    setSeciliIdler(new Set());
-    setTopluOnay(null);
-  }
+  function handleTumunuSil() { return islemleriUygula(filtrelenmis,'sil'); }
 
   function kalanSureFormat(silinmeTarihi: string): string {
     const saklamaSuresi = getCopKutusuSuresi();
     const ms = saklamaSuresi - (Date.now() - new Date(silinmeTarihi).getTime());
-    if (ms <= 0) return 'Süresi doldu';
+    if (ms <= 0) return 'Saklama hedefi doldu; otomatik silinmez';
     const saat = Math.floor(ms / (1000 * 60 * 60));
     const dk = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
-    const sn = Math.floor((ms % (1000 * 60)) / 1000);
     if (saat > 24) return `${Math.floor(saat / 24)} gün ${saat % 24} saat`;
-    if (saat > 0) return `${saat} saat ${dk} dk ${sn} sn`;
-    if (dk > 0) return `${dk} dk ${sn} sn`;
-    return `${sn} sn`;
+    if (saat > 0) return `${saat} saat ${dk} dk`;
+    if (dk > 0) return `${dk} dk`;
+    return 'Bir dakikadan az';
   }
-
-  // tick kullanımı — React'ın optimize etmemesi için
-  void tick;
 
   const BADGE_RENK: Record<string, string> = {
     muvekkillar: 'green',
@@ -149,10 +127,7 @@ export function CopKutusuTab() {
       : (silinenler || []);
   }, [silinenler, filtre]);
 
-  // Filtre değişince seçimi temizle
-  useEffect(() => {
-    setSeciliIdler(new Set());
-  }, [filtre]);
+  function handleFiltre(value: string) { setFiltre(value); setSeciliIdler(new Set()); }
 
   // Tablo bazında sayılar
   const tabloSayilari = (silinenler || []).reduce<Record<string, number>>((acc, s) => {
@@ -161,9 +136,10 @@ export function CopKutusuTab() {
   }, {});
 
   return (
-    <div>
+    <fieldset disabled={busy || isPending || isError}>
+      {sonucMesaji && <p role="status" className="text-xs text-text bg-surface2 p-3 rounded-lg mb-3">{sonucMesaji}</p>}
       <div className="flex items-center justify-between mb-1">
-        <SectionTitle sub="Silinen kayıtlar burada saklanır. Saklama süresi dolduğunda otomatik silinir.">
+        <SectionTitle sub="Kayıtlar kendiliğinden silinmez. Finans geçmişi ve bağlantılı kayıtlar kalıcı silmeye karşı korunur.">
           Çöp Kutusu
         </SectionTitle>
         <div className="flex items-center gap-2">
@@ -176,7 +152,7 @@ export function CopKutusuTab() {
               🗑️ Çöp Kutusunu Boşalt ({filtrelenmis.length})
             </button>
           )}
-          <span className="text-[11px] text-text-muted">Saklama süresi:</span>
+          <span className="text-[11px] text-text-muted">Saklama hedefi:</span>
           <select
             value={sure}
             onChange={(e) => handleSureDegistir(Number(e.target.value))}
@@ -193,7 +169,7 @@ export function CopKutusuTab() {
       {silinenler && silinenler.length > 0 && (
         <div className="flex gap-1.5 mb-4 flex-wrap">
           <button
-            onClick={() => setFiltre('')}
+            onClick={() => handleFiltre('')}
             className={`px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all ${
               !filtre ? 'bg-gold-dim text-gold border-gold/30' : 'bg-surface2 text-text-muted border-border hover:text-text'
             }`}
@@ -205,7 +181,7 @@ export function CopKutusuTab() {
             return (
               <button
                 key={tablo}
-                onClick={() => setFiltre(tablo)}
+                onClick={() => handleFiltre(tablo)}
                 className={`px-2.5 py-1 rounded-full text-[11px] font-medium border transition-all ${
                   filtre === tablo ? 'bg-gold-dim text-gold border-gold/30' : 'bg-surface2 text-text-muted border-border hover:text-text'
                 }`}
@@ -239,8 +215,10 @@ export function CopKutusuTab() {
         </div>
       )}
 
-      {isLoading ? (
+      {isPending ? (
         <div className="text-center py-8 text-text-muted text-sm">Yükleniyor...</div>
+      ) : isError ? (
+        <p role="alert" className="text-sm text-red py-6">Çöp kutusu yüklenemedi. Kayıtlar boş kabul edilmiyor; sayfayı yenileyin.</p>
       ) : !silinenler || silinenler.length === 0 ? (
         <AyarlarEmptyState icon="🗑️" text="Çöp kutusu boş" sub="Silinen kayıtlar burada görünür" />
       ) : filtrelenmis.length === 0 ? (
@@ -312,7 +290,7 @@ export function CopKutusuTab() {
 
       {/* Toplu İşlem Onay Modalı */}
       {topluOnay && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setTopluOnay(null)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => { if (!busy) setTopluOnay(null); }}>
           <div className="bg-surface border border-border rounded-xl p-6 w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-text mb-3">
               {topluOnay === 'sil' ? '🗑️ Kalıcı Silme Onayı' : '♻️ Geri Yükleme Onayı'}
@@ -351,6 +329,6 @@ export function CopKutusuTab() {
           </div>
         </div>
       )}
-    </div>
+    </fieldset>
   );
 }

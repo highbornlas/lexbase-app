@@ -28,6 +28,12 @@ publication. Existing Claude credentials and connections must be preserved.
 - [x] Implement frontend income classification, archived financial lists and
       reliable client fee saves; legacy service fees survive the first payment.
 - [ ] Unify frontend/backend finance calculations with fixture tests.
+- [x] Prepare atomic expense/cash writes, shared expense form and separate client
+      expense receivables; 21 hosted temporary-table candidate scenarios passed.
+- [x] Prepare atomic lifecycle operations, remove destructive trash listing and
+      add explicit-delete finance guards; local SQL and isolated browser checks.
+- [ ] Reconcile 249 historical file expenses and 11 unverified client links;
+      the unmatched cash movement belongs to a deleted case, not a proven duplicate.
 - [x] Share case movement, expense and agreement calculations across detail,
       client drawer, client dues and balance screens; six additional fixtures.
 - [x] Reproduce three production summary discrepancies using isolated temporary
@@ -68,6 +74,9 @@ browser observations. Proposed product changes are not verified findings.
 - Confirmed: archives remain in financial history, not active-work screens.
 - Whether deletion of a case with financial history is allowed, or requires
   cancellation/correction entries instead.
+- Historical expense reimbursement/opening balances must be reviewed before
+  backfilling missing cash movements; the 249 unmatched costs are not automatically
+  newly collectible debts.
 
 ## Current Evidence
 

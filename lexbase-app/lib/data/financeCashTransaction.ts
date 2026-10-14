@@ -20,6 +20,7 @@ interface RpcClient {
 
 export function kasaIslemHatasi(error: unknown): string {
   const code = (error as { code?: string } | null)?.code;
+  if (code === '23514') return 'Finans geçmişi veya dosya bağlantısı olan kayıt kalıcı silinmedi. Arşivleyebilir veya geri yükleyebilirsiniz.';
   if (code === '40001') return 'Kayıt başka bir oturumda değişti. Sayfayı yenileyip tekrar deneyin.';
   if (code === 'PGRST202' || code === '42883') return 'Güvenli kasa işlemi henüz sunucuda etkin değil. Kayıt yapılmadı.';
   if (code === '42501') return 'Bu büroda işlem yetkisi bulunamadı veya kayıt erişimi reddedildi.';

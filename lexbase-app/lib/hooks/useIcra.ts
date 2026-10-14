@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
+import { useRecordLifecycle } from './useRecordLifecycle';
 import { masraflariKoruyarakDosyaKaydet } from '@/lib/data/financeCashTransaction';
 import { raporKaydiGorunurMu } from '@/lib/finans/gelirKurallari';
 import { useBuroId } from './useBuro';
@@ -260,160 +261,25 @@ export function useIcraKaydet() {
 
 // ── Soft Delete ─────────────────────────────────────────────
 export function useIcraSil() {
-  const buroId = useBuroId();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      if (!buroId) throw new Error('Büro bulunamadı');
-      const supabase = createClient();
-
-      const { data: mevcut } = await supabase
-        .from('icra')
-        .select('data')
-        .eq('id', id)
-        .eq('buro_id', buroId)
-        .single();
-
-      if (!mevcut) throw new Error('İcra dosyası bulunamadı');
-
-      const { error } = await supabase.from('icra').update({
-        data: { ...(mevcut.data as object), _silindi: new Date().toISOString() },
-      }).eq('id', id).eq('buro_id', buroId);
-
-      if (error) throw error;
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['icra'] });
-      queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
-      queryClient.invalidateQueries({ queryKey: ['finans'] });
-    },
-  });
+  return useRecordLifecycle('icra', 'sil');
 }
 
 // ── Kalıcı Sil ──────────────────────────────────────────────
 export function useIcraKaliciSil() {
-  const buroId = useBuroId();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      if (!buroId) throw new Error('Büro bulunamadı');
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('icra')
-        .delete()
-        .eq('id', id)
-        .eq('buro_id', buroId);
-      if (error) throw error;
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['icra'] });
-      queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
-      queryClient.invalidateQueries({ queryKey: ['finans'] });
-    },
-  });
+  return useRecordLifecycle('icra', 'kalici_sil');
 }
 
 // ── Geri Yükle ──────────────────────────────────────────────
 export function useIcraGeriYukle() {
-  const buroId = useBuroId();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      if (!buroId) throw new Error('Büro bulunamadı');
-      const supabase = createClient();
-
-      const { data: mevcut } = await supabase
-        .from('icra')
-        .select('data')
-        .eq('id', id)
-        .eq('buro_id', buroId)
-        .single();
-
-      if (!mevcut) throw new Error('İcra dosyası bulunamadı');
-
-      const data = { ...(mevcut.data as Record<string, unknown>) };
-      delete data._silindi;
-
-      const { error } = await supabase.from('icra').update({ data })
-        .eq('id', id).eq('buro_id', buroId);
-
-      if (error) throw error;
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['icra'] });
-      queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
-      queryClient.invalidateQueries({ queryKey: ['finans'] });
-    },
-  });
+  return useRecordLifecycle('icra', 'geri_yukle');
 }
 
 // ── Arşive Kaldır ────────────────────────────────────────────
 export function useIcraArsivle() {
-  const buroId = useBuroId();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      if (!buroId) throw new Error('Büro bulunamadı');
-      const supabase = createClient();
-
-      const { data: mevcut } = await supabase
-        .from('icra')
-        .select('data')
-        .eq('id', id)
-        .eq('buro_id', buroId)
-        .single();
-
-      if (!mevcut) throw new Error('İcra dosyası bulunamadı');
-
-      const { error } = await supabase.from('icra').update({
-        data: { ...(mevcut.data as object), _arsivlendi: new Date().toISOString() },
-      }).eq('id', id).eq('buro_id', buroId);
-
-      if (error) throw error;
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['icra'] });
-      queryClient.invalidateQueries({ queryKey: ['icra-arsiv'] });
-      queryClient.invalidateQueries({ queryKey: ['finans'] });
-    },
-  });
+  return useRecordLifecycle('icra', 'arsivle');
 }
 
 // ── Arşivden Çıkar ───────────────────────────────────────────
 export function useIcraArsivdenCikar() {
-  const buroId = useBuroId();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      if (!buroId) throw new Error('Büro bulunamadı');
-      const supabase = createClient();
-
-      const { data: mevcut } = await supabase
-        .from('icra')
-        .select('data')
-        .eq('id', id)
-        .eq('buro_id', buroId)
-        .single();
-
-      if (!mevcut) throw new Error('İcra dosyası bulunamadı');
-
-      const data = { ...(mevcut.data as Record<string, unknown>) };
-      delete data._arsivlendi;
-
-      const { error } = await supabase.from('icra').update({ data })
-        .eq('id', id).eq('buro_id', buroId);
-
-      if (error) throw error;
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['icra'] });
-      queryClient.invalidateQueries({ queryKey: ['icra-arsiv'] });
-      queryClient.invalidateQueries({ queryKey: ['finans'] });
-    },
-  });
+  return useRecordLifecycle('icra', 'arsivden_cikar');
 }
