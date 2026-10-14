@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useOnayTalepleri, useOnayIslem, useOnayAyarlari, useOnayAyarlariGuncelle, ISLEM_ETIKETLERI, type OnayTalebi } from '@/lib/hooks/useOnay';
 import { useYetki } from '@/lib/hooks/useRol';
 import { createClient } from '@/lib/supabase/client';
+import { approvalErrorMessage } from '@/lib/data/approvalRequest';
 
 /* ══════════════════════════════════════════════════════════════
    Onaylar Sayfası — Maker/Checker Onay Mekanizması
@@ -35,9 +36,14 @@ export default function OnaylarPage() {
     });
   }, []);
 
-  const { data: bekleyenler } = useOnayTalepleri({ durum: 'beklemede' });
-  const { data: onaylananlar } = useOnayTalepleri({ durum: 'onaylandi' });
-  const { data: reddedilenler } = useOnayTalepleri({ durum: 'reddedildi' });
+  const bekleyenSorgu = useOnayTalepleri({ durum: 'beklemede' });
+  const onaylananSorgu = useOnayTalepleri({ durum: 'onaylandi' });
+  const reddedilenSorgu = useOnayTalepleri({ durum: 'reddedildi' });
+  const bekleyenler = bekleyenSorgu.data;
+  const onaylananlar = onaylananSorgu.data;
+  const reddedilenler = reddedilenSorgu.data;
+  const listeYukleniyor = !authId || [bekleyenSorgu, onaylananSorgu, reddedilenSorgu].some((q) => q.isPending);
+  const listeHatasi = [bekleyenSorgu, onaylananSorgu, reddedilenSorgu].find((q) => q.isError)?.error;
 
   // Yönetici değilse sadece kendi taleplerini göster
   const filtrele = (liste: OnayTalebi[] | undefined) => {
@@ -76,19 +82,24 @@ export default function OnaylarPage() {
         </h1>
       </div>
 
+      <div role="note" className="mb-4 rounded-lg border border-gold/20 bg-gold-dim px-4 py-3 text-xs text-text-muted">
+        Onay akışının finans formlarıyla entegrasyonu henüz tamamlanmadı. Bu ekrandaki ayarlar,
+        bütün masraf ve tahsilat işlemlerini otomatik olarak onaya bağlamaz.
+      </div>
+
       {/* KPI Strip */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         <div className="bg-surface border border-border rounded-lg px-3 py-2.5 text-center">
           <div className="text-[10px] text-text-muted uppercase tracking-wider mb-0.5">Bekleyen</div>
-          <div className="font-[var(--font-playfair)] text-xl font-bold text-gold">{sekmeSayilari.beklemede}</div>
+          <div className="font-[var(--font-playfair)] text-xl font-bold text-gold">{listeYukleniyor || listeHatasi ? '—' : sekmeSayilari.beklemede}</div>
         </div>
         <div className="bg-surface border border-border rounded-lg px-3 py-2.5 text-center">
           <div className="text-[10px] text-text-muted uppercase tracking-wider mb-0.5">Onaylanan</div>
-          <div className="font-[var(--font-playfair)] text-xl font-bold text-green">{sekmeSayilari.onaylandi}</div>
+          <div className="font-[var(--font-playfair)] text-xl font-bold text-green">{listeYukleniyor || listeHatasi ? '—' : sekmeSayilari.onaylandi}</div>
         </div>
         <div className="bg-surface border border-border rounded-lg px-3 py-2.5 text-center">
           <div className="text-[10px] text-text-muted uppercase tracking-wider mb-0.5">Reddedilen</div>
-          <div className="font-[var(--font-playfair)] text-xl font-bold text-red">{sekmeSayilari.reddedildi}</div>
+          <div className="font-[var(--font-playfair)] text-xl font-bold text-red">{listeYukleniyor || listeHatasi ? '—' : sekmeSayilari.reddedildi}</div>
         </div>
       </div>
 
@@ -122,6 +133,15 @@ export default function OnaylarPage() {
       {/* İçerik */}
       {sekme === 'ayarlar' ? (
         <OnayAyarlariPanel />
+      ) : listeHatasi ? (
+        <div role="alert" className="rounded-lg border border-red/20 bg-red-dim p-4 text-sm text-red">
+          Onay talepleri yüklenemedi. {approvalErrorMessage(listeHatasi)}
+          <button className="ml-3 underline" onClick={() => {
+            void bekleyenSorgu.refetch(); void onaylananSorgu.refetch(); void reddedilenSorgu.refetch();
+          }}>Tekrar dene</button>
+        </div>
+      ) : listeYukleniyor ? (
+        <div role="status" className="py-8 text-center text-sm text-text-muted">Onay talepleri yükleniyor...</div>
       ) : (
         <OnayListesi
           talepler={aktifListe || []}
@@ -140,15 +160,28 @@ function OnayListesi({ talepler, sekme, yonetici }: { talepler: OnayTalebi[]; se
   const onayIslem = useOnayIslem();
   const [redModalId, setRedModalId] = useState<string | null>(null);
   const [redNedeni, setRedNedeni] = useState('');
+  const [hata, setHata] = useState('');
+  const kararKilidi = useRef(false);
 
   async function handleOnayla(id: string) {
-    await onayIslem.mutateAsync({ id, karar: 'onaylandi' });
+    if (kararKilidi.current) return;
+    kararKilidi.current = true;
+    setHata('');
+    try { await onayIslem.mutateAsync({ id, karar: 'onaylandi' }); }
+    catch (error) { setHata(approvalErrorMessage(error)); }
+    finally { kararKilidi.current = false; }
   }
 
   async function handleReddet(id: string) {
-    await onayIslem.mutateAsync({ id, karar: 'reddedildi', redNedeni: redNedeni || undefined });
-    setRedModalId(null);
-    setRedNedeni('');
+    if (kararKilidi.current) return;
+    kararKilidi.current = true;
+    setHata('');
+    try {
+      await onayIslem.mutateAsync({ id, karar: 'reddedildi', redNedeni: redNedeni || undefined });
+      setRedModalId(null);
+      setRedNedeni('');
+    } catch (error) { setHata(approvalErrorMessage(error)); }
+    finally { kararKilidi.current = false; }
   }
 
   if (talepler.length === 0) {
@@ -166,6 +199,7 @@ function OnayListesi({ talepler, sekme, yonetici }: { talepler: OnayTalebi[]; se
 
   return (
     <div className="space-y-2 flex-1">
+      {hata && <div role="alert" className="rounded-lg border border-red/20 bg-red-dim p-3 text-xs text-red">{hata}</div>}
       {talepler.map((t) => {
         const islemInfo = ISLEM_ETIKETLERI[t.islem_tipi] || { label: t.islem_tipi, icon: '📝', renk: 'text-text-muted' };
 
@@ -247,6 +281,7 @@ function OnayListesi({ talepler, sekme, yonetici }: { talepler: OnayTalebi[]; se
                   <input
                     type="text"
                     value={redNedeni}
+                    disabled={onayIslem.isPending}
                     onChange={(e) => setRedNedeni(e.target.value)}
                     placeholder="Neden reddedildi?"
                     className="flex-1 px-3 py-1.5 bg-surface2 border border-border rounded-lg text-xs text-text placeholder:text-text-dim focus:outline-none focus:border-red"
@@ -261,6 +296,7 @@ function OnayListesi({ talepler, sekme, yonetici }: { talepler: OnayTalebi[]; se
                   </button>
                   <button
                     onClick={() => { setRedModalId(null); setRedNedeni(''); }}
+                    disabled={onayIslem.isPending}
                     className="px-3 py-1.5 border border-border text-text-muted text-[11px] rounded-lg hover:bg-surface2 transition-colors"
                   >
                     İptal
@@ -279,25 +315,43 @@ function OnayListesi({ talepler, sekme, yonetici }: { talepler: OnayTalebi[]; se
    Onay Ayarları Paneli
    ══════════════════════════════════════════════════════════════ */
 function OnayAyarlariPanel() {
-  const { data: ayarlar, isLoading } = useOnayAyarlari();
+  const { data: ayarlar, isPending, error, refetch } = useOnayAyarlari();
   const guncelle = useOnayAyarlariGuncelle();
   const [mesaj, setMesaj] = useState('');
+  const [hata, setHata] = useState('');
+  const ayarKilidi = useRef(false);
 
   async function handleToggle(key: string, value: boolean) {
-    await guncelle.mutateAsync({ [key]: value } as Record<string, unknown>);
-    setMesaj('Ayarlar güncellendi');
-    setTimeout(() => setMesaj(''), 2000);
+    if (ayarKilidi.current) return;
+    ayarKilidi.current = true;
+    setMesaj(''); setHata('');
+    try {
+      await guncelle.mutateAsync({ [key]: value } as Record<string, unknown>);
+      setMesaj('Ayarlar güncellendi');
+    } catch (error) { setHata(approvalErrorMessage(error)); }
+    finally { ayarKilidi.current = false; }
   }
 
   async function handleEsikGuncelle(value: string) {
     const num = parseFloat(value);
-    if (isNaN(num) || num < 0) return;
-    await guncelle.mutateAsync({ masraf_onay_esik: num });
-    setMesaj('Eşik güncellendi');
-    setTimeout(() => setMesaj(''), 2000);
+    if (!Number.isFinite(num) || num < 0) { setHata('Geçerli, sıfır veya pozitif bir eşik girin.'); return; }
+    if (ayarKilidi.current) return;
+    ayarKilidi.current = true;
+    setMesaj(''); setHata('');
+    try {
+      await guncelle.mutateAsync({ masraf_onay_esik: num });
+      setMesaj('Eşik güncellendi');
+    } catch (error) { setHata(approvalErrorMessage(error)); }
+    finally { ayarKilidi.current = false; }
   }
 
-  if (isLoading || !ayarlar) {
+  if (error) {
+    return <div role="alert" className="rounded-lg border border-red/20 p-4 text-sm text-red">
+      Onay ayarları yüklenemedi. {approvalErrorMessage(error)}
+      <button className="ml-3 underline" onClick={() => { void refetch(); }}>Tekrar dene</button>
+    </div>;
+  }
+  if (isPending || !ayarlar) {
     return <div className="text-center py-8 text-text-muted text-sm">Yükleniyor...</div>;
   }
 
@@ -317,6 +371,7 @@ function OnayAyarlariPanel() {
 
   return (
     <div className="space-y-6">
+      {hata && <div role="alert" className="rounded-lg border border-red/20 bg-red-dim p-3 text-xs text-red">{hata}</div>}
       {mesaj && (
         <div className="bg-green-dim border border-green/20 rounded-lg px-3 py-2 text-xs text-green">
           {mesaj}
@@ -363,6 +418,7 @@ function OnayAyarlariPanel() {
             <div className="flex items-center gap-2">
               <input
                 type="number"
+                disabled={guncelle.isPending}
                 defaultValue={ayarlar.masraf_onay_esik}
                 onBlur={(e) => handleEsikGuncelle(e.target.value)}
                 className="w-28 px-3 py-1.5 bg-surface2 border border-border rounded-lg text-xs text-text text-right focus:outline-none focus:border-gold"

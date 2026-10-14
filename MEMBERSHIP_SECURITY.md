@@ -34,11 +34,10 @@ a narrowly authorized server operation instead.
 
 - Real Supabase Auth/staging checks: outsider/member/manager/platform admin,
   multiple bureaus, revoked membership, invitation and bureau switching.
-- `useOnay.ts` currently reads other managers' membership auth_ids to send
-  notifications from the browser. A regular member will no longer see those rows
-  with the existing self-only SELECT policy. Move recipient lookup/delivery to
-  an authorized server operation before coordinated publication; do NOT restore
-  broad membership reads just to make notifications work.
+- Request creation in `useOnay.ts` now uses an atomic server operation with a
+  narrowly privileged private notification helper; see APPROVAL_WORKFLOW.md.
+  This candidate no longer needs broader membership reads. It is not live and
+  does not complete form integration or secure the legacy decision/upsert path.
 - Review registration/bootstrap paths and server-owned onboarding functions;
   this packet does not prove their full compatibility.
 - Audit `kullanicilar_insert`, `ip_loglari` insertion, license visibility,

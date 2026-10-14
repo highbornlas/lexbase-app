@@ -7,6 +7,7 @@
     "Müvekkil avansı ve masraf alacağı, büro vekâlet ücreti hesaplarından ayrıldı.",
     "Dosya masrafları ile müvekkil kasası için atomik kayıt altyapısı ve ortak masraf formu hazırlandı.",
     "Arşiv ve geri yükleme işlemleri ortak altyapıya taşındı; çöp kutusunun listeleme sırasında otomatik silme davranışı kaldırıldı.",
+    "Üyelik yetkisi ve onay bildirimi güvenliği için düzeltmeler hazırlandı; onay ekranının yükleme ve hata durumları iyileştirildi.",
     "Sürüm göstergeleri ve güncelleme notları tek kaynağa bağlandı."
   ],
   "releases": [

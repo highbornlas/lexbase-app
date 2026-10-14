@@ -24,6 +24,11 @@ Proposals are not implemented functionality.
 | Agreements | Source / production definitions | Percentage and mixed fee models calculated differently across views | Shared frontend formulas and precedence tests in branch |
 | Summary RPC parity | Isolated production-function clones | Office income 2500 vs 2800, agreement 3000 vs 5000, fee collection 12800 vs 2000 in synthetic fixture | Guarded candidate fixes pass 27 SQL scenarios; not deployed |
 | Client reports | Source | Statutory fee was mixed into contractual fees; cards omitted service dues and PDF mixed client money into fees | Branch aligned with candidate RPC; visual PDF/browser verification pending |
+| Membership isolation | Production metadata / isolated fixtures | Unconditional service policy applies to PUBLIC; active membership can be forged | Guarded correction and 23 isolated assertions prepared, not live |
+| Approval delivery | Source / isolated fixtures | Request and notifications saved separately; ordinary members lose manager lookup after membership fix | Atomic invoker RPC/private scoped delivery prepared, not live |
+| Approval integration | Source | No finance form callers of request/approval-check hooks; settings imply protection not enforced | UI warning and reliability fixes in branch; integration pending |
+| Approval authorization | Production policies / source | Queue updates lack manager check; decision then generic upsert is non-atomic | Atomic decision and policy redesign required; not fixed by notification packet |
+| Legacy financial triggers | Production definitions | Enforcement/notice costs still projected into legacy avanslar | Trigger-aware cash regression and historical ownership review pending |
 
 ## Product Direction
 

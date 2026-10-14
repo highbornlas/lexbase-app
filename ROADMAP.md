@@ -48,8 +48,12 @@ publication. Existing Claude credentials and connections must be preserved.
 - [ ] Complete role/admin/invitation checks.
 - [x] Confirm overly broad membership service policy with read-only live metadata;
       prepare guarded scope/grant correction and 23 isolated PostgreSQL assertions.
-- [ ] Move approval-recipient lookup to a narrowly authorized server operation;
+- [x] Prepare atomic approval-request/server notification operation without
+      broadening membership reads; scoped retry/rollback/security fixture tests.
+- [ ] Complete form-to-approval integration and authorized atomic decisions;
       verify onboarding/platform-admin parity before membership security rollout.
+- [ ] Reproduce legacy enforcement/notice expense projection triggers alongside
+      new cash transactions before accounting publication.
 - [ ] Validate, publish in bounded releases and run production smoke checks.
 
 ## Module Review
