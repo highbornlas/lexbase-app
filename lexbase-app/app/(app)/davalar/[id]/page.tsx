@@ -556,6 +556,7 @@ export default function DavaDetay({ params }: { params: Promise<{ id: string }> 
         />
       )}
       <TahsilatModal
+        draftScope={`dava_${dava.id}`}
         open={tahsilatModal}
         onClose={() => setTahsilatModal(false)}
         tahsilat={duzenlenecekTahsilat}

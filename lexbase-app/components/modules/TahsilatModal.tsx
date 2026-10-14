@@ -29,6 +29,7 @@ interface TahsilatModalProps {
   open: boolean;
   onClose: () => void;
   onKaydet: (tahsilat: TahsilatKaydi) => Promise<void>;
+  draftScope: string;
   tahsilat?: TahsilatKaydi | null;
 }
 
@@ -53,11 +54,11 @@ const bos: TahsilatKaydi = {
   makbuzTarih: '',
 };
 
-export function TahsilatModal({ open, onClose, onKaydet, tahsilat }: TahsilatModalProps) {
-  return <TahsilatModalForm key={`${open}-${tahsilat?.id || 'yeni'}`} open={open} onClose={onClose} onKaydet={onKaydet} tahsilat={tahsilat} />;
+export function TahsilatModal(props: TahsilatModalProps) {
+  return <TahsilatModalForm key={`${props.draftScope}-${props.open}-${props.tahsilat?.id || 'yeni'}`} {...props} />;
 }
 
-function TahsilatModalForm({ open, onClose, onKaydet, tahsilat }: TahsilatModalProps) {
+function TahsilatModalForm({ open, onClose, onKaydet, tahsilat, draftScope }: TahsilatModalProps) {
   const [initialForm] = useState<TahsilatKaydi>(() => tahsilat ? { ...tahsilat } : {
     ...bos, id: crypto.randomUUID(), tarih: new Date().toISOString().split('T')[0],
   });
@@ -67,8 +68,8 @@ function TahsilatModalForm({ open, onClose, onKaydet, tahsilat }: TahsilatModalP
   const [tutarModu, setTutarModu] = useState<'brut' | 'net'>('brut');
   const [hata, setHata] = useState('');
 
-  const draftKey = `tahsilat_${form.id || 'yeni'}`;
-  const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(
+  const draftKey = `tahsilat_${draftScope}_${tahsilat?.id || 'yeni'}`;
+  const { isDirty, hasDraft, loadDraft, clearDraft, saveDraft } = useModalDraft(
     draftKey, form as unknown as Record<string, unknown>, initialForm as unknown as Record<string, unknown>, open
   );
 
@@ -95,6 +96,7 @@ function TahsilatModalForm({ open, onClose, onKaydet, tahsilat }: TahsilatModalP
       clearDraft();
       onClose();
     } catch (error) {
+      saveDraft();
       setHata(error instanceof Error ? error.message : 'Tahsilat kaydedilemedi. Tekrar deneyiniz.');
     } finally {
       kayitKilidi.current = false;
@@ -109,9 +111,13 @@ function TahsilatModalForm({ open, onClose, onKaydet, tahsilat }: TahsilatModalP
 
   return (
     <Modal open={open} onClose={() => { if (!kayitKilidi.current) onClose(); }} title={tahsilat ? 'Tahsilat Düzenle' : 'Yeni Tahsilat'} maxWidth="max-w-lg"
-      dirty={isDirty}
-      hasDraft={hasDraft()}
-      onLoadDraft={() => { const d = loadDraft(); if (d) setForm(d as unknown as TahsilatKaydi); clearDraft(); }}
+      dirty={isDirty && !kaydediliyor}
+      hasDraft={!kaydediliyor && hasDraft()}
+      onLoadDraft={() => {
+        const d = loadDraft();
+        if (d) setForm({ ...d, id: initialForm.id } as unknown as TahsilatKaydi);
+      }}
+      onSaveDraft={saveDraft}
       onDiscardDraft={clearDraft}
     >
       <fieldset disabled={kaydediliyor} className="space-y-4">
