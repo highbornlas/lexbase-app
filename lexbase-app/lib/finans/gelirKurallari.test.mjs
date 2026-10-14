@@ -28,6 +28,7 @@ test('client collection, office fee and opposing fee remain distinct', () => {
   assert.equal(muvekkilTahsilatiMi('akdi_vekalet'), false);
   assert.equal(ucretTahsilatiMi('akdi_vekalet'), true);
   assert.equal(ucretTahsilatiMi('hakediş'), false);
+  assert.equal(ucretTahsilatiMi('icra_vekalet'), false);
 });
 
 test('archiving preserves financial history without keeping deleted records', () => {

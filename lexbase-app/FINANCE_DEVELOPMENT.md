@@ -14,7 +14,9 @@
 - Transfer and refund movements are excluded from income summaries.
 - General/counterparty collections belong to clients, not office income.
 - Recognized office income includes contractual fees, opposing fees and legacy
-  enforcement fees. Only contractual fees reduce the contractual amount due.
+  enforcement fees. Statutory enforcement fees do not reduce contractual dues.
+  Enforcement percentage shares and case opposing fees share the legacy
+  hakediş type; context-aware contractual calculations remain pending.
 - Archives remain in financial history; soft-deleted records are excluded.
 - A service's first explicit collection preserves its legacy flat fee payment.
 - Do not add legacy `tahsilEdildi` to an existing `tahsilatlar` total.
@@ -52,6 +54,8 @@ The production RPC definitions were inspected read-only on 2026-10-14.
 - Frontend and production calculation parity is still incomplete. Client-held
   balances need explicit direct-payment vs offset provenance; never infer this
   from historical fee types alone.
+- Enforcement payment choices and tahsilat/borclu_odeme form/storage mapping
+  are preserved from the live compiled asset; see SOURCE_RECONCILIATION.md.
 - Live collection UI differs from the checked-out GitHub and Desktop sources;
   web publication remains gated on source reconciliation.
 

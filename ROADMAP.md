@@ -71,6 +71,9 @@ browser observations. Proposed product changes are not verified findings.
 - Live collection form differs from GitHub and Desktop/Lexbase sources, including
   the ZIP backup. Frontend publication is blocked until this is reconciled;
   do not overwrite live functionality with the older source.
+- Cloudflare runtime inspection confirmed missing enforcement payment options
+  and the debtor-payment storage convention. These are reconstructed in the
+  branch; full-source reconciliation remains open (SOURCE_RECONCILIATION.md).
 
 ## Deferred Feature Backlog
 

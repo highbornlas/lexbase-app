@@ -4,7 +4,7 @@ export function gelirTahsilatiMi(tur: unknown): boolean {
 }
 
 export function ucretTahsilatiMi(tur: unknown): boolean {
-  return tur === 'akdi_vekalet' || tur === 'icra_vekalet';
+  return tur === 'akdi_vekalet';
 }
 
 export function muvekkilTahsilatiMi(tur: unknown): boolean {

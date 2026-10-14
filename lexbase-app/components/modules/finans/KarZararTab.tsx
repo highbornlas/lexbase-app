@@ -60,9 +60,9 @@ function useKarZararFallback(yil: number, ay?: number) {
       tahsilatlar.forEach((th) => {
         if (!gelirTahsilatiMi(th.tur)) return;
         if (!tarihIcindeMi(th.tarih as string)) return;
-        const tutar = Number(th.tutar || 0);
-        if (th.tur === 'akdi_vekalet' || th.tur === 'icra_vekalet') akdiVekaletUcreti += tutar;
-        else if (th.tur === 'hakediş') karsiVekaletHakedis += tutar;
+        const tutar = safeNum(th.tutar);
+        if (th.tur === 'akdi_vekalet') akdiVekaletUcreti += tutar;
+        else karsiVekaletHakedis += tutar;
       });
     });
 

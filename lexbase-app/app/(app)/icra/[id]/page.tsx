@@ -542,6 +542,7 @@ export default function IcraDetayPage({ params }: { params: Promise<{ id: string
         />
       )}
       <TahsilatModal
+        icraDosyasi
         draftScope={`icra_${icra.id}`}
         open={tahsilatModal}
         onClose={() => setTahsilatModal(false)}

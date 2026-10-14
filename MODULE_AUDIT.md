@@ -18,6 +18,7 @@ Proposals are not implemented functionality.
 | Dashboard | Browser | Many empty widgets; advance client count differs from active count; unresolved client names | Data linkage and prioritization review pending |
 | Case loading | Browser | Temporary zero/empty list and not-found detail before data appears | Loading-state fixes pending |
 | Release | Browser / source | Live payment form has changes absent from GitHub, Desktop source and ZIP | No frontend deployment until reconciliation |
+| Enforcement payments | Live asset / Worker | Separate debtor, percentage-share and statutory-fee choices missing in GitHub | Choices and legacy storage mapping restored in branch; full source gate remains |
 
 ## Product Direction
 
