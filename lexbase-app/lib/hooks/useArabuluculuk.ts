@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
+import { updateRecordStatus } from '@/lib/data/updateJsonRecord';
 import { useBuroId } from './useBuro';
 
 // ── Oturum Kaydı ─────────────────────────────────────────────
@@ -198,6 +199,8 @@ export function useArabuluculukKaydet() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['arabuluculuk'] });
+      queryClient.invalidateQueries({ queryKey: ['arabuluculuk-detay'] });
+      queryClient.invalidateQueries({ queryKey: ['finans'] });
     },
   });
 }
@@ -211,13 +214,7 @@ export function useArabuluculukSil() {
     mutationFn: async (kayit: Arabuluculuk) => {
       if (!buroId) throw new Error('Büro bulunamadı');
       const supabase = createClient();
-      const { data: mevcut } = await supabase.from('arabuluculuk').select('data').eq('id', kayit.id).single();
-      const mevcutData = (mevcut?.data as object) || {};
-      const { error } = await supabase.from('arabuluculuk').upsert({
-        id: kayit.id, buro_id: buroId,
-        data: { ...mevcutData, _silindi: new Date().toISOString() },
-      });
-      if (error) throw error;
+      await updateRecordStatus(supabase, 'arabuluculuk', kayit.id, buroId, '_silindi');
     },
     onMutate: async (kayit) => {
       await queryClient.cancelQueries({ queryKey: ['arabuluculuk', buroId] });
@@ -230,7 +227,9 @@ export function useArabuluculukSil() {
     onError: (_err, _yeni, ctx) => {
       if (ctx?.onceki) queryClient.setQueryData(['arabuluculuk', buroId], ctx.onceki);
     },
-    onSettled: () => { queryClient.invalidateQueries({ queryKey: ['arabuluculuk'] }); },
+    onSettled: () => { queryClient.invalidateQueries({ queryKey: ['arabuluculuk'] });
+      queryClient.invalidateQueries({ queryKey: ['arabuluculuk-detay'] });
+      queryClient.invalidateQueries({ queryKey: ['finans'] }); },
   });
 }
 
@@ -243,13 +242,7 @@ export function useArabuluculukArsivle() {
     mutationFn: async (kayit: Arabuluculuk) => {
       if (!buroId) throw new Error('Büro bulunamadı');
       const supabase = createClient();
-      const { data: mevcut } = await supabase.from('arabuluculuk').select('data').eq('id', kayit.id).single();
-      const mevcutData = (mevcut?.data as object) || {};
-      const { error } = await supabase.from('arabuluculuk').upsert({
-        id: kayit.id, buro_id: buroId,
-        data: { ...mevcutData, _arsivlendi: new Date().toISOString() },
-      });
-      if (error) throw error;
+      await updateRecordStatus(supabase, 'arabuluculuk', kayit.id, buroId, '_arsivlendi');
     },
     onMutate: async (kayit) => {
       await queryClient.cancelQueries({ queryKey: ['arabuluculuk', buroId] });
@@ -262,7 +255,9 @@ export function useArabuluculukArsivle() {
     onError: (_err, _yeni, ctx) => {
       if (ctx?.onceki) queryClient.setQueryData(['arabuluculuk', buroId], ctx.onceki);
     },
-    onSettled: () => { queryClient.invalidateQueries({ queryKey: ['arabuluculuk'] }); },
+    onSettled: () => { queryClient.invalidateQueries({ queryKey: ['arabuluculuk'] });
+      queryClient.invalidateQueries({ queryKey: ['arabuluculuk-detay'] });
+      queryClient.invalidateQueries({ queryKey: ['finans'] }); },
   });
 }
 
@@ -284,6 +279,8 @@ export function useArabuluculukKaliciSil() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['arabuluculuk'] });
+      queryClient.invalidateQueries({ queryKey: ['arabuluculuk-detay'] });
+      queryClient.invalidateQueries({ queryKey: ['finans'] });
       queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
     },
   });
@@ -313,6 +310,8 @@ export function useArabuluculukGeriYukle() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['arabuluculuk'] });
+      queryClient.invalidateQueries({ queryKey: ['arabuluculuk-detay'] });
+      queryClient.invalidateQueries({ queryKey: ['finans'] });
       queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
     },
   });

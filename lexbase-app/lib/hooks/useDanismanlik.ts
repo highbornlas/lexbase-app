@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
+import { updateRecordStatus } from '@/lib/data/updateJsonRecord';
 import { useBuroId } from './useBuro';
 
 // ── Efor (Zaman) Kaydı ──────────────────────────────────────
@@ -176,6 +177,8 @@ export function useDanismanlikKaydet() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['danismanlik'] });
+      queryClient.invalidateQueries({ queryKey: ['danismanlik-detay'] });
+      queryClient.invalidateQueries({ queryKey: ['finans'] });
     },
   });
 }
@@ -189,13 +192,7 @@ export function useDanismanlikSil() {
     mutationFn: async (kayit: Danismanlik) => {
       if (!buroId) throw new Error('Büro bulunamadı');
       const supabase = createClient();
-      const { data: mevcut } = await supabase.from('danismanlik').select('data').eq('id', kayit.id).single();
-      const mevcutData = (mevcut?.data as object) || {};
-      const { error } = await supabase.from('danismanlik').upsert({
-        id: kayit.id, buro_id: buroId,
-        data: { ...mevcutData, _silindi: new Date().toISOString() },
-      });
-      if (error) throw error;
+      await updateRecordStatus(supabase, 'danismanlik', kayit.id, buroId, '_silindi');
     },
     onMutate: async (kayit) => {
       await queryClient.cancelQueries({ queryKey: ['danismanlik', buroId] });
@@ -208,7 +205,9 @@ export function useDanismanlikSil() {
     onError: (_err, _yeni, ctx) => {
       if (ctx?.onceki) queryClient.setQueryData(['danismanlik', buroId], ctx.onceki);
     },
-    onSettled: () => { queryClient.invalidateQueries({ queryKey: ['danismanlik'] }); },
+    onSettled: () => { queryClient.invalidateQueries({ queryKey: ['danismanlik'] });
+      queryClient.invalidateQueries({ queryKey: ['danismanlik-detay'] });
+      queryClient.invalidateQueries({ queryKey: ['finans'] }); },
   });
 }
 
@@ -221,13 +220,7 @@ export function useDanismanlikArsivle() {
     mutationFn: async (kayit: Danismanlik) => {
       if (!buroId) throw new Error('Büro bulunamadı');
       const supabase = createClient();
-      const { data: mevcut } = await supabase.from('danismanlik').select('data').eq('id', kayit.id).single();
-      const mevcutData = (mevcut?.data as object) || {};
-      const { error } = await supabase.from('danismanlik').upsert({
-        id: kayit.id, buro_id: buroId,
-        data: { ...mevcutData, _arsivlendi: new Date().toISOString() },
-      });
-      if (error) throw error;
+      await updateRecordStatus(supabase, 'danismanlik', kayit.id, buroId, '_arsivlendi');
     },
     onMutate: async (kayit) => {
       await queryClient.cancelQueries({ queryKey: ['danismanlik', buroId] });
@@ -240,7 +233,9 @@ export function useDanismanlikArsivle() {
     onError: (_err, _yeni, ctx) => {
       if (ctx?.onceki) queryClient.setQueryData(['danismanlik', buroId], ctx.onceki);
     },
-    onSettled: () => { queryClient.invalidateQueries({ queryKey: ['danismanlik'] }); },
+    onSettled: () => { queryClient.invalidateQueries({ queryKey: ['danismanlik'] });
+      queryClient.invalidateQueries({ queryKey: ['danismanlik-detay'] });
+      queryClient.invalidateQueries({ queryKey: ['finans'] }); },
   });
 }
 
@@ -262,6 +257,8 @@ export function useDanismanlikKaliciSil() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['danismanlik'] });
+      queryClient.invalidateQueries({ queryKey: ['danismanlik-detay'] });
+      queryClient.invalidateQueries({ queryKey: ['finans'] });
       queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
     },
   });
@@ -291,6 +288,8 @@ export function useDanismanlikGeriYukle() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['danismanlik'] });
+      queryClient.invalidateQueries({ queryKey: ['danismanlik-detay'] });
+      queryClient.invalidateQueries({ queryKey: ['finans'] });
       queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
     },
   });

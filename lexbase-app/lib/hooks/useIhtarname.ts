@@ -111,8 +111,21 @@ export function useIhtarname(id: string | null) {
 
 /* Arşivlenmiş ihtarnameler */
 export function useArsivIhtarnameler() {
-  const { data: tumu } = useIhtarnameler();
-  return { data: tumu?.filter((i) => i._arsivlendi && !i._silindi) ?? [] };
+  const buroId = useBuroId();
+  return useQuery<Ihtarname[]>({
+    queryKey: ['ihtarnameler-arsiv', buroId],
+    queryFn: async () => {
+      if (!buroId) return [];
+      const supabase = createClient();
+      const { data, error } = await supabase.from('ihtarnameler')
+        .select('id, data').eq('buro_id', buroId);
+      if (error) throw error;
+      return (data || [])
+        .map((r) => ({ id: r.id, ...(r.data as object) }) as Ihtarname)
+        .filter((i) => !!i._arsivlendi && !i._silindi);
+    },
+    enabled: !!buroId,
+  });
 }
 
 export function useIhtarnameKaydet() {
@@ -129,6 +142,9 @@ export function useIhtarnameKaydet() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['ihtarnameler'] });
+      queryClient.invalidateQueries({ queryKey: ['ihtarnameler-arsiv'] });
+      queryClient.invalidateQueries({ queryKey: ['ihtarname-detay'] });
+      queryClient.invalidateQueries({ queryKey: ['finans'] });
     },
   });
 }
@@ -177,6 +193,9 @@ export function useIhtarnameGeriYukle() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['ihtarnameler'] });
+      queryClient.invalidateQueries({ queryKey: ['ihtarnameler-arsiv'] });
+      queryClient.invalidateQueries({ queryKey: ['ihtarname-detay'] });
+      queryClient.invalidateQueries({ queryKey: ['finans'] });
       queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
     },
   });
@@ -196,6 +215,9 @@ export function useIhtarnameHardSil() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['ihtarnameler'] });
+      queryClient.invalidateQueries({ queryKey: ['ihtarnameler-arsiv'] });
+      queryClient.invalidateQueries({ queryKey: ['ihtarname-detay'] });
+      queryClient.invalidateQueries({ queryKey: ['finans'] });
       queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
     },
   });
