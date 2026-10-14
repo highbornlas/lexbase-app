@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { muvekkileGoreGrupla } from '@/lib/finans/dosyaGruplari';
 import Link from 'next/link';
 import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
 import { useDavalar } from '@/lib/hooks/useDavalar';
@@ -20,23 +21,34 @@ import { EmptyState, MiniKpi } from './shared';
 const PAGE_SIZE = 20;
 
 export function BakiyelerTab() {
-  const { data: muvekkillar } = useMuvekkillar();
-  const { data: davalar } = useDavalar();
-  const { data: icralar } = useIcralar();
-  const { data: danismanliklar } = useDanismanliklar();
-  const { data: arabuluculuklar } = useArabuluculuklar();
-  const { data: ihtarnameler } = useIhtarnameler();
+  const muvekkilQuery = useMuvekkillar();
+  const davaQuery = useDavalar();
+  const icraQuery = useIcralar();
+  const danismanlikQuery = useDanismanliklar();
+  const arabuluculukQuery = useArabuluculuklar();
+  const ihtarnameQuery = useIhtarnameler();
+  const { data: muvekkillar } = muvekkilQuery;
+  const { data: davalar } = davaQuery;
+  const { data: icralar } = icraQuery;
+  const { data: danismanliklar } = danismanlikQuery;
+  const { data: arabuluculuklar } = arabuluculukQuery;
+  const { data: ihtarnameler } = ihtarnameQuery;
   const [arama, setArama] = useState('');
   const [sayfa, setSayfa] = useState(1);
 
   const bakiyeler = useMemo(() => {
     if (!muvekkillar) return [];
+    const davaGruplari = muvekkileGoreGrupla(davalar || []);
+    const icraGruplari = muvekkileGoreGrupla(icralar || []);
+    const danismanlikGruplari = muvekkileGoreGrupla(danismanliklar || []);
+    const arabuluculukGruplari = muvekkileGoreGrupla(arabuluculuklar || []);
+    const ihtarnameGruplari = muvekkileGoreGrupla(ihtarnameler || []);
     return muvekkillar.map((m) => {
-      const muvDavalar = (davalar || []).filter((d) => d.muvId === m.id) as Record<string, unknown>[];
-      const muvIcralar = (icralar || []).filter((i) => i.muvId === m.id) as Record<string, unknown>[];
-      const muvDanismanlik = (danismanliklar || []).filter((d) => d.muvId === m.id);
-      const muvArabuluculuk = (arabuluculuklar || []).filter((a) => a.muvId === m.id);
-      const muvIhtarname = (ihtarnameler || []).filter((ih) => ih.muvId === m.id);
+      const muvDavalar = (davaGruplari.get(m.id) || []) as Record<string, unknown>[];
+      const muvIcralar = (icraGruplari.get(m.id) || []) as Record<string, unknown>[];
+      const muvDanismanlik = danismanlikGruplari.get(m.id) || [];
+      const muvArabuluculuk = arabuluculukGruplari.get(m.id) || [];
+      const muvIhtarname = ihtarnameGruplari.get(m.id) || [];
 
       let anlasilanToplam = 0;
       let tahsilEdilenToplam = 0;
@@ -126,6 +138,14 @@ export function BakiyelerTab() {
   // Pagination
   const toplamSayfa = Math.max(1, Math.ceil(bakiyeler.length / PAGE_SIZE));
   const sayfadakiler = bakiyeler.slice((sayfa - 1) * PAGE_SIZE, sayfa * PAGE_SIZE);
+
+  const queries = [muvekkilQuery, davaQuery, icraQuery, danismanlikQuery, arabuluculukQuery, ihtarnameQuery];
+  if (queries.some((query) => query.isError)) {
+    return <div role="alert" className="text-center py-8 text-red text-xs">Bakiyeler yüklenemedi. Lütfen tekrar deneyiniz.</div>;
+  }
+  if (queries.some((query) => query.isPending)) {
+    return <div className="text-center py-8 text-text-muted text-xs">Bakiyeler yükleniyor...</div>;
+  }
 
   return (
     <div>

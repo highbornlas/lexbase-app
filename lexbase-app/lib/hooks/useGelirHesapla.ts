@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { gelirTahsilatiMi } from '@/lib/finans/gelirKurallari';
 import { useMuvekkillar } from './useMuvekkillar';
 import { useDavalar } from './useDavalar';
 import { useIcralar } from './useIcra';
@@ -60,6 +61,7 @@ export function useGelirHesapla() {
         const dosyaNo = (dosya.no as string) || (dosya.esasNo as string) || (dosya.dosyaNo as string) || '';
 
         tahsilatlar.forEach((th) => {
+          if (!gelirTahsilatiMi(th.tur)) return;
           const tutar = safeNum(th.tutar);
           if (tutar <= 0) return;
 

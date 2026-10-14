@@ -545,13 +545,13 @@ export default function IcraDetayPage({ params }: { params: Promise<{ id: string
         open={tahsilatModal}
         onClose={() => setTahsilatModal(false)}
         tahsilat={duzenlenecekTahsilat}
-        onKaydet={(tahsilat) => {
+        onKaydet={async (tahsilat) => {
           const mevcut = icra.tahsilatlar || [];
           const varMi = mevcut.find((t) => t.id === tahsilat.id);
           const yeniListe = varMi
             ? mevcut.map((t) => (t.id === tahsilat.id ? tahsilat : t))
             : [...mevcut, tahsilat];
-          icraKaydet.mutate({ ...icra, tahsilatlar: yeniListe });
+          await icraKaydet.mutateAsync({ ...icra, tahsilatlar: yeniListe });
         }}
       />
     </div>
@@ -1436,7 +1436,11 @@ function AlacakKalemleriSection({ icra, hesap, onUpdate }: {
     digerMasraflar: String(k.digerMasraflar || ''),
   });
 
-  useEffect(() => {
+  function handleDuzenle() {
+    if (duzenle) {
+      setDuzenle(false);
+      return;
+    }
     const kk = icra.alacakKalemleri || {};
     setForm({
       asilAlacak: String(kk.asilAlacak || ''),
@@ -1446,7 +1450,8 @@ function AlacakKalemleriSection({ icra, hesap, onUpdate }: {
       icraHarci: String(kk.icraHarci || ''),
       digerMasraflar: String(kk.digerMasraflar || ''),
     });
-  }, [icra.alacakKalemleri]);
+    setDuzenle(true);
+  }
 
   const toplam = (Number(form.asilAlacak) || 0) + (Number(form.islemisiFaiz) || 0) + (Number(form.davaMasrafi) || 0) +
     (Number(form.vekaletUcreti) || 0) + (Number(form.icraHarci) || 0) + (Number(form.digerMasraflar) || 0);
@@ -1481,7 +1486,7 @@ function AlacakKalemleriSection({ icra, hesap, onUpdate }: {
     <div>
       <div className="flex items-center justify-between">
         <SectionHeader title="Alacak Kalemleri" />
-        <button onClick={() => setDuzenle(!duzenle)} className="text-xs px-3 py-1.5 rounded-lg bg-gold/10 text-gold border border-gold/20 hover:bg-gold/20 transition-colors flex items-center gap-1.5">
+        <button onClick={handleDuzenle} className="text-xs px-3 py-1.5 rounded-lg bg-gold/10 text-gold border border-gold/20 hover:bg-gold/20 transition-colors flex items-center gap-1.5">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           {duzenle ? 'Iptal' : 'Duzenle'}
         </button>
@@ -1528,7 +1533,7 @@ function AlacakKalemleriSection({ icra, hesap, onUpdate }: {
         ) : (
           <div className="text-center py-4 text-xs text-text-dim">
             Alacak kalemleri henuz girilmemis.
-            <button onClick={() => setDuzenle(true)} className="text-gold hover:underline ml-1">Ekle</button>
+            <button onClick={handleDuzenle} className="text-gold hover:underline ml-1">Ekle</button>
           </div>
         )}
       </div>
@@ -1865,7 +1870,11 @@ function BorcluBilgileriSection({ icra, onUpdate, karsiRolLabel = 'Borçlu' }: {
     tasinmazlar: (det.tasinmazlar || []).join('\n'),
   });
 
-  useEffect(() => {
+  function handleDuzenle() {
+    if (duzenle) {
+      setDuzenle(false);
+      return;
+    }
     const d = icra.borcluDetay || {};
     setForm({
       tcVkn: d.tcVkn || '',
@@ -1876,7 +1885,8 @@ function BorcluBilgileriSection({ icra, onUpdate, karsiRolLabel = 'Borçlu' }: {
       aracPlakalari: (d.aracPlakalari || []).join('\n'),
       tasinmazlar: (d.tasinmazlar || []).join('\n'),
     });
-  }, [icra.borcluDetay]);
+    setDuzenle(true);
+  }
 
   const hasData = det.tcVkn || det.adres || det.isveren || (det.bankaHesaplari || []).length > 0 || (det.aracPlakalari || []).length > 0 || (det.tasinmazlar || []).length > 0;
 
@@ -1906,7 +1916,7 @@ function BorcluBilgileriSection({ icra, onUpdate, karsiRolLabel = 'Borçlu' }: {
           {hasData && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gold/10 text-gold border border-gold/20">Bilgi var</span>}
         </button>
         {acik && (
-          <button onClick={() => setDuzenle(!duzenle)} className="text-xs px-3 py-1.5 rounded-lg bg-gold/10 text-gold border border-gold/20 hover:bg-gold/20 transition-colors flex items-center gap-1.5">
+          <button onClick={handleDuzenle} className="text-xs px-3 py-1.5 rounded-lg bg-gold/10 text-gold border border-gold/20 hover:bg-gold/20 transition-colors flex items-center gap-1.5">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             {duzenle ? 'Iptal' : 'Duzenle'}
           </button>
@@ -2002,7 +2012,7 @@ function BorcluBilgileriSection({ icra, onUpdate, karsiRolLabel = 'Borçlu' }: {
           ) : (
             <div className="text-center py-4 text-xs text-text-dim">
               Borclu detay bilgisi girilmemis.
-              <button onClick={() => setDuzenle(true)} className="text-gold hover:underline ml-1">Bilgi Ekle</button>
+              <button onClick={handleDuzenle} className="text-gold hover:underline ml-1">Bilgi Ekle</button>
             </div>
           )}
         </div>

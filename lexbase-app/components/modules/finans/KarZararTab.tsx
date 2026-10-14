@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { gelirTahsilatiMi } from '@/lib/finans/gelirKurallari';
 import { useBuroKarZarar } from '@/lib/hooks/useFinans';
 import { useDavalar } from '@/lib/hooks/useDavalar';
 import { useIcralar } from '@/lib/hooks/useIcra';
@@ -21,14 +22,20 @@ interface KarZararTabProps {
 
 // ── Client-Side Fallback Hesaplama ────────────────────────────
 function useKarZararFallback(yil: number, ay?: number) {
-  const { data: davalar } = useDavalar();
-  const { data: icralar } = useIcralar();
-  const { data: danismanliklar } = useDanismanliklar();
-  const { data: arabuluculuklar } = useArabuluculuklar();
-  const { data: ihtarnameler } = useIhtarnameler();
-  const { data: giderler } = useBuroGiderleri();
+  const davaQuery = useDavalar();
+  const icraQuery = useIcralar();
+  const danismanlikQuery = useDanismanliklar();
+  const arabuluculukQuery = useArabuluculuklar();
+  const ihtarnameQuery = useIhtarnameler();
+  const giderQuery = useBuroGiderleri();
+  const { data: davalar } = davaQuery;
+  const { data: icralar } = icraQuery;
+  const { data: danismanliklar } = danismanlikQuery;
+  const { data: arabuluculuklar } = arabuluculukQuery;
+  const { data: ihtarnameler } = ihtarnameQuery;
+  const { data: giderler } = giderQuery;
 
-  return useMemo(() => {
+  const data = useMemo(() => {
     const tarihIcindeMi = (tarih: string | undefined) => {
       if (!tarih) return false;
       const d = new Date(tarih);
@@ -51,6 +58,7 @@ function useKarZararFallback(yil: number, ay?: number) {
     tumDosyalar.forEach((dosya) => {
       const tahsilatlar = (dosya.tahsilatlar || []) as Array<Record<string, unknown>>;
       tahsilatlar.forEach((th) => {
+        if (!gelirTahsilatiMi(th.tur)) return;
         if (!tarihIcindeMi(th.tarih as string)) return;
         const tutar = Number(th.tutar || 0);
         if (th.tur === 'akdi_vekalet') akdiVekaletUcreti += tutar;
@@ -111,7 +119,7 @@ function useKarZararFallback(yil: number, ay?: number) {
     // İhtarname noter masrafları
     (ihtarnameler || []).forEach((ih) => {
       if (tarihIcindeMi(ih.tarih)) {
-        dosyaMasraflari += Number(ih.noterMasrafi || 0);
+        dosyaMasraflari += safeNum(ih.noterMasrafi);
       }
     });
 
@@ -140,19 +148,34 @@ function useKarZararFallback(yil: number, ay?: number) {
       _fallback: true,
     };
   }, [davalar, icralar, danismanliklar, arabuluculuklar, ihtarnameler, giderler, yil, ay]);
+  const queries = [davaQuery, icraQuery, danismanlikQuery, arabuluculukQuery, ihtarnameQuery, giderQuery];
+  return {
+    data,
+    isPending: queries.some((query) => query.isPending),
+    isError: queries.some((query) => query.isError),
+  };
 }
 
 // ── KarZararTab Bileşeni ──────────────────────────────────────
-export function KarZararTab({ yil, setYil, ay, setAy }: KarZararTabProps) {
-  const { data: rpcKarZarar, isLoading } = useBuroKarZarar(yil, ay || undefined);
-  const fallback = useKarZararFallback(yil, ay || undefined);
+export function KarZararTab(props: KarZararTabProps) {
+  const { data, isPending } = useBuroKarZarar(props.yil, props.ay || undefined);
+  if (isPending) return <div className="text-center py-8 text-text-muted text-xs">Yükleniyor...</div>;
+  if (!data) return <KarZararFallback {...props} />;
+  return <KarZararRapor {...props} karZarar={data} isFallback={false} />;
+}
+
+function KarZararFallback(props: KarZararTabProps) {
+  const { data, isPending, isError } = useKarZararFallback(props.yil, props.ay || undefined);
+  if (isError) return <div role="alert" className="text-center py-8 text-red text-xs">Finans verileri yüklenemedi. Lütfen tekrar deneyiniz.</div>;
+  if (isPending) return <div className="text-center py-8 text-text-muted text-xs">Finans verileri yükleniyor...</div>;
+  return <KarZararRapor {...props} karZarar={data} isFallback />;
+}
+
+function KarZararRapor({ yil, setYil, ay, setAy, karZarar, isFallback }: KarZararTabProps & {
+  karZarar: Record<string, unknown>;
+  isFallback: boolean;
+}) {
   const buYil = new Date().getFullYear();
-
-  if (isLoading) return <div className="text-center py-8 text-text-muted text-xs">Yükleniyor...</div>;
-
-  // RPC verisi varsa kullan, yoksa fallback
-  const karZarar = rpcKarZarar || fallback;
-  const isFallback = !rpcKarZarar;
 
   const gelirler = (karZarar?.gelirler || {}) as Record<string, unknown>;
   const giderler = (karZarar?.giderler || {}) as Record<string, unknown>;

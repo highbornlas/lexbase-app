@@ -559,11 +559,11 @@ export default function DavaDetay({ params }: { params: Promise<{ id: string }> 
         open={tahsilatModal}
         onClose={() => setTahsilatModal(false)}
         tahsilat={duzenlenecekTahsilat}
-        onKaydet={(tahsilat) => {
+        onKaydet={async (tahsilat) => {
           const mevcut = dava.tahsilatlar || [];
           const varMi = mevcut.find((t) => t.id === tahsilat.id);
           const yeniListe = varMi ? mevcut.map((t) => (t.id === tahsilat.id ? tahsilat : t)) : [...mevcut, tahsilat];
-          davaKaydet.mutate({ ...dava, tahsilatlar: yeniListe });
+          await davaKaydet.mutateAsync({ ...dava, tahsilatlar: yeniListe });
         }}
       />
     </div>

@@ -220,6 +220,7 @@ export function useDavaKaydet() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['davalar'] });
       queryClient.invalidateQueries({ queryKey: ['dava'] });
+      queryClient.invalidateQueries({ queryKey: ['finans'] });
     },
   });
 }
@@ -254,6 +255,7 @@ export function useDavaSil() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['davalar'] });
       queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
+      queryClient.invalidateQueries({ queryKey: ['finans'] });
     },
   });
 }
@@ -277,6 +279,7 @@ export function useDavaKaliciSil() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['davalar'] });
       queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
+      queryClient.invalidateQueries({ queryKey: ['finans'] });
     },
   });
 }
@@ -311,6 +314,7 @@ export function useDavaGeriYukle() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['davalar'] });
       queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
+      queryClient.invalidateQueries({ queryKey: ['finans'] });
     },
   });
 }
@@ -343,6 +347,7 @@ export function useDavaArsivle() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['davalar'] });
       queryClient.invalidateQueries({ queryKey: ['davalar-arsiv'] });
+      queryClient.invalidateQueries({ queryKey: ['finans'] });
     },
   });
 }
@@ -377,6 +382,7 @@ export function useDavaArsivdenCikar() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['davalar'] });
       queryClient.invalidateQueries({ queryKey: ['davalar-arsiv'] });
+      queryClient.invalidateQueries({ queryKey: ['finans'] });
     },
   });
 }

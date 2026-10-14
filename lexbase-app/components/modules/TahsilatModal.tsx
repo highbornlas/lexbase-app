@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Modal, FormGroup, FormInput, FormSelect, BtnGold, BtnOutline } from '@/components/ui/Modal';
 import { useModalDraft } from '@/lib/hooks/useModalDraft';
 import { fmt } from '@/lib/utils';
@@ -28,7 +28,7 @@ export interface TahsilatKaydi {
 interface TahsilatModalProps {
   open: boolean;
   onClose: () => void;
-  onKaydet: (tahsilat: TahsilatKaydi) => void;
+  onKaydet: (tahsilat: TahsilatKaydi) => Promise<void>;
   tahsilat?: TahsilatKaydi | null;
 }
 
@@ -54,23 +54,18 @@ const bos: TahsilatKaydi = {
 };
 
 export function TahsilatModal({ open, onClose, onKaydet, tahsilat }: TahsilatModalProps) {
-  const [form, setForm] = useState<TahsilatKaydi>({ ...bos });
-  const [initialForm, setInitialForm] = useState<TahsilatKaydi>({ ...bos });
+  return <TahsilatModalForm key={`${open}-${tahsilat?.id || 'yeni'}`} open={open} onClose={onClose} onKaydet={onKaydet} tahsilat={tahsilat} />;
+}
+
+function TahsilatModalForm({ open, onClose, onKaydet, tahsilat }: TahsilatModalProps) {
+  const [initialForm] = useState<TahsilatKaydi>(() => tahsilat ? { ...tahsilat } : {
+    ...bos, id: crypto.randomUUID(), tarih: new Date().toISOString().split('T')[0],
+  });
+  const [form, setForm] = useState<TahsilatKaydi>(initialForm);
+  const [kaydediliyor, setKaydediliyor] = useState(false);
+  const kayitKilidi = useRef(false);
   const [tutarModu, setTutarModu] = useState<'brut' | 'net'>('brut');
   const [hata, setHata] = useState('');
-
-  useEffect(() => {
-    let init: TahsilatKaydi;
-    if (tahsilat) {
-      init = { ...tahsilat };
-    } else {
-      init = { ...bos, id: crypto.randomUUID() };
-    }
-    setInitialForm(init);
-    setForm(init);
-    setHata('');
-    setTutarModu('brut');
-  }, [tahsilat, open]);
 
   const draftKey = `tahsilat_${form.id || 'yeni'}`;
   const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(
@@ -81,21 +76,30 @@ export function TahsilatModal({ open, onClose, onKaydet, tahsilat }: TahsilatMod
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  function handleSubmit() {
-    if (!form.tutar || form.tutar <= 0) {
+  async function handleSubmit() {
+    if (kayitKilidi.current) return;
+    if (!Number.isFinite(form.tutar) || form.tutar <= 0) {
       setHata('Tutar giriniz.');
       return;
     }
     setHata('');
-    // Makbuz kesilmediyse KDV/stopaj oranlarını sıfırla
-    const kaydedilecek = { ...form };
-    if (!kaydedilecek.makbuzKesildi) {
-      kaydedilecek.kdvOrani = 0;
-      kaydedilecek.stopajOrani = 0;
+    kayitKilidi.current = true;
+    setKaydediliyor(true);
+    try {
+      const kaydedilecek = { ...form };
+      if (!kaydedilecek.makbuzKesildi) {
+        kaydedilecek.kdvOrani = 0;
+        kaydedilecek.stopajOrani = 0;
+      }
+      await onKaydet(kaydedilecek);
+      clearDraft();
+      onClose();
+    } catch (error) {
+      setHata(error instanceof Error ? error.message : 'Tahsilat kaydedilemedi. Tekrar deneyiniz.');
+    } finally {
+      kayitKilidi.current = false;
+      setKaydediliyor(false);
     }
-    onKaydet(kaydedilecek);
-    clearDraft();
-    onClose();
   }
 
   // Vergi hesaplama
@@ -104,13 +108,13 @@ export function TahsilatModal({ open, onClose, onKaydet, tahsilat }: TahsilatMod
   const hesap = bruttenNete(form.tutar || 0, efektifKdv, efektifStopaj);
 
   return (
-    <Modal open={open} onClose={onClose} title={tahsilat ? 'Tahsilat Düzenle' : 'Yeni Tahsilat'} maxWidth="max-w-lg"
+    <Modal open={open} onClose={() => { if (!kayitKilidi.current) onClose(); }} title={tahsilat ? 'Tahsilat Düzenle' : 'Yeni Tahsilat'} maxWidth="max-w-lg"
       dirty={isDirty}
       hasDraft={hasDraft()}
       onLoadDraft={() => { const d = loadDraft(); if (d) setForm(d as unknown as TahsilatKaydi); clearDraft(); }}
       onDiscardDraft={clearDraft}
     >
-      <div className="space-y-4">
+      <fieldset disabled={kaydediliyor} className="space-y-4">
         {hata && (
           <div className="bg-red-dim border border-red/20 rounded-lg px-3 py-2 text-xs text-red">{hata}</div>
         )}
@@ -133,7 +137,7 @@ export function TahsilatModal({ open, onClose, onKaydet, tahsilat }: TahsilatMod
           <div className="flex gap-2">
             <FormInput
               type="number"
-              value={form.tutar || ''}
+              value={(tutarModu === 'net' && form.makbuzKesildi ? hesap.netTutar : form.tutar) || ''}
               onChange={(e) => {
                 const val = Number(e.target.value);
                 if (tutarModu === 'net' && form.makbuzKesildi) {
@@ -242,11 +246,11 @@ export function TahsilatModal({ open, onClose, onKaydet, tahsilat }: TahsilatMod
             </div>
           )}
         </div>
-      </div>
+      </fieldset>
 
       <div className="flex items-center justify-end gap-2 mt-6 pt-4 border-t border-border">
-        <BtnOutline onClick={onClose}>İptal</BtnOutline>
-        <BtnGold onClick={handleSubmit}>{tahsilat ? 'Güncelle' : 'Ekle'}</BtnGold>
+        <BtnOutline disabled={kaydediliyor} onClick={onClose}>İptal</BtnOutline>
+        <BtnGold disabled={kaydediliyor} onClick={handleSubmit}>{kaydediliyor ? 'Kaydediliyor...' : tahsilat ? 'Güncelle' : 'Ekle'}</BtnGold>
       </div>
     </Modal>
   );

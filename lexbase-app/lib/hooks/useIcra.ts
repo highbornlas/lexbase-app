@@ -257,6 +257,7 @@ export function useIcraKaydet() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['icra'] });
       queryClient.invalidateQueries({ queryKey: ['icra-detay'] });
+      queryClient.invalidateQueries({ queryKey: ['finans'] });
     },
   });
 }
@@ -289,6 +290,7 @@ export function useIcraSil() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['icra'] });
       queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
+      queryClient.invalidateQueries({ queryKey: ['finans'] });
     },
   });
 }
@@ -312,6 +314,7 @@ export function useIcraKaliciSil() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['icra'] });
       queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
+      queryClient.invalidateQueries({ queryKey: ['finans'] });
     },
   });
 }
@@ -346,6 +349,7 @@ export function useIcraGeriYukle() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['icra'] });
       queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
+      queryClient.invalidateQueries({ queryKey: ['finans'] });
     },
   });
 }
@@ -378,6 +382,7 @@ export function useIcraArsivle() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['icra'] });
       queryClient.invalidateQueries({ queryKey: ['icra-arsiv'] });
+      queryClient.invalidateQueries({ queryKey: ['finans'] });
     },
   });
 }
@@ -412,6 +417,7 @@ export function useIcraArsivdenCikar() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['icra'] });
       queryClient.invalidateQueries({ queryKey: ['icra-arsiv'] });
+      queryClient.invalidateQueries({ queryKey: ['finans'] });
     },
   });
 }
