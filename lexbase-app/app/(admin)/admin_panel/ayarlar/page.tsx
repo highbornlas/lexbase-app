@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAdminBilgi, useAdminAuditYaz } from '@/lib/hooks/useAdmin';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
+import { APP_VERSION } from '@/lib/version';
 
 /* ══════════════════════════════════════════════════════════════
    Admin — Platform Ayarları
@@ -105,7 +106,7 @@ export default function AyarlarPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
                 { label: 'Platform Adı', value: 'LexBase' },
-                { label: 'Versiyon', value: 'v2.1.0' },
+                { label: 'Versiyon', value: `v${APP_VERSION}` },
                 { label: 'Domain', value: 'lexbase.app' },
                 { label: 'Hosting', value: 'Cloudflare Pages' },
                 { label: 'Veritabanı', value: 'Supabase PostgreSQL 17' },
@@ -132,7 +133,7 @@ export default function AyarlarPage() {
               </div>
               <div className="rounded-lg bg-amber-500/5 border border-amber-500/20 px-3 py-2 mt-2">
                 <p className="text-[10px] text-amber-400">
-                  ⚠️ RESEND_API_KEY Supabase Edge Function secrets'ta tanımlı olmalıdır.
+                  ⚠️ RESEND_API_KEY Supabase Edge Function secrets&apos;ta tanımlı olmalıdır.
                 </p>
               </div>
             </div>

@@ -1,0 +1,18 @@
+{
+  "legacyLiveVersion": "2.3.0",
+  "unreleased": [
+    "Müvekkil adına alınan para ile büroya ait ücret tahsilatları ayrıldı.",
+    "Tahsilat formlarında başarısız kayıt sonrası bilgilerin korunması iyileştirildi.",
+    "Arşivlenmiş dosyaların finans geçmişinde kalması için hesaplar düzenlendi.",
+    "Sürüm göstergeleri ve güncelleme notları tek kaynağa bağlandı."
+  ],
+  "releases": [
+    { "version": "2.3.0", "date": "2026-03-21", "changes": ["Veri sorgularında performans iyileştirmeleri yapıldı.", "Hata kaydı ve hata takibi geliştirildi.", "Renk ve durum sabitleri merkezileştirildi.", "TypeScript tipleri temizlendi."] },
+    { "version": "2.2.0", "date": "2026-03-21", "changes": ["Güvenlik kontrolleri ve veri erişim kuralları iyileştirildi.", "TIFF dosya önizleme desteği eklendi.", "Sürüm takibi altyapısı eklendi."] },
+    { "version": "2.1.0", "date": "2026-03-20", "changes": ["UDF belgelerinde tablo çerçevesi ve numaralı paragraf desteği geliştirildi.", "Belge inceleme paneli iyileştirildi.", "Giriş güvenliği, KVKK belgeleri ve veri kullanım onayları güncellendi."] },
+    { "version": "2.0.0", "date": "2026-02", "changes": ["Finans modülü ve finans hesaplama altyapısı yeniden düzenlendi.", "Banka seçimi ve veri aktarımı geliştirildi."] },
+    { "version": "1.8.0", "date": "2026-01", "changes": ["Admin paneli, lisans sistemi ve e-posta bildirim altyapısı eklendi."] },
+    { "version": "1.5.0", "date": "2025-12", "changes": ["İcra dosyası yönetimi ve PWA desteği eklendi.", "Karanlık tema geliştirildi."] },
+    { "version": "1.0.0", "date": "2025-11", "changes": ["Dosya yönetimi, müvekkil takibi ve duruşma takvimi kullanıma sunuldu.", "Bulut senkronizasyonu ve mobil uyumlu arayüz eklendi."] }
+  ]
+}

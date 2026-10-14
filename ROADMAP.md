@@ -13,6 +13,8 @@ publication. Existing Claude credentials and connections must be preserved.
 - Critical screen performance has a measured before/after comparison.
 - Regression tests, type checks and production builds pass.
 - Releases have post-deployment smoke checks and a documented rollback.
+- Every new production code release advances the version, includes dated
+  user-facing update notes and passes the RELEASING.md preflight/smoke checks.
 
 ## Work Packages
 
@@ -33,6 +35,8 @@ publication. Existing Claude credentials and connections must be preserved.
 - [x] Prepare guarded case/client summary corrections, rollback snapshot and
       27 passing isolated SQL scenarios; verify idempotence and drift rejection.
 - [x] Align client cards/report/PDF fee labels with separated fee summaries.
+- [x] Centralize version/history displays, add release preparation and predeploy
+      version/notes checks; seven new release tests and local notes/API checks.
 - [ ] Review and improve core forms, list/detail screens and mobile behavior.
 - [ ] Measure and improve critical screen loading.
 - [ ] Complete role/admin/invitation checks.
