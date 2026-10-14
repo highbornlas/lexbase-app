@@ -46,6 +46,10 @@ publication. Existing Claude credentials and connections must be preserved.
 - [ ] Review and improve core forms, list/detail screens and mobile behavior.
 - [ ] Measure and improve critical screen loading.
 - [ ] Complete role/admin/invitation checks.
+- [x] Confirm overly broad membership service policy with read-only live metadata;
+      prepare guarded scope/grant correction and 23 isolated PostgreSQL assertions.
+- [ ] Move approval-recipient lookup to a narrowly authorized server operation;
+      verify onboarding/platform-admin parity before membership security rollout.
 - [ ] Validate, publish in bounded releases and run production smoke checks.
 
 ## Module Review
@@ -97,6 +101,10 @@ browser observations. Proposed product changes are not verified findings.
 - Case/client calculation corrections are tested candidates, not live changes.
   Profit/loss, refund/source allocation, tax totals and full browser parity
   remain open before a coordinated accounting release.
+- Membership-based checks depend on trusted membership writes. Live
+  `service_role_full_access` currently applies to PUBLIC, not just service_role;
+  its unconditional policy defeats narrower rules. A local correction is tested
+  but NOT applied. See MEMBERSHIP_SECURITY.md; this is a priority security gate.
 
 ## Deferred Feature Backlog
 
