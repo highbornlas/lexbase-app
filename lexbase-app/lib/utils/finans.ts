@@ -83,6 +83,17 @@ export function dosyaMasrafToplami(kayit: Record<string, unknown>): number {
   return yuvarla(harcamalar.reduce((sum, h) => sum + safeNum(h?.tutar), 0));
 }
 
+export function dosyaMasrafOzeti(kayit: Record<string, unknown>) {
+  let buro = 0, muvekkil = 0;
+  const harcamalar = Array.isArray(kayit.harcamalar) ? kayit.harcamalar : [];
+  for (const harcama of harcamalar) {
+    if (!harcama || harcama._silindi) continue;
+    if (harcama.masrafSahibi === 'buro') buro += safeNum(harcama.tutar);
+    else muvekkil += safeNum(harcama.tutar);
+  }
+  return { buro: yuvarla(buro), muvekkil: yuvarla(muvekkil) };
+}
+
 export function anlasilanUcret(kayit: Record<string, unknown>): number {
   const anlasma = kayit.anlasma && typeof kayit.anlasma === 'object' && !Array.isArray(kayit.anlasma)
     ? kayit.anlasma as Record<string, unknown> : {};

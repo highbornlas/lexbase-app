@@ -1,8 +1,10 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
+import { useKasaIslemi } from './useKasaIslemi';
 import { createClient } from '@/lib/supabase/client';
 import { useBuroId } from './useBuro';
+export { hesaplaKasaOzet, hesaplaTumKasalar } from '@/lib/finans/avansKurallari';
 
 // ── Avans Hareket Tipi ──────────────────────────────────────
 export interface AvansHareket {
@@ -29,6 +31,9 @@ export interface AvansKasaOzet {
   toplamMasraf: number;
   toplamIade: number;
   bakiye: number;
+  masrafAlacagi: number;
+  emanetBakiyesi: number;
+  gecersizHareketSayisi: number;
   hareketSayisi: number;
 }
 
@@ -60,7 +65,7 @@ export function useAvansHareketleri(muvId?: string) {
 
       if (error) throw error;
       return (data || [])
-        .map((r) => ({ id: r.id, ...(r.data as object) }) as AvansHareket)
+        .map((r) => ({ ...(r.data as object), id: r.id }) as AvansHareket)
         .filter((h) => !h._silindi)
         .sort((a, b) => (b.tarih || '').localeCompare(a.tarih || ''));
     },
@@ -84,144 +89,26 @@ export function useTumAvansHareketleri() {
 
       if (error) throw error;
       return (data || [])
-        .map((r) => ({ id: r.id, ...(r.data as object) }) as AvansHareket)
+        .map((r) => ({ ...(r.data as object), id: r.id }) as AvansHareket)
         .filter((h) => !h._silindi);
     },
     enabled: !!buroId,
   });
 }
 
-// ── Avans Kasa Özeti Hesapla (client-side) ──────────────────
-export function hesaplaKasaOzet(hareketler: AvansHareket[]): Omit<AvansKasaOzet, 'muvId' | 'muvAd'> {
-  let toplamAlim = 0;
-  let toplamMasraf = 0;
-  let toplamIade = 0;
 
-  hareketler.forEach((h) => {
-    const tutar = Number(h.tutar || 0);
-    if (h.tip === 'alim') toplamAlim += tutar;
-    else if (h.tip === 'masraf') toplamMasraf += tutar;
-    else if (h.tip === 'iade') toplamIade += tutar;
-  });
-
+export function useAvansHareketKaydet() {
+  const mutation = useKasaIslemi();
   return {
-    toplamAlim,
-    toplamMasraf,
-    toplamIade,
-    bakiye: toplamAlim - toplamMasraf - toplamIade,
-    hareketSayisi: hareketler.length,
+    isPending: mutation.isPending,
+    mutateAsync: (hareket: AvansHareket) => mutation.mutateAsync({ islem: 'kaydet', hareket }),
   };
 }
 
-// ── Tüm Müvekkillerin Kasa Özetleri ────────────────────────
-export function hesaplaTumKasalar(hareketler: AvansHareket[]): Map<string, Omit<AvansKasaOzet, 'muvAd'>> {
-  const gruplar = new Map<string, AvansHareket[]>();
-
-  hareketler.forEach((h) => {
-    if (!h.muvId) return;
-    const arr = gruplar.get(h.muvId) || [];
-    arr.push(h);
-    gruplar.set(h.muvId, arr);
-  });
-
-  const sonuc = new Map<string, Omit<AvansKasaOzet, 'muvAd'>>();
-  gruplar.forEach((hArr, muvId) => {
-    sonuc.set(muvId, { muvId, ...hesaplaKasaOzet(hArr) });
-  });
-
-  return sonuc;
-}
-
-// ── Kaydet (upsert) — optimistic update ─────────────────────
-export function useAvansHareketKaydet() {
-  const buroId = useBuroId();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (kayit: AvansHareket) => {
-      if (!buroId) throw new Error('Büro bulunamadı');
-      const supabase = createClient();
-      const { id, ...data } = kayit;
-      const { error } = await supabase.from('avans_hareketleri').upsert({
-        id,
-        buro_id: buroId,
-        data,
-      });
-      if (error) throw error;
-    },
-    onMutate: async (yeni) => {
-      const key = ['avans', 'muv', yeni.muvId, buroId];
-      await queryClient.cancelQueries({ queryKey: key });
-      const onceki = queryClient.getQueryData<AvansHareket[]>(key);
-
-      queryClient.setQueryData<AvansHareket[]>(key, (eski) => {
-        if (!eski) return [yeni];
-        const idx = eski.findIndex((h) => h.id === yeni.id);
-        if (idx >= 0) {
-          const klon = [...eski];
-          klon[idx] = yeni;
-          return klon;
-        }
-        return [yeni, ...eski];
-      });
-
-      return { onceki };
-    },
-    onError: (_err, yeni, ctx) => {
-      if (ctx?.onceki) {
-        queryClient.setQueryData(['avans', 'muv', yeni.muvId, buroId], ctx.onceki);
-      }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['avans'] });
-      queryClient.invalidateQueries({ queryKey: ['finans'] });
-    },
-  });
-}
-
-// ── Sil (soft delete) ───────────────────────────────────────
 export function useAvansHareketSil() {
-  const buroId = useBuroId();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (hareket: AvansHareket) => {
-      if (!buroId) throw new Error('Büro bulunamadı');
-      const supabase = createClient();
-
-      const { data: mevcut } = await supabase
-        .from('avans_hareketleri')
-        .select('data')
-        .eq('id', hareket.id)
-        .single();
-
-      const mevcutData = (mevcut?.data as object) || {};
-      const { error } = await supabase.from('avans_hareketleri').upsert({
-        id: hareket.id,
-        buro_id: buroId,
-        data: { ...mevcutData, _silindi: new Date().toISOString() },
-      });
-      if (error) throw error;
-    },
-    onMutate: async (hareket) => {
-      const key = ['avans', 'muv', hareket.muvId, buroId];
-      await queryClient.cancelQueries({ queryKey: key });
-      const onceki = queryClient.getQueryData<AvansHareket[]>(key);
-
-      queryClient.setQueryData<AvansHareket[]>(key, (eski) =>
-        (eski || []).filter((h) => h.id !== hareket.id)
-      );
-
-      return { onceki };
-    },
-    onError: (_err, hareket, ctx) => {
-      if (ctx?.onceki) {
-        queryClient.setQueryData(['avans', 'muv', hareket.muvId, buroId], ctx.onceki);
-      }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['avans'] });
-      queryClient.invalidateQueries({ queryKey: ['finans'] });
-    },
-  });
+  const mutation = useKasaIslemi();
+  return {
+    isPending: mutation.isPending,
+    mutateAsync: (hareket: AvansHareket) => mutation.mutateAsync({ islem: 'sil', hareket, beklenen: hareket }),
+  };
 }

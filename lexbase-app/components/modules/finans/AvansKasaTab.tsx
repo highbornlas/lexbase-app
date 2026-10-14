@@ -14,8 +14,10 @@ import { exportAvansKasaXLS } from '@/lib/export/excelExport';
    ══════════════════════════════════════════════════════════════ */
 
 export function AvansKasaTab() {
-  const { data: hareketler, isLoading } = useTumAvansHareketleri();
-  const { data: muvekkillar } = useMuvekkillar();
+  const kasaQuery = useTumAvansHareketleri();
+  const { data: hareketler } = kasaQuery;
+  const muvQuery = useMuvekkillar();
+  const { data: muvekkillar } = muvQuery;
   const [arama, setArama] = useState('');
   const [durumFiltre, setDurumFiltre] = useState<'hepsi' | 'kritik' | 'normal'>('hepsi');
 
@@ -25,8 +27,8 @@ export function AvansKasaTab() {
     return map;
   }, [muvekkillar]);
 
-  const { kasalar, toplamBakiye, toplamAlim, toplamMasraf, kritikSayisi, eksiSayisi } = useMemo(() => {
-    if (!hareketler?.length) return { kasalar: [], toplamBakiye: 0, toplamAlim: 0, toplamMasraf: 0, kritikSayisi: 0, eksiSayisi: 0 };
+  const { kasalar, toplamBakiye, toplamAlim, toplamMasraf, kritikSayisi, eksiSayisi, toplamMasrafAlacagi, toplamEmanet } = useMemo(() => {
+    if (!hareketler?.length) return { kasalar: [], toplamBakiye: 0, toplamAlim: 0, toplamMasraf: 0, kritikSayisi: 0, eksiSayisi: 0, toplamMasrafAlacagi: 0, toplamEmanet: 0 };
 
     const kasaMap = hesaplaTumKasalar(hareketler);
     const arr = Array.from(kasaMap.values())
@@ -39,7 +41,9 @@ export function AvansKasaTab() {
     const kritikSayisi = arr.filter((k) => k.bakiye < AVANS_ESIK && k.bakiye >= 0).length;
     const eksiSayisi = arr.filter((k) => k.bakiye < 0).length;
 
-    return { kasalar: arr, toplamBakiye, toplamAlim, toplamMasraf, kritikSayisi, eksiSayisi };
+    const toplamMasrafAlacagi = arr.reduce((t, k) => t + k.masrafAlacagi, 0);
+    const toplamEmanet = arr.reduce((t, k) => t + k.emanetBakiyesi, 0);
+    return { kasalar: arr, toplamBakiye, toplamAlim, toplamMasraf, kritikSayisi, eksiSayisi, toplamMasrafAlacagi, toplamEmanet };
   }, [hareketler, muvAdMap]);
 
   // Filtreleme
@@ -54,15 +58,18 @@ export function AvansKasaTab() {
     return sonuc;
   }, [kasalar, durumFiltre, arama]);
 
-  if (isLoading) {
+  if (kasaQuery.isPending || muvQuery.isPending) {
     return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-gold border-t-transparent rounded-full animate-spin" /></div>;
   }
+
+  if (kasaQuery.isError || muvQuery.isError) return <p role="alert" className="text-sm text-red p-4">Kasa bilgileri yüklenemedi. Boş bakiye gösterilmiyor; sayfayı yenileyin.</p>;
 
   return (
     <div className="space-y-5">
       {/* KPI Kartları */}
-      <div className="grid grid-cols-5 gap-3">
-        <MiniKpi label="Toplam Bakiye" value={fmt(toplamBakiye)} color={toplamBakiye >= 0 ? 'text-green' : 'text-red'} />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <MiniKpi label="Müvekkillerin Kalan Avansı" value={fmt(toplamEmanet)} color="text-green" />
+        <MiniKpi label="Müvekkillerden Alınacak Masraf" value={fmt(toplamMasrafAlacagi)} color="text-red" />
         <MiniKpi label="Toplam Alınan" value={fmt(toplamAlim)} color="text-green" />
         <MiniKpi label="Toplam Harcanan" value={fmt(toplamMasraf)} color="text-text" />
         <MiniKpi label="Düşük Bakiye" value={kritikSayisi.toString()} color={kritikSayisi > 0 ? 'text-orange-400' : 'text-green'} />

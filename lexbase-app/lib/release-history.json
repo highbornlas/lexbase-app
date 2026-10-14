@@ -4,6 +4,8 @@
     "Müvekkil adına alınan para ile büroya ait ücret tahsilatları ayrıldı.",
     "Tahsilat formlarında başarısız kayıt sonrası bilgilerin korunması iyileştirildi.",
     "Arşivlenmiş dosyaların finans geçmişinde kalması için hesaplar düzenlendi.",
+    "Müvekkil avansı ve masraf alacağı, büro vekâlet ücreti hesaplarından ayrıldı.",
+    "Dosya masrafları ile müvekkil kasası için atomik kayıt altyapısı ve ortak masraf formu hazırlandı.",
     "Sürüm göstergeleri ve güncelleme notları tek kaynağa bağlandı."
   ],
   "releases": [

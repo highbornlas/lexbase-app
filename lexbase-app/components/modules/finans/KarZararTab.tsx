@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { gelirTahsilatiMi, hizmetUcretHareketleri } from '@/lib/finans/gelirKurallari';
+import { karZararHesapla } from '@/lib/finans/raporHesaplari';
 import { useBuroKarZarar } from '@/lib/hooks/useFinans';
 import { useDavalar } from '@/lib/hooks/useDavalar';
 import { useIcralar } from '@/lib/hooks/useIcra';
@@ -10,7 +10,6 @@ import { useArabuluculuklar } from '@/lib/hooks/useArabuluculuk';
 import { useIhtarnameler } from '@/lib/hooks/useIhtarname';
 import { useBuroGiderleri } from '@/lib/hooks/useBuroGiderleri';
 import { fmt } from '@/lib/utils';
-import { safeNum } from '@/lib/utils/finans';
 import { AYLAR, KzRow } from './shared';
 
 interface KarZararTabProps {
@@ -35,102 +34,9 @@ function useKarZararFallback(yil: number, ay?: number) {
   const { data: ihtarnameler } = ihtarnameQuery;
   const { data: giderler } = giderQuery;
 
-  const data = useMemo(() => {
-    const tarihIcindeMi = (tarih: string | undefined) => {
-      if (!tarih) return false;
-      const d = new Date(tarih);
-      if (isNaN(d.getTime())) return false;
-      if (d.getFullYear() !== yil) return false;
-      if (ay && (d.getMonth() + 1) !== ay) return false;
-      return true;
-    };
-
-    // GELİRLER
-    let akdiVekaletUcreti = 0;
-    let karsiVekaletHakedis = 0;
-    const digerGelir = 0;
-    let danismanlikGeliri = 0;
-    let arabuluculukGeliri = 0;
-    let ihtarnameGeliri = 0;
-
-    // Dava + İcra tahsilatları
-    const tumDosyalar = [...(davalar || []), ...(icralar || [])] as Record<string, unknown>[];
-    tumDosyalar.forEach((dosya) => {
-      const tahsilatlar = (dosya.tahsilatlar || []) as Array<Record<string, unknown>>;
-      tahsilatlar.forEach((th) => {
-        if (!gelirTahsilatiMi(th.tur)) return;
-        if (!tarihIcindeMi(th.tarih as string)) return;
-        const tutar = safeNum(th.tutar);
-        if (th.tur === 'akdi_vekalet') akdiVekaletUcreti += tutar;
-        else karsiVekaletHakedis += tutar;
-      });
-    });
-
-    const hizmetToplami = (items: Record<string, unknown>[]) => items.reduce((sum, dosya) =>
-      sum + hizmetUcretHareketleri(dosya).reduce((subtotal, th) =>
-        tarihIcindeMi(th.tarih as string) ? subtotal + safeNum(th.tutar) : subtotal, 0), 0);
-    danismanlikGeliri = hizmetToplami(danismanliklar || []);
-    arabuluculukGeliri = hizmetToplami(arabuluculuklar || []);
-    ihtarnameGeliri = hizmetToplami(ihtarnameler || []);
-
-    const toplamGelir = akdiVekaletUcreti + karsiVekaletHakedis + danismanlikGeliri + arabuluculukGeliri + ihtarnameGeliri + digerGelir;
-
-    // GİDERLER
-    let buroGiderToplam = 0;
-    const buroGiderKategori: Record<string, number> = {};
-    let dosyaMasraflari = 0;
-
-    // Büro giderleri
-    (giderler || []).forEach((g) => {
-      if (!tarihIcindeMi(g.tarih)) return;
-      const tutar = g.netTutar || g.tutar || 0;
-      buroGiderToplam += tutar;
-      const kat = g.kategori || 'Diğer';
-      buroGiderKategori[kat] = (buroGiderKategori[kat] || 0) + tutar;
-    });
-
-    // Dosya masrafları
-    tumDosyalar.forEach((dosya) => {
-      const harcamalar = (dosya.harcamalar || []) as Array<Record<string, unknown>>;
-      harcamalar.forEach((h) => {
-        if (tarihIcindeMi(h.tarih as string)) {
-          dosyaMasraflari += Number(h.tutar || 0);
-        }
-      });
-    });
-
-    // İhtarname noter masrafları
-    (ihtarnameler || []).forEach((ih) => {
-      if (tarihIcindeMi(ih.tarih)) {
-        dosyaMasraflari += safeNum(ih.noterMasrafi);
-      }
-    });
-
-    const toplamGider = buroGiderToplam + dosyaMasraflari;
-    const net = toplamGelir - toplamGider;
-    const karZararOrani = toplamGelir > 0 ? (net / toplamGelir) * 100 : 0;
-
-    return {
-      gelirler: {
-        akdiVekaletUcreti,
-        karsiVekaletHakedis,
-        danismanlikGeliri,
-        arabuluculukGeliri,
-        ihtarnameGeliri,
-        digerGelir,
-        toplam: toplamGelir,
-      },
-      giderler: {
-        buroGiderleri: buroGiderKategori,
-        buroGiderToplam,
-        dosyaMasraflari,
-        toplam: toplamGider,
-      },
-      net,
-      karZararOrani,
-      _fallback: true,
-    };
-  }, [davalar, icralar, danismanliklar, arabuluculuklar, ihtarnameler, giderler, yil, ay]);
+  const data = useMemo(() => karZararHesapla({
+    davalar, icralar, danismanliklar, arabuluculuklar, ihtarnameler, giderler,
+  }, yil, ay), [davalar, icralar, danismanliklar, arabuluculuklar, ihtarnameler, giderler, yil, ay]);
   const queries = [davaQuery, icraQuery, danismanlikQuery, arabuluculukQuery, ihtarnameQuery, giderQuery];
   return {
     data,
@@ -232,7 +138,7 @@ function KarZararRapor({ yil, setYil, ay, setAy, karZarar, isFallback }: KarZara
             ) : (
               <KzRow label="Büro Giderleri" value={Number(giderler.buroGiderToplam || giderler.buroGiderleri || 0)} color="text-red" />
             )}
-            <KzRow label="Dosya Masrafları" value={Number(giderler.dosyaMasraflari || 0)} color="text-red" />
+            <KzRow label="Büroya Ait Dosya Maliyetleri" value={Number(giderler.dosyaMasraflari || 0)} color="text-red" />
             <div className="border-t border-border pt-2">
               <KzRow label="TOPLAM GİDER" value={Number(giderler.toplam || 0)} color="text-red" bold />
             </div>

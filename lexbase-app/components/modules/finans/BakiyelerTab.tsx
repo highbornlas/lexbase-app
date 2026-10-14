@@ -11,7 +11,7 @@ import { useDanismanliklar } from '@/lib/hooks/useDanismanlik';
 import { useArabuluculuklar } from '@/lib/hooks/useArabuluculuk';
 import { useIhtarnameler } from '@/lib/hooks/useIhtarname';
 import { fmt } from '@/lib/utils';
-import { safeNum, tahsilatToplam, dosyaParaOzeti, dosyaMasrafToplami, anlasilanUcret } from '@/lib/utils/finans';
+import { safeNum, tahsilatToplam, dosyaParaOzeti, dosyaMasrafToplami, dosyaMasrafOzeti, anlasilanUcret } from '@/lib/utils/finans';
 import { EmptyState, MiniKpi } from './shared';
 
 /* ══════════════════════════════════════════════════════════════
@@ -54,6 +54,7 @@ export function BakiyelerTab() {
       let anlasilanToplam = 0;
       let tahsilEdilenToplam = 0;
       let masrafToplam = 0;
+      let buroMasrafToplam = 0;
 
       // ── Dava + İcra (MuvAlacak pattern) ──
       const tumDosyalar = [...muvDavalar, ...muvIcralar];
@@ -61,6 +62,7 @@ export function BakiyelerTab() {
         anlasilanToplam += anlasilanUcret(dosya);
         tahsilEdilenToplam += dosyaParaOzeti(dosya).sozlesmeTahsilati;
         masrafToplam += dosyaMasrafToplami(dosya);
+        buroMasrafToplam += dosyaMasrafOzeti(dosya).buro;
       });
 
       // ── Danışmanlık ──
@@ -86,7 +88,7 @@ export function BakiyelerTab() {
       });
 
       const kalanAlacak = anlasilanToplam - tahsilEdilenToplam;
-      const netBakiye = tahsilEdilenToplam - masrafToplam;
+      const netBakiye = tahsilEdilenToplam - buroMasrafToplam;
       const dosyaSayisi = tumDosyalar.length + muvDanismanlik.length + muvArabuluculuk.length + muvIhtarname.length;
 
       return {

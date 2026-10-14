@@ -42,3 +42,13 @@ export function hizmetTahsilatiEkle(kayit: Record<string, unknown>, hareket: Rec
     : Number.isFinite(eskiTutar) && eskiTutar > 0 ? hizmetUcretHareketleri(kayit) : [];
   return [...onceki, hareket];
 }
+
+export function raporGelirHareketleri(kayit: Record<string, unknown>, hizmet = false): Record<string, unknown>[] {
+  if (hizmet) return hizmetUcretHareketleri(kayit);
+  if (Array.isArray(kayit.tahsilatlar) && kayit.tahsilatlar.length > 0) {
+    return kayit.tahsilatlar.filter((t): t is Record<string, unknown> =>
+      !!t && typeof t === 'object' && !Array.isArray(t) && gelirTahsilatiMi(t.tur));
+  }
+  return [{ id: `${kayit.id}-legacy-fee`, tur: 'akdi_vekalet', tutar: kayit.tahsilEdildi,
+    tarih: kayit.tahsilTarih || kayit.tahsilatTarihi || '' }];
+}

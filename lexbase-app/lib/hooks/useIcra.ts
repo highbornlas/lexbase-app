@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
+import { masraflariKoruyarakDosyaKaydet } from '@/lib/data/financeCashTransaction';
 import { raporKaydiGorunurMu } from '@/lib/finans/gelirKurallari';
 import { useBuroId } from './useBuro';
 
@@ -134,7 +135,7 @@ export interface Icra {
   // Alt veriler
   evraklar?: Record<string, unknown>[];
   notlar?: Record<string, unknown>[];
-  harcamalar?: Array<{ id: string; kat?: string; acik?: string; tarih?: string; tutar: number }>;
+  harcamalar?: Array<{ id: string; kat?: string; acik?: string; tarih?: string; tutar: number; masrafSahibi?: string }>;
   tahsilatlar?: Array<{ id: string; tur: string; tutar: number; tarih?: string; acik?: string; kdvOrani?: number; stopajOrani?: number; makbuzKesildi?: boolean; makbuzNo?: string; makbuzTarih?: string }>;
   anlasma?: Record<string, unknown>;
   not?: string;
@@ -225,13 +226,7 @@ export function useIcraKaydet() {
     mutationFn: async (kayit: Icra) => {
       if (!buroId) throw new Error('Büro bulunamadı');
       const supabase = createClient();
-      const { id, ...data } = kayit;
-      const { error } = await supabase.from('icra').upsert({
-        id,
-        buro_id: buroId,
-        data,
-      });
-      if (error) throw error;
+      await masraflariKoruyarakDosyaKaydet(supabase, buroId, 'İcra', { ...kayit });
     },
     onMutate: async (yeniIcra) => {
       await queryClient.cancelQueries({ queryKey: ['icra', buroId] });

@@ -112,15 +112,6 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
     'İhtarname': { arr: ihtArr, kaydet: ihtKaydet },
   };
 
-  const handleMasrafKaydet = (dosyaId: string, dosyaTur: string, harcama: { id: string; kat: string; acik: string; tarih: string; tutar: number }) => {
-    const hedef = turMap[dosyaTur];
-    if (!hedef) return;
-    const dosya = hedef.arr.find((d) => d.id === dosyaId);
-    if (!dosya) return;
-    const mevcutHarcamalar = (dosya.harcamalar || []) as Array<Record<string, unknown>>;
-    hedef.kaydet.mutate({ ...dosya, harcamalar: [...mevcutHarcamalar, harcama] } as never);
-  };
-
   const handleTahsilatKaydet = async (dosyaId: string, dosyaTur: string, tahsilat: { id: string; tarih: string; tutar: number; aciklama: string }) => {
     const hedef = turMap[dosyaTur];
     if (!hedef) throw new Error('Dosya türü desteklenmiyor');
@@ -248,7 +239,6 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
             arabuluculuklar={arabArr}
             ihtarnameler={ihtArr}
             finansOzet={finansOzet}
-            onMasrafKaydet={handleMasrafKaydet}
             onTahsilatKaydet={handleTahsilatKaydet}
           />
         )}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { gelirTahsilatiMi, hizmetUcretHareketleri } from '@/lib/finans/gelirKurallari';
+import { raporGelirHareketleri } from '@/lib/finans/gelirKurallari';
 import { useMuvekkillar } from './useMuvekkillar';
 import { useDavalar } from './useDavalar';
 import { useIcralar } from './useIcra';
@@ -35,15 +35,17 @@ import { bruttenNete, nettenBrute, safeNum } from '@/lib/utils/finans';
 export { bruttenNete, nettenBrute };
 
 // ── Gelir Hesaplama Hook'u ────────────────────────────────────
-export function useGelirHesapla() {
-  const { data: muvekkillar } = useMuvekkillar();
-  const { data: davalar } = useDavalar(true);
-  const { data: icralar } = useIcralar(true);
-  const { data: danismanliklar } = useDanismanliklar(true);
-  const { data: arabuluculuklar } = useArabuluculuklar(true);
-  const { data: ihtarnameler } = useIhtarnameler(true);
+export function useGelirVerisi() {
+  const muvekkilQuery = useMuvekkillar();
+  const davaQuery = useDavalar(true), icraQuery = useIcralar(true);
+  const danismanlikQuery = useDanismanliklar(true), arabuluculukQuery = useArabuluculuklar(true);
+  const ihtarnameQuery = useIhtarnameler(true);
+  const { data: muvekkillar } = muvekkilQuery;
+  const { data: davalar } = davaQuery, { data: icralar } = icraQuery;
+  const { data: danismanliklar } = danismanlikQuery, { data: arabuluculuklar } = arabuluculukQuery;
+  const { data: ihtarnameler } = ihtarnameQuery;
 
-  return useMemo(() => {
+  const gelirler = useMemo(() => {
     const gelirler: GelirKaydi[] = [];
     const muvAdMap: Record<string, string> = {};
     (muvekkillar || []).forEach((m) => { muvAdMap[m.id] = m.ad || '?'; });
@@ -56,14 +58,13 @@ export function useGelirHesapla() {
 
     dosyaGruplari.forEach(({ items, kaynak }) => {
       items.forEach((dosya) => {
-        const tahsilatlar = (dosya.tahsilatlar || []) as Array<Record<string, unknown>>;
+        const tahsilatlar = raporGelirHareketleri(dosya);
         const muvId = (dosya.muvId as string) || '';
         const dosyaNo = (dosya.no as string) || (dosya.esasNo as string) || (dosya.dosyaNo as string) || '';
 
-        tahsilatlar.forEach((th) => {
-          if (!gelirTahsilatiMi(th.tur)) return;
+        tahsilatlar.forEach((th, index) => {
           const tutar = safeNum(th.tutar);
-          if (tutar <= 0) return;
+          if (tutar === 0) return;
 
           const kdvOrani = safeNum(th.kdvOrani);
           const stopajOrani = safeNum(th.stopajOrani);
@@ -75,7 +76,7 @@ export function useGelirHesapla() {
           const { kdvTutar, stopajTutar, netTutar } = bruttenNete(tutar, efektifKdv, efektifStopaj);
 
           gelirler.push({
-            id: (th.id as string) || crypto.randomUUID(),
+            id: (th.id as string) || `${kaynak}-${dosya.id}-gelir-${index}`,
             tarih: (th.tarih as string) || '',
             kaynak,
             tur: turLabel(th.tur as string),
@@ -104,9 +105,9 @@ export function useGelirHesapla() {
     ];
     for (const { items, kaynak, tur } of hizmetGruplari) {
       for (const dosya of items) {
-        for (const [index, th] of hizmetUcretHareketleri(dosya).entries()) {
+        for (const [index, th] of raporGelirHareketleri(dosya, true).entries()) {
           const tutar = safeNum(th.tutar);
-          if (tutar <= 0) continue;
+          if (tutar === 0) continue;
           const makbuzKesildi = th.makbuzKesildi === true;
           const kdvOrani = makbuzKesildi ? safeNum(th.kdvOrani) : 0;
           const stopajOrani = makbuzKesildi ? safeNum(th.stopajOrani) : 0;
@@ -132,6 +133,12 @@ export function useGelirHesapla() {
 
     return gelirler;
   }, [muvekkillar, davalar, icralar, danismanliklar, arabuluculuklar, ihtarnameler]);
+  const queries = [muvekkilQuery, davaQuery, icraQuery, danismanlikQuery, arabuluculukQuery, ihtarnameQuery];
+  return { gelirler, isPending: queries.some(q => q.isPending), isError: queries.some(q => q.isError) };
+}
+
+export function useGelirHesapla() {
+  return useGelirVerisi().gelirler;
 }
 
 // ── Yardımcılar ──────────────────────────────────────────────
