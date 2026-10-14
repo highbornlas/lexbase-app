@@ -7,6 +7,7 @@ import { usePersonelKaydet, type Personel } from '@/lib/hooks/usePersonel';
 import { useBildirimGonder } from '@/lib/hooks/useBildirimler';
 import { ROL_ETIKETLERI, type Rol } from '@/lib/hooks/useRol';
 import { createClient } from '@/lib/supabase/client';
+import { useBuroId } from '@/lib/hooks/useBuro';
 
 interface PersonelModalProps {
   open: boolean;
@@ -41,6 +42,7 @@ function createInitialForm(personel?: Personel | null): Partial<Personel> & { _d
 }
 
 function PersonelModalIcerik({ open, onClose, personel }: PersonelModalProps) {
+  const buroId = useBuroId();
   const [initialForm] = useState<Partial<Personel> & { _davetGonder?: boolean }>(() => createInitialForm(personel));
   const [form, setForm] = useState<Partial<Personel>>(initialForm);
   const [hata, setHata] = useState('');
@@ -66,6 +68,7 @@ function PersonelModalIcerik({ open, onClose, personel }: PersonelModalProps) {
   }
 
   async function davetGonderFn(): Promise<{ ok: boolean; status?: string; message?: string }> {
+    if (!buroId) { setHata('Davet için aktif büro bulunamadı.'); return { ok: false }; }
     const supabase = createClient();
     const { data: { session } } = await supabase.auth.getSession();
 
@@ -82,6 +85,7 @@ function PersonelModalIcerik({ open, onClose, personel }: PersonelModalProps) {
         'Authorization': `Bearer ${session.access_token}`,
       },
       body: JSON.stringify({
+        buro_id: buroId,
         email: form.email!.trim(),
         ad: form.ad!.trim(),
         rol: form.rol || 'avukat',

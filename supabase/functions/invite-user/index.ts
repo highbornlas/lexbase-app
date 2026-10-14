@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { authorizeInvite, authorizeReactivation, InviteAuthorizationError } from './authorization.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -53,45 +54,18 @@ Deno.serve(async (req: Request) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Çağıranın rolünü kontrol et (sahip veya yonetici olmalı)
-    const { data: callerUyelik } = await admin
-      .from("uyelikler")
-      .select("buro_id, rol")
-      .eq("auth_id", caller.id)
-      .eq("durum", "aktif")
-      .in("rol", ["sahip", "yonetici"])
-      .limit(1)
-      .single();
-
-    // Fallback: kullanicilar tablosu
-    let callerBuroId: string;
-    let callerRol: string;
-
-    if (callerUyelik) {
-      callerBuroId = callerUyelik.buro_id;
-      callerRol = callerUyelik.rol;
-    } else {
-      const { data: callerKul } = await admin
-        .from("kullanicilar")
-        .select("buro_id, rol")
-        .eq("auth_id", caller.id)
-        .single();
-
-      if (!callerKul || !["sahip", "yonetici"].includes(callerKul.rol)) {
-        return jsonRes({ error: "Personel ekleme yetkiniz yok. Sahip veya yönetici olmalısınız." }, 403);
-      }
-      callerBuroId = callerKul.buro_id;
-      callerRol = callerKul.rol;
-    }
-
     // Request body
-    const { email, ad, rol } = await req.json();
-    if (!email || !ad) {
+    const { email, ad, rol, buro_id } = await req.json();
+    if (typeof email !== 'string' || !email.trim() || typeof ad !== 'string' || !ad.trim()) {
       return jsonRes({ error: "E-posta ve ad zorunludur" }, 400);
     }
-
+    // Authorization comes only from a confirmed active membership, never an
+    // editable profile or user_metadata. Older single-bureau clients still work.
+    const authorization = await authorizeInvite(admin, caller.id, buro_id, rol);
+    const callerBuroId = authorization.buroId;
+    const callerRol = authorization.callerRole;
     const normalizedEmail = email.trim().toLowerCase();
-    const normalizedRol = rol || "avukat";
+    const normalizedRol = authorization.role;
 
     // Büro adını al (bildirim ve e-posta için)
     const { data: buroData } = await admin
@@ -112,18 +86,25 @@ Deno.serve(async (req: Request) => {
       // Zaten bu büroda üyeliği var mı?
       const { data: mevcutUyelik } = await admin
         .from("uyelikler")
-        .select("id, durum")
+        .select("id, durum, rol")
         .eq("auth_id", existingUser.id)
         .eq("buro_id", callerBuroId)
         .single();
 
       if (mevcutUyelik) {
         if (mevcutUyelik.durum === "pasif") {
+          authorizeReactivation(callerRol, mevcutUyelik.rol);
           // ── SENARYO 3: Pasif üyeliği yeniden aktifleştir ──
-          await admin
+          const { error: reactivationError } = await admin
             .from("uyelikler")
             .update({ durum: "aktif", rol: normalizedRol })
-            .eq("id", mevcutUyelik.id);
+            .eq("id", mevcutUyelik.id)
+            .eq("buro_id", callerBuroId)
+            .eq("durum", "pasif")
+            .eq("rol", mevcutUyelik.rol)
+            .select('id')
+            .single();
+          if (reactivationError) return jsonRes({error:'Uyelik yeniden etkinlestirilemedi.'},500);
 
           // Uygulama içi bildirim
           await insertBildirim(admin, callerBuroId, existingUser.id, {
@@ -240,6 +221,7 @@ Deno.serve(async (req: Request) => {
     }
 
   } catch (err: any) {
+    if (err instanceof InviteAuthorizationError) return jsonRes({error:err.message},err.status);
     console.error("invite-user error:", err);
     return jsonRes({ error: err.message || "Sunucu hatası" }, 500);
   }

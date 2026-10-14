@@ -46,6 +46,12 @@ publication. Existing Claude credentials and connections must be preserved.
 - [ ] Review and improve core forms, list/detail screens and mobile behavior.
 - [ ] Measure and improve critical screen loading.
 - [ ] Complete role/admin/invitation checks.
+- [x] Prepare private platform-admin predicates, nonrecursive registry policies
+      and disabled self-provisioning bootstrap; 38 isolated SQL assertions.
+- [x] Prepare membership-only invite authorization, selected-bureau requests and
+      protected privileged-role reactivation; six Node assertions.
+- [ ] Confirm existing administrators and real Auth/onboarding compatibility;
+      use PLATFORM_SECURITY_RELEASE.md for an isolated security rollout.
 - [x] Confirm overly broad membership service policy with read-only live metadata;
       prepare guarded scope/grant correction and 23 isolated PostgreSQL assertions.
 - [x] Prepare atomic approval-request/server notification operation without

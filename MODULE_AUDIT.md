@@ -29,6 +29,9 @@ Proposals are not implemented functionality.
 | Approval integration | Source | No finance form callers of request/approval-check hooks; settings imply protection not enforced | UI warning and reliability fixes in branch; integration pending |
 | Approval authorization | Production policies / source | Queue updates lack manager check; decision then generic upsert is non-atomic | Atomic decision and policy redesign required; not fixed by notification packet |
 | Legacy financial triggers | Production definitions | Enforcement/notice costs still projected into legacy avanslar | Trigger-aware cash regression and historical ownership review pending |
+| Platform administrator access | Production definitions / isolated fixtures | Any signed-in user satisfies admin predicate; bootstrap self-provisions and null uid bypasses its check | Guarded correction with 38 local SQL assertions, not live |
+| Invitation authority | Deployed v6 / source | Editable profile fallback and arbitrary first eligible bureau used for authority | Membership-only scoped source candidate; handler/runtime and legacy-caller checks pending |
+| Signup | Production trigger | User metadata used for bureau/profile roles; errors swallowed and membership not created | Trusted onboarding and historical profile reconciliation pending |
 
 ## Product Direction
 

@@ -32,6 +32,11 @@ a narrowly authorized server operation instead.
 
 ## Release Gates
 
+Membership restriction alone is insufficient: production `is_platform_admin()`
+currently treats all signed-in identities as admins. A separately tested platform
+predicate/registry candidate is described in PLATFORM_SECURITY_RELEASE.md. Do not
+claim tenant isolation repaired based only on the membership migration.
+
 - Real Supabase Auth/staging checks: outsider/member/manager/platform admin,
   multiple bureaus, revoked membership, invitation and bureau switching.
 - Request creation in `useOnay.ts` now uses an atomic server operation with a

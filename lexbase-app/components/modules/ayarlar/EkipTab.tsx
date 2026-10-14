@@ -6,6 +6,7 @@ import { useYetki } from '@/lib/hooks/useRol';
 import { ROL_ETIKETLERI, type Rol } from '@/lib/hooks/useRol';
 import { useBildirimGonder } from '@/lib/hooks/useBildirimler';
 import { PersonelModal } from '@/components/modules/PersonelModal';
+import { useBuroId } from '@/lib/hooks/useBuro';
 import { SectionTitle, Badge, AyarlarEmptyState, AyarInput } from './shared';
 
 /* ══════════════════════════════════════════════════════════════
@@ -19,6 +20,7 @@ const DURUM_LABEL: Record<string, { label: string; color: string }> = {
 };
 
 export function EkipTab() {
+  const buroId = useBuroId();
   const { data: personeller, isLoading } = usePersoneller();
   const { yetkili } = useYetki('kullanici:yonet');
   const kaydet = usePersonelKaydet();
@@ -110,6 +112,7 @@ export function EkipTab() {
     setDavetYukleniyor(p.id);
     setDavetMesaj(null);
     try {
+      if (!buroId) throw new Error('Davet için aktif büro bulunamadı.');
       const { createClient: cc } = await import('@/lib/supabase/client');
       const supabase = cc();
       const { data: { session } } = await supabase.auth.getSession();
@@ -125,6 +128,7 @@ export function EkipTab() {
           'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
+          buro_id: buroId,
           email: p.email.trim(),
           ad: (p.ad || '').trim(),
           rol: p.rol || 'avukat',
