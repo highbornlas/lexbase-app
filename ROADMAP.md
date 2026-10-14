@@ -30,6 +30,9 @@ publication. Existing Claude credentials and connections must be preserved.
       client drawer, client dues and balance screens; six additional fixtures.
 - [x] Reproduce three production summary discrepancies using isolated temporary
       SQL fixtures and cloned functions, without writing persistent data.
+- [x] Prepare guarded case/client summary corrections, rollback snapshot and
+      27 passing isolated SQL scenarios; verify idempotence and drift rejection.
+- [x] Align client cards/report/PDF fee labels with separated fee summaries.
 - [ ] Review and improve core forms, list/detail screens and mobile behavior.
 - [ ] Measure and improve critical screen loading.
 - [ ] Complete role/admin/invitation checks.
@@ -78,6 +81,9 @@ browser observations. Proposed product changes are not verified findings.
 - Cloudflare runtime inspection confirmed missing enforcement payment options
   and the debtor-payment storage convention. These are reconstructed in the
   branch; full-source reconciliation remains open (SOURCE_RECONCILIATION.md).
+- Case/client calculation corrections are tested candidates, not live changes.
+  Profit/loss, refund/source allocation, tax totals and full browser parity
+  remain open before a coordinated accounting release.
 
 ## Deferred Feature Backlog
 

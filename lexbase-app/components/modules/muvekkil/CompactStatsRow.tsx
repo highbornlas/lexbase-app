@@ -27,6 +27,7 @@ export function CompactStatsRow({
   const avanslar = finansOzet?.avanslar as Record<string, number> | undefined;
   const bakiye = finansOzet?.bakiye as Record<string, number> | undefined;
   const vekalet = finansOzet?.vekaletUcreti as Record<string, Record<string, number>> | undefined;
+  const alacak = finansOzet?.alacak as Record<string, number> | undefined;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-5">
@@ -69,15 +70,15 @@ export function CompactStatsRow({
             <span className={`font-[var(--font-playfair)] text-lg font-bold ${(bakiye?.genelBakiye ?? 0) >= 0 ? 'text-green' : 'text-red'}`}>
               {fmt(bakiye?.genelBakiye ?? 0)}
             </span>
-            <span className="text-[10px] text-text-dim">bakiye</span>
+            <span className="text-[10px] text-text-dim">hareket bakiyesi</span>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <MiniStat label="Masraf" value={fmt(masraflar?.toplam ?? 0)} color="text-text" />
           <MiniStat label="Avans" value={fmt(avanslar?.alinan ?? 0)} color="text-green" />
           <Sep />
-          <MiniStat label="Alacak" value={fmt(vekalet?.akdi?.kalan ?? 0)} color="text-gold" />
-          <MiniStat label="Tahsil" value={fmt(vekalet?.akdi?.tahsilEdilen ?? 0)} color="text-green" />
+          <MiniStat label="Ücret Alacağı" value={fmt(alacak?.kalan ?? vekalet?.akdi?.kalan ?? 0)} color="text-gold" />
+          <MiniStat label="Ücret Tahsilatı" value={fmt(alacak?.tahsilEdilen ?? vekalet?.akdi?.tahsilEdilen ?? 0)} color="text-green" />
         </div>
       </div>
     </div>

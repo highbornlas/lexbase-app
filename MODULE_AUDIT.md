@@ -22,7 +22,8 @@ Proposals are not implemented functionality.
 | Client drawer | Source | Explicit movements and legacy flat collections were added together; client money reduced fee dues | Shared fee/collection calculations in branch; fixtures passed |
 | Enforcement cover sheet | Source | All movement types, including fees and transfers, reduced debtor debt | Explicit debtor-payment subtotal shared with detail view; refund/source allocation remains pending |
 | Agreements | Source / production definitions | Percentage and mixed fee models calculated differently across views | Shared frontend formulas and precedence tests in branch |
-| Summary RPC parity | Isolated production-function clones | Office income 2500 vs 2800, agreement 3000 vs 5000, fee collection 12800 vs 2000 in synthetic fixture | Reproduced; live calculation changes pending |
+| Summary RPC parity | Isolated production-function clones | Office income 2500 vs 2800, agreement 3000 vs 5000, fee collection 12800 vs 2000 in synthetic fixture | Guarded candidate fixes pass 27 SQL scenarios; not deployed |
+| Client reports | Source | Statutory fee was mixed into contractual fees; cards omitted service dues and PDF mixed client money into fees | Branch aligned with candidate RPC; visual PDF/browser verification pending |
 
 ## Product Direction
 

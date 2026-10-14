@@ -71,6 +71,37 @@ These are diagnostic failures, not passing database regression tests. A
 follow-up catalog check found zero persistent audit functions and both existing
 summary access guards intact. Backend calculation fixes remain outstanding.
 
+## Tested Summary Candidate
+
+The forward migration `20261014092345_finance_summary_calculation_fixes.sql`
+patches the inspected, guarded case/client definitions without touching rows.
+It refuses unexpected source anchors or a missing access guard. It separates
+statutory fees, fixes fee dues, honors agreement totals, retains archive history,
+excludes deleted records and normalizes service array-vs-flat fee sources.
+The aggregate gross-collection field keeps its existing meaning.
+
+Build the isolated test SQL from the repository root:
+
+```sh
+node supabase/tests/build_finance_summary_candidate.mjs
+```
+
+Run that complete output in one SQL connection. It clones the live definitions,
+uses temporary data/membership tables, retargets the migration to the temporary
+namespace and ends with ROLLBACK. Never execute the unmodified migration as a
+substitute for this test. Source-drift/missing-guard rejection and repeated
+application are tested; 27 result scenarios passed on 2026-10-14.
+
+The rollback snapshot `finance_summary_calculation_fixes_prechange.sql` retains
+the established bureau guards, unlike the older pre-security reference.
+After testing, both production fingerprints matched the snapshot, anonymous
+execution remained disabled and neither candidate function was live.
+
+Client report/card/PDF changes are staged with the candidate accounting fields.
+Do not deploy the migration independently of their compatibility review.
+Outstanding: production profit/loss parity, malformed numeric data, refund and
+fee-source provenance, client-held balances, taxes and browser/PDF visual checks.
+
 ## Production Differences Observed
 
 The production RPC definitions were inspected read-only on 2026-10-14.
