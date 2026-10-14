@@ -3,6 +3,8 @@
 ## Sources
 
 - Shared numeric and SMM calculations: `lib/utils/finans.ts`.
+- Shared case money, expense and agreement summaries: `dosyaParaOzeti`,
+  `dosyaMasrafToplami` and `anlasilanUcret` in `lib/utils/finans.ts`.
 - Income classification: `lib/finans/gelirKurallari.ts`.
 - Client grouping: `lib/finans/dosyaGruplari.ts`.
 - Server summary queries: `lib/hooks/useFinans.ts`.
@@ -20,6 +22,13 @@
 - Archives remain in financial history; soft-deleted records are excluded.
 - A service's first explicit collection preserves its legacy flat fee payment.
 - Do not add legacy `tahsilEdildi` to an existing `tahsilatlar` total.
+- Case/client dues exclude client receipts, transfers and statutory opposing
+  fees. The client drawer, dues table and balance list use the same helpers.
+- Case and enforcement fee-minus-expense indicators exclude client money and
+  are labeled as fee/expense differences, not a client-held cash balance.
+- Cover-sheet debtor collections include only explicit tahsilat/borclu_odeme
+  movements, or legacy tahsil when no movements exist. Refund allocation and
+  separately paid statutory fees need source provenance before netting debt.
 - Case mutations invalidate both case queries and finance summaries.
 - A collection form closes and clears its draft only after a successful save.
 - New collection draft keys are scoped by case; explicit draft saves flush
@@ -40,6 +49,27 @@ npm run build
 
 These tests do not replace browser checks of save failures, duplicate submissions,
 draft recovery, bureau switching, or production RPC calculations.
+
+25 Node tests and the production build passed for the shared-summary packet.
+
+## Isolated SQL Diagnostics
+
+`../supabase/tests/finance_calculation_diagnostics.sql` clones the current
+guarded production functions into pg_temp and shadows their data tables with
+synthetic fixtures. It must be run as a whole, including ROLLBACK. It neither
+changes real client records nor replaces production functions.
+
+On 2026-10-14, three expected parity checks failed against production bodies:
+
+| Scenario | Observed | Expected |
+| --- | ---: | ---: |
+| Office income including statutory fee | 2500 | 2800 |
+| Explicit agreement total precedence | 3000 | 5000 |
+| Fee collection excluding client-owned money | 12800 | 2000 |
+
+These are diagnostic failures, not passing database regression tests. A
+follow-up catalog check found zero persistent audit functions and both existing
+summary access guards intact. Backend calculation fixes remain outstanding.
 
 ## Production Differences Observed
 

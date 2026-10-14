@@ -3,8 +3,8 @@
 import { useState, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { fmt } from '@/lib/utils';
-import { safeNum, tahsilatToplam } from '@/lib/utils/finans';
-import { ucretTahsilatiMi, hizmetUcretHareketleri } from '@/lib/finans/gelirKurallari';
+import { safeNum, tahsilatToplam, dosyaParaOzeti, anlasilanUcret } from '@/lib/utils/finans';
+import { hizmetUcretHareketleri } from '@/lib/finans/gelirKurallari';
 
 interface AlacakSatir {
   dosyaId: string;
@@ -74,23 +74,10 @@ export function MuvAlacak({ davalar, icralar, arabuluculuklar, ihtarnameler, onT
       items.forEach((d) => {
         const anlasma = d.anlasma as Record<string, unknown> | undefined;
         const hizmet = tur !== 'Dava' && tur !== 'İcra';
-        const tahsilatlar = hizmet ? hizmetUcretHareketleri(d)
-          : (d.tahsilatlar || []) as Array<Record<string, unknown>>;
-        const ucret = d.ucret as number | string | undefined;
-
-        let anlasmaToplam = 0;
-        if (anlasma) {
-          anlasmaToplam = parseFloat(String(anlasma.toplam || anlasma.ucret || 0)) || 0;
-        } else if (ucret) {
-          anlasmaToplam = parseFloat(String(ucret)) || 0;
-        }
-
-        // Tek kaynak: tahsilatlar[] varsa onu kullan, yoksa tahsilEdildi
-        const tahsilEdilen = hizmet || tahsilatlar.length > 0
-          ? tahsilatToplam(tahsilatlar
-              .filter((t) => hizmet || ucretTahsilatiMi(t.tur))
-              .map((t) => ({ tutar: safeNum(t.tutar) })))
-          : safeNum(d.tahsilEdildi);
+        const anlasmaToplam = anlasilanUcret(d);
+        const tahsilEdilen = hizmet
+          ? tahsilatToplam(hizmetUcretHareketleri(d).map((t) => ({ tutar: safeNum(t.tutar) })))
+          : dosyaParaOzeti(d).sozlesmeTahsilati;
 
         if (anlasmaToplam > 0 || tahsilEdilen > 0) {
           result.push({

@@ -18,6 +18,7 @@ import { IcraModal } from '@/components/modules/IcraModal';
 import { DosyaEvrakTab } from '@/components/modules/DosyaEvrakTab';
 import { TahsilatModal, type TahsilatKaydi } from '@/components/modules/TahsilatModal';
 import { useSonErisim } from '@/lib/hooks/useSonErisim';
+import { dosyaParaOzeti, dosyaMasrafToplami, safeNum } from '@/lib/utils/finans';
 import { AlacakKalemleriPanel } from '@/components/modules/icra/AlacakKalemleriPanel';
 import { KapakHesabiPanel } from '@/components/modules/icra/KapakHesabi';
 import type { AlacakKalemi } from '@/lib/utils/faiz';
@@ -105,11 +106,12 @@ export default function IcraDetayPage({ params }: { params: Promise<{ id: string
   // Hesaplamalar
   const hesap = useMemo(() => {
     if (!icra) return { masraf: 0, tahsilat: 0, tahsilOran: 0, kalan: 0, evrakSayisi: 0, net: 0 };
-    const masraf = (icra.harcamalar || []).reduce((t, h) => t + (h.tutar || 0), 0);
-    const tahsilat = (icra.tahsilatlar || []).reduce((t, h) => t + (h.tutar || 0), 0);
-    const alacak = icra.alacak || 0;
-    const tahsilOran = alacak > 0 ? Math.min((tahsilat / alacak) * 100, 100) : 0;
-    const net = tahsilat - masraf;
+    const masraf = dosyaMasrafToplami(icra);
+    const para = dosyaParaOzeti(icra);
+    const tahsilat = para.karsiTaraf;
+    const alacak = safeNum(icra.alacak);
+    const tahsilOran = alacak > 0 ? Math.max(0, Math.min((tahsilat / alacak) * 100, 100)) : 0;
+    const net = para.buroGelir - masraf;
     return { masraf, tahsilat, tahsilOran, kalan: alacak - tahsilat, evrakSayisi: (icra.evraklar || []).length, net };
   }, [icra]);
 
@@ -656,7 +658,7 @@ function OzetTab({
             <FinansKart label="Kalan" value={hesap.kalan} color="text-red" />
             <FinansKart label="Masraf" value={hesap.masraf} color="text-text" />
             <div className="border-l border-border pl-4">
-              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">Net Durum</div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">Ücret - Masraf</div>
               <div className={`font-[var(--font-playfair)] text-lg font-bold ${hesap.net >= 0 ? 'text-green' : 'text-red'}`}>
                 {fmt(hesap.net)}
               </div>

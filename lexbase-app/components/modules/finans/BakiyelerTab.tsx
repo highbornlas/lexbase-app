@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { muvekkileGoreGrupla } from '@/lib/finans/dosyaGruplari';
-import { ucretTahsilatiMi, hizmetUcretHareketleri } from '@/lib/finans/gelirKurallari';
+import { hizmetUcretHareketleri } from '@/lib/finans/gelirKurallari';
 import Link from 'next/link';
 import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
 import { useDavalar } from '@/lib/hooks/useDavalar';
@@ -11,7 +11,7 @@ import { useDanismanliklar } from '@/lib/hooks/useDanismanlik';
 import { useArabuluculuklar } from '@/lib/hooks/useArabuluculuk';
 import { useIhtarnameler } from '@/lib/hooks/useIhtarname';
 import { fmt } from '@/lib/utils';
-import { safeNum, tahsilatToplam } from '@/lib/utils/finans';
+import { safeNum, tahsilatToplam, dosyaParaOzeti, dosyaMasrafToplami, anlasilanUcret } from '@/lib/utils/finans';
 import { EmptyState, MiniKpi } from './shared';
 
 /* ══════════════════════════════════════════════════════════════
@@ -58,30 +58,9 @@ export function BakiyelerTab() {
       // ── Dava + İcra (MuvAlacak pattern) ──
       const tumDosyalar = [...muvDavalar, ...muvIcralar];
       tumDosyalar.forEach((dosya) => {
-        // Anlaşılan tutar: anlasma.toplam || anlasma.ucret || ucret
-        const anlasma = dosya.anlasma as Record<string, unknown> | undefined;
-        const ucret = dosya.ucret as number | string | undefined;
-        if (anlasma) {
-          anlasilanToplam += parseFloat(String(anlasma.toplam || anlasma.ucret || 0)) || 0;
-        } else if (ucret) {
-          anlasilanToplam += parseFloat(String(ucret)) || 0;
-        }
-
-        // Tahsilat: tek kaynak — tahsilatlar[] varsa onu kullan, yoksa tahsilEdildi
-        const tahArr = (dosya.tahsilatlar || []) as Array<{ tutar?: number }>;
-        if (tahArr.length > 0) {
-          tahsilEdilenToplam += tahsilatToplam(
-            tahArr.filter((t) => ucretTahsilatiMi((t as { tur?: string }).tur)),
-          );
-        } else {
-          tahsilEdilenToplam += safeNum(dosya.tahsilEdildi);
-        }
-
-        // Masraflar: harcamalar dizisi
-        const harcamalar = (dosya.harcamalar || []) as Array<Record<string, unknown>>;
-        harcamalar.forEach((h) => {
-          masrafToplam += parseFloat(String(h.tutar || 0)) || 0;
-        });
+        anlasilanToplam += anlasilanUcret(dosya);
+        tahsilEdilenToplam += dosyaParaOzeti(dosya).sozlesmeTahsilati;
+        masrafToplam += dosyaMasrafToplami(dosya);
       });
 
       // ── Danışmanlık ──

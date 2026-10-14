@@ -19,6 +19,10 @@ Proposals are not implemented functionality.
 | Case loading | Browser | Temporary zero/empty list and not-found detail before data appears | Loading-state fixes pending |
 | Release | Browser / source | Live payment form has changes absent from GitHub, Desktop source and ZIP | No frontend deployment until reconciliation |
 | Enforcement payments | Live asset / Worker | Separate debtor, percentage-share and statutory-fee choices missing in GitHub | Choices and legacy storage mapping restored in branch; full source gate remains |
+| Client drawer | Source | Explicit movements and legacy flat collections were added together; client money reduced fee dues | Shared fee/collection calculations in branch; fixtures passed |
+| Enforcement cover sheet | Source | All movement types, including fees and transfers, reduced debtor debt | Explicit debtor-payment subtotal shared with detail view; refund/source allocation remains pending |
+| Agreements | Source / production definitions | Percentage and mixed fee models calculated differently across views | Shared frontend formulas and precedence tests in branch |
+| Summary RPC parity | Isolated production-function clones | Office income 2500 vs 2800, agreement 3000 vs 5000, fee collection 12800 vs 2000 in synthetic fixture | Reproduced; live calculation changes pending |
 
 ## Product Direction
 

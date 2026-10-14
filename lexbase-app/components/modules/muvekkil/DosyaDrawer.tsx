@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { fmt } from '@/lib/utils';
+import { anlasilanUcret, dosyaParaOzeti, dosyaMasrafToplami, safeNum, tahsilatToplam } from '@/lib/utils/finans';
+import { hizmetUcretHareketleri } from '@/lib/finans/gelirKurallari';
 
 interface DosyaInfo {
   id: string;
@@ -46,10 +48,7 @@ export function DosyaDrawer({ dosya, onClose, durumRenk }: Props) {
 
   const renkClass = durumRenk[dosya.durum] || 'text-text-muted bg-surface2 border-border';
   const raw = dosya.raw;
-  const anlasma = raw.anlasma as Record<string, unknown> | undefined;
   const tahsilatlar = (raw.tahsilatlar || []) as Array<Record<string, string>>;
-  const harcamalar = (raw.harcamalar || []) as Array<Record<string, string>>;
-  const ucret = raw.ucret as number | string | undefined;
 
   // Sonraki durusma
   const sonrakiDurusma = (() => {
@@ -62,15 +61,13 @@ export function DosyaDrawer({ dosya, onClose, durumRenk }: Props) {
   })();
 
   // Mali bilgiler
-  let anlasmaToplam = 0;
-  if (anlasma) {
-    anlasmaToplam = parseFloat(String(anlasma.toplam || anlasma.ucret || 0)) || 0;
-  } else if (ucret) {
-    anlasmaToplam = parseFloat(String(ucret)) || 0;
-  }
-  const tahsilEdilen = tahsilatlar.reduce((s, t) => s + (parseFloat(t.tutar) || 0), 0)
-    + (parseFloat(String(raw.tahsilEdildi || 0)) || 0);
-  const toplamHarcama = harcamalar.reduce((s, h) => s + (parseFloat(h.tutar) || 0), 0);
+  const anlasmaToplam = anlasilanUcret(raw);
+  const para = dosyaParaOzeti(raw);
+  const hizmet = dosya.tur === 'arabuluculuk' || dosya.tur === 'ihtarname';
+  const tahsilEdilen = hizmet
+    ? tahsilatToplam(hizmetUcretHareketleri(raw).map((t) => ({ tutar: safeNum(t.tutar) })))
+    : para.sozlesmeTahsilati;
+  const toplamHarcama = dosyaMasrafToplami(raw);
 
   return (
     <>
@@ -139,14 +136,17 @@ export function DosyaDrawer({ dosya, onClose, durumRenk }: Props) {
           )}
 
           {/* Finansal Özet */}
-          {(anlasmaToplam > 0 || tahsilEdilen > 0 || toplamHarcama > 0) && (
+          {(anlasmaToplam > 0 || tahsilEdilen > 0 || toplamHarcama > 0 || para.karsiTaraf > 0) && (
             <div className="bg-surface border border-border rounded-lg p-3 space-y-2">
               <div className="text-[10px] text-text-dim uppercase tracking-wider font-bold mb-2">Mali Durum</div>
               {anlasmaToplam > 0 && (
                 <Row label="Anlaşılan Ücret" value={fmt(anlasmaToplam)} color="text-text" />
               )}
               {tahsilEdilen > 0 && (
-                <Row label="Tahsil Edilen" value={fmt(tahsilEdilen)} color="text-green" />
+                <Row label="Ücret Tahsilatı" value={fmt(tahsilEdilen)} color="text-green" />
+              )}
+              {!hizmet && para.karsiTaraf > 0 && (
+                <Row label="Müvekkil Adına Tahsilat" value={fmt(para.karsiTaraf)} color="text-text" />
               )}
               {anlasmaToplam > 0 && (
                 <>
@@ -155,7 +155,7 @@ export function DosyaDrawer({ dosya, onClose, durumRenk }: Props) {
                   <div className="w-full bg-surface2 rounded-full h-1.5 mt-1">
                     <div
                       className="bg-green rounded-full h-1.5 transition-all"
-                      style={{ width: `${Math.min(Math.round((tahsilEdilen / anlasmaToplam) * 100), 100)}%` }}
+                      style={{ width: `${Math.max(0, Math.min(Math.round((tahsilEdilen / anlasmaToplam) * 100), 100))}%` }}
                     />
                   </div>
                 </>

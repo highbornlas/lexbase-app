@@ -26,6 +26,10 @@ publication. Existing Claude credentials and connections must be preserved.
 - [x] Implement frontend income classification, archived financial lists and
       reliable client fee saves; legacy service fees survive the first payment.
 - [ ] Unify frontend/backend finance calculations with fixture tests.
+- [x] Share case movement, expense and agreement calculations across detail,
+      client drawer, client dues and balance screens; six additional fixtures.
+- [x] Reproduce three production summary discrepancies using isolated temporary
+      SQL fixtures and cloned functions, without writing persistent data.
 - [ ] Review and improve core forms, list/detail screens and mobile behavior.
 - [ ] Measure and improve critical screen loading.
 - [ ] Complete role/admin/invitation checks.

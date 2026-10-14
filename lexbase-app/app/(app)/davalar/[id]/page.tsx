@@ -20,6 +20,7 @@ import { DavaModal } from '@/components/modules/DavaModal';
 import { DosyaEvrakTab } from '@/components/modules/DosyaEvrakTab';
 import { TahsilatModal, type TahsilatKaydi } from '@/components/modules/TahsilatModal';
 import { useSonErisim } from '@/lib/hooks/useSonErisim';
+import { dosyaParaOzeti, dosyaMasrafToplami } from '@/lib/utils/finans';
 
 // ── Legacy duruşma sync yardımcısı ─────────────────────────
 function legacyDurusmaSync(durusmalar: Array<{ tarih: string; saat?: string }>) {
@@ -136,12 +137,13 @@ export default function DavaDetay({ params }: { params: Promise<{ id: string }> 
 
   const hesap = useMemo(() => {
     if (!dava) return { masraf: 0, tahsilat: 0, hakedis: 0, vekalet: 0, evrakSayisi: 0, net: 0 };
-    const masraf = (dava.harcamalar || []).reduce((t, h) => t + (h.tutar || 0), 0);
-    const tahsilat = (dava.tahsilatlar || []).filter((t) => t.tur === 'tahsilat').reduce((t, h) => t + (h.tutar || 0), 0);
-    const hakedis = (dava.tahsilatlar || []).filter((t) => t.tur === 'hakediş').reduce((t, h) => t + (h.tutar || 0), 0);
-    const vekalet = (dava.tahsilatlar || []).filter((t) => t.tur === 'akdi_vekalet').reduce((t, h) => t + (h.tutar || 0), 0);
+    const masraf = dosyaMasrafToplami(dava);
+    const para = dosyaParaOzeti(dava);
+    const tahsilat = para.karsiTaraf;
+    const hakedis = para.hakedis + para.icraVekalet;
+    const vekalet = para.akdiVekalet;
     const evrakSayisi = (dava.evraklar || []).length;
-    const net = tahsilat + hakedis + vekalet - masraf;
+    const net = para.buroGelir - masraf;
     return { masraf, tahsilat, hakedis, vekalet, evrakSayisi, net };
   }, [dava]);
 
@@ -398,11 +400,11 @@ export default function DavaDetay({ params }: { params: Promise<{ id: string }> 
               <span className="text-text font-medium">{fmt(hesap.masraf)}</span>
             </div>
             <div className="flex justify-between text-[11px]">
-              <span className="text-text-muted">Tahsilat</span>
-              <span className="text-green font-medium">{fmt(hesap.tahsilat + hesap.hakedis + hesap.vekalet)}</span>
+              <span className="text-text-muted">Ücret / Hakediş</span>
+              <span className="text-green font-medium">{fmt(hesap.hakedis + hesap.vekalet)}</span>
             </div>
             <div className="border-t border-border/50 pt-1.5 flex justify-between text-xs">
-              <span className="text-text-muted font-semibold">Net</span>
+              <span className="text-text-muted font-semibold">Ücret - Masraf</span>
               <span className={`font-bold ${hesap.net >= 0 ? 'text-green' : 'text-red'}`}>{fmt(hesap.net)}</span>
             </div>
           </div>
@@ -664,20 +666,20 @@ function OzetTab({
         <div className="mt-3 bg-surface2/50 rounded-xl border border-border/50 p-4">
           <div className="grid grid-cols-5 gap-4">
             <FinansKart label="Masraf" value={hesap.masraf} color="text-text" />
-            <FinansKart label="Tahsilat" value={hesap.tahsilat} color="text-green" />
+            <FinansKart label="Müvekkil Tahsilatı" value={hesap.tahsilat} color="text-green" />
             <FinansKart label="Hakediş" value={hesap.hakedis} color="text-gold" />
             <FinansKart label="Akdi Vekalet" value={hesap.vekalet} color="text-blue-400" />
             <div className="border-l border-border pl-4">
-              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">Net Durum</div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">Ücret - Masraf</div>
               <div className={`font-[var(--font-playfair)] text-lg font-bold ${hesap.net >= 0 ? 'text-green' : 'text-red'}`}>
                 {fmt(hesap.net)}
               </div>
               {/* Oran çubuğu */}
-              {(hesap.masraf > 0 || hesap.tahsilat + hesap.hakedis + hesap.vekalet > 0) && (
+              {(hesap.masraf > 0 || hesap.hakedis + hesap.vekalet > 0) && (
                 <div className="mt-2 h-1.5 rounded-full bg-surface2 overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all ${hesap.net >= 0 ? 'bg-green' : 'bg-red'}`}
-                    style={{ width: `${Math.min(100, Math.abs(hesap.net) / Math.max(hesap.masraf, hesap.tahsilat + hesap.hakedis + hesap.vekalet, 1) * 100)}%` }}
+                    style={{ width: `${Math.min(100, Math.abs(hesap.net) / Math.max(hesap.masraf, hesap.hakedis + hesap.vekalet, 1) * 100)}%` }}
                   />
                 </div>
               )}
