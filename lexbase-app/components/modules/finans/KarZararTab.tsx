@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { gelirTahsilatiMi } from '@/lib/finans/gelirKurallari';
+import { gelirTahsilatiMi, hizmetUcretHareketleri } from '@/lib/finans/gelirKurallari';
 import { useBuroKarZarar } from '@/lib/hooks/useFinans';
 import { useDavalar } from '@/lib/hooks/useDavalar';
 import { useIcralar } from '@/lib/hooks/useIcra';
@@ -22,11 +22,11 @@ interface KarZararTabProps {
 
 // ── Client-Side Fallback Hesaplama ────────────────────────────
 function useKarZararFallback(yil: number, ay?: number) {
-  const davaQuery = useDavalar();
-  const icraQuery = useIcralar();
-  const danismanlikQuery = useDanismanliklar();
-  const arabuluculukQuery = useArabuluculuklar();
-  const ihtarnameQuery = useIhtarnameler();
+  const davaQuery = useDavalar(true);
+  const icraQuery = useIcralar(true);
+  const danismanlikQuery = useDanismanliklar(true);
+  const arabuluculukQuery = useArabuluculuklar(true);
+  const ihtarnameQuery = useIhtarnameler(true);
   const giderQuery = useBuroGiderleri();
   const { data: davalar } = davaQuery;
   const { data: icralar } = icraQuery;
@@ -48,7 +48,7 @@ function useKarZararFallback(yil: number, ay?: number) {
     // GELİRLER
     let akdiVekaletUcreti = 0;
     let karsiVekaletHakedis = 0;
-    let digerGelir = 0;
+    const digerGelir = 0;
     let danismanlikGeliri = 0;
     let arabuluculukGeliri = 0;
     let ihtarnameGeliri = 0;
@@ -61,34 +61,17 @@ function useKarZararFallback(yil: number, ay?: number) {
         if (!gelirTahsilatiMi(th.tur)) return;
         if (!tarihIcindeMi(th.tarih as string)) return;
         const tutar = Number(th.tutar || 0);
-        if (th.tur === 'akdi_vekalet') akdiVekaletUcreti += tutar;
+        if (th.tur === 'akdi_vekalet' || th.tur === 'icra_vekalet') akdiVekaletUcreti += tutar;
         else if (th.tur === 'hakediş') karsiVekaletHakedis += tutar;
-        else if (th.tur === 'tahsilat') digerGelir += tutar;
       });
     });
 
-    // Danışmanlık
-    (danismanliklar || []).forEach((d) => {
-      const tarih = (d as Record<string, unknown>).sonucTarih as string || (d as Record<string, unknown>).tarih as string;
-      if (tarihIcindeMi(tarih)) {
-        danismanlikGeliri += safeNum(d.tahsilEdildi);
-      }
-    });
-
-    // Arabuluculuk
-    (arabuluculuklar || []).forEach((a) => {
-      const tarih = a.sonucTarih || a.basvuruTarih;
-      if (tarihIcindeMi(tarih)) {
-        arabuluculukGeliri += safeNum(a.tahsilEdildi);
-      }
-    });
-
-    // İhtarname
-    (ihtarnameler || []).forEach((ih) => {
-      if (tarihIcindeMi(ih.tarih)) {
-        ihtarnameGeliri += safeNum(ih.tahsilEdildi);
-      }
-    });
+    const hizmetToplami = (items: Record<string, unknown>[]) => items.reduce((sum, dosya) =>
+      sum + hizmetUcretHareketleri(dosya).reduce((subtotal, th) =>
+        tarihIcindeMi(th.tarih as string) ? subtotal + safeNum(th.tutar) : subtotal, 0), 0);
+    danismanlikGeliri = hizmetToplami(danismanliklar || []);
+    arabuluculukGeliri = hizmetToplami(arabuluculuklar || []);
+    ihtarnameGeliri = hizmetToplami(ihtarnameler || []);
 
     const toplamGelir = akdiVekaletUcreti + karsiVekaletHakedis + danismanlikGeliri + arabuluculukGeliri + ihtarnameGeliri + digerGelir;
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { gelirTahsilatiMi } from '@/lib/finans/gelirKurallari';
+import { gelirTahsilatiMi, hizmetUcretHareketleri } from '@/lib/finans/gelirKurallari';
 import { useMuvekkillar } from './useMuvekkillar';
 import { useDavalar } from './useDavalar';
 import { useIcralar } from './useIcra';
@@ -37,11 +37,11 @@ export { bruttenNete, nettenBrute };
 // ── Gelir Hesaplama Hook'u ────────────────────────────────────
 export function useGelirHesapla() {
   const { data: muvekkillar } = useMuvekkillar();
-  const { data: davalar } = useDavalar();
-  const { data: icralar } = useIcralar();
-  const { data: danismanliklar } = useDanismanliklar();
-  const { data: arabuluculuklar } = useArabuluculuklar();
-  const { data: ihtarnameler } = useIhtarnameler();
+  const { data: davalar } = useDavalar(true);
+  const { data: icralar } = useIcralar(true);
+  const { data: danismanliklar } = useDanismanliklar(true);
+  const { data: arabuluculuklar } = useArabuluculuklar(true);
+  const { data: ihtarnameler } = useIhtarnameler(true);
 
   return useMemo(() => {
     const gelirler: GelirKaydi[] = [];
@@ -97,92 +97,35 @@ export function useGelirHesapla() {
       });
     });
 
-    // ── Danışmanlık ──
-    (danismanliklar || []).forEach((d) => {
-      const tutar = safeNum(d.tahsilEdildi);
-      if (tutar <= 0) return;
-
-      const kdvOrani = safeNum(d.kdvOrani);
-      const stopajOrani = safeNum(d.stopajOrani);
-      const makbuzKesildi = (d as Record<string, unknown>).makbuzKesildi === true;
-      const efektifKdv = makbuzKesildi ? kdvOrani : 0;
-      const efektifStopaj = makbuzKesildi ? stopajOrani : 0;
-      const { kdvTutar, stopajTutar, netTutar } = bruttenNete(tutar, efektifKdv, efektifStopaj);
-
-      gelirler.push({
-        id: d.id + '-gelir',
-        tarih: (d as Record<string, unknown>).sonucTarih as string || (d as Record<string, unknown>).tarih as string || '',
-        kaynak: 'Danışmanlık',
-        tur: d.sozlesmeModeli === 'sureklii' ? 'Sürekli Danışmanlık' : 'Tek Seferlik',
-        brutTutar: tutar,
-        kdvOrani: efektifKdv, kdvTutar, stopajOrani: efektifStopaj, stopajTutar, netTutar,
-        makbuzNo: (d as Record<string, unknown>).makbuzNo as string || undefined,
-        makbuzKesildi,
-        makbuzTarih: (d as Record<string, unknown>).makbuzTarih as string || undefined,
-        muvId: d.muvId || '',
-        muvAd: muvAdMap[d.muvId || ''] || '?',
-        dosyaNo: d.no || '',
-        dosyaId: d.id,
-      });
-    });
-
-    // ── Arabuluculuk ──
-    (arabuluculuklar || []).forEach((a) => {
-      const tutar = safeNum(a.tahsilEdildi);
-      if (tutar <= 0) return;
-
-      const kdvOrani = safeNum(a.kdvOrani);
-      const stopajOrani = safeNum(a.stopajOrani);
-      const makbuzKesildi = (a as Record<string, unknown>).makbuzKesildi === true;
-      const efektifKdv = makbuzKesildi ? kdvOrani : 0;
-      const efektifStopaj = makbuzKesildi ? stopajOrani : 0;
-      const { kdvTutar, stopajTutar, netTutar } = bruttenNete(tutar, efektifKdv, efektifStopaj);
-
-      gelirler.push({
-        id: a.id + '-gelir',
-        tarih: a.sonucTarih || a.basvuruTarih || '',
-        kaynak: 'Arabuluculuk',
-        tur: 'Arabuluculuk Ücreti',
-        brutTutar: tutar,
-        kdvOrani: efektifKdv, kdvTutar, stopajOrani: efektifStopaj, stopajTutar, netTutar,
-        makbuzNo: (a as Record<string, unknown>).makbuzNo as string || undefined,
-        makbuzKesildi,
-        makbuzTarih: (a as Record<string, unknown>).makbuzTarih as string || undefined,
-        muvId: a.muvId || '',
-        muvAd: muvAdMap[a.muvId || ''] || '?',
-        dosyaNo: a.no || '',
-        dosyaId: a.id,
-      });
-    });
-
-    // ── İhtarname ──
-    (ihtarnameler || []).forEach((ih) => {
-      const tutar = safeNum(ih.tahsilEdildi);
-      if (tutar <= 0) return;
-
-      const kdvOrani = safeNum(ih.kdvOrani);
-      const stopajOrani = safeNum(ih.stopajOrani);
-      const makbuzKesildi = (ih as Record<string, unknown>).makbuzKesildi === true;
-      const efektifKdv = makbuzKesildi ? kdvOrani : 0;
-      const efektifStopaj = makbuzKesildi ? stopajOrani : 0;
-      const { kdvTutar, stopajTutar, netTutar } = bruttenNete(tutar, efektifKdv, efektifStopaj);
-
-      gelirler.push({
-        id: ih.id + '-gelir',
-        tarih: ih.tarih || '',
-        kaynak: 'İhtarname',
-        tur: 'İhtarname Ücreti',
-        brutTutar: tutar,
-        kdvOrani: efektifKdv, kdvTutar, stopajOrani: efektifStopaj, stopajTutar, netTutar,
-        makbuzNo: (ih as Record<string, unknown>).makbuzNo as string || undefined,
-        makbuzKesildi,
-        makbuzTarih: (ih as Record<string, unknown>).makbuzTarih as string || undefined,
-        muvId: ih.muvId || '',
-        muvAd: muvAdMap[ih.muvId || ''] || '?',
-        dosyaNo: ih.no || '',
-        dosyaId: ih.id,
-      });
-    });
+    const hizmetGruplari: Array<{ items: Record<string, unknown>[]; kaynak: GelirKaydi['kaynak']; tur: string }> = [
+      { items: danismanliklar || [], kaynak: 'Danışmanlık', tur: 'Danışmanlık Ücreti' },
+      { items: arabuluculuklar || [], kaynak: 'Arabuluculuk', tur: 'Arabuluculuk Ücreti' },
+      { items: ihtarnameler || [], kaynak: 'İhtarname', tur: 'İhtarname Ücreti' },
+    ];
+    for (const { items, kaynak, tur } of hizmetGruplari) {
+      for (const dosya of items) {
+        for (const [index, th] of hizmetUcretHareketleri(dosya).entries()) {
+          const tutar = safeNum(th.tutar);
+          if (tutar <= 0) continue;
+          const makbuzKesildi = th.makbuzKesildi === true;
+          const kdvOrani = makbuzKesildi ? safeNum(th.kdvOrani) : 0;
+          const stopajOrani = makbuzKesildi ? safeNum(th.stopajOrani) : 0;
+          const hesap = bruttenNete(tutar, kdvOrani, stopajOrani);
+          const muvId = String(dosya.muvId || '');
+          gelirler.push({
+            id: String(th.id || `${dosya.id}-gelir-${index}`),
+            tarih: String(th.tarih || ''),
+            kaynak, tur, brutTutar: tutar, kdvOrani, stopajOrani,
+            ...hesap, makbuzKesildi,
+            makbuzNo: th.makbuzNo ? String(th.makbuzNo) : undefined,
+            makbuzTarih: th.makbuzTarih ? String(th.makbuzTarih) : undefined,
+            muvId, muvAd: muvAdMap[muvId] || '?',
+            dosyaNo: String(dosya.no || ''),
+            dosyaId: String(dosya.id),
+          });
+        }
+      }
+    }
 
     // Tarihe göre sırala (yeniden eskiye)
     gelirler.sort((a, b) => (b.tarih || '').localeCompare(a.tarih || ''));
@@ -195,6 +138,7 @@ export function useGelirHesapla() {
 function turLabel(tur: string | undefined): string {
   const map: Record<string, string> = {
     'akdi_vekalet': 'Akdi Vekalet',
+    'icra_vekalet': 'İcra Vekalet Ücreti',
     'hakediş': 'Hakediş',
     'tahsilat': 'Tahsilat',
     'aktarim': 'Aktarım',

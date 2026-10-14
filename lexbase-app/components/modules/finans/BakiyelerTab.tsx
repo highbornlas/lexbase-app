@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { muvekkileGoreGrupla } from '@/lib/finans/dosyaGruplari';
+import { ucretTahsilatiMi, hizmetUcretHareketleri } from '@/lib/finans/gelirKurallari';
 import Link from 'next/link';
 import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
 import { useDavalar } from '@/lib/hooks/useDavalar';
@@ -22,11 +23,11 @@ const PAGE_SIZE = 20;
 
 export function BakiyelerTab() {
   const muvekkilQuery = useMuvekkillar();
-  const davaQuery = useDavalar();
-  const icraQuery = useIcralar();
-  const danismanlikQuery = useDanismanliklar();
-  const arabuluculukQuery = useArabuluculuklar();
-  const ihtarnameQuery = useIhtarnameler();
+  const davaQuery = useDavalar(true);
+  const icraQuery = useIcralar(true);
+  const danismanlikQuery = useDanismanliklar(true);
+  const arabuluculukQuery = useArabuluculuklar(true);
+  const ihtarnameQuery = useIhtarnameler(true);
   const { data: muvekkillar } = muvekkilQuery;
   const { data: davalar } = davaQuery;
   const { data: icralar } = icraQuery;
@@ -69,7 +70,9 @@ export function BakiyelerTab() {
         // Tahsilat: tek kaynak — tahsilatlar[] varsa onu kullan, yoksa tahsilEdildi
         const tahArr = (dosya.tahsilatlar || []) as Array<{ tutar?: number }>;
         if (tahArr.length > 0) {
-          tahsilEdilenToplam += tahsilatToplam(tahArr);
+          tahsilEdilenToplam += tahsilatToplam(
+            tahArr.filter((t) => ucretTahsilatiMi((t as { tur?: string }).tur)),
+          );
         } else {
           tahsilEdilenToplam += safeNum(dosya.tahsilEdildi);
         }
@@ -85,21 +88,21 @@ export function BakiyelerTab() {
       muvDanismanlik.forEach((d) => {
         const ucret = safeNum(d.ucret || d.aylikUcret);
         if (ucret > 0) anlasilanToplam += ucret;
-        tahsilEdilenToplam += safeNum(d.tahsilEdildi);
+        tahsilEdilenToplam += tahsilatToplam(hizmetUcretHareketleri(d).map((t) => ({ tutar: safeNum(t.tutar) })));
       });
 
       // ── Arabuluculuk ──
       muvArabuluculuk.forEach((a) => {
         const ucret = safeNum(a.ucret);
         if (ucret > 0) anlasilanToplam += ucret;
-        tahsilEdilenToplam += safeNum(a.tahsilEdildi);
+        tahsilEdilenToplam += tahsilatToplam(hizmetUcretHareketleri(a).map((t) => ({ tutar: safeNum(t.tutar) })));
       });
 
       // ── İhtarname ──
       muvIhtarname.forEach((ih) => {
         const ucret = safeNum(ih.ucret);
         if (ucret > 0) anlasilanToplam += ucret;
-        tahsilEdilenToplam += safeNum(ih.tahsilEdildi);
+        tahsilEdilenToplam += tahsilatToplam(hizmetUcretHareketleri(ih).map((t) => ({ tutar: safeNum(t.tutar) })));
         masrafToplam += safeNum(ih.noterMasrafi);
       });
 

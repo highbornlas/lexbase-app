@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
+import { raporKaydiGorunurMu } from '@/lib/finans/gelirKurallari';
 import { useBuroId } from './useBuro';
 
 // ── İcra Tip Tanımı (UYAP Uyumlu) ──────────────────────────
@@ -144,11 +145,11 @@ export interface Icra {
 }
 
 // ── Tüm İcra Dosyaları (soft delete filtreli) ──────────────
-export function useIcralar() {
+export function useIcralar(includeArchived = false) {
   const buroId = useBuroId();
 
   return useQuery<Icra[]>({
-    queryKey: ['icra', buroId],
+    queryKey: includeArchived ? ['icra', buroId, 'finans'] : ['icra', buroId],
     queryFn: async () => {
       if (!buroId) return [];
       const supabase = createClient();
@@ -160,7 +161,7 @@ export function useIcralar() {
       if (error) throw error;
       return (data || [])
         .map((r) => ({ id: r.id, ...(r.data as object) }) as Icra)
-        .filter((i) => !i._silindi && !i._arsivlendi);
+        .filter((i) => raporKaydiGorunurMu(i, includeArchived));
     },
     enabled: !!buroId,
   });

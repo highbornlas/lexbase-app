@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
+import { raporKaydiGorunurMu } from '@/lib/finans/gelirKurallari';
 import { useBuroId } from './useBuro';
 
 export interface Ihtarname {
@@ -63,11 +64,11 @@ export interface Ihtarname {
   [key: string]: unknown;
 }
 
-export function useIhtarnameler() {
+export function useIhtarnameler(includeArchived = false) {
   const buroId = useBuroId();
 
   return useQuery<Ihtarname[]>({
-    queryKey: ['ihtarnameler', buroId],
+    queryKey: includeArchived ? ['ihtarnameler', buroId, 'finans'] : ['ihtarnameler', buroId],
     queryFn: async () => {
       if (!buroId) return [];
       const supabase = createClient();
@@ -78,7 +79,7 @@ export function useIhtarnameler() {
       if (error) throw error;
       return (data || [])
         .map((r) => ({ id: r.id, ...(r.data as object) }) as Ihtarname)
-        .filter((i) => !i._silindi && !i._arsivlendi);
+        .filter((i) => raporKaydiGorunurMu(i, includeArchived));
     },
     enabled: !!buroId,
   });

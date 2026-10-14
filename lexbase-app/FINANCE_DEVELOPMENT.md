@@ -12,8 +12,11 @@
 ## Invariants
 
 - Transfer and refund movements are excluded from income summaries.
-- General collections retain the existing income classification. Whether they
-  include client-held funds is an unresolved product rule.
+- General/counterparty collections belong to clients, not office income.
+- Recognized office income includes contractual fees, opposing fees and legacy
+  enforcement fees. Only contractual fees reduce the contractual amount due.
+- Archives remain in financial history; soft-deleted records are excluded.
+- A service's first explicit collection preserves its legacy flat fee payment.
 - Do not add legacy `tahsilEdildi` to an existing `tahsilatlar` total.
 - Case mutations invalidate both case queries and finance summaries.
 - A collection form closes and clears its draft only after a successful save.
@@ -40,13 +43,17 @@ draft recovery, bureau switching, or production RPC calculations.
 
 The production RPC definitions were inspected read-only on 2026-10-14.
 
-- Profit/loss omits notice income and general collections.
+- Profit/loss omits notice income; excluding general collections is intentional.
 - Profit/loss reads mediation meeting amounts, while the UI uses collected fees.
 - Client summary and profit/loss do not exclude soft-deleted cases in their
-  case queries. UI module lists exclude both deleted and archived records.
-- Both RPCs are SECURITY DEFINER and their inspected bodies do not check
-  caller bureau membership. Execution grants and authorization need a separate
-  audit before making any production function changes.
+  case queries. Financial UI queries now include archives, not deleted records.
+- Six finance RPCs now enforce active bureau membership and deny anonymous
+  execution through the verified production finance_rpc_access_guard migration.
+- Frontend and production calculation parity is still incomplete. Client-held
+  balances need explicit direct-payment vs offset provenance; never infer this
+  from historical fee types alone.
+- Live collection UI differs from the checked-out GitHub and Desktop sources;
+  web publication remains gated on source reconciliation.
 
 Do not replace these functions by replaying old migration files. Prepare a
 forward migration against the live schema, define archival/accounting rules,

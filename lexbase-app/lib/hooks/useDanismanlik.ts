@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
+import { raporKaydiGorunurMu } from '@/lib/finans/gelirKurallari';
 import { updateRecordStatus } from '@/lib/data/updateJsonRecord';
 import { useBuroId } from './useBuro';
 
@@ -102,11 +103,11 @@ export const EFOR_KATEGORILERI = [
 ] as const;
 
 // ── Tüm Danışmanlıklar (aktif) ─────────────────────────────
-export function useDanismanliklar() {
+export function useDanismanliklar(includeArchived = false) {
   const buroId = useBuroId();
 
   return useQuery<Danismanlik[]>({
-    queryKey: ['danismanlik', buroId],
+    queryKey: includeArchived ? ['danismanlik', buroId, 'finans'] : ['danismanlik', buroId],
     queryFn: async () => {
       if (!buroId) return [];
       const supabase = createClient();
@@ -117,7 +118,7 @@ export function useDanismanliklar() {
       if (error) throw error;
       return (data || [])
         .map((r) => ({ id: r.id, ...(r.data as object) }) as Danismanlik)
-        .filter((d) => !d._silindi && !d._arsivlendi);
+        .filter((d) => raporKaydiGorunurMu(d, includeArchived));
     },
     enabled: !!buroId,
   });

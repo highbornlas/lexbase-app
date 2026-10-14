@@ -16,7 +16,7 @@ interface Props {
   ihtarnameler: Record<string, unknown>[];
   finansOzet: Record<string, unknown> | null | undefined;
   onMasrafKaydet: (dosyaId: string, dosyaTur: string, harcama: { id: string; kat: string; acik: string; tarih: string; tutar: number }) => void;
-  onTahsilatKaydet: (dosyaId: string, dosyaTur: string, tahsilat: { id: string; tarih: string; tutar: number; aciklama: string }) => void;
+  onTahsilatKaydet: (dosyaId: string, dosyaTur: string, tahsilat: { id: string; tarih: string; tutar: number; aciklama: string }) => Promise<void>;
 }
 
 const ALT_SEKMELER: { key: FinansAltSekme; label: string; icon: string }[] = [

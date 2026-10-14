@@ -12,7 +12,12 @@ Proposals are not implemented functionality.
 | Support | Source | Submit button has no handler; telephone is a placeholder | Pending redesign |
 | Support | Source / project metadata | Turkish storage claim conflicts with eu-central-1 | Content correction pending |
 | Support | Source | App Store / Play Store release claims lack verified evidence | Release verification pending |
-| Reports | Production | Missing notice income, different mediation source, deleted cases included | Pending accounting decisions |
+| Reports | Production | Missing notice income, different mediation source, deleted cases included | Rules confirmed; backend parity pending |
+| Collections | Source | Client funds could inflate fee totals; service payments used inconsistent sources | Frontend classification and service normalization fixed in branch |
+| Client fees | Source | Form closed before save confirmation; new records lacked fee type | Async save, failure retention and explicit fee type fixed in branch |
+| Dashboard | Browser | Many empty widgets; advance client count differs from active count; unresolved client names | Data linkage and prioritization review pending |
+| Case loading | Browser | Temporary zero/empty list and not-found detail before data appears | Loading-state fixes pending |
+| Release | Browser / source | Live payment form has changes absent from GitHub, Desktop source and ZIP | No frontend deployment until reconciliation |
 
 ## Product Direction
 
@@ -23,12 +28,13 @@ Proposals are not implemented functionality.
 - Prioritize existing deadlines, owners and tasks in the dashboard; avoid
   generating unverified legal advice or deadlines.
 - Replace nonfunctional support controls with a real submission flow.
-- Preserve historical accounting separately from active-work lists; archive
-  behavior awaits the product decision in ROADMAP.md.
+- Preserve historical accounting separately from active-work lists; the user
+  confirmed that archives remain in financial reports.
 
 ## Browser Status
 
-An unauthenticated /dashboard request redirected to the landing page.
-Internal desktop/mobile browser checks require a signed-in session.
-Dashboard, clients, cases, documents, tasks/calendar, team/approvals, toolbox and
-support remain in the review queue. Source review is not browser verification.
+A signed-in Chrome session was used to inspect dashboard, finance, case list,
+case detail and the collection form without submitting or changing live data.
+The live form labels differ from the available source. Client workflows,
+documents, tasks/calendar, team/approvals, toolbox, support and mobile checks
+remain in the review queue. Source review is not browser verification.

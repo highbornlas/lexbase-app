@@ -22,7 +22,9 @@ publication. Existing Claude credentials and connections must be preserved.
 - [x] Secure six finance RPCs in production and verify cross-bureau denial.
 - [x] Fix consulting/mediation status-write failures, notice archive and
       service-module finance refresh; 12 Node regression tests passed.
-- [ ] Define income/client-held money and archive accounting rules.
+- [x] Confirm income/client-held money and archive accounting rules.
+- [x] Implement frontend income classification, archived financial lists and
+      reliable client fee saves; legacy service fees survive the first payment.
 - [ ] Unify frontend/backend finance calculations with fixture tests.
 - [ ] Review and improve core forms, list/detail screens and mobile behavior.
 - [ ] Measure and improve critical screen loading.
@@ -49,9 +51,10 @@ browser observations. Proposed product changes are not verified findings.
 
 ## Decisions Requiring Product Clarification
 
-- Whether general collections represent office income or client-held money.
-- Whether archived cases remain in historical financial reports (recommended)
-  while disappearing from active-work screens.
+- Confirmed: counterparty collections belong to clients; only separately
+  recognized fees are office income. Direct fee payments must be distinguished
+  from fees offset against held client funds before implementing held balances.
+- Confirmed: archives remain in financial history, not active-work screens.
 - Whether deletion of a case with financial history is allowed, or requires
   cancellation/correction entries instead.
 
@@ -64,6 +67,10 @@ browser observations. Proposed product changes are not verified findings.
 - Production profit/loss omits notice income and uses mediation meeting amounts
   rather than the collected-fee field used in the UI.
 - Production client/profit-loss case queries include soft-deleted records.
+- Signed-in Chrome review reached dashboard, finance, cases and collection forms.
+- Live collection form differs from GitHub and Desktop/Lexbase sources, including
+  the ZIP backup. Frontend publication is blocked until this is reconciled;
+  do not overwrite live functionality with the older source.
 
 ## Deferred Feature Backlog
 

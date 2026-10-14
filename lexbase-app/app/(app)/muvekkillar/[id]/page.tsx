@@ -22,6 +22,7 @@ import { useIcraKaydet } from '@/lib/hooks/useIcra';
 import { useArabuluculukKaydet } from '@/lib/hooks/useArabuluculuk';
 import { useIhtarnameKaydet } from '@/lib/hooks/useIhtarname';
 import { useSonErisim } from '@/lib/hooks/useSonErisim';
+import { hizmetTahsilatiEkle } from '@/lib/finans/gelirKurallari';
 import Link from 'next/link';
 
 /* ══════════════════════════════════════════════════════════════
@@ -104,7 +105,7 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
   };
 
   /* ── Masraf & Tahsilat handlers ── */
-  const turMap: Record<string, { arr: Record<string, unknown>[]; kaydet: { mutate: (v: never) => void } }> = {
+  const turMap: Record<string, { arr: Record<string, unknown>[]; kaydet: { mutate: (v: never) => void; mutateAsync: (v: never) => Promise<unknown> } }> = {
     'Dava': { arr: davaArr, kaydet: davaKaydet },
     'İcra': { arr: icraArr, kaydet: icraKaydet },
     'Arabuluculuk': { arr: arabArr, kaydet: arabKaydet },
@@ -120,13 +121,18 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
     hedef.kaydet.mutate({ ...dosya, harcamalar: [...mevcutHarcamalar, harcama] } as never);
   };
 
-  const handleTahsilatKaydet = (dosyaId: string, dosyaTur: string, tahsilat: { id: string; tarih: string; tutar: number; aciklama: string }) => {
+  const handleTahsilatKaydet = async (dosyaId: string, dosyaTur: string, tahsilat: { id: string; tarih: string; tutar: number; aciklama: string }) => {
     const hedef = turMap[dosyaTur];
-    if (!hedef) return;
+    if (!hedef) throw new Error('Dosya türü desteklenmiyor');
     const dosya = hedef.arr.find((d) => d.id === dosyaId);
-    if (!dosya) return;
+    if (!dosya) throw new Error('Dosya bulunamadı');
     const mevcutTahsilatlar = (dosya.tahsilatlar || []) as Array<Record<string, unknown>>;
-    hedef.kaydet.mutate({ ...dosya, tahsilatlar: [...mevcutTahsilatlar, tahsilat] } as never);
+    const hareket = { ...tahsilat, tur: 'akdi_vekalet', acik: tahsilat.aciklama };
+    await hedef.kaydet.mutateAsync({
+      ...dosya,
+      tahsilatlar: dosyaTur === 'Dava' || dosyaTur === 'İcra'
+        ? [...mevcutTahsilatlar, hareket] : hizmetTahsilatiEkle(dosya, hareket),
+    } as never);
   };
 
   /* ── Loading / Not Found ── */

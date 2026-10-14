@@ -5,6 +5,7 @@ import { Modal, FormGroup, FormInput, FormSelect, BtnGold, BtnOutline } from '@/
 import { useModalDraft } from '@/lib/hooks/useModalDraft';
 import { fmt } from '@/lib/utils';
 import { bruttenNete, nettenBrute } from '@/lib/utils/finans';
+import { gelirTahsilatiMi } from '@/lib/finans/gelirKurallari';
 
 /* ══════════════════════════════════════════════════════════════
    Tahsilat Ekleme / Düzenleme Modal
@@ -36,7 +37,7 @@ interface TahsilatModalProps {
 const TAHSILAT_TURLERI = [
   { value: 'akdi_vekalet', label: 'Akdi Vekalet Ücreti' },
   { value: 'hakediş', label: 'Karşı Vekalet Hakedişi' },
-  { value: 'tahsilat', label: 'Genel Tahsilat' },
+  { value: 'tahsilat', label: 'Müvekkil Adına Tahsilat' },
   { value: 'aktarim', label: 'Aktarım' },
   { value: 'iade', label: 'İade' },
 ];
@@ -88,7 +89,8 @@ function TahsilatModalForm({ open, onClose, onKaydet, tahsilat, draftScope }: Ta
     setKaydediliyor(true);
     try {
       const kaydedilecek = { ...form };
-      if (!kaydedilecek.makbuzKesildi) {
+      if (!kaydedilecek.makbuzKesildi || !gelirTahsilatiMi(kaydedilecek.tur)) {
+        kaydedilecek.makbuzKesildi = false;
         kaydedilecek.kdvOrani = 0;
         kaydedilecek.stopajOrani = 0;
       }
@@ -105,8 +107,9 @@ function TahsilatModalForm({ open, onClose, onKaydet, tahsilat, draftScope }: Ta
   }
 
   // Vergi hesaplama
-  const efektifKdv = form.makbuzKesildi ? (form.kdvOrani || 0) : 0;
-  const efektifStopaj = form.makbuzKesildi ? (form.stopajOrani || 0) : 0;
+  const vergiUygulanabilir = gelirTahsilatiMi(form.tur);
+  const efektifKdv = form.makbuzKesildi && vergiUygulanabilir ? (form.kdvOrani || 0) : 0;
+  const efektifStopaj = form.makbuzKesildi && vergiUygulanabilir ? (form.stopajOrani || 0) : 0;
   const hesap = bruttenNete(form.tutar || 0, efektifKdv, efektifStopaj);
 
   return (
@@ -132,6 +135,15 @@ function TahsilatModalForm({ open, onClose, onKaydet, tahsilat, draftScope }: Ta
                 <option key={t.value} value={t.value}>{t.label}</option>
               ))}
             </FormSelect>
+            <p className="text-[11px] text-text-muted mt-1">
+              {form.tur === 'tahsilat'
+                ? 'Karşı taraftan müvekkil adına alınan para. Büro geliri değildir; ücret mahsubunu ayrı bir ücret veya hakediş kaydıyla izleyin.'
+                : form.tur === 'aktarim'
+                  ? 'Müvekkile aktarılan para. Büro geliri değildir.'
+                  : form.tur === 'iade'
+                    ? 'İade edilen para. Büro geliri değildir.'
+                    : 'Büroya ait ücret veya hakediş. Müvekkil adına alınan ana paradan ayrı kaydedilir.'}
+            </p>
           </FormGroup>
           <FormGroup label="Tarih">
             <FormInput type="date" value={form.tarih || ''} onChange={(e) => handleChange('tarih', e.target.value)} />
@@ -143,10 +155,10 @@ function TahsilatModalForm({ open, onClose, onKaydet, tahsilat, draftScope }: Ta
           <div className="flex gap-2">
             <FormInput
               type="number"
-              value={(tutarModu === 'net' && form.makbuzKesildi ? hesap.netTutar : form.tutar) || ''}
+              value={(tutarModu === 'net' && form.makbuzKesildi && vergiUygulanabilir ? hesap.netTutar : form.tutar) || ''}
               onChange={(e) => {
                 const val = Number(e.target.value);
-                if (tutarModu === 'net' && form.makbuzKesildi) {
+                if (tutarModu === 'net' && form.makbuzKesildi && vergiUygulanabilir) {
                   // Net girildiyse brüte çevir
                   const { brutTutar } = nettenBrute(val, form.kdvOrani || 0, form.stopajOrani || 0);
                   setForm((prev) => ({ ...prev, tutar: brutTutar }));
@@ -156,7 +168,7 @@ function TahsilatModalForm({ open, onClose, onKaydet, tahsilat, draftScope }: Ta
               }}
               placeholder="0"
             />
-            {form.makbuzKesildi && (
+            {form.makbuzKesildi && vergiUygulanabilir && (
               <div className="flex rounded-lg border border-border overflow-hidden shrink-0">
                 <button
                   type="button"
@@ -186,7 +198,7 @@ function TahsilatModalForm({ open, onClose, onKaydet, tahsilat, draftScope }: Ta
         </FormGroup>
 
         {/* Vergi / SMM Bölümü */}
-        <div className="border-t border-border/50 pt-4">
+        {vergiUygulanabilir && <div className="border-t border-border/50 pt-4">
           <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-3">Vergi / SMM Bilgileri</div>
           <div className="grid grid-cols-2 gap-4 mb-3">
             <FormGroup label="KDV Oranı (%)">
@@ -251,7 +263,7 @@ function TahsilatModalForm({ open, onClose, onKaydet, tahsilat, draftScope }: Ta
               ℹ️ Makbuz kesilmediğinde KDV/Stopaj vergi hesabına dahil edilmez (avans/elden tahsilat).
             </div>
           )}
-        </div>
+        </div>}
       </fieldset>
 
       <div className="flex items-center justify-end gap-2 mt-6 pt-4 border-t border-border">

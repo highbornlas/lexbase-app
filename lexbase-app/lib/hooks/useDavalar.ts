@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
+import { raporKaydiGorunurMu } from '@/lib/finans/gelirKurallari';
 import { useBuroId } from './useBuro';
 
 // ── Dava Tip Tanımı (UYAP Uyumlu) ──────────────────────────
@@ -107,11 +108,11 @@ export interface Dava {
 }
 
 // ── Tüm Davalar (soft delete filtreli) ──────────────────────
-export function useDavalar() {
+export function useDavalar(includeArchived = false) {
   const buroId = useBuroId();
 
   return useQuery<Dava[]>({
-    queryKey: ['davalar', buroId],
+    queryKey: includeArchived ? ['davalar', buroId, 'finans'] : ['davalar', buroId],
     queryFn: async () => {
       if (!buroId) return [];
       const supabase = createClient();
@@ -123,7 +124,7 @@ export function useDavalar() {
       if (error) throw error;
       return (data || [])
         .map((r) => ({ id: r.id, ...(r.data as object) }) as Dava)
-        .filter((d) => !d._silindi && !d._arsivlendi);
+        .filter((d) => raporKaydiGorunurMu(d, includeArchived));
     },
     enabled: !!buroId,
   });
