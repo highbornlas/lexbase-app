@@ -124,5 +124,14 @@ browser observations. Proposed product changes are not verified findings.
 
 ## Deferred Feature Backlog
 
+Latest verification: signed-in synthetic client/case/advance/expense creation
+confirmed -500 client cash separately from 3,000 fee receivable. See
+LIVE_TEST_LOG.md for record IDs, observed UI defects and untested scenarios.
+Client-context/lazy-form/session initialization changes are candidates only.
+The legacy expense trigger candidate passes 21 local assertions, but notice
+settled-history reconciliation and complete profit/loss remain release gates.
+The admin migration deployment attempt failed at connector approval; production
+readback was unchanged. This is not a completed security release.
+
 Client portal, AI document generation and major integrations require separate
 scope selection after existing workflows are reliable.

@@ -10,7 +10,10 @@
     "Üyelik yetkisi ve onay bildirimi güvenliği için düzeltmeler hazırlandı; onay ekranının yükleme ve hata durumları iyileştirildi.",
     "Platform yöneticisi erişimi ve davetlerde büro/rol yetkilendirmesi için güvenlik düzeltmeleri hazırlandı.",
     "Davetlerde eksik kurulum ve bildirim hataları görünür hâle getirildi; bekleyen davetlerin yanlışlıkla aktif gösterilmesi önlendi.",
-    "Sürüm göstergeleri ve güncelleme notları tek kaynağa bağlandı."
+    "Sürüm göstergeleri ve güncelleme notları tek kaynağa bağlandı.",
+    "Müvekkil ekranından açılan yeni dosya formlarına müvekkil bilgisi aktarıldı; kapalı formların gereksiz yüklenmesi azaltıldı.",
+    "Arka plan sorguları yenilendiğinde açık form bilgilerinin sıfırlanmasına karşı koruma ve form hazırlama durumları eklendi.",
+    "Eski icra ve ihtarname masraf yansımaları için sahiplik ve iptal düzeltmeleri hazırlandı; geçmiş kayıtlar değiştirilmedi."
   ],
   "releases": [
     { "version": "2.3.0", "date": "2026-03-21", "changes": ["Veri sorgularında performans iyileştirmeleri yapıldı.", "Hata kaydı ve hata takibi geliştirildi.", "Renk ve durum sabitleri merkezileştirildi.", "TypeScript tipleri temizlendi."] },

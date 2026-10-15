@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Modal, FormGroup, FormInput, FormSelect, FormTextarea, BtnGold, BtnOutline } from '@/components/ui/Modal';
 import { useModalDraft } from '@/lib/hooks/useModalDraft';
 import { useIhtarnameKaydet, useIhtarnameler, type Ihtarname } from '@/lib/hooks/useIhtarname';
@@ -12,10 +12,13 @@ import { useIcralar } from '@/lib/hooks/useIcra';
 import { fmt } from '@/lib/utils';
 import { bruttenNete } from '@/lib/hooks/useGelirHesapla';
 
+import { type ClientFormSeed } from '@/lib/data/clientFormSeed';
+
 interface IhtarnameModalProps {
   open: boolean;
   onClose: () => void;
   ihtarname?: Ihtarname | null;
+  varsayilanMuvekkil?: ClientFormSeed;
 }
 
 const bos: Partial<Ihtarname> = {
@@ -44,7 +47,7 @@ const bos: Partial<Ihtarname> = {
   iliskiliDosyaId: '',
 };
 
-export function IhtarnameModal({ open, onClose, ihtarname }: IhtarnameModalProps) {
+export function IhtarnameModal({ open, onClose, ihtarname, varsayilanMuvekkil }: IhtarnameModalProps) {
   const [form, setForm] = useState<Partial<Ihtarname>>({ ...bos });
   const [initialForm, setInitialForm] = useState<Partial<Ihtarname>>({ ...bos });
   const [hata, setHata] = useState('');
@@ -58,8 +61,9 @@ export function IhtarnameModal({ open, onClose, ihtarname }: IhtarnameModalProps
   const { data: karsiTaraflar } = useKarsiTaraflar();
   const { data: davalar } = useDavalar();
   const { data: icralar } = useIcralar();
-  const { data: tumIhtarnameler } = useIhtarnameler();
+  const { data: tumIhtarnameler, error: listeHatasi, refetch: listeyiYenile } = useIhtarnameler();
   const karsiTarafKaydet = useKarsiTarafKaydet();
+  const initializedRecord = useRef<string | null>(null);
 
   /* ── Otomatik numaralama ── */
   const sonrakiNo = useMemo(() => {
@@ -183,11 +187,16 @@ export function IhtarnameModal({ open, onClose, ihtarname }: IhtarnameModalProps
   }
 
   useEffect(() => {
+    if (!open) { initializedRecord.current = null; return; }
+    if (!ihtarname && !tumIhtarnameler) return;
+    const recordKey = ihtarname?.id || 'new';
+    if (initializedRecord.current === recordKey) return;
+    initializedRecord.current = recordKey;
     let init: Partial<Ihtarname>;
     if (ihtarname) {
       init = { ...ihtarname };
     } else {
-      init = { ...bos, id: crypto.randomUUID(), no: sonrakiNo };
+      init = { ...bos, muvId: varsayilanMuvekkil?.id || '', id: crypto.randomUUID(), no: sonrakiNo };
     }
     setInitialForm(init);
     setForm(init);
@@ -195,7 +204,7 @@ export function IhtarnameModal({ open, onClose, ihtarname }: IhtarnameModalProps
     setPttSonuc('');
     setYeniKarsiTarafGoster(false);
     setYeniKarsiTarafAd('');
-  }, [ihtarname, open, sonrakiNo]);
+  }, [ihtarname, open, sonrakiNo, tumIhtarnameler, varsayilanMuvekkil]);
 
   const draftKey = `ihtarname_${form.id || 'yeni'}`;
   const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(
@@ -314,6 +323,13 @@ export function IhtarnameModal({ open, onClose, ihtarname }: IhtarnameModalProps
 
   /* ── Cevap bölümü gösterilecek mi? ── */
   const cevapGosterilecek = form.durum === 'Cevap Geldi' || form.durum === 'Sonuçlandı';
+
+  if (!ihtarname && !tumIhtarnameler) return (
+    <Modal open={open} onClose={onClose} title="Yeni İhtarname">
+      <p role={listeHatasi ? 'alert' : 'status'}>{listeHatasi ? 'Dosya bilgileri yüklenemedi.' : 'Form hazırlanıyor...'}</p>
+      {listeHatasi && <BtnOutline onClick={() => { void listeyiYenile(); }}>Tekrar Dene</BtnOutline>}
+    </Modal>
+  );
 
   return (
     <Modal

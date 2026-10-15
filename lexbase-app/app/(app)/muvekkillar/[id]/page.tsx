@@ -11,11 +11,7 @@ import { GenelBakis } from '@/components/modules/muvekkil/GenelBakis';
 import { FinansTab } from '@/components/modules/muvekkil/FinansTab';
 import { EvrakNotlarTab } from '@/components/modules/muvekkil/EvrakNotlarTab';
 import { MuvDosyalar } from '@/components/modules/muvekkil/MuvDosyalar';
-import { MuvekkilModal } from '@/components/modules/MuvekkilModal';
-import { DavaModal } from '@/components/modules/DavaModal';
-import { IcraModal } from '@/components/modules/IcraModal';
-import { ArabuluculukModal } from '@/components/modules/ArabuluculukModal';
-import { IhtarnameModal } from '@/components/modules/IhtarnameModal';
+import dynamic from 'next/dynamic';
 import { useMuvekkilKaydet, useMuvekkilSil } from '@/lib/hooks/useMuvekkillar';
 import { useDavaKaydet } from '@/lib/hooks/useDavalar';
 import { useIcraKaydet } from '@/lib/hooks/useIcra';
@@ -24,6 +20,12 @@ import { useIhtarnameKaydet } from '@/lib/hooks/useIhtarname';
 import { useSonErisim } from '@/lib/hooks/useSonErisim';
 import { hizmetTahsilatiEkle } from '@/lib/finans/gelirKurallari';
 import Link from 'next/link';
+
+const MuvekkilModal = dynamic(() => import('@/components/modules/MuvekkilModal').then((m) => m.MuvekkilModal));
+const DavaModal = dynamic(() => import('@/components/modules/DavaModal').then((m) => m.DavaModal));
+const IcraModal = dynamic(() => import('@/components/modules/IcraModal').then((m) => m.IcraModal));
+const ArabuluculukModal = dynamic(() => import('@/components/modules/ArabuluculukModal').then((m) => m.ArabuluculukModal));
+const IhtarnameModal = dynamic(() => import('@/components/modules/IhtarnameModal').then((m) => m.IhtarnameModal));
 
 /* ══════════════════════════════════════════════════════════════
    Müvekkil Detay Sayfası — 4 Ana Sekmeli Yeni Yapı
@@ -166,11 +168,11 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
       />
 
       {/* ── Modal'lar ── */}
-      <MuvekkilModal open={editOpen} onClose={() => setEditOpen(false)} muvekkil={muv} />
-      <DavaModal open={yeniDavaOpen} onClose={() => setYeniDavaOpen(false)} />
-      <IcraModal open={yeniIcraOpen} onClose={() => setYeniIcraOpen(false)} />
-      <ArabuluculukModal open={yeniArabuluculukOpen} onClose={() => setYeniArabuluculukOpen(false)} />
-      <IhtarnameModal open={yeniIhtarnameOpen} onClose={() => { setYeniIhtarnameOpen(false); setSeciliIhtarname(null); }} ihtarname={seciliIhtarname as import('@/lib/hooks/useIhtarname').Ihtarname | null} />
+      {editOpen && <MuvekkilModal open onClose={() => setEditOpen(false)} muvekkil={muv} />}
+      {yeniDavaOpen && <DavaModal open onClose={() => setYeniDavaOpen(false)} varsayilanMuvekkil={muv} />}
+      {yeniIcraOpen && <IcraModal open onClose={() => setYeniIcraOpen(false)} varsayilanMuvekkil={muv} />}
+      {yeniArabuluculukOpen && <ArabuluculukModal open onClose={() => setYeniArabuluculukOpen(false)} varsayilanMuvekkil={muv} />}
+      {yeniIhtarnameOpen && <IhtarnameModal open onClose={() => { setYeniIhtarnameOpen(false); setSeciliIhtarname(null); }} ihtarname={seciliIhtarname as import('@/lib/hooks/useIhtarname').Ihtarname | null} varsayilanMuvekkil={muv} />}
 
       {/* ── Compact KPI Row ── */}
       <div className="mt-5">

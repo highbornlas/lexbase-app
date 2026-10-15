@@ -121,6 +121,20 @@ handler, actual SDK transport, Deno listener or GoTrue trigger.
 
 ## Other Security Work Still Open
 
+### 2026-10-15 Deployment Attempt
+
+Fresh read-only preflight confirmed three existing super administrators and the
+known insecure predicate/policy baseline. The 38 local admin assertions passed.
+An actual `apply_migration` attempt failed at the connector approval stage with
+`Invalid or expired requestState`. Readback confirmed the old predicate remains
+unchanged and all three administrators remain present. This migration is NOT live.
+No frontend version was advanced. No credentials were rotated or removed.
+
+A private preflight snapshot is retained outside the managed checkout at
+`/Users/enes/Desktop/Lexbase/EMD-hukuk-main/lexbase-admin-security-preflight-20261015.private.json`
+with mode 0600. It contains definitions/policies/counts, not customer records or
+credentials. No staging project or branch was found; none was created.
+
 Profile INSERT/UPDATE permissions, profile-based legacy enforcement policies,
 staff-to-membership trigger authority, arbitrary bureau metadata edits, approval
 decision rules and recipient inbox permissions require separate restriction and
