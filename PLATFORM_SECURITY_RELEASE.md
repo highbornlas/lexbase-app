@@ -85,7 +85,9 @@ and must be reconciled from trusted evidence, not automatically elevated.
 5. Do not blindly deploy the local invite function over v6: review the full diff
    against its retrieved source, package the imported authorization.ts file,
    validate Deno/runtime behavior and reconcile profile-only legacy callers.
-   No local Deno runtime is currently available; full handler validation is open.
+   Include handler.ts as well as authorization.ts after the HTTP refactor.
+   The complete HTTP handler now has offline Node tests; actual Deno/SDK/Auth
+   integration is still open. See INVITATION_FLOW.md.
 6. Check normal-member read denial across bureaus and legitimate own-bureau reads
    through Auth/PostgREST, admin UI read paths (without triggering auto-provision),
    and a controlled invitation only to an agreed test recipient.
@@ -113,7 +115,9 @@ management, retained tenant-policy access, server access, idempotence and drift 
 `supabase/tests/platform_admin_security_diagnostics.sql`.
 
 The invite authorization helper has six Node tests and an independent strict
-TypeScript check. These do not send emails or execute the deployed handler.
+TypeScript check. A further 24 HTTP-handler and three result-state tests execute
+the refactored handler offline. They do not send emails or execute the deployed
+handler, actual SDK transport, Deno listener or GoTrue trigger.
 
 ## Other Security Work Still Open
 

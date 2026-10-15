@@ -7,6 +7,7 @@ import { ROL_ETIKETLERI, type Rol } from '@/lib/hooks/useRol';
 import { useBildirimGonder } from '@/lib/hooks/useBildirimler';
 import { PersonelModal } from '@/components/modules/PersonelModal';
 import { useBuroId } from '@/lib/hooks/useBuro';
+import { invitationResult } from '@/lib/data/invitationResult';
 import { SectionTitle, Badge, AyarlarEmptyState, AyarInput } from './shared';
 
 /* ══════════════════════════════════════════════════════════════
@@ -135,13 +136,14 @@ export function EkipTab() {
         }),
       });
 
-      const result = await res.json();
+      const response = await res.json();
 
       if (!res.ok) {
-        throw new Error(result.error || 'Davet gönderilemedi.');
+        throw new Error(typeof response?.error === 'string' ? response.error : 'Davet sonucu doğrulanamadı. Üyelik durumunu kontrol edin.');
       }
 
-      const yeniDurum = result.status === 'invited' ? 'davet_gonderildi' : 'aktif';
+      const result=invitationResult(response);
+      const yeniDurum = result.durum;
       if ((p.durum || 'aktif') !== yeniDurum) {
         await kaydet.mutateAsync({ ...p, durum: yeniDurum });
       }

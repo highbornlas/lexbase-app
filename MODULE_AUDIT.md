@@ -32,6 +32,7 @@ Proposals are not implemented functionality.
 | Platform administrator access | Production definitions / isolated fixtures | Any signed-in user satisfies admin predicate; bootstrap self-provisions and null uid bypasses its check | Guarded correction with 38 local SQL assertions, not live |
 | Invitation authority | Deployed v6 / source | Editable profile fallback and arbitrary first eligible bureau used for authority | Membership-only scoped source candidate; handler/runtime and legacy-caller checks pending |
 | Signup | Production trigger | User metadata used for bureau/profile roles; errors swallowed and membership not created | Trusted onboarding and historical profile reconciliation pending |
+| Invitation reliability | Source / offline HTTP tests | First-page-only lookup, unchecked setup writes and pending replies could falsely activate staff | Candidate checks writes, paginates lookup, preserves pending states and reports delivery warnings; real Auth acceptance remains open |
 
 ## Product Direction
 

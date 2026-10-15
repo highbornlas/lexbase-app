@@ -50,6 +50,10 @@ publication. Existing Claude credentials and connections must be preserved.
       and disabled self-provisioning bootstrap; 38 isolated SQL assertions.
 - [x] Prepare membership-only invite authorization, selected-bureau requests and
       protected privileged-role reactivation; six Node assertions.
+- [x] Add full offline invitation HTTP tests, checked setup writes, paginated
+      directory lookup and backward-compatible pending states; 27 new Node tests.
+- [ ] Repair trusted signup/invite provisioning and pending-invitation acceptance;
+      offline HTTP success is not an end-to-end Auth/email release gate.
 - [x] Owner confirmed ownership of all three existing administrator accounts on
       2026-10-15; preserve their current permissions.
 - [ ] Verify real Auth/onboarding compatibility;

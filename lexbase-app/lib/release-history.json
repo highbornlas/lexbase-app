@@ -9,6 +9,7 @@
     "Arşiv ve geri yükleme işlemleri ortak altyapıya taşındı; çöp kutusunun listeleme sırasında otomatik silme davranışı kaldırıldı.",
     "Üyelik yetkisi ve onay bildirimi güvenliği için düzeltmeler hazırlandı; onay ekranının yükleme ve hata durumları iyileştirildi.",
     "Platform yöneticisi erişimi ve davetlerde büro/rol yetkilendirmesi için güvenlik düzeltmeleri hazırlandı.",
+    "Davetlerde eksik kurulum ve bildirim hataları görünür hâle getirildi; bekleyen davetlerin yanlışlıkla aktif gösterilmesi önlendi.",
     "Sürüm göstergeleri ve güncelleme notları tek kaynağa bağlandı."
   ],
   "releases": [
