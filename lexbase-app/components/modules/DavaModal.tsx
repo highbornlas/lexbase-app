@@ -18,11 +18,14 @@ import {
 } from '@/lib/constants/uyap';
 import { tamMahkemeAdi, esasNoGoster } from '@/lib/utils/uyapHelpers';
 
+import { clientFormSeed, type ClientFormSeed } from '@/lib/data/clientFormSeed';
+
 interface DavaModalProps {
   open: boolean;
   onClose: () => void;
   dava?: Dava | null;
   onCreated?: (d: Dava) => void;
+  varsayilanMuvekkil?: ClientFormSeed;
 }
 
 const bos: Partial<Dava> = {
@@ -64,16 +67,16 @@ const ADIM_BASLIKLAR: Record<Adim, string> = {
   3: 'Bağlantı & Notlar',
 };
 
-export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
+export function DavaModal({ open, onClose, dava, onCreated, varsayilanMuvekkil }: DavaModalProps) {
   const [form, setForm] = useState<Partial<Dava>>({ ...bos });
   const [initialForm, setInitialForm] = useState<Partial<Dava>>({ ...bos });
   const [hata, setHata] = useState('');
   const [adim, setAdim] = useState<Adim>(1);
   const [yargiTuru, setYargiTuru] = useState<string>('');
-  const { data: mevcutlar } = useDavalar();
+  const { data: mevcutlar, error: listeHatasi, refetch: listeyiYenile } = useDavalar();
   const { data: icralar } = useIcralar();
   const kaydet = useDavaKaydet();
-  const { data: muvekkillar } = useMuvekkillar();
+  const { data: muvekkillar, error: muvekkilHatasi, refetch: muvekkillariYenile } = useMuvekkillar();
   const { mahkemeler, kullanılanIller } = useMahkemeHafizasi();
   const { data: ozelKonular } = useOzelDavaKonulari();
   const ozelKonuKaydet = useOzelDavaKonusuKaydet();
@@ -86,8 +89,15 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
   const [konuArama, setKonuArama] = useState('');
   const [konuDropOpen, setKonuDropOpen] = useState(false);
   const konuWrapRef = useRef<HTMLDivElement>(null);
+  const initializedRecord = useRef<string | null>(null);
+  const muvekkilBekleniyor = !!(dava?.muvId && !dava.muvekkilTaraflar?.length && !muvekkillar);
 
   useEffect(() => {
+    if (!open) { initializedRecord.current = null; return; }
+    if ((!dava && !mevcutlar) || muvekkilBekleniyor) return;
+    const recordKey = dava?.id || 'new';
+    if (initializedRecord.current === recordKey) return;
+    initializedRecord.current = recordKey;
     let init: Partial<Dava>;
     if (dava) {
       init = { ...dava };
@@ -125,7 +135,7 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
       setYargiTuru(bulunanTur ? bulunanTur[0] : '');
     } else {
       const maxNo = Math.max(0, ...(mevcutlar || []).map((d) => d.kayitNo || 0));
-      init = { ...bos, id: crypto.randomUUID(), sira: Date.now(), kayitNo: maxNo + 1 };
+      init = { ...bos, ...clientFormSeed(varsayilanMuvekkil), id: crypto.randomUUID(), sira: Date.now(), kayitNo: maxNo + 1 };
       setYargiTuru('');
     }
     setInitialForm(init);
@@ -135,7 +145,7 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
     setKonuArama('');
     setKonuDropOpen(false);
     setOzelKonuOpen(false);
-  }, [dava, open, muvekkillar]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [dava, open, muvekkillar, mevcutlar, varsayilanMuvekkil, muvekkilBekleniyor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const draftKey = `dava_${form.id || 'yeni'}`;
   const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(
@@ -311,6 +321,13 @@ export function DavaModal({ open, onClose, dava, onCreated }: DavaModalProps) {
       setHata('Kayıt sırasında bir hata oluştu.');
     }
   }
+
+  if ((!dava && !mevcutlar) || muvekkilBekleniyor) return (
+    <Modal open={open} onClose={onClose} title="Yeni Dava">
+      <p role={listeHatasi || muvekkilHatasi ? 'alert' : 'status'}>{listeHatasi || muvekkilHatasi ? 'Dosya bilgileri yüklenemedi.' : 'Form hazırlanıyor...'}</p>
+      {(listeHatasi || muvekkilHatasi) && <BtnOutline onClick={() => { void listeyiYenile(); void muvekkillariYenile(); }}>Tekrar Dene</BtnOutline>}
+    </Modal>
+  );
 
   return (
     <Modal

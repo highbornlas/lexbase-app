@@ -2,6 +2,9 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
+import { useRecordLifecycle } from './useRecordLifecycle';
+import { masraflariKoruyarakDosyaKaydet } from '@/lib/data/financeCashTransaction';
+import { raporKaydiGorunurMu } from '@/lib/finans/gelirKurallari';
 import { useBuroId } from './useBuro';
 
 export interface Ihtarname {
@@ -63,11 +66,11 @@ export interface Ihtarname {
   [key: string]: unknown;
 }
 
-export function useIhtarnameler() {
+export function useIhtarnameler(includeArchived = false) {
   const buroId = useBuroId();
 
   return useQuery<Ihtarname[]>({
-    queryKey: ['ihtarnameler', buroId],
+    queryKey: includeArchived ? ['ihtarnameler', buroId, 'finans'] : ['ihtarnameler', buroId],
     queryFn: async () => {
       if (!buroId) return [];
       const supabase = createClient();
@@ -78,7 +81,7 @@ export function useIhtarnameler() {
       if (error) throw error;
       return (data || [])
         .map((r) => ({ id: r.id, ...(r.data as object) }) as Ihtarname)
-        .filter((i) => !i._silindi && !i._arsivlendi);
+        .filter((i) => raporKaydiGorunurMu(i, includeArchived));
     },
     enabled: !!buroId,
   });
@@ -111,8 +114,21 @@ export function useIhtarname(id: string | null) {
 
 /* Arşivlenmiş ihtarnameler */
 export function useArsivIhtarnameler() {
-  const { data: tumu } = useIhtarnameler();
-  return { data: tumu?.filter((i) => i._arsivlendi && !i._silindi) ?? [] };
+  const buroId = useBuroId();
+  return useQuery<Ihtarname[]>({
+    queryKey: ['ihtarnameler-arsiv', buroId],
+    queryFn: async () => {
+      if (!buroId) return [];
+      const supabase = createClient();
+      const { data, error } = await supabase.from('ihtarnameler')
+        .select('id, data').eq('buro_id', buroId);
+      if (error) throw error;
+      return (data || [])
+        .map((r) => ({ id: r.id, ...(r.data as object) }) as Ihtarname)
+        .filter((i) => !!i._arsivlendi && !i._silindi);
+    },
+    enabled: !!buroId,
+  });
 }
 
 export function useIhtarnameKaydet() {
@@ -123,104 +139,38 @@ export function useIhtarnameKaydet() {
     mutationFn: async (kayit: Ihtarname) => {
       if (!buroId) throw new Error('Büro bulunamadı');
       const supabase = createClient();
-      const { id, ...data } = kayit;
-      const { error } = await supabase.from('ihtarnameler').upsert({ id, buro_id: buroId, data });
-      if (error) throw error;
+      await masraflariKoruyarakDosyaKaydet(supabase, buroId, 'İhtarname', { ...kayit });
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['ihtarnameler'] });
+      queryClient.invalidateQueries({ queryKey: ['ihtarnameler-arsiv'] });
+      queryClient.invalidateQueries({ queryKey: ['ihtarname-detay'] });
+      queryClient.invalidateQueries({ queryKey: ['finans'] });
     },
   });
 }
 
 /* Soft delete — _silindi timestamp */
 export function useIhtarnameSil() {
-  const kaydet = useIhtarnameKaydet();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (ihtarname: Ihtarname) => {
-      await kaydet.mutateAsync({ ...ihtarname, _silindi: new Date().toISOString() });
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
-    },
-  });
+  return useRecordLifecycle('ihtarnameler', 'sil');
 }
 
 /* Geri Yükle — _silindi flag'i kaldır */
 export function useIhtarnameGeriYukle() {
-  const buroId = useBuroId();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      if (!buroId) throw new Error('Büro bulunamadı');
-      const supabase = createClient();
-
-      const { data: mevcut } = await supabase
-        .from('ihtarnameler')
-        .select('data')
-        .eq('id', id)
-        .eq('buro_id', buroId)
-        .single();
-
-      if (!mevcut) throw new Error('İhtarname bulunamadı');
-
-      const data = { ...(mevcut.data as Record<string, unknown>) };
-      delete data._silindi;
-
-      const { error } = await supabase.from('ihtarnameler').update({ data })
-        .eq('id', id).eq('buro_id', buroId);
-
-      if (error) throw error;
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['ihtarnameler'] });
-      queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
-    },
-  });
+  return useRecordLifecycle('ihtarnameler', 'geri_yukle');
 }
 
 /* Hard delete — Supabase'den tamamen sil */
 export function useIhtarnameHardSil() {
-  const buroId = useBuroId();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      if (!buroId) throw new Error('Büro bulunamadı');
-      const supabase = createClient();
-      const { error } = await supabase.from('ihtarnameler').delete().eq('id', id).eq('buro_id', buroId);
-      if (error) throw error;
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['ihtarnameler'] });
-      queryClient.invalidateQueries({ queryKey: ['cop-kutusu'] });
-    },
-  });
+  return useRecordLifecycle('ihtarnameler', 'kalici_sil');
 }
 
 /* Arşivle */
 export function useIhtarnameArsivle() {
-  const kaydet = useIhtarnameKaydet();
-
-  return useMutation({
-    mutationFn: async (ihtarname: Ihtarname) => {
-      await kaydet.mutateAsync({ ...ihtarname, _arsivlendi: new Date().toISOString() });
-    },
-  });
+  return useRecordLifecycle('ihtarnameler', 'arsivle');
 }
 
 /* Arşivden çıkar */
 export function useIhtarnameArsivdenCikar() {
-  const kaydet = useIhtarnameKaydet();
-
-  return useMutation({
-    mutationFn: async (ihtarname: Ihtarname) => {
-      const { _arsivlendi, ...rest } = ihtarname;
-      void _arsivlendi;
-      await kaydet.mutateAsync({ ...rest, _arsivlendi: undefined });
-    },
-  });
+  return useRecordLifecycle('ihtarnameler', 'arsivden_cikar');
 }

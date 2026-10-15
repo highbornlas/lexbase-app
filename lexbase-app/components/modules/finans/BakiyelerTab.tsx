@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { muvekkileGoreGrupla } from '@/lib/finans/dosyaGruplari';
+import { hizmetUcretHareketleri } from '@/lib/finans/gelirKurallari';
 import Link from 'next/link';
 import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
 import { useDavalar } from '@/lib/hooks/useDavalar';
@@ -9,7 +11,7 @@ import { useDanismanliklar } from '@/lib/hooks/useDanismanlik';
 import { useArabuluculuklar } from '@/lib/hooks/useArabuluculuk';
 import { useIhtarnameler } from '@/lib/hooks/useIhtarname';
 import { fmt } from '@/lib/utils';
-import { safeNum, tahsilatToplam } from '@/lib/utils/finans';
+import { safeNum, tahsilatToplam, dosyaParaOzeti, dosyaMasrafToplami, dosyaMasrafOzeti, anlasilanUcret } from '@/lib/utils/finans';
 import { EmptyState, MiniKpi } from './shared';
 
 /* ══════════════════════════════════════════════════════════════
@@ -20,79 +22,73 @@ import { EmptyState, MiniKpi } from './shared';
 const PAGE_SIZE = 20;
 
 export function BakiyelerTab() {
-  const { data: muvekkillar } = useMuvekkillar();
-  const { data: davalar } = useDavalar();
-  const { data: icralar } = useIcralar();
-  const { data: danismanliklar } = useDanismanliklar();
-  const { data: arabuluculuklar } = useArabuluculuklar();
-  const { data: ihtarnameler } = useIhtarnameler();
+  const muvekkilQuery = useMuvekkillar();
+  const davaQuery = useDavalar(true);
+  const icraQuery = useIcralar(true);
+  const danismanlikQuery = useDanismanliklar(true);
+  const arabuluculukQuery = useArabuluculuklar(true);
+  const ihtarnameQuery = useIhtarnameler(true);
+  const { data: muvekkillar } = muvekkilQuery;
+  const { data: davalar } = davaQuery;
+  const { data: icralar } = icraQuery;
+  const { data: danismanliklar } = danismanlikQuery;
+  const { data: arabuluculuklar } = arabuluculukQuery;
+  const { data: ihtarnameler } = ihtarnameQuery;
   const [arama, setArama] = useState('');
   const [sayfa, setSayfa] = useState(1);
 
   const bakiyeler = useMemo(() => {
     if (!muvekkillar) return [];
+    const davaGruplari = muvekkileGoreGrupla(davalar || []);
+    const icraGruplari = muvekkileGoreGrupla(icralar || []);
+    const danismanlikGruplari = muvekkileGoreGrupla(danismanliklar || []);
+    const arabuluculukGruplari = muvekkileGoreGrupla(arabuluculuklar || []);
+    const ihtarnameGruplari = muvekkileGoreGrupla(ihtarnameler || []);
     return muvekkillar.map((m) => {
-      const muvDavalar = (davalar || []).filter((d) => d.muvId === m.id) as Record<string, unknown>[];
-      const muvIcralar = (icralar || []).filter((i) => i.muvId === m.id) as Record<string, unknown>[];
-      const muvDanismanlik = (danismanliklar || []).filter((d) => d.muvId === m.id);
-      const muvArabuluculuk = (arabuluculuklar || []).filter((a) => a.muvId === m.id);
-      const muvIhtarname = (ihtarnameler || []).filter((ih) => ih.muvId === m.id);
+      const muvDavalar = (davaGruplari.get(m.id) || []) as Record<string, unknown>[];
+      const muvIcralar = (icraGruplari.get(m.id) || []) as Record<string, unknown>[];
+      const muvDanismanlik = danismanlikGruplari.get(m.id) || [];
+      const muvArabuluculuk = arabuluculukGruplari.get(m.id) || [];
+      const muvIhtarname = ihtarnameGruplari.get(m.id) || [];
 
       let anlasilanToplam = 0;
       let tahsilEdilenToplam = 0;
       let masrafToplam = 0;
+      let buroMasrafToplam = 0;
 
       // ── Dava + İcra (MuvAlacak pattern) ──
       const tumDosyalar = [...muvDavalar, ...muvIcralar];
       tumDosyalar.forEach((dosya) => {
-        // Anlaşılan tutar: anlasma.toplam || anlasma.ucret || ucret
-        const anlasma = dosya.anlasma as Record<string, unknown> | undefined;
-        const ucret = dosya.ucret as number | string | undefined;
-        if (anlasma) {
-          anlasilanToplam += parseFloat(String(anlasma.toplam || anlasma.ucret || 0)) || 0;
-        } else if (ucret) {
-          anlasilanToplam += parseFloat(String(ucret)) || 0;
-        }
-
-        // Tahsilat: tek kaynak — tahsilatlar[] varsa onu kullan, yoksa tahsilEdildi
-        const tahArr = (dosya.tahsilatlar || []) as Array<{ tutar?: number }>;
-        if (tahArr.length > 0) {
-          tahsilEdilenToplam += tahsilatToplam(tahArr);
-        } else {
-          tahsilEdilenToplam += safeNum(dosya.tahsilEdildi);
-        }
-
-        // Masraflar: harcamalar dizisi
-        const harcamalar = (dosya.harcamalar || []) as Array<Record<string, unknown>>;
-        harcamalar.forEach((h) => {
-          masrafToplam += parseFloat(String(h.tutar || 0)) || 0;
-        });
+        anlasilanToplam += anlasilanUcret(dosya);
+        tahsilEdilenToplam += dosyaParaOzeti(dosya).sozlesmeTahsilati;
+        masrafToplam += dosyaMasrafToplami(dosya);
+        buroMasrafToplam += dosyaMasrafOzeti(dosya).buro;
       });
 
       // ── Danışmanlık ──
       muvDanismanlik.forEach((d) => {
         const ucret = safeNum(d.ucret || d.aylikUcret);
         if (ucret > 0) anlasilanToplam += ucret;
-        tahsilEdilenToplam += safeNum(d.tahsilEdildi);
+        tahsilEdilenToplam += tahsilatToplam(hizmetUcretHareketleri(d).map((t) => ({ tutar: safeNum(t.tutar) })));
       });
 
       // ── Arabuluculuk ──
       muvArabuluculuk.forEach((a) => {
         const ucret = safeNum(a.ucret);
         if (ucret > 0) anlasilanToplam += ucret;
-        tahsilEdilenToplam += safeNum(a.tahsilEdildi);
+        tahsilEdilenToplam += tahsilatToplam(hizmetUcretHareketleri(a).map((t) => ({ tutar: safeNum(t.tutar) })));
       });
 
       // ── İhtarname ──
       muvIhtarname.forEach((ih) => {
         const ucret = safeNum(ih.ucret);
         if (ucret > 0) anlasilanToplam += ucret;
-        tahsilEdilenToplam += safeNum(ih.tahsilEdildi);
+        tahsilEdilenToplam += tahsilatToplam(hizmetUcretHareketleri(ih).map((t) => ({ tutar: safeNum(t.tutar) })));
         masrafToplam += safeNum(ih.noterMasrafi);
       });
 
       const kalanAlacak = anlasilanToplam - tahsilEdilenToplam;
-      const netBakiye = tahsilEdilenToplam - masrafToplam;
+      const netBakiye = tahsilEdilenToplam - buroMasrafToplam;
       const dosyaSayisi = tumDosyalar.length + muvDanismanlik.length + muvArabuluculuk.length + muvIhtarname.length;
 
       return {
@@ -126,6 +122,14 @@ export function BakiyelerTab() {
   // Pagination
   const toplamSayfa = Math.max(1, Math.ceil(bakiyeler.length / PAGE_SIZE));
   const sayfadakiler = bakiyeler.slice((sayfa - 1) * PAGE_SIZE, sayfa * PAGE_SIZE);
+
+  const queries = [muvekkilQuery, davaQuery, icraQuery, danismanlikQuery, arabuluculukQuery, ihtarnameQuery];
+  if (queries.some((query) => query.isError)) {
+    return <div role="alert" className="text-center py-8 text-red text-xs">Bakiyeler yüklenemedi. Lütfen tekrar deneyiniz.</div>;
+  }
+  if (queries.some((query) => query.isPending)) {
+    return <div className="text-center py-8 text-text-muted text-xs">Bakiyeler yükleniyor...</div>;
+  }
 
   return (
     <div>

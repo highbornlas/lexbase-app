@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useGelirHesapla, GELIR_KAYNAKLARI, type GelirKaydi } from '@/lib/hooks/useGelirHesapla';
+import { useGelirVerisi, GELIR_KAYNAKLARI } from '@/lib/hooks/useGelirHesapla';
+import { raporTarihi } from '@/lib/finans/raporHesaplari';
 import { fmt, fmtTarih } from '@/lib/utils';
 import { MiniKpi, EmptyState } from './shared';
 
@@ -15,7 +16,7 @@ const KAYNAK_RENK: Record<string, string> = {
 };
 
 export function GelirlerTab() {
-  const tumGelirler = useGelirHesapla();
+  const { gelirler: tumGelirler, isPending, isError } = useGelirVerisi();
   const [arama, setArama] = useState('');
   const [kaynakFiltre, setKaynakFiltre] = useState('hepsi');
   const [makbuzFiltre, setMakbuzFiltre] = useState<'hepsi' | 'makbuzlu' | 'makbuzsuz'>('hepsi');
@@ -29,7 +30,8 @@ export function GelirlerTab() {
   const filtrelenmis = useMemo(() => {
     return tumGelirler.filter((g) => {
       // Tarih filtresi
-      if (g.tarih) {
+      if (tarihBaslangic || tarihBitis) {
+        if (!raporTarihi(g.tarih)) return false;
         if (tarihBaslangic && g.tarih < tarihBaslangic) return false;
         if (tarihBitis && g.tarih > tarihBitis) return false;
       }
@@ -75,6 +77,9 @@ export function GelirlerTab() {
   // Pagination
   const toplamSayfa = Math.max(1, Math.ceil(filtrelenmis.length / PAGE_SIZE));
   const sayfadakiler = filtrelenmis.slice((sayfa - 1) * PAGE_SIZE, sayfa * PAGE_SIZE);
+
+  if (isError) return <div role="alert" className="py-8 text-center text-xs text-red">Gelir kayıtları yüklenemedi. Lütfen tekrar deneyiniz.</div>;
+  if (isPending) return <div className="py-8 text-center text-xs text-text-muted">Gelir kayıtları yükleniyor...</div>;
 
   return (
     <div>

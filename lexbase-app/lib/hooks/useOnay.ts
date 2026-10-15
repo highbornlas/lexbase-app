@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import { useBuroId } from './useBuro';
 import { useEffect, useState } from 'react';
+import { createApprovalRequest, type ApprovalRequest } from '@/lib/data/approvalRequest';
 
 /* ══════════════════════════════════════════════════════════════
    Onay Mekanizması — Maker/Checker prensibi
@@ -120,11 +121,14 @@ export function useOnayAyarlariGuncelle() {
     mutationFn: async (ayarlar: Partial<OnayAyarlari>) => {
       if (!buroId) throw new Error('Büro bulunamadı');
       const supabase = createClient();
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('onay_ayarlari')
         .update({ ...ayarlar, updated_at: new Date().toISOString() })
-        .eq('buro_id', buroId);
+        .eq('buro_id', buroId)
+        .select('id')
+        .single();
       if (error) throw error;
+      if (!data?.id) throw new Error('Onay ayarı güncellemesi doğrulanamadı');
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['onay-ayarlari', buroId] });
@@ -193,62 +197,19 @@ export function useOnayBekleyenSayisi(): number {
 
 /**
  * Yeni onay talebi oluştur.
- * Eğer kullanıcının rolü onaysız geçme hakkına sahipse, direkt onaylar.
+ * Talep ve yönetici bildirimlerini atomik kaydeder; karar ayrı bir işlemdir.
+ * Çağıran form aynı taslak/yeniden deneme için aynı UUID'yi sağlamalıdır.
  */
 export function useOnayTalebiOlustur() {
   const buroId = useBuroId();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (talep: {
-      modul: string;
-      islem_tipi: string;
-      hedef_tablo: string;
-      hedef_kayit_id?: string;
-      veri: Record<string, unknown>;
-      aciklama?: string;
-      ekler?: string[];
-      tutar?: number;
-    }) => {
+    mutationFn: async ({ id, ...talep }: ApprovalRequest & { id: string }) => {
       if (!buroId) throw new Error('Büro bulunamadı');
       const supabase = createClient();
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Oturum bulunamadı');
-
-      const { error } = await supabase.from('onay_kuyrugu').insert({
-        buro_id: buroId,
-        talep_eden_auth_id: user.id,
-        ...talep,
-      });
-
-      if (error) throw error;
-
-      // Yöneticilere bildirim gönder
-      const { data: yoneticiler } = await supabase
-        .from('uyelikler')
-        .select('auth_id')
-        .eq('buro_id', buroId)
-        .eq('durum', 'aktif')
-        .in('rol', ['sahip', 'yonetici']);
-
-      if (yoneticiler && yoneticiler.length > 0) {
-        const bildirimler = yoneticiler
-          .filter((y) => y.auth_id !== user.id)
-          .map((y) => ({
-            buro_id: buroId,
-            hedef_auth_id: y.auth_id,
-            tip: 'sistem',
-            baslik: 'Yeni onay talebi',
-            mesaj: talep.aciklama || `${talep.islem_tipi} işlemi onayınızı bekliyor`,
-            link: '/onaylar',
-            okundu: false,
-          }));
-
-        if (bildirimler.length > 0) {
-          await supabase.from('bildirimler').insert(bildirimler);
-        }
-      }
+      return createApprovalRequest(supabase, buroId, id, talep);
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['onay-talepleri'] });

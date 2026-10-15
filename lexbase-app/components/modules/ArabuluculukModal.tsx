@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Modal, FormGroup, FormInput, FormSelect, FormTextarea, BtnGold, BtnOutline } from '@/components/ui/Modal';
 import { useModalDraft } from '@/lib/hooks/useModalDraft';
 import {
@@ -19,11 +19,14 @@ import { useEtkinlikKaydet, type Etkinlik } from '@/lib/hooks/useEtkinlikler';
 import { fmt } from '@/lib/utils';
 import { bruttenNete } from '@/lib/hooks/useGelirHesapla';
 
+import { type ClientFormSeed } from '@/lib/data/clientFormSeed';
+
 interface ArabuluculukModalProps {
   open: boolean;
   onClose: () => void;
   arabuluculuk?: Arabuluculuk | null;
   onAnlasamama?: (arabuluculuk: Arabuluculuk) => void;
+  varsayilanMuvekkil?: ClientFormSeed;
 }
 
 const bos: Partial<Arabuluculuk> = {
@@ -48,7 +51,7 @@ const bos: Partial<Arabuluculuk> = {
   sonTutanakNo: '',
 };
 
-export function ArabuluculukModal({ open, onClose, arabuluculuk, onAnlasamama }: ArabuluculukModalProps) {
+export function ArabuluculukModal({ open, onClose, arabuluculuk, onAnlasamama, varsayilanMuvekkil }: ArabuluculukModalProps) {
   const [form, setForm] = useState<Partial<Arabuluculuk>>({ ...bos });
   const [initialForm, setInitialForm] = useState<Partial<Arabuluculuk>>({ ...bos });
   const [hata, setHata] = useState('');
@@ -62,20 +65,25 @@ export function ArabuluculukModal({ open, onClose, arabuluculuk, onAnlasamama }:
   const { data: davalar } = useDavalar();
   const { data: icralar } = useIcralar();
   const etkinlikKaydet = useEtkinlikKaydet();
+  const initializedRecord = useRef<string | null>(null);
 
   useEffect(() => {
+    if (!open) { initializedRecord.current = null; return; }
+    const recordKey = arabuluculuk?.id || 'new';
+    if (initializedRecord.current === recordKey) return;
+    initializedRecord.current = recordKey;
     let init: Partial<Arabuluculuk>;
     if (arabuluculuk) {
       init = { ...arabuluculuk };
     } else {
-      init = { ...bos, id: crypto.randomUUID() };
+      init = { ...bos, muvId: varsayilanMuvekkil?.id || '', id: crypto.randomUUID() };
     }
     setInitialForm(init);
     setForm(init);
     setHata('');
     setAnlasamamaDialog(false);
     setYeniKtGoster(false);
-  }, [arabuluculuk, open]);
+  }, [arabuluculuk, open, varsayilanMuvekkil]);
 
   const draftKey = `arabuluculuk_${form.id || 'yeni'}`;
   const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(

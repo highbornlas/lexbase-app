@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { AdminGuard } from '@/components/admin/AdminGuard';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { AdminTopbar } from '@/components/admin/AdminTopbar';
+import { APP_VERSION } from '@/lib/version';
 
 /* ══════════════════════════════════════════════════════════════
    Admin Layout — Platform Yönetim Paneli
@@ -41,7 +42,7 @@ export default function AdminLayout({
               <span className="text-[9px] text-zinc-700">
                 LexBase Admin Panel — Platform Yönetimi
               </span>
-              <span className="text-[9px] text-zinc-700">v2.1.0</span>
+              <span className="text-[9px] text-zinc-700">v{APP_VERSION}</span>
             </div>
           </footer>
         </div>

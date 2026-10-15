@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { fmt } from '@/lib/utils';
-import { safeNum, tahsilatToplam } from '@/lib/utils/finans';
+import { safeNum, tahsilatToplam, dosyaParaOzeti, anlasilanUcret } from '@/lib/utils/finans';
+import { hizmetUcretHareketleri } from '@/lib/finans/gelirKurallari';
 
 interface AlacakSatir {
   dosyaId: string;
@@ -31,13 +32,16 @@ interface Props {
   arabuluculuklar: Record<string, unknown>[];
   ihtarnameler: Record<string, unknown>[];
   finansOzet: Record<string, unknown> | null | undefined;
-  onTahsilatKaydet: (dosyaId: string, dosyaTur: string, tahsilat: { id: string; tarih: string; tutar: number; aciklama: string }) => void;
+  onTahsilatKaydet: (dosyaId: string, dosyaTur: string, tahsilat: { id: string; tarih: string; tutar: number; aciklama: string }) => Promise<void>;
 }
 
 const TAHSILAT_TURLERI = ['Nakit', 'Havale/EFT', 'Kredi Kartı', 'Çek', 'Senet', 'Diğer'] as const;
 
-export function MuvAlacak({ davalar, icralar, arabuluculuklar, ihtarnameler, finansOzet, onTahsilatKaydet }: Props) {
+export function MuvAlacak({ davalar, icralar, arabuluculuklar, ihtarnameler, onTahsilatKaydet }: Props) {
   const [formAcik, setFormAcik] = useState(false);
+  const [kaydediliyor, setKaydediliyor] = useState(false);
+  const [hata, setHata] = useState('');
+  const kayitKilidi = useRef(false);
   const [yeni, setYeni] = useState({ dosyaKey: '', tarih: new Date().toISOString().slice(0, 10), tutar: '', aciklama: '', tur: 'Havale/EFT' });
 
   /* ── Müvekkile ait tüm dosyalar ── */
@@ -69,20 +73,11 @@ export function MuvAlacak({ davalar, icralar, arabuluculuklar, ihtarnameler, fin
     const ekle = (items: Record<string, unknown>[], tur: string, linkPrefix: string) => {
       items.forEach((d) => {
         const anlasma = d.anlasma as Record<string, unknown> | undefined;
-        const tahsilatlar = (d.tahsilatlar || []) as Array<Record<string, string>>;
-        const ucret = d.ucret as number | string | undefined;
-
-        let anlasmaToplam = 0;
-        if (anlasma) {
-          anlasmaToplam = parseFloat(String(anlasma.toplam || anlasma.ucret || 0)) || 0;
-        } else if (ucret) {
-          anlasmaToplam = parseFloat(String(ucret)) || 0;
-        }
-
-        // Tek kaynak: tahsilatlar[] varsa onu kullan, yoksa tahsilEdildi
-        const tahsilEdilen = tahsilatlar.length > 0
-          ? tahsilatToplam(tahsilatlar.map((t) => ({ tutar: parseFloat(t.tutar) || 0 })))
-          : safeNum(d.tahsilEdildi);
+        const hizmet = tur !== 'Dava' && tur !== 'İcra';
+        const anlasmaToplam = anlasilanUcret(d);
+        const tahsilEdilen = hizmet
+          ? tahsilatToplam(hizmetUcretHareketleri(d).map((t) => ({ tutar: safeNum(t.tutar) })))
+          : dosyaParaOzeti(d).sozlesmeTahsilati;
 
         if (anlasmaToplam > 0 || tahsilEdilen > 0) {
           result.push({
@@ -122,19 +117,31 @@ export function MuvAlacak({ davalar, icralar, arabuluculuklar, ihtarnameler, fin
   };
 
   /* ── Kaydet ── */
-  function handleKaydet() {
+  async function handleKaydet() {
+    if (kayitKilidi.current) return;
     const secilenDosya = dosyaSecenekleri.find((d) => `${d.tur}::${d.id}` === yeni.dosyaKey);
-    if (!secilenDosya || !yeni.tutar) return;
+    const tutar = Number(yeni.tutar);
+    if (!secilenDosya || !Number.isFinite(tutar) || tutar <= 0 || !yeni.tarih) {
+      setHata('Dosya, tarih ve sıfırdan büyük bir tutar giriniz.');
+      return;
+    }
 
-    onTahsilatKaydet(secilenDosya.id, secilenDosya.tur, {
-      id: crypto.randomUUID(),
-      tarih: yeni.tarih,
-      tutar: Number(yeni.tutar),
-      aciklama: `${yeni.tur}${yeni.aciklama ? ' — ' + yeni.aciklama : ''}`,
-    });
-
-    setYeni({ dosyaKey: '', tarih: new Date().toISOString().slice(0, 10), tutar: '', aciklama: '', tur: 'Havale/EFT' });
-    setFormAcik(false);
+    kayitKilidi.current = true;
+    setKaydediliyor(true);
+    setHata('');
+    try {
+      await onTahsilatKaydet(secilenDosya.id, secilenDosya.tur, {
+        id: crypto.randomUUID(), tarih: yeni.tarih, tutar,
+        aciklama: `${yeni.tur}${yeni.aciklama ? ' — ' + yeni.aciklama : ''}`,
+      });
+      setYeni({ dosyaKey: '', tarih: new Date().toISOString().slice(0, 10), tutar: '', aciklama: '', tur: 'Havale/EFT' });
+      setFormAcik(false);
+    } catch (error) {
+      setHata(error instanceof Error ? error.message : 'Ücret tahsilatı kaydedilemedi. Girdiğiniz bilgiler korunuyor.');
+    } finally {
+      kayitKilidi.current = false;
+      setKaydediliyor(false);
+    }
   }
 
   return (
@@ -159,8 +166,10 @@ export function MuvAlacak({ davalar, icralar, arabuluculuklar, ihtarnameler, fin
 
       {/* Tahsilat Ekleme Formu */}
       {formAcik && (
-        <div className="bg-surface2/50 border border-gold/20 rounded-lg p-5 space-y-4">
-          <h4 className="text-sm font-semibold text-gold">Yeni Tahsilat Ekle</h4>
+        <fieldset disabled={kaydediliyor} className="bg-surface2/50 border border-gold/20 rounded-lg p-5 space-y-4">
+          <h4 className="text-sm font-semibold text-gold">Ücret Tahsilatı Ekle</h4>
+          <p className="text-xs text-text-muted">Bu form, anlaşılan ücretin ödemesini kaydeder. Müvekkil adına karşı taraftan alınan para dosyanın tahsilat bölümünde ayrı kaydedilir.</p>
+          {hata && <p role="alert" className="text-xs text-red">{hata}</p>}
 
           {dosyaSecenekleri.length === 0 ? (
             <div className="text-xs text-text-muted py-3">
@@ -242,10 +251,10 @@ export function MuvAlacak({ davalar, icralar, arabuluculuklar, ihtarnameler, fin
               <div className="flex items-center gap-2 pt-1">
                 <button
                   onClick={handleKaydet}
-                  disabled={!yeni.dosyaKey || !yeni.tutar}
+                  disabled={kaydediliyor || !yeni.dosyaKey || !yeni.tutar}
                   className="px-4 py-2 text-xs font-semibold bg-gold text-bg rounded-lg hover:bg-gold-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  Kaydet
+                  {kaydediliyor ? 'Kaydediliyor...' : 'Kaydet'}
                 </button>
                 <button
                   onClick={() => { setFormAcik(false); setYeni({ dosyaKey: '', tarih: new Date().toISOString().slice(0, 10), tutar: '', aciklama: '', tur: 'Havale/EFT' }); }}
@@ -256,7 +265,7 @@ export function MuvAlacak({ davalar, icralar, arabuluculuklar, ihtarnameler, fin
               </div>
             </>
           )}
-        </div>
+        </fieldset>
       )}
 
       {/* Başlık + Buton */}
@@ -264,6 +273,7 @@ export function MuvAlacak({ davalar, icralar, arabuluculuklar, ihtarnameler, fin
         <h3 className="text-sm font-semibold text-text">Alacak Detayları ({alacaklar.length})</h3>
         <button
           onClick={() => setFormAcik(!formAcik)}
+          disabled={kaydediliyor}
           className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
             formAcik
               ? 'bg-gold/10 text-gold border border-gold/30'

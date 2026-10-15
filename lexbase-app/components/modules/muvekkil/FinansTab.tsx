@@ -15,8 +15,7 @@ interface Props {
   arabuluculuklar: Record<string, unknown>[];
   ihtarnameler: Record<string, unknown>[];
   finansOzet: Record<string, unknown> | null | undefined;
-  onMasrafKaydet: (dosyaId: string, dosyaTur: string, harcama: { id: string; kat: string; acik: string; tarih: string; tutar: number }) => void;
-  onTahsilatKaydet: (dosyaId: string, dosyaTur: string, tahsilat: { id: string; tarih: string; tutar: number; aciklama: string }) => void;
+  onTahsilatKaydet: (dosyaId: string, dosyaTur: string, tahsilat: { id: string; tarih: string; tutar: number; aciklama: string }) => Promise<void>;
 }
 
 const ALT_SEKMELER: { key: FinansAltSekme; label: string; icon: string }[] = [
@@ -25,7 +24,7 @@ const ALT_SEKMELER: { key: FinansAltSekme; label: string; icon: string }[] = [
   { key: 'rapor', label: 'Rapor', icon: '📊' },
 ];
 
-export function FinansTab({ muv, davalar, icralar, arabuluculuklar, ihtarnameler, finansOzet, onMasrafKaydet, onTahsilatKaydet }: Props) {
+export function FinansTab({ muv, davalar, icralar, arabuluculuklar, ihtarnameler, finansOzet, onTahsilatKaydet }: Props) {
   const [altSekme, setAltSekme] = useState<FinansAltSekme>('kasa');
 
   return (
@@ -56,7 +55,6 @@ export function FinansTab({ muv, davalar, icralar, arabuluculuklar, ihtarnameler
           icralar={icralar}
           arabuluculuklar={arabuluculuklar}
           ihtarnameler={ihtarnameler}
-          onMasrafKaydet={onMasrafKaydet}
         />
       )}
       {altSekme === 'alacak' && (

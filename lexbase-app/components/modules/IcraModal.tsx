@@ -27,11 +27,14 @@ import {
 } from '@/lib/utils/faiz';
 import { useOzelKalemTurleri, useOzelKalemTuruKaydet } from '@/lib/hooks/useOzelKalemTurleri';
 
+import { clientFormSeed, type ClientFormSeed } from '@/lib/data/clientFormSeed';
+
 interface IcraModalProps {
   open: boolean;
   onClose: () => void;
   icra?: Icra | null;
   onCreated?: (ic: Icra) => void;
+  varsayilanMuvekkil?: ClientFormSeed;
   /** Dava'dan icra açarken otomatik doldurma */
   davaKaynak?: {
     davaId: string;
@@ -89,20 +92,25 @@ const PARA_BIRIMLERI = [
   { value: 'GBP', label: '£ GBP' },
 ];
 
-export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraModalProps) {
+export function IcraModal({ open, onClose, icra, onCreated, davaKaynak, varsayilanMuvekkil }: IcraModalProps) {
   const [form, setForm] = useState<Partial<Icra>>({ ...bos });
   const [initialForm, setInitialForm] = useState<Partial<Icra>>({ ...bos });
   const [hata, setHata] = useState('');
   const [adim, setAdim] = useState<Adim>(1);
-  const { data: mevcutlar } = useIcralar();
+  const { data: mevcutlar, error: listeHatasi, refetch: listeyiYenile } = useIcralar();
   const { data: davalar } = useDavalar();
   const kaydet = useIcraKaydet();
-  const { data: muvekkillar } = useMuvekkillar();
+  const { data: muvekkillar, error: muvekkilHatasi, refetch: muvekkillariYenile } = useMuvekkillar();
   const { daireler, adliyeler, kullanılanIller } = useMahkemeHafizasi();
   const { data: ozelAlacakTurleri } = useOzelAlacakTurleri();
   const ozelAlacakKaydet = useOzelAlacakTuruKaydet();
   const [yeniAlacakTuru, setYeniAlacakTuru] = useState('');
   const [alacakTuruEkleAcik, setAlacakTuruEkleAcik] = useState(false);
+  const initializedRecord = useRef<string | null>(null);
+  const muvekkilBekleniyor = !muvekkillar && !!(
+    (icra?.muvId && !icra.muvekkilTaraflar?.length) ||
+    (!icra && davaKaynak?.muvId && varsayilanMuvekkil?.id !== davaKaynak.muvId)
+  );
 
   // Tüm alacak türleri (sabit + özel)
   const tumAlacakTurleri = useMemo(() => {
@@ -113,6 +121,11 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
   }, [ozelAlacakTurleri]);
 
   useEffect(() => {
+    if (!open) { initializedRecord.current = null; return; }
+    if ((!icra && !mevcutlar) || muvekkilBekleniyor) return;
+    const recordKey = icra?.id || 'new';
+    if (initializedRecord.current === recordKey) return;
+    initializedRecord.current = recordKey;
     let init: Partial<Icra>;
     if (icra) {
       // Eski esas alanını parçala (geriye uyumluluk)
@@ -144,12 +157,15 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
       if (!init.vekiller) init.vekiller = [];
     } else {
       const maxNo = Math.max(0, ...(mevcutlar || []).map((i) => i.kayitNo || 0));
-      init = { ...bos, id: crypto.randomUUID(), sira: Date.now(), kayitNo: maxNo + 1 };
+      init = { ...bos, ...clientFormSeed(varsayilanMuvekkil), id: crypto.randomUUID(), sira: Date.now(), kayitNo: maxNo + 1 };
 
       // Dava'dan gelen otomatik doldurma
       if (davaKaynak) {
         init.iliskiliDavaId = davaKaynak.davaId;
         init.muvId = davaKaynak.muvId;
+        const muv = varsayilanMuvekkil?.id === davaKaynak.muvId
+          ? varsayilanMuvekkil : muvekkillar?.find((m) => m.id === davaKaynak.muvId);
+        init.muvekkilTaraflar = muv ? clientFormSeed(muv).muvekkilTaraflar : [];
         init.dayanak = davaKaynak.dayanak;
       }
     }
@@ -157,7 +173,7 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
     setForm(init);
     setHata('');
     setAdim(1);
-  }, [icra, open, davaKaynak]);
+  }, [icra, open, davaKaynak, mevcutlar, varsayilanMuvekkil, muvekkillar, muvekkilBekleniyor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const draftKey = `icra_${form.id || 'yeni'}`;
   const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(
@@ -295,6 +311,13 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak }: IcraMo
       setHata('Kayıt sırasında bir hata oluştu.');
     }
   }
+
+  if ((!icra && !mevcutlar) || muvekkilBekleniyor) return (
+    <Modal open={open} onClose={onClose} title="Yeni İcra Dosyası">
+      <p role={listeHatasi || muvekkilHatasi ? 'alert' : 'status'}>{listeHatasi || muvekkilHatasi ? 'Dosya bilgileri yüklenemedi.' : 'Form hazırlanıyor...'}</p>
+      {(listeHatasi || muvekkilHatasi) && <BtnOutline onClick={() => { void listeyiYenile(); void muvekkillariYenile(); }}>Tekrar Dene</BtnOutline>}
+    </Modal>
+  );
 
   return (
     <Modal

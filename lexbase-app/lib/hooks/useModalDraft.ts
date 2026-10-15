@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useMemo, useCallback } from 'react';
+import { createDraftStorage } from '@/lib/utils/modalDraftStorage';
 
 /* ══════════════════════════════════════════════════════════════
    useModalDraft — Modal taslak yönetimi + dirty detection
@@ -20,7 +21,6 @@ import { useEffect, useRef, useCallback } from 'react';
    ══════════════════════════════════════════════════════════════ */
 
 const DRAFT_PREFIX = 'lb_draft_';
-const DEBOUNCE_MS = 800;
 
 export function useModalDraft<T extends Record<string, unknown>>(
   draftKey: string,
@@ -28,8 +28,8 @@ export function useModalDraft<T extends Record<string, unknown>>(
   initialForm: T,
   open: boolean,
 ) {
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const storageKey = `${DRAFT_PREFIX}${draftKey}`;
+  const storage = useMemo(() => createDraftStorage(storageKey), [storageKey]);
 
   // ── Dirty Detection ─────────────────────────────────────────
   const isDirty = (() => {
@@ -43,35 +43,27 @@ export function useModalDraft<T extends Record<string, unknown>>(
   // ── Auto-Save Draft (debounced) ─────────────────────────────
   useEffect(() => {
     if (!open || !isDirty) return;
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
-      try {
-        localStorage.setItem(storageKey, JSON.stringify(form));
-      } catch { /* quota exceeded — ignore */ }
-    }, DEBOUNCE_MS);
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-  }, [form, open, isDirty, storageKey]);
+    storage.schedule(form);
+    return storage.cancel;
+  }, [form, open, isDirty, storage]);
 
   // ── Draft okuma ─────────────────────────────────────────────
   const hasDraft = useCallback((): boolean => {
-    try { return !!localStorage.getItem(storageKey); }
-    catch { return false; }
-  }, [storageKey]);
+    return storage.has();
+  }, [storage]);
 
   const loadDraft = useCallback((): T | null => {
-    try {
-      const raw = localStorage.getItem(storageKey);
-      return raw ? (JSON.parse(raw) as T) : null;
-    } catch { return null; }
-  }, [storageKey]);
+    return storage.load() as T | null;
+  }, [storage]);
 
   // ── Draft temizleme ─────────────────────────────────────────
   const clearDraft = useCallback(() => {
-    try { localStorage.removeItem(storageKey); }
-    catch { /* ignore */ }
-  }, [storageKey]);
+    storage.clear();
+  }, [storage]);
 
-  return { isDirty, hasDraft, loadDraft, clearDraft };
+  const saveDraft = useCallback(() => storage.save(form), [storage, form]);
+
+  return { isDirty, hasDraft, loadDraft, clearDraft, saveDraft };
 }
 
 /* ══════════════════════════════════════════════════════════════

@@ -7,6 +7,8 @@ import { usePersonelKaydet, type Personel } from '@/lib/hooks/usePersonel';
 import { useBildirimGonder } from '@/lib/hooks/useBildirimler';
 import { ROL_ETIKETLERI, type Rol } from '@/lib/hooks/useRol';
 import { createClient } from '@/lib/supabase/client';
+import { useBuroId } from '@/lib/hooks/useBuro';
+import { invitationResult } from '@/lib/data/invitationResult';
 
 interface PersonelModalProps {
   open: boolean;
@@ -41,6 +43,7 @@ function createInitialForm(personel?: Personel | null): Partial<Personel> & { _d
 }
 
 function PersonelModalIcerik({ open, onClose, personel }: PersonelModalProps) {
+  const buroId = useBuroId();
   const [initialForm] = useState<Partial<Personel> & { _davetGonder?: boolean }>(() => createInitialForm(personel));
   const [form, setForm] = useState<Partial<Personel>>(initialForm);
   const [hata, setHata] = useState('');
@@ -65,7 +68,8 @@ function PersonelModalIcerik({ open, onClose, personel }: PersonelModalProps) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  async function davetGonderFn(): Promise<{ ok: boolean; status?: string; message?: string }> {
+  async function davetGonderFn(): Promise<{ ok: boolean; status?: string; message?: string; durum?: 'aktif'|'davet_gonderildi' }> {
+    if (!buroId) { setHata('Davet için aktif büro bulunamadı.'); return { ok: false }; }
     const supabase = createClient();
     const { data: { session } } = await supabase.auth.getSession();
 
@@ -82,16 +86,17 @@ function PersonelModalIcerik({ open, onClose, personel }: PersonelModalProps) {
         'Authorization': `Bearer ${session.access_token}`,
       },
       body: JSON.stringify({
+        buro_id: buroId,
         email: form.email!.trim(),
         ad: form.ad!.trim(),
         rol: form.rol || 'avukat',
       }),
     });
 
-    const result = await res.json();
+    const response = await res.json();
 
     if (!res.ok) {
-      const errorMsg = result.error || 'Bilinmeyen hata';
+      const errorMsg = typeof response?.error === 'string' ? response.error : 'Davet sonucu doğrulanamadı. Üyelik durumunu kontrol edin.';
       if (errorMsg.includes('zaten') && errorMsg.includes('kayıtlı')) {
         setBilgi('Bu e-posta zaten bu büroda kayıtlı.');
       } else {
@@ -99,6 +104,7 @@ function PersonelModalIcerik({ open, onClose, personel }: PersonelModalProps) {
       }
       return { ok: false };
     }
+    const result=invitationResult(response);
 
     // Başarılı senaryolar
     if (result.status === 'already_member') {
@@ -110,7 +116,7 @@ function PersonelModalIcerik({ open, onClose, personel }: PersonelModalProps) {
     } else {
       setBilgi(result.message || 'Davet gönderildi!');
     }
-    return { ok: true, status: result.status, message: result.message };
+    return { ok: true, ...result };
   }
 
   async function handleSubmit() {
@@ -138,12 +144,7 @@ function PersonelModalIcerik({ open, onClose, personel }: PersonelModalProps) {
       const kaydedilecekForm = { ...(form as Partial<Personel> & { _davetGonder?: boolean }) };
       delete kaydedilecekForm._davetGonder;
 
-      const inviteDurum =
-        davetSonuc?.status === 'invited'
-          ? 'davet_gonderildi'
-          : davetSonuc
-            ? 'aktif'
-            : kaydedilecekForm.durum;
+      const inviteDurum = davetSonuc?.durum ?? kaydedilecekForm.durum;
 
       // 1. Personel tablosuna kaydet
       const personelData = {

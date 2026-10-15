@@ -1,0 +1,27 @@
+{
+  "legacyLiveVersion": "2.3.0",
+  "unreleased": [
+    "Müvekkil adına alınan para ile büroya ait ücret tahsilatları ayrıldı.",
+    "Tahsilat formlarında başarısız kayıt sonrası bilgilerin korunması iyileştirildi.",
+    "Arşivlenmiş dosyaların finans geçmişinde kalması için hesaplar düzenlendi.",
+    "Müvekkil avansı ve masraf alacağı, büro vekâlet ücreti hesaplarından ayrıldı.",
+    "Dosya masrafları ile müvekkil kasası için atomik kayıt altyapısı ve ortak masraf formu hazırlandı.",
+    "Arşiv ve geri yükleme işlemleri ortak altyapıya taşındı; çöp kutusunun listeleme sırasında otomatik silme davranışı kaldırıldı.",
+    "Üyelik yetkisi ve onay bildirimi güvenliği için düzeltmeler hazırlandı; onay ekranının yükleme ve hata durumları iyileştirildi.",
+    "Platform yöneticisi erişimi ve davetlerde büro/rol yetkilendirmesi için güvenlik düzeltmeleri hazırlandı.",
+    "Davetlerde eksik kurulum ve bildirim hataları görünür hâle getirildi; bekleyen davetlerin yanlışlıkla aktif gösterilmesi önlendi.",
+    "Sürüm göstergeleri ve güncelleme notları tek kaynağa bağlandı.",
+    "Müvekkil ekranından açılan yeni dosya formlarına müvekkil bilgisi aktarıldı; kapalı formların gereksiz yüklenmesi azaltıldı.",
+    "Arka plan sorguları yenilendiğinde açık form bilgilerinin sıfırlanmasına karşı koruma ve form hazırlama durumları eklendi.",
+    "Eski icra ve ihtarname masraf yansımaları için sahiplik ve iptal düzeltmeleri hazırlandı; geçmiş kayıtlar değiştirilmedi."
+  ],
+  "releases": [
+    { "version": "2.3.0", "date": "2026-03-21", "changes": ["Veri sorgularında performans iyileştirmeleri yapıldı.", "Hata kaydı ve hata takibi geliştirildi.", "Renk ve durum sabitleri merkezileştirildi.", "TypeScript tipleri temizlendi."] },
+    { "version": "2.2.0", "date": "2026-03-21", "changes": ["Güvenlik kontrolleri ve veri erişim kuralları iyileştirildi.", "TIFF dosya önizleme desteği eklendi.", "Sürüm takibi altyapısı eklendi."] },
+    { "version": "2.1.0", "date": "2026-03-20", "changes": ["UDF belgelerinde tablo çerçevesi ve numaralı paragraf desteği geliştirildi.", "Belge inceleme paneli iyileştirildi.", "Giriş güvenliği, KVKK belgeleri ve veri kullanım onayları güncellendi."] },
+    { "version": "2.0.0", "date": "2026-02", "changes": ["Finans modülü ve finans hesaplama altyapısı yeniden düzenlendi.", "Banka seçimi ve veri aktarımı geliştirildi."] },
+    { "version": "1.8.0", "date": "2026-01", "changes": ["Admin paneli, lisans sistemi ve e-posta bildirim altyapısı eklendi."] },
+    { "version": "1.5.0", "date": "2025-12", "changes": ["İcra dosyası yönetimi ve PWA desteği eklendi.", "Karanlık tema geliştirildi."] },
+    { "version": "1.0.0", "date": "2025-11", "changes": ["Dosya yönetimi, müvekkil takibi ve duruşma takvimi kullanıma sunuldu.", "Bulut senkronizasyonu ve mobil uyumlu arayüz eklendi."] }
+  ]
+}
