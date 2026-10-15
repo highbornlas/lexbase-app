@@ -1,6 +1,8 @@
 # Membership Security Candidate
 
-Status: prepared and locally tested, NOT applied to production.
+Status: applied to production 2026-10-15 as part of DB-SEC-2026.10.15.1,
+alongside platform-admin hardening. See SECURITY_RELEASES.md for exact source
+hashes, preserved counts, live role checks and remaining limitations.
 
 ## Confirmed 2026-10-14
 
@@ -32,9 +34,9 @@ a narrowly authorized server operation instead.
 
 ## Release Gates
 
-Membership restriction alone is insufficient: production `is_platform_admin()`
-currently treats all signed-in identities as admins. A separately tested platform
-predicate/registry candidate is described in PLATFORM_SECURITY_RELEASE.md. Do not
+Membership restriction alone is insufficient: the former production
+`is_platform_admin()` treated all signed-in identities as admins. Its separately
+tested correction is now applied; see PLATFORM_SECURITY_RELEASE.md. Do not
 claim tenant isolation repaired based only on the membership migration.
 
 - Real Supabase Auth/staging checks: outsider/member/manager/platform admin,

@@ -1,9 +1,12 @@
 # Bounded Platform Security Release Candidate
 
-Prepared 2026-10-14. NOT applied or deployed. App version remains 2.3.0.
+Prepared 2026-10-14. The admin and membership migrations were applied on
+2026-10-15 as DB-SEC-2026.10.15.1; see SECURITY_RELEASES.md for independent
+readback and limitations. The invitation Edge candidate is NOT deployed.
+App version remains 2.3.0.
 No credentials, connection settings, customer records or admin roles were changed.
 
-## Confirmed Production Metadata
+## Pre-Release Production Metadata
 
 - `is_platform_admin()` currently returns `auth.uid() IS NOT NULL`. Thus every
   signed-in identity satisfies policies intended for platform administrators.
@@ -127,7 +130,9 @@ Fresh read-only preflight confirmed three existing super administrators and the
 known insecure predicate/policy baseline. The 38 local admin assertions passed.
 An actual `apply_migration` attempt failed at the connector approval stage with
 `Invalid or expired requestState`. Readback confirmed the old predicate remains
-unchanged and all three administrators remain present. This migration is NOT live.
+unchanged and all three administrators remained present at that failed attempt.
+Later the same day, owner-authenticated Dashboard application succeeded; the
+current status is LIVE as recorded in SECURITY_RELEASES.md.
 No frontend version was advanced. No credentials were rotated or removed.
 
 A private preflight snapshot is retained outside the managed checkout at

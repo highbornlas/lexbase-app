@@ -117,10 +117,10 @@ browser observations. Proposed product changes are not verified findings.
 - Case/client calculation corrections are tested candidates, not live changes.
   Profit/loss, refund/source allocation, tax totals and full browser parity
   remain open before a coordinated accounting release.
-- Membership-based checks depend on trusted membership writes. Live
-  `service_role_full_access` currently applies to PUBLIC, not just service_role;
-  its unconditional policy defeats narrower rules. A local correction is tested
-  but NOT applied. See MEMBERSHIP_SECURITY.md; this is a priority security gate.
+- Membership and admin-predicate corrections were applied on 2026-10-15 as
+  DB-SEC-2026.10.15.1. Independent readback confirmed restricted grants and
+  preserved admin/membership counts. Other profile/onboarding authority and
+  complete tenant-isolation gates remain open; see SECURITY_RELEASES.md.
 
 ## Deferred Feature Backlog
 
@@ -130,8 +130,9 @@ LIVE_TEST_LOG.md for record IDs, observed UI defects and untested scenarios.
 Client-context/lazy-form/session initialization changes are candidates only.
 The legacy expense trigger candidate passes 21 local assertions, but notice
 settled-history reconciliation and complete profit/loss remain release gates.
-The admin migration deployment attempt failed at connector approval; production
-readback was unchanged. This is not a completed security release.
+The initial admin migration attempt failed at connector approval. Subsequent
+owner-authenticated Dashboard application succeeded for the bounded admin and
+membership fixes. This does not complete the broader security or finance roadmap.
 
 Client portal, AI document generation and major integrations require separate
 scope selection after existing workflows are reliable.
