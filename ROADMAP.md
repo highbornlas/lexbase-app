@@ -50,7 +50,9 @@ publication. Existing Claude credentials and connections must be preserved.
       and disabled self-provisioning bootstrap; 38 isolated SQL assertions.
 - [x] Prepare membership-only invite authorization, selected-bureau requests and
       protected privileged-role reactivation; six Node assertions.
-- [ ] Confirm existing administrators and real Auth/onboarding compatibility;
+- [x] Owner confirmed ownership of all three existing administrator accounts on
+      2026-10-15; preserve their current permissions.
+- [ ] Verify real Auth/onboarding compatibility;
       use PLATFORM_SECURITY_RELEASE.md for an isolated security rollout.
 - [x] Confirm overly broad membership service policy with read-only live metadata;
       prepare guarded scope/grant correction and 23 isolated PostgreSQL assertions.

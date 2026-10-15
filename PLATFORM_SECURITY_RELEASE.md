@@ -14,8 +14,9 @@ No credentials, connection settings, customer records or admin roles were change
 - Platform registry policies reference that same table from its own policies,
   a recursion risk reproduced in a production-shaped local fixture.
 - Anon/authenticated have TRUNCATE table grants, which are not restricted by RLS.
-- There are three current super-admin records. Their legitimacy requires owner
-  confirmation; this candidate deliberately preserves all existing registry rows.
+- There are three current super-admin records. On 2026-10-15 the owner confirmed
+  that all three accounts belong to him. Preserve their current permissions;
+  ownership confirmation does not authorize any account deletion or demotion.
 - Three user profiles have no active membership. This count does NOT prove they
   should be activated: they may be disabled, legacy or otherwise unverified.
 - Auth signup trigger trusts user-editable `firm_id`/`rol` metadata for profile
@@ -62,8 +63,9 @@ and must be reconciled from trusted evidence, not automatically elevated.
 
 ## Release Order and Gates
 
-1. Confirm the existing administrator accounts with the owner. Do not publish
-   names/emails/auth IDs into Git history or PR comments.
+1. Account ownership confirmed by the owner on 2026-10-15 for all three existing
+   administrators; preserve them. Real Auth/access compatibility is still open.
+   Do not publish names/emails/auth IDs into Git history or PR comments.
 2. Capture function definitions, policy definitions and grants privately;
    compare fresh metadata with the reviewed candidate. Record a DB security
    release separately from the frontend app version. Do not imply a web version
