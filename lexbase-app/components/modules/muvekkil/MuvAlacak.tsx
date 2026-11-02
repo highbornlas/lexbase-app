@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { fmt } from '@/lib/utils';
 import { safeNum, tahsilatToplam, dosyaParaOzeti, anlasilanUcret } from '@/lib/utils/finans';
 import { hizmetUcretHareketleri } from '@/lib/finans/gelirKurallari';
+import { raporTarihi } from '@/lib/finans/raporHesaplari';
 
 interface AlacakSatir {
   dosyaId: string;
@@ -31,17 +32,19 @@ interface Props {
   icralar: Record<string, unknown>[];
   arabuluculuklar: Record<string, unknown>[];
   ihtarnameler: Record<string, unknown>[];
+  danismanliklar?: Record<string, unknown>[];
   finansOzet: Record<string, unknown> | null | undefined;
   onTahsilatKaydet: (dosyaId: string, dosyaTur: string, tahsilat: { id: string; tarih: string; tutar: number; aciklama: string }) => Promise<void>;
 }
 
 const TAHSILAT_TURLERI = ['Nakit', 'Havale/EFT', 'Kredi Kartı', 'Çek', 'Senet', 'Diğer'] as const;
 
-export function MuvAlacak({ davalar, icralar, arabuluculuklar, ihtarnameler, onTahsilatKaydet }: Props) {
+export function MuvAlacak({ davalar, icralar, arabuluculuklar, ihtarnameler, danismanliklar = [], onTahsilatKaydet }: Props) {
   const [formAcik, setFormAcik] = useState(false);
   const [kaydediliyor, setKaydediliyor] = useState(false);
   const [hata, setHata] = useState('');
   const kayitKilidi = useRef(false);
+  const tahsilatId = useRef<string | null>(null);
   const [yeni, setYeni] = useState({ dosyaKey: '', tarih: new Date().toISOString().slice(0, 10), tutar: '', aciklama: '', tur: 'Havale/EFT' });
 
   /* ── Müvekkile ait tüm dosyalar ── */
@@ -63,8 +66,12 @@ export function MuvAlacak({ davalar, icralar, arabuluculuklar, ihtarnameler, onT
       const no = (d.no as string) || (d.konu as string) || '';
       result.push({ id: d.id as string, no, tur: 'İhtarname', label: `📨 İhtarname — ${no || (d.id as string).slice(0, 8)}` });
     });
+    danismanliklar.forEach((d) => {
+      const no = String(d.no || d.konu || '');
+      result.push({ id: String(d.id), no, tur: 'Danışmanlık', label: `Danışmanlık — ${no || String(d.id).slice(0, 8)}` });
+    });
     return result;
-  }, [davalar, icralar, arabuluculuklar, ihtarnameler]);
+  }, [davalar, icralar, arabuluculuklar, ihtarnameler, danismanliklar]);
 
   /* ── Dosya bazlı alacak bilgilerini topla ── */
   const alacaklar = useMemo(() => {
@@ -74,7 +81,7 @@ export function MuvAlacak({ davalar, icralar, arabuluculuklar, ihtarnameler, onT
       items.forEach((d) => {
         const anlasma = d.anlasma as Record<string, unknown> | undefined;
         const hizmet = tur !== 'Dava' && tur !== 'İcra';
-        const anlasmaToplam = anlasilanUcret(d);
+        const anlasmaToplam = anlasilanUcret(d) || (hizmet ? safeNum(d.aylikUcret) : 0);
         const tahsilEdilen = hizmet
           ? tahsilatToplam(hizmetUcretHareketleri(d).map((t) => ({ tutar: safeNum(t.tutar) })))
           : dosyaParaOzeti(d).sozlesmeTahsilati;
@@ -82,7 +89,7 @@ export function MuvAlacak({ davalar, icralar, arabuluculuklar, ihtarnameler, onT
         if (anlasmaToplam > 0 || tahsilEdilen > 0) {
           result.push({
             dosyaId: d.id as string,
-            dosyaNo: (d.no as string) || '—',
+            dosyaNo: String(d.no || d.esasNo || d.dosyaNo || d.konu || '—'),
             dosyaTur: tur,
             dosyaLink: `${linkPrefix}/${d.id}`,
             anlasmaToplam,
@@ -100,9 +107,10 @@ export function MuvAlacak({ davalar, icralar, arabuluculuklar, ihtarnameler, onT
     ekle(icralar, 'İcra', '/icra');
     ekle(arabuluculuklar, 'Arabuluculuk', '/arabuluculuk');
     ekle(ihtarnameler, 'İhtarname', '/ihtarname');
+    ekle(danismanliklar, 'Danışmanlık', '/danismanlik');
 
     return result;
-  }, [davalar, icralar, arabuluculuklar, ihtarnameler]);
+  }, [davalar, icralar, arabuluculuklar, ihtarnameler, danismanliklar]);
 
   /* ── Toplamlar ── */
   const toplamAnlasma = alacaklar.reduce((s, a) => s + a.anlasmaToplam, 0);
@@ -121,21 +129,23 @@ export function MuvAlacak({ davalar, icralar, arabuluculuklar, ihtarnameler, onT
     if (kayitKilidi.current) return;
     const secilenDosya = dosyaSecenekleri.find((d) => `${d.tur}::${d.id}` === yeni.dosyaKey);
     const tutar = Number(yeni.tutar);
-    if (!secilenDosya || !Number.isFinite(tutar) || tutar <= 0 || !yeni.tarih) {
+    if (!secilenDosya || !Number.isFinite(tutar) || tutar <= 0 || Math.abs(tutar * 100 - Math.round(tutar * 100)) > 0.000001 || !raporTarihi(yeni.tarih)) {
       setHata('Dosya, tarih ve sıfırdan büyük bir tutar giriniz.');
       return;
     }
 
     kayitKilidi.current = true;
+    tahsilatId.current ??= crypto.randomUUID();
     setKaydediliyor(true);
     setHata('');
     try {
       await onTahsilatKaydet(secilenDosya.id, secilenDosya.tur, {
-        id: crypto.randomUUID(), tarih: yeni.tarih, tutar,
+        id: tahsilatId.current, tarih: yeni.tarih, tutar,
         aciklama: `${yeni.tur}${yeni.aciklama ? ' — ' + yeni.aciklama : ''}`,
       });
       setYeni({ dosyaKey: '', tarih: new Date().toISOString().slice(0, 10), tutar: '', aciklama: '', tur: 'Havale/EFT' });
       setFormAcik(false);
+      tahsilatId.current = null;
     } catch (error) {
       setHata(error instanceof Error ? error.message : 'Ücret tahsilatı kaydedilemedi. Girdiğiniz bilgiler korunuyor.');
     } finally {

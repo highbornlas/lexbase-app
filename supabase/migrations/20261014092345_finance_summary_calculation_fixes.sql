@@ -22,6 +22,19 @@ BEGIN
 
     IF function_name = 'finans_dosya_ozet' THEN
       patches := jsonb_build_array(
+        jsonb_build_array('v_hareket_sayisi := v_hareket_sayisi + 1;',
+          $new$IF coalesce(t->'_silindi','null'::jsonb) NOT IN ('null'::jsonb,'false'::jsonb,'0'::jsonb,'""'::jsonb) THEN CONTINUE; END IF;
+      v_hareket_sayisi := v_hareket_sayisi + 1;$new$, 1),
+        jsonb_build_array('v_masraf numeric := 0;', 'v_masraf numeric := 0; v_buro_masraf numeric := 0;', 1),
+        jsonb_build_array(
+          'v_masraf := v_masraf + COALESCE((h->>''tutar'')::numeric, 0);',
+          $new$IF COALESCE(h->'_silindi', 'null'::jsonb) IN ('null'::jsonb, 'false'::jsonb, '0'::jsonb, '""'::jsonb) THEN
+        v_masraf := v_masraf + COALESCE((h->>'tutar')::numeric, 0);
+        IF h->>'masrafSahibi' = 'buro' THEN
+          v_buro_masraf := v_buro_masraf + COALESCE((h->>'tutar')::numeric, 0);
+        END IF;
+      END IF;$new$, 1),
+        jsonb_build_array('- v_masraf', '- v_buro_masraf', 1),
         jsonb_build_array('v_aktarim numeric := 0;', 'v_icra_vekalet numeric := 0; v_aktarim numeric := 0;', 1),
         jsonb_build_array(
           $old$WHEN 'akdi_vekalet' THEN v_akdi_vekalet := v_akdi_vekalet + COALESCE((t->>'tutar')::numeric, 0);$old$,
@@ -68,6 +81,38 @@ BEGIN
       );
     ELSE
       patches := jsonb_build_array(
+        jsonb_build_array($old$CASE COALESCE(t->>'tur', 'tahsilat')$old$,
+          $new$IF coalesce(t->'_silindi','null'::jsonb) NOT IN ('null'::jsonb,'false'::jsonb,'0'::jsonb,'""'::jsonb) THEN CONTINUE; END IF;
+        CASE COALESCE(t->>'tur', 'tahsilat')$new$, 1),
+        jsonb_build_array('v_avans_bekleyen numeric := 0;',
+          'v_avans_bekleyen numeric := 0; v_kasa_masraf numeric := 0; v_kasa_iade numeric := 0; v_dosya_masraf numeric := 0; v_eski_avans numeric := 0;', 1),
+        jsonb_build_array(
+          $old$FROM jsonb_array_elements(rec.data->'harcamalar') e;$old$,
+          $new$FROM jsonb_array_elements(rec.data->'harcamalar') e
+        WHERE COALESCE(e->>'masrafSahibi', 'muvekkil') <> 'buro'
+          AND COALESCE(e->'_silindi', 'null'::jsonb) IN ('null'::jsonb, 'false'::jsonb, '0'::jsonb, '""'::jsonb);$new$, 1),
+        jsonb_build_array(
+          $old$    0
+  INTO v_avans_alinan, v_avans_bekleyen
+  FROM avans_hareketleri$old$,
+          $new$    COALESCE(SUM(CASE WHEN data->>'tip' = 'masraf' THEN (data->>'tutar')::numeric ELSE 0 END), 0),
+    COALESCE(SUM(CASE WHEN data->>'tip' = 'iade' THEN (data->>'tutar')::numeric ELSE 0 END), 0)
+  INTO v_avans_alinan, v_kasa_masraf, v_kasa_iade
+  FROM avans_hareketleri$new$, 1),
+        jsonb_build_array($old$AND data->>'_silindi' IS NULL;$old$,
+          $new$AND COALESCE(data->'_silindi', 'null'::jsonb) IN ('null'::jsonb, 'false'::jsonb, '0'::jsonb, '""'::jsonb)
+    AND COALESCE((data->>'tutar')::numeric, 0) > 0;$new$, 1),
+        jsonb_build_array('v_avans_alinan + COALESCE(SUM(', 'COALESCE(SUM(', 1),
+        jsonb_build_array('INTO v_avans_alinan, v_avans_bekleyen', 'INTO v_eski_avans, v_avans_bekleyen', 1),
+        jsonb_build_array(
+          'v_genel_bakiye    := v_tahsil_toplam - v_masraf_toplam + v_avans_alinan - v_top_aktarim - v_top_iade;',
+          'v_genel_bakiye    := v_masraf_bakiye;', 1),
+        jsonb_build_array($old$'toplam', v_masraf_toplam, 'detay'$old$,
+          $new$'toplam', v_masraf_toplam, 'dosyaToplam', v_dosya_masraf, 'detay'$new$, 1),
+        jsonb_build_array($old$'bekleyen', v_avans_bekleyen, 'kalan'$old$,
+          $new$'bekleyen', v_avans_bekleyen, 'iade', v_kasa_iade, 'eskiKayitToplam', v_eski_avans, 'kalan'$new$, 1),
+        jsonb_build_array($old$'masrafBakiye', v_masraf_bakiye,$old$,
+          $new$'masrafBakiye', v_masraf_bakiye, 'masrafAlacagi', greatest(0, -v_masraf_bakiye),$new$, 1),
         jsonb_build_array('v_top_akdi numeric := 0;',
           'v_top_icra numeric := 0; v_ucret_toplam numeric := 0; v_top_akdi numeric := 0;', 1),
         jsonb_build_array('v_th_karsi numeric;', 'v_th_icra numeric; v_th_karsi numeric;', 1),
@@ -90,7 +135,10 @@ BEGIN
       AND COALESCE(data->'_silindi', 'null'::jsonb) IN ('null'::jsonb, 'false'::jsonb, '0'::jsonb, '""'::jsonb)$new$, 5),
         jsonb_build_array('v_masraf_bakiye   := v_avans_alinan - v_masraf_toplam;',
           $new$v_ucret_toplam := v_top_akdi + v_dan_gelir + v_arab_gelir + v_iht_gelir;
-  v_masraf_bakiye   := v_avans_alinan - v_masraf_toplam;$new$, 1),
+  -- Only confirmed cash movements create a client cash deficit; never backfill historical arrays here.
+  v_dosya_masraf := v_masraf_toplam;
+  v_masraf_toplam := v_kasa_masraf;
+  v_masraf_bakiye := v_avans_alinan - v_kasa_masraf - v_kasa_iade;$new$, 1),
         jsonb_build_array($old$'tahsilEdilen', v_tahsil_toplam,$old$,
           $new$'tahsilEdilen', v_ucret_toplam,$new$, 1),
         jsonb_build_array($old$'kalan', v_anlasilan_toplam - v_tahsil_toplam$old$,
@@ -117,7 +165,8 @@ BEGIN
         THEN jsonb_array_length(data->'tahsilatlar') > 0 ELSE false END) THEN
       (SELECT COALESCE(SUM(COALESCE((movement->>'tutar')::numeric, 0)), 0)
        FROM jsonb_array_elements(data->'tahsilatlar') movement
-       WHERE COALESCE(movement->>'tur', '') IN ('', 'akdi_vekalet', 'hakediş', 'icra_vekalet'))
+       WHERE COALESCE(movement->>'tur', '') IN ('', 'akdi_vekalet', 'hakediş', 'icra_vekalet')
+         AND coalesce(movement->'_silindi','null'::jsonb) IN ('null'::jsonb,'false'::jsonb,'0'::jsonb,'""'::jsonb))
       ELSE COALESCE((data->>'tahsilEdildi')::numeric, 0) END), 0)$new$, 3),
         jsonb_build_array(
           $old$COALESCE(SUM(COALESCE((data->>'ucret')::numeric, 0)), 0)

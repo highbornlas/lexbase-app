@@ -18,6 +18,7 @@ import { IcraModal } from '@/components/modules/IcraModal';
 import { DosyaEvrakTab } from '@/components/modules/DosyaEvrakTab';
 import { DosyaHarcamaTab } from '@/components/modules/DosyaHarcamaTab';
 import { TahsilatModal, type TahsilatKaydi } from '@/components/modules/TahsilatModal';
+import { dosyaTahsilatiKaydet } from '@/lib/finans/gelirKurallari';
 import { useSonErisim } from '@/lib/hooks/useSonErisim';
 import { dosyaParaOzeti, dosyaMasrafToplami, dosyaMasrafOzeti, safeNum } from '@/lib/utils/finans';
 import { AlacakKalemleriPanel } from '@/components/modules/icra/AlacakKalemleriPanel';
@@ -550,11 +551,7 @@ export default function IcraDetayPage({ params }: { params: Promise<{ id: string
         onClose={() => setTahsilatModal(false)}
         tahsilat={duzenlenecekTahsilat}
         onKaydet={async (tahsilat) => {
-          const mevcut = icra.tahsilatlar || [];
-          const varMi = mevcut.find((t) => t.id === tahsilat.id);
-          const yeniListe = varMi
-            ? mevcut.map((t) => (t.id === tahsilat.id ? tahsilat : t))
-            : [...mevcut, tahsilat];
+          const yeniListe = dosyaTahsilatiKaydet(icra, { ...tahsilat }) as unknown as TahsilatKaydi[];
           await icraKaydet.mutateAsync({ ...icra, tahsilatlar: yeniListe });
         }}
       />

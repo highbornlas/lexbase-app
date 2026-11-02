@@ -147,7 +147,7 @@ export function DavaModal({ open, onClose, dava, onCreated, varsayilanMuvekkil }
     setOzelKonuOpen(false);
   }, [dava, open, muvekkillar, mevcutlar, varsayilanMuvekkil, muvekkilBekleniyor]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const draftKey = `dava_${form.id || 'yeni'}`;
+  const draftKey = dava?.id ? `dava_${dava.id}` : `dava_yeni_${varsayilanMuvekkil?.id || 'global'}`;
   const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(
     draftKey, form as Record<string, unknown>, initialForm as Record<string, unknown>, open
   );

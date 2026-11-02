@@ -56,6 +56,30 @@ SELECT 'service_archive_retains_legacy', (m->'ihtarname'->>'gelir')::numeric,100
 SELECT 'service_fee_collection', (m->'alacak'->>'tahsilEdilen')::numeric,700 FROM s UNION ALL
 SELECT 'service_fee_remaining', (m->'alacak'->>'kalan')::numeric,2300 FROM s;
 
+INSERT INTO pg_temp.davalar VALUES
+('cash-case','00000000-0000-0000-0000-000000000001',
+ '{"muvId":"cash-client","ucret":3000,"harcamalar":[{"id":"linked-cost","tutar":1500,"masrafSahibi":"muvekkil"},{"id":"office-cost","tutar":200,"masrafSahibi":"buro"}],"tahsilatlar":[{"tur":"akdi_vekalet","tutar":750}]}'),
+('unlinked-history','00000000-0000-0000-0000-000000000001',
+ '{"muvId":"cash-client","harcamalar":[{"id":"unreconciled","tutar":700}]}');
+INSERT INTO pg_temp.avans_hareketleri VALUES
+('cash-advance','00000000-0000-0000-0000-000000000001','{"muvId":"cash-client","tip":"alim","tutar":1000}'),
+('linked-cost','00000000-0000-0000-0000-000000000001','{"muvId":"cash-client","tip":"masraf","tutar":1500}'),
+('manual-cost','00000000-0000-0000-0000-000000000001','{"muvId":"cash-client","tip":"masraf","tutar":200,"_silindi":false}'),
+('cash-refund','00000000-0000-0000-0000-000000000001','{"muvId":"cash-client","tip":"iade","tutar":100}'),
+('deleted-cost','00000000-0000-0000-0000-000000000001','{"muvId":"cash-client","tip":"masraf","tutar":9000,"_silindi":true}');
+WITH s AS (
+  SELECT pg_temp.finans_muvekkil_ozet('00000000-0000-0000-0000-000000000001','cash-client') AS m,
+    pg_temp.finans_dosya_ozet('00000000-0000-0000-0000-000000000001','dava','cash-case') AS d
+)
+INSERT INTO pg_temp.finance_results
+SELECT 'cash_fee_remaining', (m->'alacak'->>'kalan')::numeric,2250 FROM s UNION ALL
+SELECT 'cash_expense_deficit_excludes_office_fees', (m->'bakiye'->>'genelBakiye')::numeric,-800 FROM s UNION ALL
+SELECT 'cash_expense_receivable', (m->'bakiye'->>'masrafAlacagi')::numeric,800 FROM s UNION ALL
+SELECT 'cash_movements_counted_once_not_case_array_twice', (m->'masraflar'->>'toplam')::numeric,1700 FROM s UNION ALL
+SELECT 'cash_refund_reported', (m->'avanslar'->>'iade')::numeric,100 FROM s UNION ALL
+SELECT 'unreconciled_case_costs_not_new_cash_debt', (m->'masraflar'->>'dosyaToplam')::numeric,2200 FROM s UNION ALL
+SELECT 'office_case_cost_only_reduces_office_net', (d->>'buroNet')::numeric,550 FROM s;
+
 DO $access_tests$
 DECLARE fn text; denied boolean; passed integer := 0;
 BEGIN

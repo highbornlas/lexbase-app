@@ -85,7 +85,7 @@ export function ArabuluculukModal({ open, onClose, arabuluculuk, onAnlasamama, v
     setYeniKtGoster(false);
   }, [arabuluculuk, open, varsayilanMuvekkil]);
 
-  const draftKey = `arabuluculuk_${form.id || 'yeni'}`;
+  const draftKey = arabuluculuk?.id ? `arabuluculuk_${arabuluculuk.id}` : `arabuluculuk_yeni_${varsayilanMuvekkil?.id || 'global'}`;
   const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(
     draftKey, form as Record<string, unknown>, initialForm as Record<string, unknown>, open
   );

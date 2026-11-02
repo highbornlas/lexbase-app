@@ -20,6 +20,7 @@ import { DavaModal } from '@/components/modules/DavaModal';
 import { DosyaEvrakTab } from '@/components/modules/DosyaEvrakTab';
 import { DosyaHarcamaTab } from '@/components/modules/DosyaHarcamaTab';
 import { TahsilatModal, type TahsilatKaydi } from '@/components/modules/TahsilatModal';
+import { dosyaTahsilatiKaydet } from '@/lib/finans/gelirKurallari';
 import { useSonErisim } from '@/lib/hooks/useSonErisim';
 import { dosyaParaOzeti, dosyaMasrafToplami, dosyaMasrafOzeti } from '@/lib/utils/finans';
 
@@ -563,9 +564,7 @@ export default function DavaDetay({ params }: { params: Promise<{ id: string }> 
         onClose={() => setTahsilatModal(false)}
         tahsilat={duzenlenecekTahsilat}
         onKaydet={async (tahsilat) => {
-          const mevcut = dava.tahsilatlar || [];
-          const varMi = mevcut.find((t) => t.id === tahsilat.id);
-          const yeniListe = varMi ? mevcut.map((t) => (t.id === tahsilat.id ? tahsilat : t)) : [...mevcut, tahsilat];
+          const yeniListe = dosyaTahsilatiKaydet(dava, { ...tahsilat }) as unknown as TahsilatKaydi[];
           await davaKaydet.mutateAsync({ ...dava, tahsilatlar: yeniListe });
         }}
       />

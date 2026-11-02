@@ -206,7 +206,7 @@ export function IhtarnameModal({ open, onClose, ihtarname, varsayilanMuvekkil }:
     setYeniKarsiTarafAd('');
   }, [ihtarname, open, sonrakiNo, tumIhtarnameler, varsayilanMuvekkil]);
 
-  const draftKey = `ihtarname_${form.id || 'yeni'}`;
+  const draftKey = ihtarname?.id ? `ihtarname_${ihtarname.id}` : `ihtarname_yeni_${varsayilanMuvekkil?.id || 'global'}`;
   const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(
     draftKey, form as Record<string, unknown>, initialForm as Record<string, unknown>, open
   );

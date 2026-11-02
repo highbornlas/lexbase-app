@@ -55,7 +55,7 @@ export function dosyaParaOzeti(kayit: Record<string, unknown>) {
   const toplamlar = { karsiTaraf: 0, akdiVekalet: 0, hakedis: 0, icraVekalet: 0, aktarim: 0, iade: 0 };
   const hareketler = Array.isArray(kayit.tahsilatlar) ? kayit.tahsilatlar : [];
   for (const hareket of hareketler) {
-    if (!hareket || typeof hareket !== 'object') continue;
+    if (!hareket || typeof hareket !== 'object' || hareket._silindi) continue;
     const tutar = safeNum(hareket.tutar);
     switch (hareket.tur) {
       case 'tahsilat': case 'borclu_odeme': toplamlar.karsiTaraf += tutar; break;

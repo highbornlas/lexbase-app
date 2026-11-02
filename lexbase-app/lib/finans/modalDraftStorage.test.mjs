@@ -51,3 +51,44 @@ test('invalid data and unavailable storage do not crash the form', () => {
   assert.doesNotThrow(() => unavailable.clear());
   assert.equal(unavailable.load(), null);
 });
+
+test('autosaving this session never advertises a previous recoverable draft', () => {
+  const memory = storage();
+  const draft = createDraftStorage('new-case-client-a', () => memory);
+  draft.beginSession();
+  draft.save({ konu: 'Typing now' });
+  assert.equal(draft.has(), true);
+  assert.equal(draft.hasRecoverableDraft(), false);
+  draft.beginSession();
+  assert.equal(draft.hasRecoverableDraft(), true);
+});
+
+test('recovery restores the opening snapshot rather than a later autosave', () => {
+  const memory = storage();
+  createDraftStorage('case', () => memory).save({ tutar: 100 });
+  const draft = createDraftStorage('case', () => memory);
+  draft.beginSession();
+  draft.save({ tutar: 200 });
+  assert.deepEqual(draft.recover(), { tutar: 100 });
+  assert.equal(draft.hasRecoverableDraft(), false);
+  draft.beginSession();
+  draft.clear();
+  assert.equal(draft.hasRecoverableDraft(), false);
+});
+
+test('reopening and consuming drafts notify mounted form subscribers', () => {
+  const memory = storage();
+  const draft = createDraftStorage('reopen', () => memory);
+  const snapshots = [];
+  const unsubscribe = draft.subscribe(() => snapshots.push(draft.hasRecoverableDraft()));
+  draft.save({ konu: 'Saved draft' });
+  assert.deepEqual(snapshots, []);
+  draft.beginSession();
+  draft.recover();
+  draft.beginSession();
+  draft.clear();
+  assert.deepEqual(snapshots, [true, false, true, false]);
+  unsubscribe();
+  draft.beginSession();
+  assert.equal(snapshots.length, 4);
+});

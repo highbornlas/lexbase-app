@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { gelirTahsilatiMi, muvekkilTahsilatiMi, ucretTahsilatiMi, raporKaydiGorunurMu, hizmetUcretHareketleri, hizmetTahsilatiEkle } from './gelirKurallari.ts';
+import { gelirTahsilatiMi, muvekkilTahsilatiMi, ucretTahsilatiMi, raporKaydiGorunurMu, hizmetUcretHareketleri, hizmetTahsilatiEkle, dosyaTahsilatiKaydet, raporGelirHareketleri } from './gelirKurallari.ts';
 
 test('recognized income types remain included', () => {
   for (const tur of ['akdi_vekalet', 'hakediş', 'icra_vekalet']) {
@@ -60,6 +60,23 @@ test('first service payment preserves the legacy fee without duplicating it late
   const tahsilatlar = hizmetTahsilatiEkle(legacy, payment);
   assert.deepEqual(tahsilatlar.map((t) => t.tutar), [500, 200]);
   assert.equal(tahsilatlar[0].tarih, legacy.tarih);
-  assert.equal(hizmetTahsilatiEkle({ ...legacy, tahsilatlar }, payment).length, 3);
+  assert.equal(hizmetTahsilatiEkle({ ...legacy, tahsilatlar }, payment).length, 2);
   assert.deepEqual(hizmetTahsilatiEkle({ tahsilEdildi: 'invalid' }, payment), [payment]);
+});
+
+test('first case payment preserves separate legacy fees and client principal', () => {
+  const legacy = { id: 'case', tahsilEdildi: 500, tahsil: 1000, tahsilTarih: '2026-10-01' };
+  const payment = { id: 'new', tur: 'akdi_vekalet', tutar: 200, tarih: '2026-10-15' };
+  const tahsilatlar = dosyaTahsilatiKaydet(legacy, payment);
+  assert.deepEqual(tahsilatlar.map((t) => [t.tur,t.tutar]), [['akdi_vekalet',500],['tahsilat',1000],['akdi_vekalet',200]]);
+  assert.equal(dosyaTahsilatiKaydet({ ...legacy, tahsilatlar }, payment).length, 3);
+  const edited = dosyaTahsilatiKaydet({ ...legacy, tahsilatlar }, { ...payment, tutar: 300 });
+  assert.equal(edited.length, 3);
+  assert.equal(edited.find((t) => t.id === 'new').tutar, 300);
+});
+
+test('soft-deleted fee movements never reappear through legacy fallback', () => {
+  const record = { tahsilEdildi: 500, tahsilatlar: [{ id: 'removed', tur: 'akdi_vekalet', tutar: 100, _silindi: true }] };
+  assert.deepEqual(hizmetUcretHareketleri(record), []);
+  assert.deepEqual(raporGelirHareketleri(record), []);
 });

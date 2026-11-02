@@ -67,10 +67,10 @@ export function CompactStatsRow({
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-[10px] font-bold text-text-dim uppercase tracking-wider">Finansal Özet</h3>
           <div className="flex items-center gap-2">
-            <span className={`font-[var(--font-playfair)] text-lg font-bold ${(bakiye?.genelBakiye ?? 0) >= 0 ? 'text-green' : 'text-red'}`}>
-              {fmt(bakiye?.genelBakiye ?? 0)}
+            <span className={`font-[var(--font-playfair)] text-lg font-bold ${(bakiye?.masrafBakiye ?? 0) >= 0 ? 'text-green' : 'text-red'}`}>
+              {fmt(bakiye?.masrafBakiye ?? 0)}
             </span>
-            <span className="text-[10px] text-text-dim">hareket bakiyesi</span>
+            <span className="text-[10px] text-text-dim">masraf / avans kasası</span>
           </div>
         </div>
         <div className="flex items-center gap-3">

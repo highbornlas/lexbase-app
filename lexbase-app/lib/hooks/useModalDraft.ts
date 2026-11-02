@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useCallback } from 'react';
+import { useEffect, useMemo, useCallback, useSyncExternalStore } from 'react';
 import { createDraftStorage } from '@/lib/utils/modalDraftStorage';
 
 /* ══════════════════════════════════════════════════════════════
@@ -30,6 +30,10 @@ export function useModalDraft<T extends Record<string, unknown>>(
 ) {
   const storageKey = `${DRAFT_PREFIX}${draftKey}`;
   const storage = useMemo(() => createDraftStorage(storageKey), [storageKey]);
+  const recoverable = useSyncExternalStore(storage.subscribe, storage.hasRecoverableDraft, () => false);
+  useEffect(() => {
+    if (open) storage.beginSession();
+  }, [open, storage]);
 
   // ── Dirty Detection ─────────────────────────────────────────
   const isDirty = (() => {
@@ -49,11 +53,11 @@ export function useModalDraft<T extends Record<string, unknown>>(
 
   // ── Draft okuma ─────────────────────────────────────────────
   const hasDraft = useCallback((): boolean => {
-    return storage.has();
-  }, [storage]);
+    return recoverable;
+  }, [recoverable]);
 
   const loadDraft = useCallback((): T | null => {
-    return storage.load() as T | null;
+    return storage.recover() as T | null;
   }, [storage]);
 
   // ── Draft temizleme ─────────────────────────────────────────

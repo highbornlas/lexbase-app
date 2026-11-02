@@ -175,7 +175,7 @@ export function IcraModal({ open, onClose, icra, onCreated, davaKaynak, varsayil
     setAdim(1);
   }, [icra, open, davaKaynak, mevcutlar, varsayilanMuvekkil, muvekkillar, muvekkilBekleniyor]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const draftKey = `icra_${form.id || 'yeni'}`;
+  const draftKey = icra?.id ? `icra_${icra.id}` : `icra_yeni_${davaKaynak?.davaId || varsayilanMuvekkil?.id || 'global'}`;
   const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(
     draftKey, form as Record<string, unknown>, initialForm as Record<string, unknown>, open
   );

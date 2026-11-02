@@ -4,7 +4,7 @@ import { use, useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMuvekkil, useMuvDavalar, useMuvIcralar, useMuvArabuluculuklar, useMuvIhtarnameler } from '@/lib/hooks/useMuvekkillar';
 import { useFinansOzet } from '@/lib/hooks/useFinans';
-import { useDanismanliklar } from '@/lib/hooks/useDanismanlik';
+import { useDanismanliklar, useDanismanlikKaydet } from '@/lib/hooks/useDanismanlik';
 import { ClientHeader } from '@/components/modules/muvekkil/ClientHeader';
 import { CompactStatsRow } from '@/components/modules/muvekkil/CompactStatsRow';
 import { GenelBakis } from '@/components/modules/muvekkil/GenelBakis';
@@ -18,7 +18,7 @@ import { useIcraKaydet } from '@/lib/hooks/useIcra';
 import { useArabuluculukKaydet } from '@/lib/hooks/useArabuluculuk';
 import { useIhtarnameKaydet } from '@/lib/hooks/useIhtarname';
 import { useSonErisim } from '@/lib/hooks/useSonErisim';
-import { hizmetTahsilatiEkle } from '@/lib/finans/gelirKurallari';
+import { hizmetTahsilatiEkle, dosyaTahsilatiKaydet } from '@/lib/finans/gelirKurallari';
 import Link from 'next/link';
 
 const MuvekkilModal = dynamic(() => import('@/components/modules/MuvekkilModal').then((m) => m.MuvekkilModal));
@@ -50,7 +50,7 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
   const { data: icralar } = useMuvIcralar(id);
   const { data: arabuluculuklar } = useMuvArabuluculuklar(id);
   const { data: ihtarnameler } = useMuvIhtarnameler(id);
-  const { data: tumDanismanliklar = [] } = useDanismanliklar();
+  const { data: tumDanismanliklar = [] } = useDanismanliklar(true);
 
   /* ── Navigation ── */
   const router = useRouter();
@@ -62,6 +62,7 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
   const icraKaydet = useIcraKaydet();
   const arabKaydet = useArabuluculukKaydet();
   const ihtKaydet = useIhtarnameKaydet();
+  const danKaydet = useDanismanlikKaydet();
 
   /* ── UI State ── */
   const [aktifTab, setAktifTab] = useState<TabKey>('genel');
@@ -94,7 +95,7 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
   }, [davaArr, icraArr, arabArr, ihtArr]);
 
   const danismanlikSayisi = useMemo(
-    () => tumDanismanliklar.filter((d: Record<string, unknown>) => d.muvId === id).length,
+    () => tumDanismanliklar.filter((d: Record<string, unknown>) => d.muvId === id && !d._arsivlendi).length,
     [tumDanismanliklar, id]
   );
 
@@ -112,6 +113,7 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
     'İcra': { arr: icraArr, kaydet: icraKaydet },
     'Arabuluculuk': { arr: arabArr, kaydet: arabKaydet },
     'İhtarname': { arr: ihtArr, kaydet: ihtKaydet },
+    'Danışmanlık': { arr: tumDanismanliklar.filter((d) => d.muvId === id), kaydet: danKaydet },
   };
 
   const handleTahsilatKaydet = async (dosyaId: string, dosyaTur: string, tahsilat: { id: string; tarih: string; tutar: number; aciklama: string }) => {
@@ -119,12 +121,11 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
     if (!hedef) throw new Error('Dosya türü desteklenmiyor');
     const dosya = hedef.arr.find((d) => d.id === dosyaId);
     if (!dosya) throw new Error('Dosya bulunamadı');
-    const mevcutTahsilatlar = (dosya.tahsilatlar || []) as Array<Record<string, unknown>>;
     const hareket = { ...tahsilat, tur: 'akdi_vekalet', acik: tahsilat.aciklama };
     await hedef.kaydet.mutateAsync({
       ...dosya,
       tahsilatlar: dosyaTur === 'Dava' || dosyaTur === 'İcra'
-        ? [...mevcutTahsilatlar, hareket] : hizmetTahsilatiEkle(dosya, hareket),
+        ? dosyaTahsilatiKaydet(dosya, hareket) : hizmetTahsilatiEkle(dosya, hareket),
     } as never);
   };
 
@@ -240,6 +241,7 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
             icralar={icraArr}
             arabuluculuklar={arabArr}
             ihtarnameler={ihtArr}
+            danismanliklar={tumDanismanliklar.filter((d) => d.muvId === id)}
             finansOzet={finansOzet}
             onTahsilatKaydet={handleTahsilatKaydet}
           />
