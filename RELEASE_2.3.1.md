@@ -68,3 +68,23 @@ rolled back to c9c1b4da-8879-4c1e-a3e0-e2550d07cfee. This was not a successful
 release acceptance. The retry retains the prepared 2.3.1 version and explicitly
 loads the existing original checkout .env.local without changing credentials.
 A production config guard now refuses absent configuration or private keys.
+
+## Accepted Web Publication
+
+- Source commit: 45e4f78, codex/finance-reliability on GitHub (PR #2).
+- Cloudflare deployment: 44c52045-dbe7-4182-87fa-98acf1908ea6.
+- Worker version: 6472479c-4da6-4039-8f60-9744b091ba7a, 100 percent traffic.
+- Public /api/version: 2.3.1, releaseDate 2026-11-02.
+- Authenticated dashboard loaded with v2.3.1 sidebar/footer.
+- Release notes modal displays the correct date and six current release notes.
+- Client cash tab now displays the persisted original two movements and -500.
+- Live synthetic smoke added a 100 advance and matching 100 refund through
+  the new RPC; database readback confirms two new records and zero net change.
+- Final application suite: 97 passing tests, including public build-config guard.
+
+The live version is accepted for this bounded release, not a certification of
+every module. GitHub main was not merged: the existing external Workers Builds
+check for the separately named lexbase service is failing. The tested live
+source is preserved on the feature branch; resolve that integration before
+merging or publishing from main. Do not overwrite this live release from the
+older main branch. No existing integration settings were disabled or replaced.
