@@ -3,6 +3,14 @@
   "unreleased": [],
   "releases": [
     {
+      "version": "2.3.2",
+      "date": "2026-11-02",
+      "changes": [
+        "Otomatik yayın süreci doğru uygulama klasörü ve Cloudflare Worker ile eşleştirildi.",
+        "GitHub test ve üretim derlemesi kontrolleri ile canlı yayın işlemi ayrıldı; birbiriyle yarışan yayın yolları kaldırıldı."
+      ]
+    },
+    {
       "version": "2.3.1",
       "date": "2026-11-02",
       "changes": [

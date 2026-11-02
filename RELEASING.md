@@ -40,7 +40,12 @@ first patch release from this baseline will be 2.3.1.
 
 Keep the existing `npm run deploy` flow. Its predeploy hook validates metadata
 and requires a version greater than the version returned by the live site.
-GitHub deployment also checks metadata and runs regression tests first.
+GitHub CI checks metadata, runs regression tests and builds the production
+Worker without publishing. Cloudflare Workers Builds for `lexbase-app` is the
+single automatic publisher on main, using the existing build token. Its root
+directory is `lexbase-app`, build command is `npm test`, and deploy command is
+`npm run deploy`. Keep both public Supabase build settings configured there.
+The legacy `lexbase` connection remains validation-only and must not publish.
 Do not bypass these checks by invoking Wrangler/OpenNext deploy directly.
 
 The existing site lacks /api/version. Only the first prepared release directly
@@ -65,5 +70,11 @@ These commands can be used by Codex, Claude or a human without changing existing
 Cloudflare/Supabase/GitHub credentials. Both agents should follow the same
 preparation and verification steps. No automatic Git commit or token mutation
 is performed by the release scripts.
+
+Before merging, wait for GitHub CI and the legacy Cloudflare validation check.
+Prepare a newer version whenever merging runtime changes into main. Once main
+is merged, wait for the `lexbase-app` Cloudflare build and verify /api/version;
+do not start a competing local deploy. Documentation-only pushes do not publish.
+Future work must start from current main, not an older desktop copy.
 
 Node 22.18 or newer is required for the TypeScript-backed regression tests.
