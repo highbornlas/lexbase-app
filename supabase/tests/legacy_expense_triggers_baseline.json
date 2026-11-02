@@ -1,0 +1,14 @@
+{
+  "captured": "2026-10-15",
+  "source": "Read-only production function definitions; no customer data.",
+  "functions": [
+    {
+      "proname": "auto_icra_harcama_sync",
+      "definition": "CREATE OR REPLACE FUNCTION public.auto_icra_harcama_sync()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\nAS $function$\r\nDECLARE harc jsonb; harc_item jsonb; muv_id text; dosya_no text;\r\nBEGIN\r\n  IF TG_OP = 'UPDATE' AND (OLD.data->'harcamalar') IS NOT DISTINCT FROM (NEW.data->'harcamalar') THEN RETURN NEW; END IF;\r\n  muv_id := NEW.data->>'muvId'; dosya_no := COALESCE(NEW.data->>'no', '');\r\n  DELETE FROM avanslar WHERE buro_id = NEW.buro_id AND (data->>'_icraId') = NEW.id AND (data->>'_otoHarcama')::boolean = true;\r\n  harc := COALESCE(NEW.data->'harcamalar', '[]'::jsonb);\r\n  FOR harc_item IN SELECT * FROM jsonb_array_elements(harc) LOOP\r\n    IF (harc_item->>'tutar')::numeric > 0 THEN\r\n      INSERT INTO avanslar (id, buro_id, data) VALUES (\r\n        gen_random_uuid()::text, NEW.buro_id,\r\n        jsonb_build_object('muvId', muv_id, 'tur', 'Masraf', 'tutar', (harc_item->>'tutar')::numeric,\r\n          'acik', dosya_no || ' İcra — ' || COALESCE(harc_item->>'kat', 'Harcama'),\r\n          'tarih', COALESCE(harc_item->>'tarih', to_char(now(), 'YYYY-MM-DD')),\r\n          'durum', 'Bekliyor', 'odeme', '', '_icraId', NEW.id, '_otoHarcama', true));\r\n    END IF;\r\n  END LOOP;\r\n  RETURN NEW;\r\nEND;\r\n$function$\n"
+    },
+    {
+      "proname": "auto_ihtar_masraf",
+      "definition": "CREATE OR REPLACE FUNCTION public.auto_ihtar_masraf()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\nAS $function$\r\nDECLARE\r\n  masraf_tutar numeric; masraf_yansit boolean; muv_id text;\r\n  ihtar_no text; ihtar_tur text; ihtar_tarih text;\r\nBEGIN\r\n  masraf_tutar := COALESCE((NEW.data->>'masrafTutar')::numeric, 0);\r\n  masraf_yansit := COALESCE((NEW.data->>'masrafYansit')::boolean, true);\r\n  muv_id := NEW.data->>'muvId';\r\n  ihtar_no := COALESCE(NEW.data->>'no', '');\r\n  ihtar_tur := COALESCE(NEW.data->>'tur', 'İhtarname');\r\n  ihtar_tarih := COALESCE(NEW.data->>'tarih', to_char(now(), 'YYYY-MM-DD'));\r\n  IF masraf_tutar > 0 AND masraf_yansit AND muv_id IS NOT NULL THEN\r\n    DELETE FROM avanslar WHERE buro_id = NEW.buro_id AND (data->>'_ihtarId') = NEW.id AND (data->>'tur') = 'Masraf';\r\n    INSERT INTO avanslar (id, buro_id, data) VALUES (\r\n      gen_random_uuid()::text, NEW.buro_id,\r\n      jsonb_build_object('muvId', muv_id, 'tur', 'Masraf', 'tutar', masraf_tutar,\r\n        'acik', ihtar_no || ' numaralı ' || ihtar_tur || ' masrafı',\r\n        'tarih', ihtar_tarih, 'durum', 'Bekliyor', 'odeme', '', '_ihtarId', NEW.id));\r\n  END IF;\r\n  RETURN NEW;\r\nEND;\r\n$function$\n"
+    }
+  ]
+}

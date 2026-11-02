@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useGelirHesapla } from '@/lib/hooks/useGelirHesapla';
+import { useGelirVerisi } from '@/lib/hooks/useGelirHesapla';
+import { vergiOzetiHesapla } from '@/lib/finans/raporHesaplari';
 import { useBuroGiderleri } from '@/lib/hooks/useBuroGiderleri';
 import { fmt } from '@/lib/utils';
 import { MiniKpi, AYLAR } from './shared';
@@ -20,80 +21,22 @@ const CEYREKLER = [
   { val: 4, label: 'Q4 (Eki-Ara)' },
 ];
 
-function ceyrekAylar(q: number): number[] {
-  if (q === 0) return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-  const baslangic = (q - 1) * 3 + 1;
-  return [baslangic, baslangic + 1, baslangic + 2];
-}
-
 export function VergiOzetTab() {
   const buYil = new Date().getFullYear();
   const [yil, setYil] = useState(buYil);
   const [ceyrek, setCeyrek] = useState(0);
 
-  const gelirler = useGelirHesapla();
-  const { data: buroGiderleri } = useBuroGiderleri();
+  const { gelirler, isPending, isError } = useGelirVerisi();
+  const giderQuery = useBuroGiderleri();
+  const { data: buroGiderleri } = giderQuery;
 
   const vergiOzeti = useMemo(() => {
-    const hedefAylar = ceyrekAylar(ceyrek);
-
-    // Aylık vergi toplamları
-    const aylik: Array<{
-      ay: number;
-      ayLabel: string;
-      gelirKdv: number;
-      giderKdv: number;
-      gelirStopaj: number;
-      giderStopaj: number;
-    }> = [];
-
-    for (let m = 1; m <= 12; m++) {
-      if (!hedefAylar.includes(m)) continue;
-
-      let gelirKdv = 0;
-      let gelirStopaj = 0;
-
-      // Gelir tarafı — sadece makbuzKesildi && ilgili yıl+ay
-      gelirler.forEach((g) => {
-        if (!g.makbuzKesildi) return;
-        const tarih = g.makbuzTarih || g.tarih;
-        if (!tarih) return;
-        const d = new Date(tarih);
-        if (d.getFullYear() !== yil || (d.getMonth() + 1) !== m) return;
-        gelirKdv += g.kdvTutar;
-        gelirStopaj += g.stopajTutar;
-      });
-
-      // Gider tarafı — büro giderleri KDV + Stopaj
-      let giderKdv = 0;
-      let giderStopaj = 0;
-      (buroGiderleri || []).forEach((g) => {
-        if (!g.tarih) return;
-        const d = new Date(g.tarih);
-        if (d.getFullYear() !== yil || (d.getMonth() + 1) !== m) return;
-        giderKdv += Number(g.kdvTutar || 0);
-        giderStopaj += Number(g.stopajTutar || 0);
-      });
-
-      aylik.push({
-        ay: m,
-        ayLabel: AYLAR[m]?.label || '',
-        gelirKdv,
-        giderKdv,
-        gelirStopaj,
-        giderStopaj,
-      });
-    }
-
-    // Toplamlar
-    const toplamGelirKdv = aylik.reduce((t, a) => t + a.gelirKdv, 0);
-    const toplamGiderKdv = aylik.reduce((t, a) => t + a.giderKdv, 0);
-    const toplamGelirStopaj = aylik.reduce((t, a) => t + a.gelirStopaj, 0);
-    const toplamGiderStopaj = aylik.reduce((t, a) => t + a.giderStopaj, 0);
-    const odenecekKdv = toplamGelirKdv - toplamGiderKdv;
-
-    return { aylik, toplamGelirKdv, toplamGiderKdv, odenecekKdv, toplamGelirStopaj, toplamGiderStopaj };
+    const ozet = vergiOzetiHesapla(gelirler as unknown as Record<string, unknown>[], buroGiderleri || [], yil, ceyrek);
+    return { ...ozet, aylik: ozet.aylik.map(row => ({ ...row, ayLabel: AYLAR[row.ay]?.label || '' })) };
   }, [gelirler, buroGiderleri, yil, ceyrek]);
+
+  if (isError || giderQuery.isError) return <div role="alert" className="py-8 text-center text-xs text-red">Vergi kayıtları yüklenemedi. Lütfen tekrar deneyiniz.</div>;
+  if (isPending || giderQuery.isPending) return <div className="py-8 text-center text-xs text-text-muted">Vergi kayıtları yükleniyor...</div>;
 
   const varMi = vergiOzeti.aylik.some(
     (a) => a.gelirKdv > 0 || a.giderKdv > 0 || a.gelirStopaj > 0 || a.giderStopaj > 0
@@ -135,7 +78,7 @@ export function VergiOzetTab() {
       <div className="grid grid-cols-5 gap-3 mb-6">
         <MiniKpi label="Hesaplanan KDV (Gelir)" value={fmt(vergiOzeti.toplamGelirKdv)} color="text-green" />
         <MiniKpi label="İndirilecek KDV (Gider)" value={fmt(vergiOzeti.toplamGiderKdv)} color="text-red" />
-        <MiniKpi label="Ödenecek KDV" value={fmt(vergiOzeti.odenecekKdv)} color={vergiOzeti.odenecekKdv >= 0 ? 'text-gold' : 'text-green'} />
+        <MiniKpi label="Kayıtlı KDV Farkı" value={fmt(vergiOzeti.odenecekKdv)} color={vergiOzeti.odenecekKdv >= 0 ? 'text-gold' : 'text-green'} />
         <MiniKpi label="Kesilen Stopaj (Gelir)" value={fmt(vergiOzeti.toplamGelirStopaj)} color="text-text" />
         <MiniKpi label="Ödenen Stopaj (Gider)" value={fmt(vergiOzeti.toplamGiderStopaj)} color="text-text-muted" />
       </div>
@@ -199,7 +142,7 @@ export function VergiOzetTab() {
 
       {/* KDV Formülü Açıklaması */}
       <div className="mt-4 text-[10px] text-text-dim">
-        <strong>Ödenecek KDV</strong> = Hesaplanan KDV (Gelir) − İndirilecek KDV (Gider) · Negatif ise devreden KDV oluşur.
+        <strong>Kayıtlı KDV farkı</strong>, uygulamadaki gelir ve gider KDV kayıtlarının farkıdır. Beyanname veya kesin vergi borcu hesabı değildir.
       </div>
     </div>
   );

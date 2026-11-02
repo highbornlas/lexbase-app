@@ -1,0 +1,87 @@
+BEGIN;
+CREATE TEMP TABLE uyelikler(auth_id uuid,buro_id uuid,durum text);
+CREATE TEMP TABLE davalar(id text PRIMARY KEY,buro_id uuid,data jsonb);
+CREATE TEMP TABLE icra(LIKE davalar INCLUDING ALL);
+CREATE TEMP TABLE arabuluculuk(LIKE davalar INCLUDING ALL);
+CREATE TEMP TABLE ihtarnameler(LIKE davalar INCLUDING ALL);
+CREATE TEMP TABLE danismanlik(LIKE davalar INCLUDING ALL);
+CREATE TEMP TABLE muvekkillar(LIKE davalar INCLUDING ALL);
+CREATE TEMP TABLE avans_hareketleri(LIKE davalar INCLUDING ALL);
+CREATE TEMP TABLE results(scenario text);
+INSERT INTO uyelikler VALUES('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000010','aktif');
+INSERT INTO davalar VALUES('case','00000000-0000-0000-0000-000000000010','{"muvId":"client","harcamalar":[{"id":"e","tutar":500}],"tahsilatlar":[{"tutar":100}],"note":"retain"}'),
+  ('empty','00000000-0000-0000-0000-000000000010','{"_silindi":"old"}');
+INSERT INTO muvekkillar VALUES('client','00000000-0000-0000-0000-000000000010','{"_silindi":"old"}');
+INSERT INTO danismanlik VALUES('service','00000000-0000-0000-0000-000000000010','{"ucret":200,"tahsilEdildi":100,"odemePlani":{"toplamTutar":200}}');
+ALTER TABLE davalar ENABLE ROW LEVEL SECURITY;
+CREATE POLICY fixture_case_access ON davalar TO authenticated
+  USING (buro_id='00000000-0000-0000-0000-000000000010') WITH CHECK (buro_id='00000000-0000-0000-0000-000000000010');
+DO $grant$ BEGIN EXECUTE format('GRANT USAGE ON SCHEMA %I TO authenticated,anon',pg_my_temp_schema()::regnamespace::text); END; $grant$;
+GRANT SELECT,INSERT,UPDATE,DELETE ON uyelikler,davalar,icra,arabuluculuk,ihtarnameler,danismanlik,muvekkillar,avans_hareketleri,results TO authenticated;
+-- CANDIDATE HERE
+SELECT set_config('request.jwt.claims','{"sub":"00000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
+SET LOCAL ROLE authenticated;
+DO $test$
+DECLARE b uuid:='00000000-0000-0000-0000-000000000010'; old jsonb; archived jsonb;
+BEGIN
+ SELECT data INTO old FROM pg_temp.davalar WHERE id='case';
+ PERFORM pg_temp.kayit_durum_islemi(b,'davalar','case','arsivle');
+ ASSERT (SELECT data-'_arsivlendi'=old FROM pg_temp.davalar WHERE id='case');
+ SELECT data INTO archived FROM pg_temp.davalar WHERE id='case';
+ PERFORM pg_temp.kayit_durum_islemi(b,'davalar','case','arsivle');
+ ASSERT (SELECT data=archived FROM pg_temp.davalar WHERE id='case');
+ INSERT INTO pg_temp.results VALUES('archive preserves latest financial data and timestamp');
+ PERFORM pg_temp.kayit_durum_islemi(b,'davalar','case','arsivden_cikar');
+ ASSERT (SELECT data=old FROM pg_temp.davalar WHERE id='case');
+ PERFORM pg_temp.kayit_durum_islemi(b,'davalar','case','sil');
+ ASSERT (SELECT data-'_silindi'=old FROM pg_temp.davalar WHERE id='case');
+ PERFORM pg_temp.kayit_durum_islemi(b,'davalar','case','geri_yukle');
+ ASSERT (SELECT data=old FROM pg_temp.davalar WHERE id='case');
+ INSERT INTO pg_temp.results VALUES('restore removes only its requested flag');
+ BEGIN PERFORM pg_temp.kayit_durum_islemi(b,'davalar','case','kalici_sil'); RAISE EXCEPTION 'active record deleted';
+ EXCEPTION WHEN check_violation THEN NULL; END;
+ INSERT INTO pg_temp.results VALUES('active records cannot be permanently deleted');
+ PERFORM pg_temp.kayit_durum_islemi(b,'davalar','case','sil');
+ BEGIN PERFORM pg_temp.kayit_durum_islemi(b,'davalar','case','kalici_sil'); RAISE EXCEPTION 'financial record deleted';
+ EXCEPTION WHEN check_violation THEN NULL; END;
+ ASSERT EXISTS(SELECT 1 FROM pg_temp.davalar WHERE id='case');
+ INSERT INTO pg_temp.results VALUES('expense and receipt history blocks permanent deletion');
+ BEGIN PERFORM pg_temp.kayit_durum_islemi(b,'muvekkillar','client','kalici_sil'); RAISE EXCEPTION 'linked client deleted';
+ EXCEPTION WHEN check_violation THEN NULL; END;
+ INSERT INTO pg_temp.results VALUES('case-linked client deletion is rejected');
+ INSERT INTO pg_temp.davalar VALUES('legacy-link',b,'{"muvId":"","_eskiMuvId":"client","harcamalar":[{"id":"old","tutar":50}]}'),
+   ('reassigned',b,'{"muvId":"new-client","_eskiMuvId":"client"}');
+ PERFORM pg_temp.kayit_durum_islemi(b,'muvekkillar','client','geri_yukle');
+ ASSERT (SELECT data->>'muvId'='client' AND NOT data?'_eskiMuvId' AND data->'harcamalar'->0->>'tutar'='50' FROM pg_temp.davalar WHERE id='legacy-link');
+ ASSERT (SELECT data->>'muvId'='new-client' FROM pg_temp.davalar WHERE id='reassigned');
+ INSERT INTO pg_temp.results VALUES('client restore repairs explicit legacy links without changing reassigned clients or expenses');
+ PERFORM pg_temp.kayit_durum_islemi(b,'muvekkillar','client','sil');
+ ASSERT (SELECT data->>'muvId'='client' FROM pg_temp.davalar WHERE id='case');
+ INSERT INTO pg_temp.results VALUES('new client trashing preserves case and financial ownership');
+ INSERT INTO pg_temp.muvekkillar VALUES('legacy-advance',b,'{"_silindi":"old","alinanAvans":100}');
+ BEGIN PERFORM pg_temp.kayit_durum_islemi(b,'muvekkillar','legacy-advance','kalici_sil'); RAISE EXCEPTION 'legacy advance deleted';
+ EXCEPTION WHEN check_violation THEN NULL; END;
+ INSERT INTO pg_temp.results VALUES('legacy client advance alone also blocks permanent deletion');
+ PERFORM pg_temp.kayit_durum_islemi(b,'davalar','empty','kalici_sil');
+ ASSERT NOT EXISTS(SELECT 1 FROM pg_temp.davalar WHERE id='empty');
+ INSERT INTO pg_temp.results VALUES('nonfinancial trash can be deleted explicitly');
+ PERFORM pg_temp.kayit_durum_islemi(b,'danismanlik','service','sil');
+ BEGIN PERFORM pg_temp.kayit_durum_islemi(b,'danismanlik','service','kalici_sil'); RAISE EXCEPTION 'service history deleted';
+ EXCEPTION WHEN check_violation THEN NULL; END;
+ PERFORM pg_temp.kayit_durum_islemi(b,'danismanlik','service','geri_yukle');
+ ASSERT (SELECT data->>'tahsilEdildi'='100' AND data?'odemePlani' FROM pg_temp.danismanlik WHERE id='service');
+ INSERT INTO pg_temp.results VALUES('service fees and payment plans are preserved');
+ BEGIN PERFORM pg_temp.kayit_durum_islemi(b,'davalar','missing','sil'); RAISE EXCEPTION 'missing record recreated';
+ EXCEPTION WHEN no_data_found THEN NULL; END;
+ BEGIN PERFORM pg_temp.kayit_durum_islemi('00000000-0000-0000-0000-000000000020','davalar','case','sil'); RAISE EXCEPTION 'nonmember allowed';
+ EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+ INSERT INTO pg_temp.results VALUES('missing and nonmember requests fail closed');
+END; $test$;
+RESET ROLE;
+DO $test$ BEGIN
+ ASSERT NOT has_function_privilege('anon','pg_temp.kayit_durum_islemi(uuid,text,text,text)','EXECUTE');
+ ASSERT NOT (SELECT prosecdef FROM pg_proc WHERE oid='pg_temp.kayit_durum_islemi(uuid,text,text,text)'::regprocedure);
+ INSERT INTO results VALUES('invoker RLS and anonymous denial retained');
+END; $test$;
+SELECT scenario FROM results;
+ROLLBACK;

@@ -70,6 +70,9 @@ function FinansalRapor({ muv, finansOzet }: { muv: Muvekkil; finansOzet: Record<
   const vekalet = finansOzet.vekaletUcreti as Record<string, Record<string, number>> | undefined;
   const bakiye = finansOzet.bakiye as Record<string, number> | undefined;
   const danismanlik = finansOzet.danismanlik as Record<string, number> | undefined;
+  const arabuluculuk = finansOzet.arabuluculuk as Record<string, number> | undefined;
+  const ihtarname = finansOzet.ihtarname as Record<string, number> | undefined;
+  const alacak = finansOzet.alacak as Record<string, number> | undefined;
 
   const rows = [
     { label: 'Toplam Masraf', value: masraflar?.toplam, color: '' },
@@ -81,10 +84,13 @@ function FinansalRapor({ muv, finansOzet }: { muv: Muvekkil; finansOzet: Record<
     { label: 'Tahsil Edilen Vekalet', value: vekalet?.akdi?.tahsilEdilen, color: 'text-green' },
     { label: 'Kalan Vekalet Alacağı', value: vekalet?.akdi?.kalan, color: 'text-gold' },
     { label: 'Hakediş Toplamı', value: vekalet?.hakedis?.toplam, color: 'text-green' },
+    { label: 'İcra Vekalet Ücreti Tahsilatı', value: tahsilatlar?.icraVekalet, color: 'text-green' },
     { label: '', value: 0, color: '', divider: true },
     { label: 'Tahsilat Bakiyesi', value: bakiye?.tahsilatBakiye, color: 'text-gold' },
     { label: 'Danışmanlık Geliri', value: danismanlik?.gelir, color: 'text-green' },
-    { label: 'GENEL BAKİYE', value: bakiye?.genelBakiye, color: (bakiye?.genelBakiye ?? 0) >= 0 ? 'text-green' : 'text-red', bold: true },
+    { label: 'Arabuluculuk Geliri', value: arabuluculuk?.gelir, color: 'text-green' },
+    { label: 'İhtarname Geliri', value: ihtarname?.gelir, color: 'text-green' },
+    { label: 'GENEL HAREKET BAKİYESİ', value: bakiye?.genelBakiye, color: (bakiye?.genelBakiye ?? 0) >= 0 ? 'text-green' : 'text-red', bold: true },
   ];
 
   return (
@@ -96,8 +102,8 @@ function FinansalRapor({ muv, finansOzet }: { muv: Muvekkil; finansOzet: Record<
         </div>
         <button
           onClick={() => exportFinansRaporuPDF(muv.ad, {
-            toplamUcret: (vekalet?.akdi?.anlasilanToplam ?? 0) + (vekalet?.hakedis?.toplam ?? 0),
-            toplamTahsilat: (tahsilatlar?.karsiTaraf ?? 0) + (vekalet?.akdi?.tahsilEdilen ?? 0),
+            toplamUcret: alacak?.anlasilanToplam ?? vekalet?.akdi?.anlasilanToplam ?? 0,
+            toplamTahsilat: alacak?.tahsilEdilen ?? vekalet?.akdi?.tahsilEdilen ?? 0,
             toplamHarcama: masraflar?.toplam ?? 0,
             toplamAvans: avanslar?.alinan ?? 0,
             net: bakiye?.genelBakiye ?? 0,
@@ -107,6 +113,8 @@ function FinansalRapor({ muv, finansOzet }: { muv: Muvekkil; finansOzet: Record<
           PDF İndir
         </button>
       </div>
+
+      <p className="text-[10px] text-text-dim mb-3">Hareket bakiyesi, büro geliri veya elde tutulan müvekkil parası değildir. Mahsup ve ödeme kaynağı ayrımı tamamlanana kadar bu tutarı ayrı değerlendirin.</p>
 
       <div className="space-y-0">
         {rows.map((row, i) => {

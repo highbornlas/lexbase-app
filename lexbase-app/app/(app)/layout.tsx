@@ -10,10 +10,11 @@ import { InactivityWarning } from '@/components/auth/InactivityWarning';
 import { FaizOranProvider } from '@/components/providers/FaizOranProvider';
 import {
   KullanimKosullari, GizlilikPolitikasi, KvkkAydinlatma,
-  VeriGuvenligi, CerezAyarlari,
+  VeriGuvenligi, CerezAyarlari, SurumNotlari,
 } from '@/lib/legal-content';
+import { APP_VERSION, BUILD_DATE } from '@/lib/version';
 
-type YasalSayfa = 'kullanim' | 'gizlilik' | 'kvkk' | 'veri' | 'cerez' | null;
+type YasalSayfa = 'kullanim' | 'gizlilik' | 'kvkk' | 'veri' | 'cerez' | 'surum' | null;
 
 const YASAL_BASLIKLAR: Record<string, string> = {
   kullanim: 'Kullanım Koşulları',
@@ -21,6 +22,7 @@ const YASAL_BASLIKLAR: Record<string, string> = {
   kvkk: 'KVKK Aydınlatma Metni',
   veri: 'Veri Güvenliği',
   cerez: 'Çerez Ayarları',
+  surum: 'Güncelleme Notları',
 };
 
 const YASAL_ICERIKLER: Record<string, React.FC> = {
@@ -29,6 +31,7 @@ const YASAL_ICERIKLER: Record<string, React.FC> = {
   kvkk: KvkkAydinlatma,
   veri: VeriGuvenligi,
   cerez: CerezAyarlari,
+  surum: SurumNotlari,
 };
 
 export default function AppLayout({
@@ -76,7 +79,10 @@ export default function AppLayout({
                     {label}
                   </button>
                 ))}
-                <span className="text-[10px] text-text-dim">v2.1.0</span>
+                <button onClick={() => setYasalSayfa('surum')} title={`Sürüm tarihi: ${BUILD_DATE}`}
+                  className="text-[10px] text-text-dim hover:text-gold transition-colors">
+                  v{APP_VERSION} · Güncelleme Notları
+                </button>
               </div>
             </div>
           </footer>

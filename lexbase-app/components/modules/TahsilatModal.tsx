@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Modal, FormGroup, FormInput, FormSelect, BtnGold, BtnOutline } from '@/components/ui/Modal';
 import { useModalDraft } from '@/lib/hooks/useModalDraft';
 import { fmt } from '@/lib/utils';
 import { bruttenNete, nettenBrute } from '@/lib/utils/finans';
+import { gelirTahsilatiMi } from '@/lib/finans/gelirKurallari';
+import { DAVA_ODEME_TURLERI, ICRA_ODEME_TURLERI, odemeFormTuru, odemeKayitTuru } from '@/lib/finans/odemeTurleri';
 
 /* ══════════════════════════════════════════════════════════════
    Tahsilat Ekleme / Düzenleme Modal
@@ -28,17 +30,11 @@ export interface TahsilatKaydi {
 interface TahsilatModalProps {
   open: boolean;
   onClose: () => void;
-  onKaydet: (tahsilat: TahsilatKaydi) => void;
+  onKaydet: (tahsilat: TahsilatKaydi) => Promise<void>;
+  draftScope: string;
   tahsilat?: TahsilatKaydi | null;
+  icraDosyasi?: boolean;
 }
-
-const TAHSILAT_TURLERI = [
-  { value: 'akdi_vekalet', label: 'Akdi Vekalet Ücreti' },
-  { value: 'hakediş', label: 'Karşı Vekalet Hakedişi' },
-  { value: 'tahsilat', label: 'Genel Tahsilat' },
-  { value: 'aktarim', label: 'Aktarım' },
-  { value: 'iade', label: 'İade' },
-];
 
 const bos: TahsilatKaydi = {
   id: '',
@@ -53,27 +49,26 @@ const bos: TahsilatKaydi = {
   makbuzTarih: '',
 };
 
-export function TahsilatModal({ open, onClose, onKaydet, tahsilat }: TahsilatModalProps) {
-  const [form, setForm] = useState<TahsilatKaydi>({ ...bos });
-  const [initialForm, setInitialForm] = useState<TahsilatKaydi>({ ...bos });
+export function TahsilatModal(props: TahsilatModalProps) {
+  return <TahsilatModalForm key={`${props.draftScope}-${props.open}-${props.tahsilat?.id || 'yeni'}`} {...props} />;
+}
+
+function TahsilatModalForm({ open, onClose, onKaydet, tahsilat, draftScope, icraDosyasi = false }: TahsilatModalProps) {
+  const odemeTurleri = icraDosyasi ? ICRA_ODEME_TURLERI : DAVA_ODEME_TURLERI;
+  const [initialForm] = useState<TahsilatKaydi>(() => tahsilat ? {
+    ...tahsilat, tur: odemeFormTuru(tahsilat.tur, icraDosyasi),
+  } : {
+    ...bos, id: crypto.randomUUID(), tur: icraDosyasi ? 'borclu_odeme' : 'akdi_vekalet',
+    tarih: new Date().toISOString().split('T')[0],
+  });
+  const [form, setForm] = useState<TahsilatKaydi>(initialForm);
+  const [kaydediliyor, setKaydediliyor] = useState(false);
+  const kayitKilidi = useRef(false);
   const [tutarModu, setTutarModu] = useState<'brut' | 'net'>('brut');
   const [hata, setHata] = useState('');
 
-  useEffect(() => {
-    let init: TahsilatKaydi;
-    if (tahsilat) {
-      init = { ...tahsilat };
-    } else {
-      init = { ...bos, id: crypto.randomUUID() };
-    }
-    setInitialForm(init);
-    setForm(init);
-    setHata('');
-    setTutarModu('brut');
-  }, [tahsilat, open]);
-
-  const draftKey = `tahsilat_${form.id || 'yeni'}`;
-  const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(
+  const draftKey = `tahsilat_${draftScope}_${tahsilat?.id || 'yeni'}`;
+  const { isDirty, hasDraft, loadDraft, clearDraft, saveDraft } = useModalDraft(
     draftKey, form as unknown as Record<string, unknown>, initialForm as unknown as Record<string, unknown>, open
   );
 
@@ -81,47 +76,78 @@ export function TahsilatModal({ open, onClose, onKaydet, tahsilat }: TahsilatMod
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  function handleSubmit() {
-    if (!form.tutar || form.tutar <= 0) {
+  async function handleSubmit() {
+    if (kayitKilidi.current) return;
+    if (!Number.isFinite(form.tutar) || form.tutar <= 0) {
       setHata('Tutar giriniz.');
       return;
     }
     setHata('');
-    // Makbuz kesilmediyse KDV/stopaj oranlarını sıfırla
-    const kaydedilecek = { ...form };
-    if (!kaydedilecek.makbuzKesildi) {
-      kaydedilecek.kdvOrani = 0;
-      kaydedilecek.stopajOrani = 0;
+    kayitKilidi.current = true;
+    setKaydediliyor(true);
+    try {
+      const kaydedilecek = { ...form, tur: odemeKayitTuru(form.tur, icraDosyasi) };
+      if (!kaydedilecek.makbuzKesildi || !gelirTahsilatiMi(kaydedilecek.tur)) {
+        kaydedilecek.makbuzKesildi = false;
+        kaydedilecek.kdvOrani = 0;
+        kaydedilecek.stopajOrani = 0;
+      }
+      await onKaydet(kaydedilecek);
+      clearDraft();
+      onClose();
+    } catch (error) {
+      saveDraft();
+      setHata(error instanceof Error ? error.message : 'Tahsilat kaydedilemedi. Tekrar deneyiniz.');
+    } finally {
+      kayitKilidi.current = false;
+      setKaydediliyor(false);
     }
-    onKaydet(kaydedilecek);
-    clearDraft();
-    onClose();
   }
 
   // Vergi hesaplama
-  const efektifKdv = form.makbuzKesildi ? (form.kdvOrani || 0) : 0;
-  const efektifStopaj = form.makbuzKesildi ? (form.stopajOrani || 0) : 0;
+  const vergiUygulanabilir = gelirTahsilatiMi(form.tur);
+  const efektifKdv = form.makbuzKesildi && vergiUygulanabilir ? (form.kdvOrani || 0) : 0;
+  const efektifStopaj = form.makbuzKesildi && vergiUygulanabilir ? (form.stopajOrani || 0) : 0;
   const hesap = bruttenNete(form.tutar || 0, efektifKdv, efektifStopaj);
 
   return (
-    <Modal open={open} onClose={onClose} title={tahsilat ? 'Tahsilat Düzenle' : 'Yeni Tahsilat'} maxWidth="max-w-lg"
-      dirty={isDirty}
-      hasDraft={hasDraft()}
-      onLoadDraft={() => { const d = loadDraft(); if (d) setForm(d as unknown as TahsilatKaydi); clearDraft(); }}
+    <Modal open={open} onClose={() => { if (!kayitKilidi.current) onClose(); }} title={tahsilat ? 'Ödeme Düzenle' : 'Yeni Ödeme Kaydı'} maxWidth="max-w-lg"
+      dirty={isDirty && !kaydediliyor}
+      hasDraft={!kaydediliyor && hasDraft()}
+      onLoadDraft={() => {
+        const d = loadDraft();
+        if (d) setForm({
+          ...d, id: initialForm.id,
+          tur: odemeFormTuru(typeof d.tur === 'string' ? d.tur : initialForm.tur, icraDosyasi),
+        } as unknown as TahsilatKaydi);
+      }}
+      onSaveDraft={saveDraft}
       onDiscardDraft={clearDraft}
     >
-      <div className="space-y-4">
+      <fieldset disabled={kaydediliyor} className="space-y-4">
         {hata && (
           <div className="bg-red-dim border border-red/20 rounded-lg px-3 py-2 text-xs text-red">{hata}</div>
         )}
 
         <div className="grid grid-cols-2 gap-4">
-          <FormGroup label="Tahsilat Türü">
+          <FormGroup label="Ödeme Türü">
             <FormSelect value={form.tur} onChange={(e) => handleChange('tur', e.target.value)}>
-              {TAHSILAT_TURLERI.map((t) => (
+              {!odemeTurleri.some((t) => t.value === form.tur) && (
+                <option value={form.tur}>{form.tur || 'Türü belirtilmemiş eski kayıt'}</option>
+              )}
+              {odemeTurleri.map((t) => (
                 <option key={t.value} value={t.value}>{t.label}</option>
               ))}
             </FormSelect>
+            <p className="text-[11px] text-text-muted mt-1">
+              {form.tur === 'tahsilat' || form.tur === 'borclu_odeme'
+                ? 'Karşı taraftan müvekkil adına alınan para. Büro geliri değildir; ücret mahsubunu ayrı bir ücret veya hakediş kaydıyla izleyin.'
+                : form.tur === 'aktarim'
+                  ? 'Müvekkile aktarılan para. Büro geliri değildir.'
+                  : form.tur === 'iade'
+                    ? 'İade edilen para. Büro geliri değildir.'
+                    : 'Büroya ait ücret veya hakediş. Müvekkil adına alınan ana paradan ayrı kaydedilir.'}
+            </p>
           </FormGroup>
           <FormGroup label="Tarih">
             <FormInput type="date" value={form.tarih || ''} onChange={(e) => handleChange('tarih', e.target.value)} />
@@ -133,10 +159,10 @@ export function TahsilatModal({ open, onClose, onKaydet, tahsilat }: TahsilatMod
           <div className="flex gap-2">
             <FormInput
               type="number"
-              value={form.tutar || ''}
+              value={(tutarModu === 'net' && form.makbuzKesildi && vergiUygulanabilir ? hesap.netTutar : form.tutar) || ''}
               onChange={(e) => {
                 const val = Number(e.target.value);
-                if (tutarModu === 'net' && form.makbuzKesildi) {
+                if (tutarModu === 'net' && form.makbuzKesildi && vergiUygulanabilir) {
                   // Net girildiyse brüte çevir
                   const { brutTutar } = nettenBrute(val, form.kdvOrani || 0, form.stopajOrani || 0);
                   setForm((prev) => ({ ...prev, tutar: brutTutar }));
@@ -146,7 +172,7 @@ export function TahsilatModal({ open, onClose, onKaydet, tahsilat }: TahsilatMod
               }}
               placeholder="0"
             />
-            {form.makbuzKesildi && (
+            {form.makbuzKesildi && vergiUygulanabilir && (
               <div className="flex rounded-lg border border-border overflow-hidden shrink-0">
                 <button
                   type="button"
@@ -172,11 +198,11 @@ export function TahsilatModal({ open, onClose, onKaydet, tahsilat }: TahsilatMod
         </FormGroup>
 
         <FormGroup label="Açıklama">
-          <FormInput value={form.acik || ''} onChange={(e) => handleChange('acik', e.target.value)} placeholder="Tahsilat açıklaması..." />
+          <FormInput value={form.acik || ''} onChange={(e) => handleChange('acik', e.target.value)} placeholder="Ödeme açıklaması..." />
         </FormGroup>
 
         {/* Vergi / SMM Bölümü */}
-        <div className="border-t border-border/50 pt-4">
+        {vergiUygulanabilir && <div className="border-t border-border/50 pt-4">
           <div className="text-[11px] font-semibold text-text-muted uppercase tracking-wider mb-3">Vergi / SMM Bilgileri</div>
           <div className="grid grid-cols-2 gap-4 mb-3">
             <FormGroup label="KDV Oranı (%)">
@@ -241,12 +267,12 @@ export function TahsilatModal({ open, onClose, onKaydet, tahsilat }: TahsilatMod
               ℹ️ Makbuz kesilmediğinde KDV/Stopaj vergi hesabına dahil edilmez (avans/elden tahsilat).
             </div>
           )}
-        </div>
-      </div>
+        </div>}
+      </fieldset>
 
       <div className="flex items-center justify-end gap-2 mt-6 pt-4 border-t border-border">
-        <BtnOutline onClick={onClose}>İptal</BtnOutline>
-        <BtnGold onClick={handleSubmit}>{tahsilat ? 'Güncelle' : 'Ekle'}</BtnGold>
+        <BtnOutline disabled={kaydediliyor} onClick={onClose}>İptal</BtnOutline>
+        <BtnGold disabled={kaydediliyor} onClick={handleSubmit}>{kaydediliyor ? 'Kaydediliyor...' : tahsilat ? 'Güncelle' : 'Ekle'}</BtnGold>
       </div>
     </Modal>
   );

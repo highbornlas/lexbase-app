@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
+import { readTrashRecords } from '@/lib/data/readTrashRecords';
 import { useBuroId } from './useBuro';
 
 /* ══════════════════════════════════════════════════════════════
@@ -44,13 +45,26 @@ const VARSAYILAN_SAKLAMA_MS = 24 * 60 * 60 * 1000;
 
 export function getCopKutusuSuresi(): number {
   if (typeof window === 'undefined') return VARSAYILAN_SAKLAMA_MS;
-  const kayitli = localStorage.getItem('lb_cop_kutusu_sure');
-  if (kayitli) return parseInt(kayitli, 10);
+  try {
+    const ms = Number(localStorage.getItem('lb_cop_kutusu_sure'));
+    if (SURE_SECENEKLERI.some(option => option.ms === ms)) return ms;
+  } catch { /* Storage may be unavailable in private sessions. */ }
   return VARSAYILAN_SAKLAMA_MS;
 }
 
 export function setCopKutusuSuresi(ms: number) {
-  localStorage.setItem('lb_cop_kutusu_sure', ms.toString());
+  if (!SURE_SECENEKLERI.some(option => option.ms === ms)) return;
+  try { localStorage.setItem('lb_cop_kutusu_sure', ms.toString()); } catch { /* Optional local preference. */ }
+  window.dispatchEvent(new Event('lb:trash-retention'));
+}
+
+export function subscribeCopKutusuSuresi(notify: () => void) {
+  window.addEventListener('storage',notify);
+  window.addEventListener('lb:trash-retention',notify);
+  return () => {
+    window.removeEventListener('storage',notify);
+    window.removeEventListener('lb:trash-retention',notify);
+  };
 }
 
 export const SURE_SECENEKLERI = [
@@ -114,61 +128,15 @@ export function useCopKutusu() {
       const saklamaSuresi = getCopKutusuSuresi();
       const sonuc: SilinenKayit[] = [];
 
-      const tablolar: CopTabloTipi[] = [
-        'muvekkillar',
-        'karsi_taraflar',
-        'vekillar',
-        'davalar',
-        'icra',
-        'ihtarnameler',
-        'arabuluculuk',
-        'danismanlik',
-      ];
-
-      for (const tablo of tablolar) {
-        try {
-          const { data } = await supabase
-            .from(tablo)
-            .select('id, data')
-            .eq('buro_id', buroId);
-
-          if (!data) continue;
-
-          for (const row of data) {
-            const d = row.data as Record<string, unknown>;
-            if (!d._silindi) continue;
-
-            const silinmeTarihi = d._silindi as string;
-            const silinmeMs = new Date(silinmeTarihi).getTime();
-            const kalanMs = saklamaSuresi - (Date.now() - silinmeMs);
-
-            // Süresi dolmuş — kalıcı sil
-            if (kalanMs <= 0) {
-              try {
-                await supabase
-                  .from(tablo)
-                  .delete()
-                  .eq('id', row.id)
-                  .eq('buro_id', buroId);
-              } catch (e) {
-                console.warn(`[CöpKutusu] ${tablo}/${row.id} kalıcı silme başarısız:`, e);
-              }
-              continue;
-            }
-
-            sonuc.push({
-              id: row.id,
-              tablo,
-              tabloLabel: TABLO_LABELS[tablo] || tablo,
-              ad: buildAd(tablo, d),
-              tip: d.tip as string | undefined,
-              silinmeTarihi,
-              kalanSure: kalanMs,
-            });
-          }
-        } catch {
-          // tablo yoksa devam
-        }
+      const rows = await readTrashRecords(supabase,buroId);
+      for (const row of rows) {
+        const d = row.data;
+        if (!d._silindi) continue;
+        const silinmeTarihi = String(d._silindi);
+        const elapsed = Date.now() - new Date(silinmeTarihi).getTime();
+        sonuc.push({ id: row.id, tablo: row.table, tabloLabel: TABLO_LABELS[row.table],
+          ad: buildAd(row.table,d), tip: d.tip as string | undefined, silinmeTarihi,
+          kalanSure: Number.isFinite(elapsed) ? Math.max(0,saklamaSuresi-elapsed) : 0 });
       }
 
       // En son silineni üste

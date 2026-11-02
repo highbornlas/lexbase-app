@@ -9,7 +9,7 @@ import {
   type KapakHesabiSonuc,
   type MahsupSonucu,
 } from '@/lib/utils/faiz';
-import { tahsilatToplam } from '@/lib/utils/finans';
+import { dosyaParaOzeti, dosyaMasrafToplami } from '@/lib/utils/finans';
 import { exportKapakHesabiPDF } from '@/lib/export/pdfExport';
 import { exportKapakHesabiXLS } from '@/lib/export/excelExport';
 import type { Icra } from '@/lib/hooks/useIcra';
@@ -61,14 +61,12 @@ export function KapakHesabiPanel({ icra }: KapakHesabiProps) {
 
   // Masraflar toplamı
   const icraMasraflari = useMemo(() => {
-    const harcamalar = icra.harcamalar || [];
-    return harcamalar.reduce((t, h) => t + (h.tutar || 0), 0);
+    return dosyaMasrafToplami({ harcamalar: icra.harcamalar });
   }, [icra.harcamalar]);
 
   // Tahsilat toplamı
   const tahsilEdilen = useMemo(() => {
-    const tahArr = icra.tahsilatlar as Array<{ tutar?: number }> | undefined;
-    return tahArr?.length ? tahsilatToplam(tahArr) : Number(icra.tahsil || 0);
+    return dosyaParaOzeti({ tahsilatlar: icra.tahsilatlar, tahsil: icra.tahsil }).karsiTaraf;
   }, [icra.tahsilatlar, icra.tahsil]);
 
   // Vekalet ücreti

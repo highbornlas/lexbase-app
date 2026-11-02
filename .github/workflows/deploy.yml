@@ -1,13 +1,22 @@
-name: Deploy to Cloudflare Workers
+name: Application CI
 
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: application-ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
@@ -24,11 +33,18 @@ jobs:
         working-directory: lexbase-app
         run: npm ci
 
-      - name: Build & Deploy
+      - name: Validate version and release notes
+        working-directory: lexbase-app
+        run: npm run release:check
+
+      - name: Run regression tests
+        working-directory: lexbase-app
+        run: npm test
+
+      # Cloudflare Workers Builds is the sole automatic production publisher.
+      - name: Build production Worker without publishing
         working-directory: lexbase-app
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-        run: npm run deploy
+        run: npm run cf:build

@@ -1,4 +1,7 @@
 import type { NextConfig } from 'next';
+import { assertPublicSupabaseConfig } from './lib/supabase/buildConfig';
+
+if (process.env.NODE_ENV === 'production') assertPublicSupabaseConfig(process.env);
 
 // Security headers (CSP hariç — Cloudflare Workers + Next.js inline scripts ile uyumsuz)
 const securityHeaders = [

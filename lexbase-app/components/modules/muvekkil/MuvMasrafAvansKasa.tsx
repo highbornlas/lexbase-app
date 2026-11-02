@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
+import { kasaIslemHatasi } from '@/lib/data/financeCashTransaction';
 import { fmt, fmtTarih } from '@/lib/utils';
 import {
   useAvansHareketleri,
@@ -35,7 +36,6 @@ interface Props {
   icralar: Record<string, unknown>[];
   arabuluculuklar: Record<string, unknown>[];
   ihtarnameler: Record<string, unknown>[];
-  onMasrafKaydet: (dosyaId: string, dosyaTur: string, harcama: { id: string; kat: string; acik: string; tarih: string; tutar: number }) => void;
 }
 
 type HareketTip = 'alim' | 'masraf' | 'iade';
@@ -47,14 +47,17 @@ const TIP_META: Record<HareketTip, { label: string; renk: string; icon: string; 
   iade:  { label: 'İade',        renk: 'text-blue-400',    icon: '↩', renkBg: 'text-blue-400 bg-blue-400/10 border-blue-400/20' },
 };
 
-export function MuvMasrafAvansKasa({ muvId, muvAd, davalar, icralar, arabuluculuklar, ihtarnameler, onMasrafKaydet }: Props) {
-  const { data: hareketler, isLoading } = useAvansHareketleri(muvId);
+export function MuvMasrafAvansKasa({ muvId, muvAd, davalar, icralar, arabuluculuklar, ihtarnameler }: Props) {
+  const { data: hareketler, isPending, isError } = useAvansHareketleri(muvId);
   const kaydetMut = useAvansHareketKaydet();
   const silMut = useAvansHareketSil();
 
   const [formAcik, setFormAcik] = useState(false);
   const [filtre, setFiltre] = useState<Filtre>('');
   const [silinecek, setSilinecek] = useState<string | null>(null);
+  const [hata, setHata] = useState('');
+  const kilit = useRef(false);
+  const hareketId = useRef<string | null>(null);
 
   const [form, setForm] = useState({
     tip: 'masraf' as HareketTip,
@@ -115,8 +118,8 @@ export function MuvMasrafAvansKasa({ muvId, muvAd, davalar, icralar, arabuluculu
   }, [hareketler]);
 
   // ── Kaydet ──
-  function handleKaydet() {
-    if (!form.tutar || Number(form.tutar) <= 0) return;
+  async function handleKaydet() {
+    if (kilit.current || !Number.isFinite(Number(form.tutar)) || Number(form.tutar) <= 0) return;
 
     const tutar = Number(form.tutar);
     const secilenDosya = dosyaSecenekleri.find((d) => `${d.tur}::${d.id}` === form.dosyaKey);
@@ -124,11 +127,13 @@ export function MuvMasrafAvansKasa({ muvId, muvAd, davalar, icralar, arabuluculu
     // Masraf tipinde dosya seçimi zorunlu
     if (form.tip === 'masraf' && !secilenDosya) return;
 
-    const hareketId = crypto.randomUUID();
+    kilit.current = true;
+    setHata('');
+    hareketId.current ||= crypto.randomUUID();
 
     // 1) Avans kasasına hareket olarak kaydet (her zaman)
     const yeniHareket: AvansHareket = {
-      id: hareketId,
+      id: hareketId.current,
       muvId,
       tip: form.tip,
       tarih: form.tarih,
@@ -143,18 +148,9 @@ export function MuvMasrafAvansKasa({ muvId, muvAd, davalar, icralar, arabuluculu
       dosyaTur: secilenDosya?.tur,
       dosyaNo: secilenDosya?.no,
     };
-    kaydetMut.mutate(yeniHareket);
-
-    // 2) Masraf tipinde dosyaya da harcama olarak kaydet (senkronizasyon)
-    if (form.tip === 'masraf' && secilenDosya) {
-      onMasrafKaydet(secilenDosya.id, secilenDosya.tur, {
-        id: hareketId, // Aynı ID ile eşleştir
-        kat: form.kategori || 'Diğer',
-        acik: form.aciklama,
-        tarih: form.tarih,
-        tutar,
-      });
-    }
+    try {
+      await kaydetMut.mutateAsync(yeniHareket);
+      hareketId.current = null;
 
     // Formu sıfırla
     setForm({
@@ -168,12 +164,17 @@ export function MuvMasrafAvansKasa({ muvId, muvAd, davalar, icralar, arabuluculu
       dosyaKey: '',
     });
     setFormAcik(false);
+    } catch (error) { setHata(kasaIslemHatasi(error)); }
+    finally { kilit.current = false; }
   }
 
   // ── Sil ──
-  function handleSil(hareket: AvansHareket) {
-    silMut.mutate(hareket);
-    setSilinecek(null);
+  async function handleSil(hareket: AvansHareket) {
+    if (kilit.current) return;
+    kilit.current = true; setHata('');
+    try { await silMut.mutateAsync(hareket); setSilinecek(null); }
+    catch (error) { setHata(kasaIslemHatasi(error)); }
+    finally { kilit.current = false; }
   }
 
   // ── Export ──
@@ -192,7 +193,7 @@ export function MuvMasrafAvansKasa({ muvId, muvAd, davalar, icralar, arabuluculu
     }
   }
 
-  if (isLoading) {
+  if (isPending) {
     return (
       <div className="flex justify-center py-12">
         <div className="w-6 h-6 border-2 border-gold border-t-transparent rounded-full animate-spin" />
@@ -200,17 +201,20 @@ export function MuvMasrafAvansKasa({ muvId, muvAd, davalar, icralar, arabuluculu
     );
   }
 
+  if (isError) return <p role="alert" className="text-sm text-red p-4">Kasa yüklenemedi. Boş bakiye gösterilmiyor; sayfayı yenileyin.</p>;
+
   return (
     <div className="space-y-5">
+      {hata && <p role="alert" className="text-xs text-red bg-red/10 rounded-lg p-3">{hata}</p>}
       {/* ── Uyarı Bannerları ── */}
       {ozet.bakiye < 0 && (
         <div className="flex items-center gap-2 px-4 py-3 bg-red/10 border border-red/20 rounded-lg">
           <span className="text-lg">🚨</span>
           <div>
-            <div className="text-sm font-semibold text-red">Avans kasası eksiye düştü!</div>
-            <div className="text-xs text-red/80">Masraflar müvekkilin avansından karşılanamamaktadır. Ek avans talep ediniz.</div>
+            <div className="text-sm font-semibold text-red">Müvekkilden alınacak masraf</div>
+            <div className="text-xs text-red/80">Avansı aşan masraf tutarıdır; vekâlet ücreti alacağından ayrıdır.</div>
           </div>
-          <div className="ml-auto font-[var(--font-playfair)] text-lg font-bold text-red">{fmt(ozet.bakiye)}</div>
+          <div className="ml-auto font-[var(--font-playfair)] text-lg font-bold text-red">{fmt(ozet.masrafAlacagi)}</div>
         </div>
       )}
       {ozet.bakiye >= 0 && ozet.bakiye < AVANS_ESIK && ozet.hareketSayisi > 0 && (
@@ -248,7 +252,7 @@ export function MuvMasrafAvansKasa({ muvId, muvAd, davalar, icralar, arabuluculu
 
       {/* ── Ekleme Formu ── */}
       {formAcik && (
-        <div className="bg-surface2/50 border border-gold/20 rounded-lg p-5 space-y-4">
+        <fieldset disabled={kaydetMut.isPending || silMut.isPending} className="bg-surface2/50 border border-gold/20 rounded-lg p-5 space-y-4">
           <h4 className="text-sm font-semibold text-gold">Yeni Hareket Ekle</h4>
 
           {/* Tip seçimi — pill buttons */}
@@ -371,7 +375,7 @@ export function MuvMasrafAvansKasa({ muvId, muvAd, davalar, icralar, arabuluculu
               İptal
             </button>
           </div>
-        </div>
+        </fieldset>
       )}
 
       {/* ── Tablo Başlık + Filtreler + Export ── */}
@@ -404,7 +408,7 @@ export function MuvMasrafAvansKasa({ muvId, muvAd, davalar, icralar, arabuluculu
               </button>
             </>
           )}
-          <button onClick={() => setFormAcik(!formAcik)}
+          <button disabled={kaydetMut.isPending || silMut.isPending} onClick={() => setFormAcik(!formAcik)}
             className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
               formAcik ? 'bg-gold/10 text-gold border border-gold/30' : 'text-gold border border-gold/30 hover:bg-gold-dim'
             }`}>

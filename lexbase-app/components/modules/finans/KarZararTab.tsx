@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { karZararHesapla } from '@/lib/finans/raporHesaplari';
 import { useBuroKarZarar } from '@/lib/hooks/useFinans';
 import { useDavalar } from '@/lib/hooks/useDavalar';
 import { useIcralar } from '@/lib/hooks/useIcra';
@@ -9,7 +10,6 @@ import { useArabuluculuklar } from '@/lib/hooks/useArabuluculuk';
 import { useIhtarnameler } from '@/lib/hooks/useIhtarname';
 import { useBuroGiderleri } from '@/lib/hooks/useBuroGiderleri';
 import { fmt } from '@/lib/utils';
-import { safeNum } from '@/lib/utils/finans';
 import { AYLAR, KzRow } from './shared';
 
 interface KarZararTabProps {
@@ -21,138 +21,50 @@ interface KarZararTabProps {
 
 // ── Client-Side Fallback Hesaplama ────────────────────────────
 function useKarZararFallback(yil: number, ay?: number) {
-  const { data: davalar } = useDavalar();
-  const { data: icralar } = useIcralar();
-  const { data: danismanliklar } = useDanismanliklar();
-  const { data: arabuluculuklar } = useArabuluculuklar();
-  const { data: ihtarnameler } = useIhtarnameler();
-  const { data: giderler } = useBuroGiderleri();
+  const davaQuery = useDavalar(true);
+  const icraQuery = useIcralar(true);
+  const danismanlikQuery = useDanismanliklar(true);
+  const arabuluculukQuery = useArabuluculuklar(true);
+  const ihtarnameQuery = useIhtarnameler(true);
+  const giderQuery = useBuroGiderleri();
+  const { data: davalar } = davaQuery;
+  const { data: icralar } = icraQuery;
+  const { data: danismanliklar } = danismanlikQuery;
+  const { data: arabuluculuklar } = arabuluculukQuery;
+  const { data: ihtarnameler } = ihtarnameQuery;
+  const { data: giderler } = giderQuery;
 
-  return useMemo(() => {
-    const tarihIcindeMi = (tarih: string | undefined) => {
-      if (!tarih) return false;
-      const d = new Date(tarih);
-      if (isNaN(d.getTime())) return false;
-      if (d.getFullYear() !== yil) return false;
-      if (ay && (d.getMonth() + 1) !== ay) return false;
-      return true;
-    };
-
-    // GELİRLER
-    let akdiVekaletUcreti = 0;
-    let karsiVekaletHakedis = 0;
-    let digerGelir = 0;
-    let danismanlikGeliri = 0;
-    let arabuluculukGeliri = 0;
-    let ihtarnameGeliri = 0;
-
-    // Dava + İcra tahsilatları
-    const tumDosyalar = [...(davalar || []), ...(icralar || [])] as Record<string, unknown>[];
-    tumDosyalar.forEach((dosya) => {
-      const tahsilatlar = (dosya.tahsilatlar || []) as Array<Record<string, unknown>>;
-      tahsilatlar.forEach((th) => {
-        if (!tarihIcindeMi(th.tarih as string)) return;
-        const tutar = Number(th.tutar || 0);
-        if (th.tur === 'akdi_vekalet') akdiVekaletUcreti += tutar;
-        else if (th.tur === 'hakediş') karsiVekaletHakedis += tutar;
-        else if (th.tur === 'tahsilat') digerGelir += tutar;
-      });
-    });
-
-    // Danışmanlık
-    (danismanliklar || []).forEach((d) => {
-      const tarih = (d as Record<string, unknown>).sonucTarih as string || (d as Record<string, unknown>).tarih as string;
-      if (tarihIcindeMi(tarih)) {
-        danismanlikGeliri += safeNum(d.tahsilEdildi);
-      }
-    });
-
-    // Arabuluculuk
-    (arabuluculuklar || []).forEach((a) => {
-      const tarih = a.sonucTarih || a.basvuruTarih;
-      if (tarihIcindeMi(tarih)) {
-        arabuluculukGeliri += safeNum(a.tahsilEdildi);
-      }
-    });
-
-    // İhtarname
-    (ihtarnameler || []).forEach((ih) => {
-      if (tarihIcindeMi(ih.tarih)) {
-        ihtarnameGeliri += safeNum(ih.tahsilEdildi);
-      }
-    });
-
-    const toplamGelir = akdiVekaletUcreti + karsiVekaletHakedis + danismanlikGeliri + arabuluculukGeliri + ihtarnameGeliri + digerGelir;
-
-    // GİDERLER
-    let buroGiderToplam = 0;
-    const buroGiderKategori: Record<string, number> = {};
-    let dosyaMasraflari = 0;
-
-    // Büro giderleri
-    (giderler || []).forEach((g) => {
-      if (!tarihIcindeMi(g.tarih)) return;
-      const tutar = g.netTutar || g.tutar || 0;
-      buroGiderToplam += tutar;
-      const kat = g.kategori || 'Diğer';
-      buroGiderKategori[kat] = (buroGiderKategori[kat] || 0) + tutar;
-    });
-
-    // Dosya masrafları
-    tumDosyalar.forEach((dosya) => {
-      const harcamalar = (dosya.harcamalar || []) as Array<Record<string, unknown>>;
-      harcamalar.forEach((h) => {
-        if (tarihIcindeMi(h.tarih as string)) {
-          dosyaMasraflari += Number(h.tutar || 0);
-        }
-      });
-    });
-
-    // İhtarname noter masrafları
-    (ihtarnameler || []).forEach((ih) => {
-      if (tarihIcindeMi(ih.tarih)) {
-        dosyaMasraflari += Number(ih.noterMasrafi || 0);
-      }
-    });
-
-    const toplamGider = buroGiderToplam + dosyaMasraflari;
-    const net = toplamGelir - toplamGider;
-    const karZararOrani = toplamGelir > 0 ? (net / toplamGelir) * 100 : 0;
-
-    return {
-      gelirler: {
-        akdiVekaletUcreti,
-        karsiVekaletHakedis,
-        danismanlikGeliri,
-        arabuluculukGeliri,
-        ihtarnameGeliri,
-        digerGelir,
-        toplam: toplamGelir,
-      },
-      giderler: {
-        buroGiderleri: buroGiderKategori,
-        buroGiderToplam,
-        dosyaMasraflari,
-        toplam: toplamGider,
-      },
-      net,
-      karZararOrani,
-      _fallback: true,
-    };
-  }, [davalar, icralar, danismanliklar, arabuluculuklar, ihtarnameler, giderler, yil, ay]);
+  const data = useMemo(() => karZararHesapla({
+    davalar, icralar, danismanliklar, arabuluculuklar, ihtarnameler, giderler,
+  }, yil, ay), [davalar, icralar, danismanliklar, arabuluculuklar, ihtarnameler, giderler, yil, ay]);
+  const queries = [davaQuery, icraQuery, danismanlikQuery, arabuluculukQuery, ihtarnameQuery, giderQuery];
+  return {
+    data,
+    isPending: queries.some((query) => query.isPending),
+    isError: queries.some((query) => query.isError),
+  };
 }
 
 // ── KarZararTab Bileşeni ──────────────────────────────────────
-export function KarZararTab({ yil, setYil, ay, setAy }: KarZararTabProps) {
-  const { data: rpcKarZarar, isLoading } = useBuroKarZarar(yil, ay || undefined);
-  const fallback = useKarZararFallback(yil, ay || undefined);
+export function KarZararTab(props: KarZararTabProps) {
+  const { data, isPending } = useBuroKarZarar(props.yil, props.ay || undefined);
+  if (isPending) return <div className="text-center py-8 text-text-muted text-xs">Yükleniyor...</div>;
+  if (!data) return <KarZararFallback {...props} />;
+  return <KarZararRapor {...props} karZarar={data} isFallback={false} />;
+}
+
+function KarZararFallback(props: KarZararTabProps) {
+  const { data, isPending, isError } = useKarZararFallback(props.yil, props.ay || undefined);
+  if (isError) return <div role="alert" className="text-center py-8 text-red text-xs">Finans verileri yüklenemedi. Lütfen tekrar deneyiniz.</div>;
+  if (isPending) return <div className="text-center py-8 text-text-muted text-xs">Finans verileri yükleniyor...</div>;
+  return <KarZararRapor {...props} karZarar={data} isFallback />;
+}
+
+function KarZararRapor({ yil, setYil, ay, setAy, karZarar, isFallback }: KarZararTabProps & {
+  karZarar: Record<string, unknown>;
+  isFallback: boolean;
+}) {
   const buYil = new Date().getFullYear();
-
-  if (isLoading) return <div className="text-center py-8 text-text-muted text-xs">Yükleniyor...</div>;
-
-  // RPC verisi varsa kullan, yoksa fallback
-  const karZarar = rpcKarZarar || fallback;
-  const isFallback = !rpcKarZarar;
 
   const gelirler = (karZarar?.gelirler || {}) as Record<string, unknown>;
   const giderler = (karZarar?.giderler || {}) as Record<string, unknown>;
@@ -226,7 +138,7 @@ export function KarZararTab({ yil, setYil, ay, setAy }: KarZararTabProps) {
             ) : (
               <KzRow label="Büro Giderleri" value={Number(giderler.buroGiderToplam || giderler.buroGiderleri || 0)} color="text-red" />
             )}
-            <KzRow label="Dosya Masrafları" value={Number(giderler.dosyaMasraflari || 0)} color="text-red" />
+            <KzRow label="Büroya Ait Dosya Maliyetleri" value={Number(giderler.dosyaMasraflari || 0)} color="text-red" />
             <div className="border-t border-border pt-2">
               <KzRow label="TOPLAM GİDER" value={Number(giderler.toplam || 0)} color="text-red" bold />
             </div>

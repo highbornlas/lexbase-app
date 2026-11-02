@@ -4,6 +4,8 @@
    React/JSX karşılığı. InfoModal içinde kullanılır.
    ══════════════════════════════════════════════════════════════ */
 
+import { APP_VERSION, CHANGELOG } from './version';
+
 // ── Ortak tablo stili ──
 const TH = 'text-left px-3 py-2 text-[11px] font-semibold text-text-muted border-b border-border/50 bg-surface2/50';
 const TD = 'px-3 py-2 text-[12px] text-text-muted border-b border-border/30';
@@ -230,13 +232,10 @@ export function Hakkimizda() {
    6. SÜRÜM NOTLARI
    ═══════════════════════════════════════════════ */
 export function SurumNotlari() {
-  const versions = [
-    { ver: 'v2.1.0', tarih: 'Mart 2026', guncel: true, items: ['🛡️ IP Loglama & Güvenlik: Tüm giriş/çıkış işlemlerinde IP adresi, konum ve cihaz bilgisi kaydı','📜 KVKK Uyumluluk: Yasal belgeler eklendi','🍪 Consent Banner: KVKK uyumlu çerez/veri kullanım onay mekanizması','📋 Kayıt KVKK Onayı: Kayıt formuna KVKK aydınlatma metni onay kutusu'] },
-    { ver: 'v2.0.0', tarih: 'Şubat 2026', items: ['💰 Finans Sistemi Yeniden Tasarımı: 6 sekmeli yeni finans modülü','📊 Finans Motoru: Bağımsız hesaplama motoru','🏦 Banka Widget: Zengin banka seçim widget\'ı','🔄 Veri Göçü: Otomatik migrasyon'] },
-    { ver: 'v1.8.0', tarih: 'Ocak 2026', items: ['👑 Admin Panel: Standalone admin paneli','🔐 Lisans Sistemi: Plan bazlı özellik kısıtlamaları','📨 E-posta Bildirimleri: Otomatik bildirim altyapısı'] },
-    { ver: 'v1.5.0', tarih: 'Aralık 2025', items: ['⚖️ İcra Modülü: İcra dosya yönetimi','📱 PWA Desteği: Mobil cihazlarda uygulama olarak kurulabilme','🌙 Karanlık Mod: Göz dostu karanlık tema'] },
-    { ver: 'v1.0.0', tarih: 'Kasım 2025', items: ['🚀 İlk Sürüm: Dosya yönetimi, müvekkil takibi, duruşma takvimi','☁️ Cloud Sync: Supabase tabanlı bulut senkronizasyon','🎨 Modern Arayüz: Gold tema, responsive tasarım'] },
-  ];
+  const versions = CHANGELOG.map((release) => ({
+    ver: `v${release.version}`, tarih: release.date,
+    guncel: release.version === APP_VERSION, items: release.changes,
+  }));
   return (
     <>
       <P>LexBase sürekli gelişiyor. İşte son güncellemeler ve iyileştirmeler:</P>
