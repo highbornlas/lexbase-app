@@ -28,7 +28,7 @@ The prior v6 source is retained in supabase/rollback/invite-user-v6.ts.
 
 ## Verification
 
-- Application regression suite: 95 passing assertions.
+- Application regression suite before build-config guard: 95 passing assertions.
 - Local Postgres summary fixture: 34; profit/loss parity: 16.
 - Cash/lifecycle fixtures: 29 and 12; legacy projection: 21.
 - Real UI component fixture: failed save preserves inputs; retry uses one ID
@@ -58,3 +58,13 @@ the known live receipt options and interest management route are preserved.
 Historical unclassified receipts/costs require reconciliation, not automatic
 income or debt creation. Real invitation acceptance, all device layouts and
 all approval decision paths are not certified by the component fixtures.
+
+## Initial Publish And Recovery
+
+The initial web upload (version a9583157-6b5a-4a1f-b28d-7d61c096391c)
+passed compilation but failed authenticated browser postflight: public Supabase
+build variables were absent from the managed checkout. It was immediately
+rolled back to c9c1b4da-8879-4c1e-a3e0-e2550d07cfee. This was not a successful
+release acceptance. The retry retains the prepared 2.3.1 version and explicitly
+loads the existing original checkout .env.local without changing credentials.
+A production config guard now refuses absent configuration or private keys.
