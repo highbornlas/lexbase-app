@@ -3,6 +3,15 @@
   "unreleased": [],
   "releases": [
     {
+      "version": "2.3.3",
+      "date": "2026-11-17",
+      "changes": [
+        "İcra detay ekranındaki sekmeler ve ağır formlar ihtiyaç halinde yüklenecek şekilde ayrıldı; başlangıç JavaScript yükü azaltıldı.",
+        "İcra detayında ilişkili müvekkil ve dava kayıtları için tüm listeler yerine hedefli sorgular kullanılmaya başlandı.",
+        "İcra formu ve detay bileşenleri bakım kolaylığı için sadeleştirildi; mevcut hesaplama ve ekran davranışlarını koruyan testler eklendi."
+      ]
+    },
+    {
       "version": "2.3.2",
       "date": "2026-11-02",
       "changes": [
