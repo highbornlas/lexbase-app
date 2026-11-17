@@ -1,0 +1,49 @@
+{
+  "route": "/(app)/icra/[id]/page",
+  "scope": "Page client-boundary static chunks; excludes async tabs, framework/layout-only chunks and CSS. Not a browser timing measurement.",
+  "chunkCount": 8,
+  "bytes": 327599,
+  "gzipBytes": 88781,
+  "files": [
+    {
+      "file": "static/chunks/6622-83c08d7b6989e465.js",
+      "bytes": 205923,
+      "gzipBytes": 54503
+    },
+    {
+      "file": "static/chunks/1935-6a290a211473d94b.js",
+      "bytes": 14253,
+      "gzipBytes": 4967
+    },
+    {
+      "file": "static/chunks/4109-5213b4546aa8fab8.js",
+      "bytes": 8799,
+      "gzipBytes": 3216
+    },
+    {
+      "file": "static/chunks/8500-98e13bcce54aa7a0.js",
+      "bytes": 8746,
+      "gzipBytes": 3521
+    },
+    {
+      "file": "static/chunks/8605-aeb74fc211c56e86.js",
+      "bytes": 8969,
+      "gzipBytes": 2949
+    },
+    {
+      "file": "static/chunks/4023-eb34f2cd93383fbb.js",
+      "bytes": 11878,
+      "gzipBytes": 4554
+    },
+    {
+      "file": "static/chunks/4640-f0d3b3e17341d53d.js",
+      "bytes": 7909,
+      "gzipBytes": 2105
+    },
+    {
+      "file": "static/chunks/app/(app)/icra/%5Bid%5D/page-5fb88f3bf976719e.js",
+      "bytes": 61122,
+      "gzipBytes": 12966
+    }
+  ]
+}

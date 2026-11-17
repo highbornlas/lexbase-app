@@ -1,0 +1,95 @@
+{
+  "sourceCommit": "2a65feab3d6d1e5294f7fa7f360c2d0866dcf1a1",
+  "route": "/(app)/icra/[id]/page",
+  "scope": "Page client-boundary static chunks; excludes async tabs, framework/layout-only chunks and CSS. Not a browser timing measurement.",
+  "chunkCount": 17,
+  "bytes": 656937,
+  "gzipBytes": 172681,
+  "files": [
+    {
+      "file": "static/chunks/6622-83c08d7b6989e465.js",
+      "bytes": 205923,
+      "gzipBytes": 54503
+    },
+    {
+      "file": "static/chunks/1935-6a290a211473d94b.js",
+      "bytes": 14253,
+      "gzipBytes": 4967
+    },
+    {
+      "file": "static/chunks/4109-5213b4546aa8fab8.js",
+      "bytes": 8799,
+      "gzipBytes": 3216
+    },
+    {
+      "file": "static/chunks/8500-98e13bcce54aa7a0.js",
+      "bytes": 8746,
+      "gzipBytes": 3521
+    },
+    {
+      "file": "static/chunks/4023-eb34f2cd93383fbb.js",
+      "bytes": 11878,
+      "gzipBytes": 4554
+    },
+    {
+      "file": "static/chunks/5639-f7575d46e8183e8a.js",
+      "bytes": 12608,
+      "gzipBytes": 3637
+    },
+    {
+      "file": "static/chunks/413-c54c3d7d4275f394.js",
+      "bytes": 10322,
+      "gzipBytes": 3185
+    },
+    {
+      "file": "static/chunks/8278-be72df4ea801885e.js",
+      "bytes": 70761,
+      "gzipBytes": 21492
+    },
+    {
+      "file": "static/chunks/4300-8e8fa0add0211317.js",
+      "bytes": 17826,
+      "gzipBytes": 4777
+    },
+    {
+      "file": "static/chunks/5829-79dfe2dfb119d581.js",
+      "bytes": 37998,
+      "gzipBytes": 10724
+    },
+    {
+      "file": "static/chunks/9216-7eeb49b83ed81f60.js",
+      "bytes": 24618,
+      "gzipBytes": 5063
+    },
+    {
+      "file": "static/chunks/5690-b573bc904f5d2cbb.js",
+      "bytes": 15082,
+      "gzipBytes": 3595
+    },
+    {
+      "file": "static/chunks/4277-94e0999018bdfa31.js",
+      "bytes": 69394,
+      "gzipBytes": 17847
+    },
+    {
+      "file": "static/chunks/2998-401d0aef66db56e4.js",
+      "bytes": 8937,
+      "gzipBytes": 2086
+    },
+    {
+      "file": "static/chunks/8035-a598ed0aea0ab129.js",
+      "bytes": 28272,
+      "gzipBytes": 7702
+    },
+    {
+      "file": "static/chunks/1569-43d5f1ef81c7901a.js",
+      "bytes": 12970,
+      "gzipBytes": 4071
+    },
+    {
+      "file": "static/chunks/app/(app)/icra/%5Bid%5D/page-adc0020662919a92.js",
+      "bytes": 98550,
+      "gzipBytes": 17741
+    }
+  ]
+}

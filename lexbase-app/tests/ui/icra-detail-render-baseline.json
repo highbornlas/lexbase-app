@@ -1,0 +1,21 @@
+{
+  "overview-empty": "c92b0775bc7df64cf5fd9895401cf70c0b2175770670f464370dbd6170581cff",
+  "overview-populated": "6285d76075f4039e6bfa8850c93a6b9862c96e095bb7c7e8c74675ccebc3107a",
+  "overview-debtor": "068f8923e8f53d40e8e0f6b819717e12192d82ed14057c595295526844a95e69",
+  "TebligatlarTab-empty": "01594f24290cf1bd16bd2afeafbef663739b2695ba80f5b22a7b9fb0e4e0c2a5",
+  "HacizTakibiSection-empty": "1b999a056403db130226991efcde38a8f2d63c764cd20920e64c8133d084f075",
+  "OdemePlaniSection-empty": "7e6994ee97f2c33c395fb099660ad38ae9b25e203f0d62a2d6dc680832ce936a",
+  "BorcluBilgileriSection-empty": "25608d135af2b658f98b4fd2cf0c8292ad28a4d89dfec368ae5ef3e548736f1e",
+  "TebligatlarTab-populated": "cb95263869f912aa10885d1527254088d8d08e80be2a4637881ded02d27ecfd2",
+  "HacizTakibiSection-populated": "8426bba216750f737a28dab7aa7c7ecc2af1935219470e3fa93de190cea5f1a4",
+  "OdemePlaniSection-populated": "6b81687a2fd02016068895b4064f960af77cb158f424fad7be81eea5ca0e2307",
+  "BorcluBilgileriSection-populated": "beaaa6122dda56863f52bf27990c4af42c5f2a8ed556a43e6891dbe8800af7eb",
+  "deadlines-false": "0f05862f32c4a6610ae58b74c25451293c9bb4d01899f1efb57f834bf4a92ba3",
+  "receipts-false": "73400341194e509abb8f6b749ae9168b011092aee6ed3e05c27d9aba9ba838ad",
+  "notes-false": "d5677ac07885047160987c303b6834f15c0071c8c862edc43da015528a8569c8",
+  "agreement-false": "08b3e63a7d2db6d95af0f57a0e1c694da6e837d7f133419fd48acd9375acf82f",
+  "deadlines-true": "7e445a1ee022b7963f58471a6b96d2e1093bea6ceaae27417789ea9fe97b936f",
+  "receipts-true": "df4357b4d6e93942067ee12e940c9c8e958068434a37abb5af62a22f90ce1d2b",
+  "notes-true": "ad52506f21bf1789448710d5c5310a674071a0f156516392565df6ed03fad46d",
+  "agreement-true": "b7a3bac9bb010e99e17bc9a5df3dc9301b0e77fe27d0ed132b3e20dbb6bf74f5"
+}
