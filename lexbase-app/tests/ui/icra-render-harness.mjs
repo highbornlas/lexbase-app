@@ -7,6 +7,9 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { icraDetailCases } from './icra-detail-cases.mjs';
 
+// Baseline markup was captured in Istanbul; pin both clock and timezone in CI.
+process.env.TZ = 'Europe/Istanbul';
+
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const require = createRequire(new URL('../../package.json', import.meta.url));
 class FixedDate extends Date {
