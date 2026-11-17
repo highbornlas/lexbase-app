@@ -6,8 +6,6 @@ import { fmt } from '@/lib/utils';
 import { useTumAvansHareketleri, hesaplaTumKasalar, AVANS_ESIK } from '@/lib/hooks/useAvansKasasi';
 import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
 import { MiniKpi } from './shared';
-import { exportAvansKasaPDF } from '@/lib/export/pdfExport';
-import { exportAvansKasaXLS } from '@/lib/export/excelExport';
 
 /* ══════════════════════════════════════════════════════════════
    Avans Kasası Sekmesi — Finans sayfasında tüm müvekkil kasaları
@@ -19,6 +17,7 @@ export function AvansKasaTab() {
   const muvQuery = useMuvekkillar();
   const { data: muvekkillar } = muvQuery;
   const [arama, setArama] = useState('');
+  const [exportHatasi, setExportHatasi] = useState('');
   const [durumFiltre, setDurumFiltre] = useState<'hepsi' | 'kritik' | 'normal'>('hepsi');
 
   const muvAdMap = useMemo(() => {
@@ -58,6 +57,19 @@ export function AvansKasaTab() {
     return sonuc;
   }, [kasalar, durumFiltre, arama]);
 
+  async function indir(format: 'pdf' | 'excel') {
+    setExportHatasi('');
+    try {
+      if (format === 'pdf') {
+        const { exportAvansKasaPDF } = await import('@/lib/export/pdfExport');
+        exportAvansKasaPDF({ kasalar: gosterilenler, toplamBakiye: gosterilenler.reduce((t, k) => t + k.bakiye, 0) });
+      } else {
+        const { exportAvansKasaXLS } = await import('@/lib/export/excelExport');
+        exportAvansKasaXLS(gosterilenler);
+      }
+    } catch { setExportHatasi('Rapor oluşturulamadı. Lütfen tekrar deneyiniz.'); }
+  }
+
   if (kasaQuery.isPending || muvQuery.isPending) {
     return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-gold border-t-transparent rounded-full animate-spin" /></div>;
   }
@@ -66,6 +78,7 @@ export function AvansKasaTab() {
 
   return (
     <div className="space-y-5">
+      {exportHatasi && <p role="alert" className="text-xs text-red">{exportHatasi}</p>}
       {/* KPI Kartları */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <MiniKpi label="Müvekkillerin Kalan Avansı" value={fmt(toplamEmanet)} color="text-green" />
@@ -104,11 +117,11 @@ export function AvansKasaTab() {
         </div>
         <div className="ml-auto flex gap-1">
           <button
-            onClick={() => exportAvansKasaPDF({ kasalar: gosterilenler, toplamBakiye })}
+            onClick={() => void indir('pdf')}
             className="px-3 py-1.5 text-xs font-medium text-text-muted bg-surface border border-border rounded-lg hover:text-text hover:border-gold/30 transition-colors"
           >PDF</button>
           <button
-            onClick={() => exportAvansKasaXLS(gosterilenler)}
+            onClick={() => void indir('excel')}
             className="px-3 py-1.5 text-xs font-medium text-text-muted bg-surface border border-border rounded-lg hover:text-text hover:border-gold/30 transition-colors"
           >Excel</button>
         </div>

@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useKasaIslemi } from './useKasaIslemi';
 import { createClient } from '@/lib/supabase/client';
 import { useBuroId } from './useBuro';
+import { raporKayitlariniOku } from '@/lib/data/raporKayitlari';
 export { hesaplaKasaOzet, hesaplaTumKasalar } from '@/lib/finans/avansKurallari';
 
 // ── Avans Hareket Tipi ──────────────────────────────────────
@@ -57,13 +58,7 @@ export function useAvansHareketleri(muvId?: string) {
     queryFn: async () => {
       if (!buroId || !muvId) return [];
       const supabase = createClient();
-      const { data, error } = await supabase
-        .from('avans_hareketleri')
-        .select('id, data')
-        .eq('buro_id', buroId)
-        .eq('data->>muvId', muvId);
-
-      if (error) throw error;
+      const data = await raporKayitlariniOku(supabase, 'avans_hareketleri', buroId, muvId);
       return (data || [])
         .map((r) => ({ ...(r.data as object), id: r.id }) as AvansHareket)
         .filter((h) => !h._silindi)
@@ -82,12 +77,7 @@ export function useTumAvansHareketleri() {
     queryFn: async () => {
       if (!buroId) return [];
       const supabase = createClient();
-      const { data, error } = await supabase
-        .from('avans_hareketleri')
-        .select('id, data')
-        .eq('buro_id', buroId);
-
-      if (error) throw error;
+      const data = await raporKayitlariniOku(supabase, 'avans_hareketleri', buroId);
       return (data || [])
         .map((r) => ({ ...(r.data as object), id: r.id }) as AvansHareket)
         .filter((h) => !h._silindi);

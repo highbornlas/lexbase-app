@@ -6,6 +6,8 @@ import { useModalDraft } from '@/lib/hooks/useModalDraft';
 import { fmt } from '@/lib/utils';
 import { bruttenNete, nettenBrute } from '@/lib/utils/finans';
 import { gelirTahsilatiMi } from '@/lib/finans/gelirKurallari';
+import { paraTutariGecerliMi } from '@/lib/finans/giderKurallari';
+import { raporTarihi } from '@/lib/finans/raporHesaplari';
 import { DAVA_ODEME_TURLERI, ICRA_ODEME_TURLERI, odemeFormTuru, odemeKayitTuru } from '@/lib/finans/odemeTurleri';
 
 /* ══════════════════════════════════════════════════════════════
@@ -78,8 +80,17 @@ function TahsilatModalForm({ open, onClose, onKaydet, tahsilat, draftScope, icra
 
   async function handleSubmit() {
     if (kayitKilidi.current) return;
-    if (!Number.isFinite(form.tutar) || form.tutar <= 0) {
-      setHata('Tutar giriniz.');
+    if (!paraTutariGecerliMi(form.tutar) || !raporTarihi(form.tarih)) {
+      setHata('Geçerli tarih ve sıfırdan büyük, en fazla iki ondalıklı tutar giriniz.');
+      return;
+    }
+    if (!odemeTurleri.some(t => t.value === form.tur)) {
+      setHata('Geçerli bir ödeme türü seçiniz.');
+      return;
+    }
+    if (form.makbuzKesildi && gelirTahsilatiMi(form.tur) && (!raporTarihi(form.makbuzTarih)
+      || [form.kdvOrani ?? 0, form.stopajOrani ?? 0].some(o => !Number.isFinite(o) || o < 0 || o > 100))) {
+      setHata('Geçerli makbuz tarihi ve 0 ile 100 arasında vergi oranları giriniz.');
       return;
     }
     setHata('');

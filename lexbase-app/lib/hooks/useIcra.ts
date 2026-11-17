@@ -6,6 +6,7 @@ import { useRecordLifecycle } from './useRecordLifecycle';
 import { masraflariKoruyarakDosyaKaydet } from '@/lib/data/financeCashTransaction';
 import { raporKaydiGorunurMu } from '@/lib/finans/gelirKurallari';
 import { useBuroId } from './useBuro';
+import { raporKayitlariniOku } from '@/lib/data/raporKayitlari';
 
 // ── İcra Tip Tanımı (UYAP Uyumlu) ──────────────────────────
 export interface Icra {
@@ -155,7 +156,7 @@ export function useIcralar(includeArchived = false) {
     queryFn: async () => {
       if (!buroId) return [];
       const supabase = createClient();
-      const { data, error } = await supabase
+      const { data, error } = includeArchived ? { data: await raporKayitlariniOku(supabase, 'icra', buroId), error: null } : await supabase
         .from('icra')
         .select('id, data')
         .eq('buro_id', buroId);

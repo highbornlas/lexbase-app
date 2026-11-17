@@ -5,8 +5,9 @@ import { fmt } from '@/lib/utils';
 import { EmptyState } from './shared';
 
 export function UyarilarTab() {
-  const { data: uyarilar, isLoading } = useFinansUyarilar();
+  const { data: uyarilar, isLoading, isError } = useFinansUyarilar();
 
+  if (isError) return <div role="alert" className="py-8 text-center text-xs text-red">Finans uyarıları yüklenemedi. Lütfen tekrar deneyiniz.</div>;
   if (isLoading) return <div className="text-center py-8 text-text-muted text-xs">Yükleniyor...</div>;
 
   const liste = Array.isArray(uyarilar) ? uyarilar : [];

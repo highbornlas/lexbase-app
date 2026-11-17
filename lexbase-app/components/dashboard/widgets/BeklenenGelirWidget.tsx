@@ -34,7 +34,9 @@ const KAYNAK_ICON: Record<string, string> = {
 };
 
 export function BeklenenGelirWidget() {
-  const { data, isLoading } = useBeklenenGelir();
+  const { data, isLoading, isError } = useBeklenenGelir();
+
+  if (isError) return <div role="alert" className="p-3 text-xs text-red">Beklenen ücretler yüklenemedi.</div>;
 
   if (isLoading) {
     return (

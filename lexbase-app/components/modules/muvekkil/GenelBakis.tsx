@@ -255,7 +255,7 @@ export function GenelBakis({
         <QuickCard
           icon="💸"
           label="Masraflar"
-          value={fmt(masraflar?.toplam ?? 0)}
+          value={finansOzet ? fmt(masraflar?.toplam ?? 0) : '—'}
           sub={vekalet?.akdi?.kalan ? `${fmt(vekalet.akdi.kalan)} alacak` : undefined}
           valueColor={(masraflar?.toplam ?? 0) > 0 ? 'text-text' : 'text-text-dim'}
         />

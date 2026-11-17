@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { fmt } from '@/lib/utils';
-import { safeNum, tahsilatToplam } from '@/lib/utils/finans';
+import { useDashboardFinans } from '@/lib/hooks/useDashboardFinans';
 
 /* ══════════════════════════════════════════════════════════════
    KPI Widget — Üst sıra KPI kartları (genişletilmiş)
@@ -16,7 +16,6 @@ interface KpiWidgetProps {
   danismanliklar: Array<Record<string, unknown>>;
   arabuluculuklar: Array<Record<string, unknown>>;
   ihtarnameler: Array<Record<string, unknown>>;
-  yilNet: number;
 }
 
 function KpiCard({ icon, value, label, sub, accent, color, href, onClick }: {
@@ -59,7 +58,9 @@ function KpiCard({ icon, value, label, sub, accent, color, href, onClick }: {
   );
 }
 
-export function KpiWidget({ muvekkillar, davalar, icralar, danismanliklar, arabuluculuklar, ihtarnameler, yilNet }: KpiWidgetProps) {
+export function KpiWidget({ muvekkillar, davalar, icralar }: KpiWidgetProps) {
+  const finans = useDashboardFinans();
+  const yilNet = finans.data?.yilNet ?? 0;
   const kpis = useMemo(() => {
     const muvSayi = muvekkillar?.length ?? 0;
     const muvGercek = muvekkillar?.filter((m) => m.tip === 'gercek').length ?? 0;
@@ -87,108 +88,9 @@ export function KpiWidget({ muvekkillar, davalar, icralar, danismanliklar, arabu
       }
     });
 
-    // Bu ay tahsilat (tüm kaynaklardan)
-    const buAy = bugun.getMonth();
-    const buYil = bugun.getFullYear();
-    let buAyTahsilat = 0;
 
-    // Dava + İcra tahsilatları (tahsilatlar[] dizisi — tek kaynak)
-    [...(davalar || []), ...(icralar || [])].forEach((d) => {
-      (d.tahsilatlar as Array<{ tutar: number; tarih?: string }> | undefined)?.forEach((t) => {
-        if (!t.tarih) return;
-        const td = new Date(t.tarih);
-        if (td.getMonth() === buAy && td.getFullYear() === buYil) {
-          buAyTahsilat += safeNum(t.tutar);
-        }
-      });
-    });
-
-    // Danışmanlık tahsilatları (henüz tahsilatlar[] dizisi yok, tahsilEdildi kullan)
-    (danismanliklar || []).forEach((d) => {
-      const tutar = safeNum(d.tahsilEdildi);
-      if (tutar <= 0) return;
-      const tarih = (d.sonucTarih || d.tarih) as string;
-      if (!tarih) return;
-      const td = new Date(tarih);
-      if (td.getMonth() === buAy && td.getFullYear() === buYil) buAyTahsilat += tutar;
-    });
-
-    // Arabuluculuk tahsilatları
-    (arabuluculuklar || []).forEach((a) => {
-      const tutar = safeNum(a.tahsilEdildi);
-      if (tutar <= 0) return;
-      const tarih = (a.sonucTarih || a.basvuruTarih) as string;
-      if (!tarih) return;
-      const td = new Date(tarih);
-      if (td.getMonth() === buAy && td.getFullYear() === buYil) buAyTahsilat += tutar;
-    });
-
-    // İhtarname tahsilatları
-    (ihtarnameler || []).forEach((ih) => {
-      const tutar = safeNum(ih.tahsilEdildi);
-      if (tutar <= 0) return;
-      const tarih = ih.tarih as string;
-      if (!tarih) return;
-      const td = new Date(tarih);
-      if (td.getMonth() === buAy && td.getFullYear() === buYil) buAyTahsilat += tutar;
-    });
-
-    // ── Ücret Alacağı: sözleşme bedeli - tahsil edilen ──
-    // Tek kaynak kuralı: tahsilatlar[] varsa onu kullan, yoksa tahsilEdildi fallback
-    let ucretAlacagi = 0;
-
-    // Dava: ucret - tahsilatlar toplamı (tek kaynak: tahsilatlar[])
-    (davalar || []).forEach((d) => {
-      if (d.durum === 'Kapalı') return;
-      const sozlesme = safeNum(d.ucret);
-      if (sozlesme <= 0) return;
-      const tahArr = d.tahsilatlar as Array<{ tutar?: number }> | undefined;
-      const tahsil = tahArr?.length ? tahsilatToplam(tahArr) : safeNum(d.tahsilEdildi);
-      const kalan = sozlesme - tahsil;
-      if (kalan > 0) ucretAlacagi += kalan;
-    });
-
-    // İcra: vekaletUcreti - tahsilatlar toplamı (tek kaynak: tahsilatlar[])
-    (icralar || []).forEach((ic) => {
-      if (ic.durum === 'Kapandı') return;
-      const sozlesme = safeNum(ic.vekaletUcreti);
-      if (sozlesme <= 0) return;
-      const tahArr = ic.tahsilatlar as Array<{ tutar?: number }> | undefined;
-      const tahsil = tahArr?.length ? tahsilatToplam(tahArr) : safeNum(ic.tahsil);
-      const kalan = sozlesme - tahsil;
-      if (kalan > 0) ucretAlacagi += kalan;
-    });
-
-    // Danışmanlık: ucret - tahsilEdildi
-    (danismanliklar || []).forEach((d) => {
-      if (d.durum === 'İptal') return;
-      const sozlesme = safeNum(d.ucret);
-      if (sozlesme <= 0) return;
-      const tahsil = safeNum(d.tahsilEdildi);
-      const kalan = sozlesme - tahsil;
-      if (kalan > 0) ucretAlacagi += kalan;
-    });
-
-    // Arabuluculuk: ucret - tahsilEdildi
-    (arabuluculuklar || []).forEach((a) => {
-      const sozlesme = safeNum(a.ucret);
-      if (sozlesme <= 0) return;
-      const tahsil = safeNum(a.tahsilEdildi);
-      const kalan = sozlesme - tahsil;
-      if (kalan > 0) ucretAlacagi += kalan;
-    });
-
-    // İhtarname: ucret - tahsilEdildi
-    (ihtarnameler || []).forEach((ih) => {
-      const sozlesme = safeNum(ih.ucret);
-      if (sozlesme <= 0) return;
-      const tahsil = safeNum(ih.tahsilEdildi);
-      const kalan = sozlesme - tahsil;
-      if (kalan > 0) ucretAlacagi += kalan;
-    });
-
-    return { muvSayi, muvGercek, muvTuzel, aktifDava, davaSayi, aktifIcra, icraSayi, buHaftaDurusma, buAyTahsilat, ucretAlacagi };
-  }, [muvekkillar, davalar, icralar, danismanliklar, arabuluculuklar, ihtarnameler]);
+    return { muvSayi, muvGercek, muvTuzel, aktifDava, davaSayi, aktifIcra, icraSayi, buHaftaDurusma };
+  }, [muvekkillar, davalar, icralar]);
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
@@ -196,9 +98,9 @@ export function KpiWidget({ muvekkillar, davalar, icralar, danismanliklar, arabu
       <KpiCard icon="📁" value={kpis.aktifDava} label="DERDEST DAVA" sub={`${kpis.davaSayi} dosya`} color="text-gold" href="/davalar" />
       <KpiCard icon="⚡" value={kpis.aktifIcra} label="DERDEST İCRA" sub={`${kpis.icraSayi} dosya`} color="text-red" href="/icra" />
       <KpiCard icon="📅" value={kpis.buHaftaDurusma} label="BU HAFTA DURUŞMA" sub={`${kpis.buHaftaDurusma} adet`} color="text-red" accent href="/takvim" />
-      <KpiCard icon="💰" value={fmt(kpis.buAyTahsilat)} label="BU AY TAHSİLAT" color="text-green" href="/finans" />
-      <KpiCard icon="📊" value={fmt(kpis.ucretAlacagi)} label="ÜCRET ALACAĞI" color={kpis.ucretAlacagi > 0 ? 'text-orange-400' : 'text-green'} href="/finans" />
-      <KpiCard icon="💎" value={fmt(yilNet)} label={`${new Date().getFullYear()} NET GELİR`} sub="Kâr" color={yilNet >= 0 ? 'text-green' : 'text-red'} href="/finans" />
+      <KpiCard icon="💰" value={finans.data ? fmt(finans.data.buAyTahsilat) : '—'} label="BU AY BÜRO GELİRİ" sub={finans.isError ? 'Veri yüklenemedi' : undefined} color="text-green" href="/finans" />
+      <KpiCard icon="📊" value={finans.data ? fmt(finans.data.ucretAlacagi) : '—'} label="ÜCRET ALACAĞI" color="text-orange-400" href="/finans" />
+      <KpiCard icon="💎" value={finans.data ? fmt(yilNet) : '—'} label={`${new Date().getFullYear()} NET GELİR`} sub="Büro gelirleri eksi büro maliyetleri" color={yilNet >= 0 ? 'text-green' : 'text-red'} href="/finans" />
     </div>
   );
 }

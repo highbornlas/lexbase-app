@@ -6,11 +6,12 @@ import { fmt } from '@/lib/utils';
 import { MiniKpi, EmptyState } from './shared';
 
 export function KarlilikTab() {
-  const { data: karlilik, isLoading } = useDosyaKarlilik();
+  const { data: karlilik, isLoading, isError } = useDosyaKarlilik();
   const [sayfa, setSayfa] = useState(1);
   const [arama, setArama] = useState('');
   const sayfaBoyutu = 25;
 
+  if (isError) return <div role="alert" className="py-8 text-center text-xs text-red">Kârlılık verileri yüklenemedi. Lütfen tekrar deneyiniz.</div>;
   if (isLoading) return <div className="text-center py-8 text-text-muted text-xs">Yükleniyor...</div>;
 
   const tumDosyalar = ((karlilik?.dosyalar as Record<string, unknown>[]) || []);
@@ -36,7 +37,7 @@ export function KarlilikTab() {
       {/* Özet KPI */}
       <div className="grid grid-cols-5 gap-3 mb-5">
         <MiniKpi label="Dosya Sayısı" value={String(ozet.dosyaSayisi || 0)} />
-        <MiniKpi label="Toplam Masraf" value={fmt(ozet.topMasraf || 0)} />
+        <MiniKpi label="Büroya Ait Masraf" value={fmt(ozet.topMasraf || 0)} />
         <MiniKpi label="Toplam Gelir" value={fmt(ozet.topGelir || 0)} color="text-green" />
         <MiniKpi label="Net" value={fmt(ozet.topNet || 0)} color={(ozet.topNet || 0) >= 0 ? 'text-green' : 'text-red'} />
         <MiniKpi label="Ort. Kârlılık" value={`%${(ozet.ortKarlilik || 0).toFixed(1)}`} color="text-gold" />

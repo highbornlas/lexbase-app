@@ -1,14 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
-import { karZararHesapla } from '@/lib/finans/raporHesaplari';
 import { useBuroKarZarar } from '@/lib/hooks/useFinans';
-import { useDavalar } from '@/lib/hooks/useDavalar';
-import { useIcralar } from '@/lib/hooks/useIcra';
-import { useDanismanliklar } from '@/lib/hooks/useDanismanlik';
-import { useArabuluculuklar } from '@/lib/hooks/useArabuluculuk';
-import { useIhtarnameler } from '@/lib/hooks/useIhtarname';
-import { useBuroGiderleri } from '@/lib/hooks/useBuroGiderleri';
 import { fmt } from '@/lib/utils';
 import { AYLAR, KzRow } from './shared';
 
@@ -19,50 +11,15 @@ interface KarZararTabProps {
   setAy: (a: number) => void;
 }
 
-// ── Client-Side Fallback Hesaplama ────────────────────────────
-function useKarZararFallback(yil: number, ay?: number) {
-  const davaQuery = useDavalar(true);
-  const icraQuery = useIcralar(true);
-  const danismanlikQuery = useDanismanliklar(true);
-  const arabuluculukQuery = useArabuluculuklar(true);
-  const ihtarnameQuery = useIhtarnameler(true);
-  const giderQuery = useBuroGiderleri();
-  const { data: davalar } = davaQuery;
-  const { data: icralar } = icraQuery;
-  const { data: danismanliklar } = danismanlikQuery;
-  const { data: arabuluculuklar } = arabuluculukQuery;
-  const { data: ihtarnameler } = ihtarnameQuery;
-  const { data: giderler } = giderQuery;
-
-  const data = useMemo(() => karZararHesapla({
-    davalar, icralar, danismanliklar, arabuluculuklar, ihtarnameler, giderler,
-  }, yil, ay), [davalar, icralar, danismanliklar, arabuluculuklar, ihtarnameler, giderler, yil, ay]);
-  const queries = [davaQuery, icraQuery, danismanlikQuery, arabuluculukQuery, ihtarnameQuery, giderQuery];
-  return {
-    data,
-    isPending: queries.some((query) => query.isPending),
-    isError: queries.some((query) => query.isError),
-  };
-}
-
-// ── KarZararTab Bileşeni ──────────────────────────────────────
 export function KarZararTab(props: KarZararTabProps) {
-  const { data, isPending } = useBuroKarZarar(props.yil, props.ay || undefined);
-  if (isPending) return <div className="text-center py-8 text-text-muted text-xs">Yükleniyor...</div>;
-  if (!data) return <KarZararFallback {...props} />;
-  return <KarZararRapor {...props} karZarar={data} isFallback={false} />;
+  const { data, isPending, isError } = useBuroKarZarar(props.yil, props.ay || undefined);
+  if (isError) return <div role="alert" className="py-8 text-center text-xs text-red">Finans verileri yüklenemedi. Lütfen tekrar deneyiniz.</div>;
+  if (isPending || !data) return <div role="status" className="py-8 text-center text-xs text-text-muted">Finans verileri yükleniyor...</div>;
+  return <KarZararRapor {...props} karZarar={data} />;
 }
 
-function KarZararFallback(props: KarZararTabProps) {
-  const { data, isPending, isError } = useKarZararFallback(props.yil, props.ay || undefined);
-  if (isError) return <div role="alert" className="text-center py-8 text-red text-xs">Finans verileri yüklenemedi. Lütfen tekrar deneyiniz.</div>;
-  if (isPending) return <div className="text-center py-8 text-text-muted text-xs">Finans verileri yükleniyor...</div>;
-  return <KarZararRapor {...props} karZarar={data} isFallback />;
-}
-
-function KarZararRapor({ yil, setYil, ay, setAy, karZarar, isFallback }: KarZararTabProps & {
+function KarZararRapor({ yil, setYil, ay, setAy, karZarar }: KarZararTabProps & {
   karZarar: Record<string, unknown>;
-  isFallback: boolean;
 }) {
   const buYil = new Date().getFullYear();
 
@@ -162,12 +119,6 @@ function KarZararRapor({ yil, setYil, ay, setAy, karZarar, isFallback }: KarZara
         </div>
       </div>
 
-      {/* Fallback notu */}
-      {isFallback && (
-        <div className="text-center text-[10px] text-text-dim mt-2">
-          📊 Hesaplama yerel veriden yapıldı
-        </div>
-      )}
     </div>
   );
 }

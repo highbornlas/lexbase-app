@@ -79,8 +79,8 @@ export function dosyaParaOzeti(kayit: Record<string, unknown>) {
 }
 
 export function dosyaMasrafToplami(kayit: Record<string, unknown>): number {
-  const harcamalar = Array.isArray(kayit.harcamalar) ? kayit.harcamalar : [];
-  return yuvarla(harcamalar.reduce((sum, h) => sum + safeNum(h?.tutar), 0));
+  const ozet = dosyaMasrafOzeti(kayit);
+  return yuvarla(ozet.buro + ozet.muvekkil);
 }
 
 export function dosyaMasrafOzeti(kayit: Record<string, unknown>) {

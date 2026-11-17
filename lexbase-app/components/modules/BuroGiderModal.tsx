@@ -1,10 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Modal, FormGroup, FormInput, FormSelect, FormTextarea, BtnGold, BtnOutline } from '@/components/ui/Modal';
 import { useModalDraft } from '@/lib/hooks/useModalDraft';
 import { useBuroGiderKaydet, type BuroGider, GIDER_KATEGORILERI, KDV_ORANLARI } from '@/lib/hooks/useBuroGiderleri';
 import { bruttenNete, formatTL } from '@/lib/utils/finans';
+import { buroGiderKaydi } from '@/lib/finans/giderKurallari';
+import { finansBugunu } from '@/lib/finans/beklenenHesaplari';
+import { useBuroId } from '@/lib/hooks/useBuro';
 
 interface BuroGiderModalProps {
   open: boolean;
@@ -29,26 +32,21 @@ const bos: Partial<BuroGider> = {
   notlar: '',
 };
 
-export function BuroGiderModal({ open, onClose, gider }: BuroGiderModalProps) {
-  const [form, setForm] = useState<Partial<BuroGider>>({ ...bos });
-  const [initialForm, setInitialForm] = useState<Partial<BuroGider>>({ ...bos });
+export function BuroGiderModal(props: BuroGiderModalProps) {
+  const buroId = useBuroId();
+  return <BuroGiderForm key={`${buroId}-${props.open}-${props.gider?.id || 'yeni'}`} {...props} buroId={buroId} />;
+}
+
+function BuroGiderForm({ open, onClose, gider, buroId }: BuroGiderModalProps & { buroId: string | null | undefined }) {
+  const [initialForm] = useState<Partial<BuroGider>>(() => gider ? { ...gider }
+    : { ...bos, id: crypto.randomUUID(), tarih: finansBugunu() });
+  const [form, setForm] = useState<Partial<BuroGider>>(initialForm);
   const [hata, setHata] = useState('');
-  const kaydet = useBuroGiderKaydet();
-
-  useEffect(() => {
-    let init: Partial<BuroGider>;
-    if (gider) {
-      init = { ...gider };
-    } else {
-      init = { ...bos, id: crypto.randomUUID() };
-    }
-    setInitialForm(init);
-    setForm(init);
-    setHata('');
-  }, [gider, open]);
-
-  const draftKey = `buroGider_${form.id || 'yeni'}`;
-  const { isDirty, hasDraft, loadDraft, clearDraft } = useModalDraft(
+  const [kaydediliyor, setKaydediliyor] = useState(false);
+  const kayitKilidi = useRef(false);
+  const kaydet = useBuroGiderKaydet(gider || undefined);
+  const draftKey = `buroGider_${buroId}_${gider?.id || 'yeni'}`;
+  const { isDirty, hasDraft, loadDraft, clearDraft, saveDraft } = useModalDraft(
     draftKey, form as Record<string, unknown>, initialForm as Record<string, unknown>, open
   );
 
@@ -74,37 +72,39 @@ export function BuroGiderModal({ open, onClose, gider }: BuroGiderModalProps) {
   }
 
   async function handleSubmit() {
-    if (!form.kategori?.trim()) {
-      setHata('Kategori seçiniz.');
-      return;
-    }
-    if (!form.tutar || form.tutar <= 0) {
-      setHata('Tutar giriniz.');
-      return;
-    }
+    if (kayitKilidi.current) return;
+    let kayit: BuroGider;
+    try { kayit = buroGiderKaydi(form) as BuroGider; }
+    catch (error) { setHata(error instanceof Error ? error.message : 'Bilgileri kontrol ediniz.'); return; }
+    kayitKilidi.current = true;
+    setKaydediliyor(true);
     setHata('');
 
     try {
-      await kaydet.mutateAsync(form as BuroGider);
+      await kaydet.mutateAsync(kayit);
       clearDraft();
       onClose();
-    } catch {
-      setHata('Kayıt sırasında hata oluştu.');
+    } catch (error) {
+      saveDraft();
+      setHata(error instanceof Error ? error.message : 'Kayıt doğrulanamadı. Girdiğiniz bilgiler korunuyor; aynı kayıtla tekrar deneyiniz.');
+    } finally {
+      kayitKilidi.current = false;
+      setKaydediliyor(false);
     }
   }
 
   const fmtTRY = (n: number) => formatTL(n);
 
   return (
-    <Modal open={open} onClose={onClose} title={gider ? 'Gideri Düzenle' : 'Yeni Büro Gideri'} maxWidth="max-w-2xl"
-      dirty={isDirty}
-      hasDraft={hasDraft()}
-      onLoadDraft={() => { const d = loadDraft(); if (d) setForm(d as Partial<BuroGider>); clearDraft(); }}
+    <Modal open={open} onClose={() => { if (!kayitKilidi.current) onClose(); }} title={gider ? 'Gideri Düzenle' : 'Yeni Büro Gideri'} maxWidth="max-w-2xl"
+      dirty={isDirty && !kaydediliyor}
+      hasDraft={!kaydediliyor && hasDraft()}
+      onLoadDraft={() => { const d = loadDraft(); if (d) setForm({ ...d, id: gider?.id || (typeof d.id === 'string' ? d.id : initialForm.id) }); }}
       onDiscardDraft={clearDraft}
     >
-      <div className="space-y-4">
+      <fieldset disabled={kaydediliyor} className="space-y-4">
         {hata && (
-          <div className="bg-red-dim border border-red/20 rounded-lg px-3 py-2 text-xs text-red">{hata}</div>
+          <div role="alert" className="bg-red-dim border border-red/20 rounded-lg px-3 py-2 text-xs text-red">{hata}</div>
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
@@ -189,12 +189,12 @@ export function BuroGiderModal({ open, onClose, gider }: BuroGiderModalProps) {
         <FormGroup label="Notlar">
           <FormTextarea value={form.notlar || ''} onChange={(e) => handleChange('notlar', e.target.value)} placeholder="Ek notlar..." rows={2} />
         </FormGroup>
-      </div>
+      </fieldset>
 
       <div className="flex items-center justify-end gap-2 mt-6 pt-4 border-t border-border">
-        <BtnOutline onClick={onClose}>İptal</BtnOutline>
-        <BtnGold onClick={handleSubmit} disabled={kaydet.isPending}>
-          {kaydet.isPending ? 'Kaydediliyor...' : gider ? 'Güncelle' : 'Kaydet'}
+        <BtnOutline disabled={kaydediliyor} onClick={onClose}>İptal</BtnOutline>
+        <BtnGold onClick={handleSubmit} disabled={kaydediliyor}>
+          {kaydediliyor ? 'Kaydediliyor...' : gider ? 'Güncelle' : 'Kaydet'}
         </BtnGold>
       </div>
     </Modal>
