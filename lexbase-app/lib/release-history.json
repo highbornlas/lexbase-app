@@ -3,6 +3,14 @@
   "unreleased": [],
   "releases": [
     {
+      "version": "2.3.4",
+      "date": "2026-11-26",
+      "changes": [
+        "Oturum geç hazırlandığında sol menülerin yüklenmeden kalmasına yönelik rol yükleme ve oturum değişikliği takibi düzeltildi.",
+        "Menü yetkileri yüklenirken durum bilgisi, hata halinde açıklama ve tekrar deneme seçeneği eklendi; doğrulanmamış rollere otomatik yetki verilmesi kaldırıldı."
+      ]
+    },
+    {
       "version": "2.3.3",
       "date": "2026-11-17",
       "changes": [
