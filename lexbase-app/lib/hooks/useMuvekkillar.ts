@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import { useRecordLifecycle } from './useRecordLifecycle';
 import { useBuroId } from './useBuro';
+import { raporKayitlariniOku } from '@/lib/data/raporKayitlari';
 
 // ── Müvekkil Tip Tanımı ──────────────────────────────────────
 export interface Muvekkil {
@@ -71,12 +72,7 @@ export function useMuvekkillar() {
     queryFn: async () => {
       if (!buroId) return [];
       const supabase = createClient();
-      const { data, error } = await supabase
-        .from('muvekkillar')
-        .select('id, data')
-        .eq('buro_id', buroId);
-
-      if (error) throw error;
+      const data = await raporKayitlariniOku(supabase, 'muvekkillar', buroId);
       return (data || [])
         .map((r) => ({ id: r.id, ...(r.data as object) }))
         .filter((m) => !(m as Record<string, unknown>)._silindi) as Muvekkil[];
@@ -121,16 +117,10 @@ async function fetchMuvDosyalar(
   // data->>muvId ile server-side filtreleme
   // Çoklu müvekkil desteği: muvekkilTaraflar JSONB dizisinde de muvId olabilir
   // Ancak temel filtreyi DB'de yapıp muvekkilTaraflar kontrolünü client-side'da yapıyoruz
-  const { data, error } = await supabase
-    .from(tablo)
-    .select('id, data')
-    .eq('buro_id', buroId)
-    .or(`data->>muvId.eq.${muvId},data->muvekkilTaraflar.cs.[{"id":"${muvId}"}]`);
-
-  if (error) throw error;
+  const data = await raporKayitlariniOku(supabase, tablo, buroId, muvId, true);
 
   return (data || [])
-    .map((r) => ({ id: r.id, ...(r.data as object) }))
+    .map((r) => ({ ...r.data, id: r.id }) as Record<string, unknown> & { id: string })
     .filter((d: Record<string, unknown>) => !d._silindi);
 }
 

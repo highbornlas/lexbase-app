@@ -1,113 +1,28 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { muvekkileGoreGrupla } from '@/lib/finans/dosyaGruplari';
-import { hizmetUcretHareketleri } from '@/lib/finans/gelirKurallari';
 import Link from 'next/link';
 import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
-import { useDavalar } from '@/lib/hooks/useDavalar';
-import { useIcralar } from '@/lib/hooks/useIcra';
-import { useDanismanliklar } from '@/lib/hooks/useDanismanlik';
-import { useArabuluculuklar } from '@/lib/hooks/useArabuluculuk';
-import { useIhtarnameler } from '@/lib/hooks/useIhtarname';
+import { useFinansRaporVerisi } from '@/lib/hooks/useFinansRaporVerisi';
+import { muvekkilBakiyeleri } from '@/lib/finans/ucretHesaplari';
 import { fmt } from '@/lib/utils';
-import { safeNum, tahsilatToplam, dosyaParaOzeti, dosyaMasrafToplami, dosyaMasrafOzeti, anlasilanUcret } from '@/lib/utils/finans';
 import { EmptyState, MiniKpi } from './shared';
-
-/* ══════════════════════════════════════════════════════════════
-   Bakiyeler Sekmesi — Müvekkil bazlı alacak/tahsilat/masraf özeti
-   MuvAlacak.tsx ile aynı hesaplama mantığını kullanır.
-   ══════════════════════════════════════════════════════════════ */
 
 const PAGE_SIZE = 20;
 
 export function BakiyelerTab() {
   const muvekkilQuery = useMuvekkillar();
-  const davaQuery = useDavalar(true);
-  const icraQuery = useIcralar(true);
-  const danismanlikQuery = useDanismanliklar(true);
-  const arabuluculukQuery = useArabuluculuklar(true);
-  const ihtarnameQuery = useIhtarnameler(true);
-  const { data: muvekkillar } = muvekkilQuery;
-  const { data: davalar } = davaQuery;
-  const { data: icralar } = icraQuery;
-  const { data: danismanliklar } = danismanlikQuery;
-  const { data: arabuluculuklar } = arabuluculukQuery;
-  const { data: ihtarnameler } = ihtarnameQuery;
+  const { veriler, isPending, isError } = useFinansRaporVerisi();
   const [arama, setArama] = useState('');
   const [sayfa, setSayfa] = useState(1);
+  const { davalar, icralar, danismanliklar, arabuluculuklar, ihtarnameler } = veriler;
 
-  const bakiyeler = useMemo(() => {
-    if (!muvekkillar) return [];
-    const davaGruplari = muvekkileGoreGrupla(davalar || []);
-    const icraGruplari = muvekkileGoreGrupla(icralar || []);
-    const danismanlikGruplari = muvekkileGoreGrupla(danismanliklar || []);
-    const arabuluculukGruplari = muvekkileGoreGrupla(arabuluculuklar || []);
-    const ihtarnameGruplari = muvekkileGoreGrupla(ihtarnameler || []);
-    return muvekkillar.map((m) => {
-      const muvDavalar = (davaGruplari.get(m.id) || []) as Record<string, unknown>[];
-      const muvIcralar = (icraGruplari.get(m.id) || []) as Record<string, unknown>[];
-      const muvDanismanlik = danismanlikGruplari.get(m.id) || [];
-      const muvArabuluculuk = arabuluculukGruplari.get(m.id) || [];
-      const muvIhtarname = ihtarnameGruplari.get(m.id) || [];
-
-      let anlasilanToplam = 0;
-      let tahsilEdilenToplam = 0;
-      let masrafToplam = 0;
-      let buroMasrafToplam = 0;
-
-      // ── Dava + İcra (MuvAlacak pattern) ──
-      const tumDosyalar = [...muvDavalar, ...muvIcralar];
-      tumDosyalar.forEach((dosya) => {
-        anlasilanToplam += anlasilanUcret(dosya);
-        tahsilEdilenToplam += dosyaParaOzeti(dosya).sozlesmeTahsilati;
-        masrafToplam += dosyaMasrafToplami(dosya);
-        buroMasrafToplam += dosyaMasrafOzeti(dosya).buro;
-      });
-
-      // ── Danışmanlık ──
-      muvDanismanlik.forEach((d) => {
-        const ucret = safeNum(d.ucret || d.aylikUcret);
-        if (ucret > 0) anlasilanToplam += ucret;
-        tahsilEdilenToplam += tahsilatToplam(hizmetUcretHareketleri(d).map((t) => ({ tutar: safeNum(t.tutar) })));
-      });
-
-      // ── Arabuluculuk ──
-      muvArabuluculuk.forEach((a) => {
-        const ucret = safeNum(a.ucret);
-        if (ucret > 0) anlasilanToplam += ucret;
-        tahsilEdilenToplam += tahsilatToplam(hizmetUcretHareketleri(a).map((t) => ({ tutar: safeNum(t.tutar) })));
-      });
-
-      // ── İhtarname ──
-      muvIhtarname.forEach((ih) => {
-        const ucret = safeNum(ih.ucret);
-        if (ucret > 0) anlasilanToplam += ucret;
-        tahsilEdilenToplam += tahsilatToplam(hizmetUcretHareketleri(ih).map((t) => ({ tutar: safeNum(t.tutar) })));
-        masrafToplam += safeNum(ih.noterMasrafi);
-      });
-
-      const kalanAlacak = anlasilanToplam - tahsilEdilenToplam;
-      const netBakiye = tahsilEdilenToplam - buroMasrafToplam;
-      const dosyaSayisi = tumDosyalar.length + muvDanismanlik.length + muvArabuluculuk.length + muvIhtarname.length;
-
-      return {
-        id: m.id,
-        ad: m.ad || '—',
-        kayitNo: (m as Record<string, unknown>).kayitNo as number | undefined,
-        anlasilanToplam,
-        tahsilEdilenToplam,
-        kalanAlacak,
-        masrafToplam,
-        netBakiye,
-        dosyaSayisi,
-      };
-    }).filter((b) => {
-      if (!arama) return true;
-      const q = arama.toLocaleLowerCase('tr');
-      return b.ad.toLocaleLowerCase('tr').includes(q) || String(b.kayitNo || '').includes(q);
-    });
-  }, [muvekkillar, davalar, icralar, danismanliklar, arabuluculuklar, ihtarnameler, arama]);
+  const bakiyeler = useMemo(() => muvekkilBakiyeleri(muvekkilQuery.data || [], {
+    davalar, icralar, danismanliklar, arabuluculuklar, ihtarnameler,
+  }).filter(b => {
+    const q = arama.toLocaleLowerCase('tr');
+    return !q || b.ad.toLocaleLowerCase('tr').includes(q) || String(b.kayitNo || '').includes(q);
+  }), [muvekkilQuery.data, davalar, icralar, danismanliklar, arabuluculuklar, ihtarnameler, arama]);
 
   // Genel toplamlar
   const toplamlar = useMemo(() => ({
@@ -123,11 +38,10 @@ export function BakiyelerTab() {
   const toplamSayfa = Math.max(1, Math.ceil(bakiyeler.length / PAGE_SIZE));
   const sayfadakiler = bakiyeler.slice((sayfa - 1) * PAGE_SIZE, sayfa * PAGE_SIZE);
 
-  const queries = [muvekkilQuery, davaQuery, icraQuery, danismanlikQuery, arabuluculukQuery, ihtarnameQuery];
-  if (queries.some((query) => query.isError)) {
+  if (muvekkilQuery.isError || isError) {
     return <div role="alert" className="text-center py-8 text-red text-xs">Bakiyeler yüklenemedi. Lütfen tekrar deneyiniz.</div>;
   }
-  if (queries.some((query) => query.isPending)) {
+  if (muvekkilQuery.isPending || isPending) {
     return <div className="text-center py-8 text-text-muted text-xs">Bakiyeler yükleniyor...</div>;
   }
 
@@ -170,7 +84,7 @@ export function BakiyelerTab() {
                     <th className="text-right px-3 py-2.5 text-[10px] text-green font-medium uppercase tracking-wider">Tahsil Edilen</th>
                     <th className="text-right px-3 py-2.5 text-[10px] text-gold font-medium uppercase tracking-wider">Kalan Alacak</th>
                     <th className="text-right px-3 py-2.5 text-[10px] text-red font-medium uppercase tracking-wider">Masraf</th>
-                    <th className="text-right px-4 py-2.5 text-[10px] text-text-muted font-medium uppercase tracking-wider">Net Bakiye</th>
+                    <th className="text-right px-4 py-2.5 text-[10px] text-text-muted font-medium uppercase tracking-wider">Büro Neti</th>
                   </tr>
                 </thead>
                 <tbody>

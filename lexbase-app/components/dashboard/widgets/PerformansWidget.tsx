@@ -1,130 +1,15 @@
 'use client';
 
-import { useMemo } from 'react';
 import { fmt } from '@/lib/utils';
-import { safeNum } from '@/lib/utils/finans';
+import { useDashboardFinans } from '@/lib/hooks/useDashboardFinans';
 
-/* ══════════════════════════════════════════════════════════════
-   Aylık Performans Widget — Gelir/Gider bar chart + kaynak dağılımı
-   Tüm modüllerden veri toplar: Dava, İcra, Danışmanlık,
-   Arabuluculuk, İhtarname, Büro Giderleri
-   ══════════════════════════════════════════════════════════════ */
-
-interface PerformansWidgetProps {
-  davalar: Array<Record<string, unknown>>;
-  icralar: Array<Record<string, unknown>>;
-  danismanliklar: Array<Record<string, unknown>>;
-  arabuluculuklar: Array<Record<string, unknown>>;
-  ihtarnameler: Array<Record<string, unknown>>;
-  buroGiderleri: Array<Record<string, unknown>>;
-}
-
-export function PerformansWidget({ davalar, icralar, danismanliklar, arabuluculuklar, ihtarnameler, buroGiderleri }: PerformansWidgetProps) {
+export function PerformansWidget() {
+  const { data, isPending, isError } = useDashboardFinans();
+  if (isError) return <p role="alert" className="p-3 text-xs text-red">Finans grafiği yüklenemedi.</p>;
+  if (isPending || !data) return <p role="status" className="p-3 text-xs text-text-muted">Finans grafiği yükleniyor...</p>;
   const aylar = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
   const buAy = new Date().getMonth();
-  const buYil = new Date().getFullYear();
-
-  const { aylikVeri, kaynakDagilim } = useMemo(() => {
-    const gelirler = new Array(12).fill(0);
-    const giderler = new Array(12).fill(0);
-
-    // Kaynak bazlı toplam gelir (yıllık)
-    const kaynaklar: Record<string, number> = {
-      'Dava': 0,
-      'İcra': 0,
-      'Danışmanlık': 0,
-      'Arabuluculuk': 0,
-      'İhtarname': 0,
-    };
-
-    const ayaEkle = (tarih: string | undefined, tutar: number, hedef: number[]) => {
-      if (!tarih) return;
-      const d = new Date(tarih);
-      if (isNaN(d.getTime()) || d.getFullYear() !== buYil) return;
-      hedef[d.getMonth()] += tutar;
-    };
-
-    // Dava tahsilatları ve harcamaları
-    (davalar || []).forEach((dosya) => {
-      const tahsilatlar = dosya.tahsilatlar as Array<{ tutar: number; tarih?: string }> | undefined;
-      tahsilatlar?.forEach((t) => {
-        ayaEkle(t.tarih, t.tutar || 0, gelirler);
-        if (t.tarih) {
-          const d = new Date(t.tarih);
-          if (d.getFullYear() === buYil) kaynaklar['Dava'] += (t.tutar || 0);
-        }
-      });
-      const harcamalar = dosya.harcamalar as Array<{ tutar: number; tarih?: string }> | undefined;
-      harcamalar?.forEach((h) => ayaEkle(h.tarih, h.tutar || 0, giderler));
-    });
-
-    // İcra tahsilatları ve harcamaları
-    (icralar || []).forEach((dosya) => {
-      const tahsilatlar = dosya.tahsilatlar as Array<{ tutar: number; tarih?: string }> | undefined;
-      tahsilatlar?.forEach((t) => {
-        ayaEkle(t.tarih, t.tutar || 0, gelirler);
-        if (t.tarih) {
-          const d = new Date(t.tarih);
-          if (d.getFullYear() === buYil) kaynaklar['İcra'] += (t.tutar || 0);
-        }
-      });
-      const harcamalar = dosya.harcamalar as Array<{ tutar: number; tarih?: string }> | undefined;
-      harcamalar?.forEach((h) => ayaEkle(h.tarih, h.tutar || 0, giderler));
-    });
-
-    // Danışmanlık gelirleri
-    (danismanliklar || []).forEach((d) => {
-      const tutar = safeNum(d.tahsilEdildi);
-      if (tutar > 0) {
-        const tarih = (d.sonucTarih as string) || (d.tarih as string);
-        ayaEkle(tarih, tutar, gelirler);
-        if (tarih) {
-          const dt = new Date(tarih);
-          if (dt.getFullYear() === buYil) kaynaklar['Danışmanlık'] += tutar;
-        }
-      }
-    });
-
-    // Arabuluculuk gelirleri
-    (arabuluculuklar || []).forEach((a) => {
-      const tutar = safeNum(a.tahsilEdildi);
-      if (tutar > 0) {
-        const tarih = (a.sonucTarih as string) || (a.basvuruTarih as string);
-        ayaEkle(tarih, tutar, gelirler);
-        if (tarih) {
-          const dt = new Date(tarih);
-          if (dt.getFullYear() === buYil) kaynaklar['Arabuluculuk'] += tutar;
-        }
-      }
-    });
-
-    // İhtarname gelirleri
-    (ihtarnameler || []).forEach((ih) => {
-      const tutar = safeNum(ih.tahsilEdildi);
-      if (tutar > 0) {
-        ayaEkle(ih.tarih as string, tutar, gelirler);
-        if (ih.tarih) {
-          const dt = new Date(ih.tarih as string);
-          if (dt.getFullYear() === buYil) kaynaklar['İhtarname'] += tutar;
-        }
-      }
-      const noter = safeNum(ih.noterMasrafi);
-      if (noter > 0) ayaEkle(ih.tarih as string, noter, giderler);
-    });
-
-    // Büro giderleri
-    (buroGiderleri || []).forEach((g) => {
-      const tutar = Number(g.netTutar || g.tutar || 0);
-      if (tutar > 0) ayaEkle(g.tarih as string, tutar, giderler);
-    });
-
-    // Kaynak dağılımı (sadece 0'dan büyük olanlar)
-    const kaynakDagilim = Object.entries(kaynaklar)
-      .filter(([, v]) => v > 0)
-      .sort((a, b) => b[1] - a[1]);
-
-    return { aylikVeri: { gelirler, giderler }, kaynakDagilim };
-  }, [davalar, icralar, danismanliklar, arabuluculuklar, ihtarnameler, buroGiderleri, buYil]);
+  const { aylikVeri, kaynakDagilim } = data;
 
   const maxVal = Math.max(1, ...aylikVeri.gelirler, ...aylikVeri.giderler);
   const toplamVarMi = aylikVeri.gelirler.some(v => v > 0) || aylikVeri.giderler.some(v => v > 0);

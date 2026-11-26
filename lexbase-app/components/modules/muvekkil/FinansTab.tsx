@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { MuvMasrafAvansKasa } from './MuvMasrafAvansKasa';
-import { MuvAlacak } from './MuvAlacak';
-import { MuvRapor } from './MuvRapor';
+import dynamic from 'next/dynamic';
 import type { Muvekkil } from '@/lib/hooks/useMuvekkillar';
 
 type FinansAltSekme = 'kasa' | 'alacak' | 'rapor';
+function Loading() { return <p role="status" className="p-5 text-xs text-text-muted">Finans bölümü yükleniyor...</p>; }
+const MuvMasrafAvansKasa = dynamic(() => import('./MuvMasrafAvansKasa').then(m => m.MuvMasrafAvansKasa), { loading: Loading });
+const MuvAlacak = dynamic(() => import('./MuvAlacak').then(m => m.MuvAlacak), { loading: Loading });
+const MuvRapor = dynamic(() => import('./MuvRapor').then(m => m.MuvRapor), { loading: Loading });
 
 interface Props {
   muv: Muvekkil;

@@ -1,16 +1,19 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useBuroGiderleri, useBuroGiderSil, type BuroGider, GIDER_KATEGORILERI } from '@/lib/hooks/useBuroGiderleri';
-import { BuroGiderModal } from '@/components/modules/BuroGiderModal';
+import dynamic from 'next/dynamic';
+import { giderToplamlari, giderNetTutari } from '@/lib/finans/giderKurallari';
+import { raporTarihi } from '@/lib/finans/raporHesaplari';
 import { fmt, fmtTarih } from '@/lib/utils';
 import { MiniKpi, EmptyState, ODEME_RENK, ODEME_LABEL } from './shared';
 
 const PAGE_SIZE = 25;
+const BuroGiderModal = dynamic(() => import('@/components/modules/BuroGiderModal').then(m => m.BuroGiderModal));
 const TEKRAR_LABEL: Record<string, string> = { aylik: '🔄 Aylık', yillik: '🔄 Yıllık' };
 
 export function BuroGiderleriTab() {
-  const { data: giderler, isLoading } = useBuroGiderleri();
+  const { data: giderler, isLoading, isError } = useBuroGiderleri();
   const silMut = useBuroGiderSil();
   const [modalAcik, setModalAcik] = useState(false);
   const [secili, setSecili] = useState<BuroGider | null>(null);
@@ -18,6 +21,17 @@ export function BuroGiderleriTab() {
   const [tekrarFiltre, setTekrarFiltre] = useState<'hepsi' | 'tek' | 'tekrarli'>('hepsi');
   const [arama, setArama] = useState('');
   const [sayfa, setSayfa] = useState(1);
+  const [silHatasi, setSilHatasi] = useState('');
+  const silKilidi = useRef(false);
+
+  async function sil(gider: BuroGider) {
+    if (silKilidi.current || !confirm(`"${gider.aciklama || gider.kategori}" silinecek. Emin misiniz?`)) return;
+    silKilidi.current = true;
+    setSilHatasi('');
+    try { await silMut.mutateAsync(gider); }
+    catch { setSilHatasi('Gider silinemedi. Kayıt korunuyor; lütfen tekrar deneyiniz.'); }
+    finally { silKilidi.current = false; }
+  }
 
   // Tarih filtresi — default: yıl başı → bugün
   const [tarihBaslangic, setTarihBaslangic] = useState(() => `${new Date().getFullYear()}-01-01`);
@@ -29,9 +43,11 @@ export function BuroGiderleriTab() {
     return giderler
       .filter((g) => {
         // Tarih filtresi
-        if (g.tarih) {
-          if (tarihBaslangic && g.tarih < tarihBaslangic) return false;
-          if (tarihBitis && g.tarih > tarihBitis) return false;
+        if (tarihBaslangic || tarihBitis) {
+          const tarih = raporTarihi(g.tarih);
+          if (!tarih) return false;
+          if (tarihBaslangic && tarih < tarihBaslangic) return false;
+          if (tarihBitis && tarih > tarihBitis) return false;
         }
         // Kategori filtresi
         if (katFiltre !== 'hepsi' && g.kategori !== katFiltre) return false;
@@ -53,16 +69,7 @@ export function BuroGiderleriTab() {
   }, [giderler, katFiltre, tekrarFiltre, arama, tarihBaslangic, tarihBitis]);
 
   // Toplam hesapları — filtrelenmiş veriden
-  const toplamlar = useMemo(() => {
-    if (!filtrelenmis.length) return { tutar: 0, kdv: 0, stopaj: 0, net: 0, bekleyen: 0 };
-    return {
-      tutar: filtrelenmis.reduce((t, g) => t + (g.tutar || 0), 0),
-      kdv: filtrelenmis.reduce((t, g) => t + (g.kdvTutar || 0), 0),
-      stopaj: filtrelenmis.reduce((t, g) => t + (g.stopajTutar || 0), 0),
-      net: filtrelenmis.reduce((t, g) => t + (g.netTutar || g.tutar || 0), 0),
-      bekleyen: filtrelenmis.filter((g) => g.odemeDurumu === 'bekliyor' || g.odemeDurumu === 'gecikti').reduce((t, g) => t + (g.netTutar || g.tutar || 0), 0),
-    };
-  }, [filtrelenmis]);
+  const toplamlar = useMemo(() => giderToplamlari(filtrelenmis), [filtrelenmis]);
 
   // Kategori bazlı dağılım — filtrelenmiş veriden
   const katDagilim = useMemo(() => {
@@ -79,14 +86,18 @@ export function BuroGiderleriTab() {
   const toplamSayfa = Math.max(1, Math.ceil(filtrelenmis.length / PAGE_SIZE));
   const sayfadakiler = filtrelenmis.slice((sayfa - 1) * PAGE_SIZE, sayfa * PAGE_SIZE);
 
+  if (isError) return <p role="alert" className="p-5 text-xs text-red">Gider kayıtları yüklenemedi. Toplamlar gösterilmiyor; lütfen tekrar deneyiniz.</p>;
+  if (isLoading) return <p role="status" className="p-5 text-xs text-text-muted">Gider kayıtları yükleniyor...</p>;
+
   return (
     <div>
+      {silHatasi && <p role="alert" className="mb-4 text-xs text-red">{silHatasi}</p>}
       {/* KPI Strip */}
       <div className="grid grid-cols-5 gap-3 mb-5">
         <MiniKpi label="Toplam Gider" value={fmt(toplamlar.tutar)} />
         <MiniKpi label="KDV Toplamı" value={fmt(toplamlar.kdv)} color="text-text-muted" />
         <MiniKpi label="Stopaj Toplamı" value={fmt(toplamlar.stopaj)} color="text-text-muted" />
-        <MiniKpi label="Net Ödenen" value={fmt(toplamlar.net)} color="text-red" />
+        <MiniKpi label="Net Ödenen" value={fmt(toplamlar.odenen)} color="text-red" />
         <MiniKpi label="Bekleyen Ödeme" value={fmt(toplamlar.bekleyen)} color={toplamlar.bekleyen > 0 ? 'text-orange-400' : 'text-green'} />
       </div>
 
@@ -242,7 +253,7 @@ export function BuroGiderleriTab() {
               <span className="text-xs font-semibold text-text">{fmt(g.tutar || 0)}</span>
               <span className="text-[11px] text-text-dim">{g.kdvTutar ? fmt(g.kdvTutar) : '—'}</span>
               <span className="text-[11px] text-text-dim">{g.stopajTutar ? fmt(g.stopajTutar) : '—'}</span>
-              <span className="text-xs font-bold text-text">{fmt(g.netTutar || g.tutar || 0)}</span>
+              <span className="text-xs font-bold text-text">{fmt(giderNetTutari(g))}</span>
               <span>
                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${ODEME_RENK[g.odemeDurumu || 'odendi'] || 'bg-surface2 text-text-dim border-border'}`}>
                   {ODEME_LABEL[g.odemeDurumu || 'odendi'] || '—'}
@@ -257,11 +268,8 @@ export function BuroGiderleriTab() {
                   ✏️
                 </button>
                 <button
-                  onClick={() => {
-                    if (confirm(`"${g.aciklama || g.kategori}" silinecek. Emin misiniz?`)) {
-                      silMut.mutate(g);
-                    }
-                  }}
+                  disabled={silMut.isPending}
+                  onClick={() => void sil(g)}
                   className="w-6 h-6 flex items-center justify-center rounded hover:bg-red-dim text-text-dim text-xs"
                   title="Sil"
                 >
@@ -301,7 +309,7 @@ export function BuroGiderleriTab() {
         </div>
       )}
 
-      <BuroGiderModal open={modalAcik} onClose={() => setModalAcik(false)} gider={secili} />
+      {modalAcik && <BuroGiderModal open={modalAcik} onClose={() => setModalAcik(false)} gider={secili} />}
     </div>
   );
 }

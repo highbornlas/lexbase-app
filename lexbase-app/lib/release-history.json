@@ -3,6 +3,19 @@
   "unreleased": [],
   "releases": [
     {
+      "version": "2.3.5",
+      "date": "2026-11-26",
+      "changes": [
+        "Finans bakiyeleri, müvekkil özeti ve dashboard parasal göstergeleri ortak hesaplama kurallarına bağlandı; müvekkil parası büro gelirinden ayrıldı.",
+        "Silinmiş masraflar rapor toplamlarından çıkarıldı; arşiv geçmişi korundu ve çok sayıda kayıt için eksik raporlamayı önleyen sayfalama eklendi.",
+        "Büro giderlerinde kayıt doğrulama, hata sonrası taslak kurtarma, çift tıklama koruması ve kontrollü silme iyileştirildi.",
+        "Beklenen gelir ekranı ve dashboard kutusu eşitlendi; avanslar gelir beklentisinden çıkarıldı, yalnız kayıtlı ücret alacakları ve girilmiş vadeler kullanıldı.",
+        "Finans alt sekmeleri ve kasa raporu indirmeleri ihtiyaç halinde yüklenecek şekilde ayrıldı.",
+        "Sol menüdeki modül bağlantıları istemci yönlendirmesinden bağımsız doğrudan sayfa açacak şekilde sağlamlaştırıldı.",
+        "Hava durumu, önceden konum izni verilmemişse otomatik izin penceresi açmak yerine kayıtlı şehirle çalışır."
+      ]
+    },
+    {
       "version": "2.3.4",
       "date": "2026-11-26",
       "changes": [

@@ -68,17 +68,17 @@ export function CompactStatsRow({
           <h3 className="text-[10px] font-bold text-text-dim uppercase tracking-wider">Finansal Özet</h3>
           <div className="flex items-center gap-2">
             <span className={`font-[var(--font-playfair)] text-lg font-bold ${(bakiye?.masrafBakiye ?? 0) >= 0 ? 'text-green' : 'text-red'}`}>
-              {fmt(bakiye?.masrafBakiye ?? 0)}
+              {finansOzet ? fmt(bakiye?.masrafBakiye ?? 0) : '—'}
             </span>
             <span className="text-[10px] text-text-dim">masraf / avans kasası</span>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <MiniStat label="Masraf" value={fmt(masraflar?.toplam ?? 0)} color="text-text" />
-          <MiniStat label="Avans" value={fmt(avanslar?.alinan ?? 0)} color="text-green" />
+          <MiniStat label="Masraf" value={finansOzet ? fmt(masraflar?.toplam ?? 0) : '—'} color="text-text" />
+          <MiniStat label="Avans" value={finansOzet ? fmt(avanslar?.alinan ?? 0) : '—'} color="text-green" />
           <Sep />
-          <MiniStat label="Ücret Alacağı" value={fmt(alacak?.kalan ?? vekalet?.akdi?.kalan ?? 0)} color="text-gold" />
-          <MiniStat label="Ücret Tahsilatı" value={fmt(alacak?.tahsilEdilen ?? vekalet?.akdi?.tahsilEdilen ?? 0)} color="text-green" />
+          <MiniStat label="Ücret Alacağı" value={finansOzet ? fmt(alacak?.kalan ?? vekalet?.akdi?.kalan ?? 0) : '—'} color="text-gold" />
+          <MiniStat label="Ücret Tahsilatı" value={finansOzet ? fmt(alacak?.tahsilEdilen ?? vekalet?.akdi?.tahsilEdilen ?? 0) : '—'} color="text-green" />
         </div>
       </div>
     </div>

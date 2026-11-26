@@ -109,13 +109,10 @@ interface WidgetGridProps {
   gorevler: Array<Record<string, unknown>>;
   danismanliklar: Array<Record<string, unknown>>;
   etkinlikler: Array<Record<string, unknown>>;
-  uyarilar: Array<Record<string, unknown>>;
   belgeler: Array<Record<string, unknown>>;
   arabuluculuklar: Array<Record<string, unknown>>;
   ihtarnameler: Array<Record<string, unknown>>;
-  buroGiderleri: Array<Record<string, unknown>>;
   personeller: Array<Record<string, unknown>>;
-  yilNet: number;
   muvAdMap: Record<string, string>;
 }
 
@@ -131,13 +128,10 @@ export function WidgetGrid({
   gorevler,
   danismanliklar,
   etkinlikler,
-  uyarilar,
   belgeler,
   arabuluculuklar,
   ihtarnameler,
-  buroGiderleri,
   personeller,
-  yilNet,
   muvAdMap,
 }: WidgetGridProps) {
   const { width, containerRef, mounted } = useContainerWidth({ initialWidth: 1200 });
@@ -146,9 +140,9 @@ export function WidgetGrid({
   const renderWidget = useCallback((widgetId: string) => {
     switch (widgetId) {
       case 'kpi':
-        return <KpiWidget muvekkillar={muvekkillar} davalar={davalar} icralar={icralar} danismanliklar={danismanliklar} arabuluculuklar={arabuluculuklar} ihtarnameler={ihtarnameler} yilNet={yilNet} />;
+        return <KpiWidget muvekkillar={muvekkillar} davalar={davalar} icralar={icralar} danismanliklar={danismanliklar} arabuluculuklar={arabuluculuklar} ihtarnameler={ihtarnameler} />;
       case 'performans':
-        return <PerformansWidget davalar={davalar} icralar={icralar} danismanliklar={danismanliklar} arabuluculuklar={arabuluculuklar} ihtarnameler={ihtarnameler} buroGiderleri={buroGiderleri} />;
+        return <PerformansWidget />;
       case 'gundem':
         return <GundemWidget davalar={davalar} etkinlikler={etkinlikler} muvAdMap={muvAdMap} />;
       case 'gorevler':
@@ -156,7 +150,7 @@ export function WidgetGrid({
       case 'kritik':
         return <KritikWidget davalar={davalar} icralar={icralar} />;
       case 'finans-uyari':
-        return <FinansUyariWidget uyarilar={uyarilar} />;
+        return <FinansUyariWidget />;
       case 'muvekkil-bakiye':
         return <MuvekkilBakiyeWidget />;
       case 'beklenen-gelir':
@@ -178,7 +172,7 @@ export function WidgetGrid({
       default:
         return <div className="text-text-dim text-sm p-4">Widget bulunamadı</div>;
     }
-  }, [muvekkillar, davalar, icralar, gorevler, danismanliklar, etkinlikler, uyarilar, belgeler, arabuluculuklar, ihtarnameler, buroGiderleri, personeller, yilNet, muvAdMap]);
+  }, [muvekkillar, davalar, icralar, gorevler, danismanliklar, etkinlikler, belgeler, arabuluculuklar, ihtarnameler, personeller, muvAdMap]);
 
   // Görünür layout items — gizli widget'ları filtrele
   const gorunurIds = useMemo(() => new Set(gorunurWidgetler.map((w) => w.id)), [gorunurWidgetler]);

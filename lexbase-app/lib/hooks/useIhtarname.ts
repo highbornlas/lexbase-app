@@ -6,6 +6,7 @@ import { useRecordLifecycle } from './useRecordLifecycle';
 import { masraflariKoruyarakDosyaKaydet } from '@/lib/data/financeCashTransaction';
 import { raporKaydiGorunurMu } from '@/lib/finans/gelirKurallari';
 import { useBuroId } from './useBuro';
+import { raporKayitlariniOku } from '@/lib/data/raporKayitlari';
 
 export interface Ihtarname {
   id: string;
@@ -74,7 +75,7 @@ export function useIhtarnameler(includeArchived = false) {
     queryFn: async () => {
       if (!buroId) return [];
       const supabase = createClient();
-      const { data, error } = await supabase
+      const { data, error } = includeArchived ? { data: await raporKayitlariniOku(supabase, 'ihtarnameler', buroId), error: null } : await supabase
         .from('ihtarnameler')
         .select('id, data')
         .eq('buro_id', buroId);

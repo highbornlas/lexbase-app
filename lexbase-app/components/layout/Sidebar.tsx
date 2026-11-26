@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
 import { useDavalar } from '@/lib/hooks/useDavalar';
@@ -118,7 +117,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     const count = item.countKey ? (badgeCounts[item.countKey] ?? 0) : 0;
 
     return (
-      <Link
+      <a
         key={item.href}
         href={item.href}
         onClick={onClose}
@@ -146,7 +145,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             {count}
           </span>
         )}
-      </Link>
+      </a>
     );
   };
 
@@ -171,9 +170,9 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       >
         {/* Logo */}
         <div className="h-14 flex items-center px-4 border-b border-border/30">
-          <Link href="/dashboard" onClick={onClose} className="font-[var(--font-playfair)] text-lg font-bold tracking-tight hover:opacity-90 transition-opacity">
+          <a href="/dashboard" onClick={onClose} className="font-[var(--font-playfair)] text-lg font-bold tracking-tight hover:opacity-90 transition-opacity">
             <span className="text-gold">Lex</span><span className="text-text">Base</span>
-          </Link>
+          </a>
         </div>
 
         {/* Büro Seçici (çoklu büro varsa) */}

@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRecordLifecycle } from './useRecordLifecycle';
 import { raporKaydiGorunurMu } from '@/lib/finans/gelirKurallari';
 import { useBuroId } from './useBuro';
+import { raporKayitlariniOku } from '@/lib/data/raporKayitlari';
 
 // ── Efor (Zaman) Kaydı ──────────────────────────────────────
 export interface EforKaydi {
@@ -111,7 +112,7 @@ export function useDanismanliklar(includeArchived = false) {
     queryFn: async () => {
       if (!buroId) return [];
       const supabase = createClient();
-      const { data, error } = await supabase
+      const { data, error } = includeArchived ? { data: await raporKayitlariniOku(supabase, 'danismanlik', buroId), error: null } : await supabase
         .from('danismanlik')
         .select('id, data')
         .eq('buro_id', buroId);

@@ -1,65 +1,24 @@
 'use client';
 
+import { useMemo } from 'react';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
-import { createClient } from '@/lib/supabase/client';
-import { useBuroId } from '@/lib/hooks/useBuro';
+import { useFinansRaporVerisi } from '@/lib/hooks/useFinansRaporVerisi';
 import { useMuvekkillar } from '@/lib/hooks/useMuvekkillar';
+import { muvekkilBakiyeleri } from '@/lib/finans/ucretHesaplari';
 import { fmt } from '@/lib/utils';
 import { EmptyState } from '../WidgetWrapper';
 
-/* ══════════════════════════════════════════════════════════════
-   Müvekkil Bakiyeleri Widget — RPC tabanlı cari özet
-   ══════════════════════════════════════════════════════════════ */
-
-interface CariOzetRow {
-  muvId: string;
-  borc: number;
-  alacak: number;
-  bakiye: number;
-}
-
-function useCariOzet() {
-  const buroId = useBuroId();
-
-  return useQuery<CariOzetRow[]>({
-    queryKey: ['cari-ozet', buroId],
-    queryFn: async () => {
-      if (!buroId) return [];
-      const supabase = createClient();
-      const { data, error } = await supabase.rpc('get_cari_ozet', {
-        p_buro_id: buroId,
-      });
-      if (error) throw error;
-      return (data || []) as CariOzetRow[];
-    },
-    enabled: !!buroId,
-  });
-}
-
 export function MuvekkilBakiyeWidget() {
-  const { data: cariOzet, isLoading } = useCariOzet();
-  const { data: muvekkillar } = useMuvekkillar();
-
-  // Müvekkil ad haritası
-  const muvAdMap: Record<string, string> = {};
-  (muvekkillar || []).forEach((m) => {
-    muvAdMap[m.id] = m.ad || '?';
-  });
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-6">
-        <div className="animate-spin rounded-full h-5 w-5 border-2 border-gold border-t-transparent" />
-      </div>
-    );
-  }
-
-  // Bakiyeye göre sıralayıp ilk 5'i al (bakiye != 0 olanlar)
-  const bakiyeler = (cariOzet || [])
-    .filter((row) => Math.abs(row.bakiye) > 0 && muvAdMap[row.muvId])
-    .sort((a, b) => b.bakiye - a.bakiye)
-    .slice(0, 5);
+  const kaynak = useFinansRaporVerisi(), muv = useMuvekkillar();
+  const { davalar, icralar, danismanliklar, arabuluculuklar, ihtarnameler } = kaynak.veriler;
+  const rows = useMemo(() => muvekkilBakiyeleri(muv.data || [], {
+    davalar, icralar, danismanliklar, arabuluculuklar, ihtarnameler,
+  }), [muv.data, davalar, icralar, danismanliklar, arabuluculuklar, ihtarnameler]);
+  if (kaynak.isError || muv.isError) return <p role="alert" className="p-3 text-xs text-red">Ücret bakiyeleri yüklenemedi.</p>;
+  if (kaynak.isPending || muv.isPending) return <p role="status" className="p-3 text-xs text-text-muted">Ücret bakiyeleri yükleniyor...</p>;
+  const muvAdMap = Object.fromEntries(rows.map(b => [b.id, b.ad]));
+  const bakiyeler = rows.filter(b => b.kalanAlacak !== 0).sort((a, b) => b.kalanAlacak - a.kalanAlacak)
+    .slice(0, 5).map(b => ({ muvId: b.id, bakiye: b.kalanAlacak, borc: b.anlasilanToplam, alacak: b.tahsilEdilenToplam }));
 
   if (bakiyeler.length === 0) {
     return <EmptyState icon="💰" text="Bakiye verisi bulunmuyor" />;
@@ -79,7 +38,7 @@ export function MuvekkilBakiyeWidget() {
           <div className="flex-1 min-w-0">
             <div className="text-[11px] font-medium text-text truncate">{muvAdMap[b.muvId]}</div>
             <div className="text-[9px] text-text-dim">
-              Borç: {fmt(b.borc)} · Alacak: {fmt(b.alacak)}
+              Ücret: {fmt(b.borc)} · Tahsil: {fmt(b.alacak)}
             </div>
           </div>
           <span className={`text-[11px] font-semibold flex-shrink-0 ${b.bakiye > 0 ? 'text-red' : 'text-green'}`}>

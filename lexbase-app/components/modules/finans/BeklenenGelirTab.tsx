@@ -5,8 +5,9 @@ import { fmt } from '@/lib/utils';
 import { MiniKpi, EmptyState } from './shared';
 
 export function BeklenenGelirTab() {
-  const { data: beklenen, isLoading } = useBeklenenGelir();
+  const { data: beklenen, isLoading, isError } = useBeklenenGelir();
 
+  if (isError) return <div role="alert" className="py-8 text-center text-xs text-red">Beklenen ücretler yüklenemedi. Lütfen tekrar deneyiniz.</div>;
   if (isLoading) return <div className="text-center py-8 text-text-muted text-xs">Yükleniyor...</div>;
 
   const beklenenler = ((beklenen?.beklenenler as Record<string, unknown>[]) || []);
@@ -14,6 +15,7 @@ export function BeklenenGelirTab() {
 
   return (
     <div>
+      <p className="mb-4 text-xs text-text-muted">Kalan ücret alacaklarıdır; müvekkil avansları dahil değildir. Vade girilmemiş kayıtlar gecikmiş sayılmaz. Taksit tarihleri tahmin edilmez.</p>
       {/* Özet */}
       <div className="grid grid-cols-3 gap-3 mb-5">
         <MiniKpi label="Toplam Beklenen" value={fmt(ozet.toplam || 0)} color="text-gold" />
@@ -37,7 +39,7 @@ export function BeklenenGelirTab() {
                   {(b.tarih as string) ? new Date(b.tarih as string).toLocaleString('tr-TR', { month: 'short' }) : '—'}
                 </div>
                 <div className="text-lg font-bold text-text">
-                  {(b.tarih as string) ? new Date(b.tarih as string).getDate() : '—'}
+                  {(b.tarih as string) ? Number(String(b.tarih).slice(8, 10)) : 'Vadesiz'}
                 </div>
               </div>
               <div className="flex-1">

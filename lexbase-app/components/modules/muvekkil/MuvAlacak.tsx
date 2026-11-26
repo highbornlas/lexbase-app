@@ -3,8 +3,8 @@
 import { useState, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { fmt } from '@/lib/utils';
-import { safeNum, tahsilatToplam, dosyaParaOzeti, anlasilanUcret } from '@/lib/utils/finans';
-import { hizmetUcretHareketleri } from '@/lib/finans/gelirKurallari';
+import { yuvarla } from '@/lib/utils/finans';
+import { alacakSatirlari } from '@/lib/finans/ucretHesaplari';
 import { raporTarihi } from '@/lib/finans/raporHesaplari';
 
 interface AlacakSatir {
@@ -73,49 +73,14 @@ export function MuvAlacak({ davalar, icralar, arabuluculuklar, ihtarnameler, dan
     return result;
   }, [davalar, icralar, arabuluculuklar, ihtarnameler, danismanliklar]);
 
-  /* ── Dosya bazlı alacak bilgilerini topla ── */
-  const alacaklar = useMemo(() => {
-    const result: AlacakSatir[] = [];
-
-    const ekle = (items: Record<string, unknown>[], tur: string, linkPrefix: string) => {
-      items.forEach((d) => {
-        const anlasma = d.anlasma as Record<string, unknown> | undefined;
-        const hizmet = tur !== 'Dava' && tur !== 'İcra';
-        const anlasmaToplam = anlasilanUcret(d) || (hizmet ? safeNum(d.aylikUcret) : 0);
-        const tahsilEdilen = hizmet
-          ? tahsilatToplam(hizmetUcretHareketleri(d).map((t) => ({ tutar: safeNum(t.tutar) })))
-          : dosyaParaOzeti(d).sozlesmeTahsilati;
-
-        if (anlasmaToplam > 0 || tahsilEdilen > 0) {
-          result.push({
-            dosyaId: d.id as string,
-            dosyaNo: String(d.no || d.esasNo || d.dosyaNo || d.konu || '—'),
-            dosyaTur: tur,
-            dosyaLink: `${linkPrefix}/${d.id}`,
-            anlasmaToplam,
-            tahsilEdilen,
-            kalan: anlasmaToplam - tahsilEdilen,
-            vadeTarihi: anlasma?.vadeTarihi as string | undefined,
-            taksitSayisi: anlasma?.taksitSayisi as number | undefined,
-            taksitOdenen: anlasma?.taksitOdenen as number | undefined,
-          });
-        }
-      });
-    };
-
-    ekle(davalar, 'Dava', '/davalar');
-    ekle(icralar, 'İcra', '/icra');
-    ekle(arabuluculuklar, 'Arabuluculuk', '/arabuluculuk');
-    ekle(ihtarnameler, 'İhtarname', '/ihtarname');
-    ekle(danismanliklar, 'Danışmanlık', '/danismanlik');
-
-    return result;
-  }, [davalar, icralar, arabuluculuklar, ihtarnameler, danismanliklar]);
+  const alacaklar: AlacakSatir[] = useMemo(() => alacakSatirlari({
+    davalar, icralar, arabuluculuklar, ihtarnameler, danismanliklar,
+  }), [davalar, icralar, arabuluculuklar, ihtarnameler, danismanliklar]);
 
   /* ── Toplamlar ── */
   const toplamAnlasma = alacaklar.reduce((s, a) => s + a.anlasmaToplam, 0);
   const toplamTahsil = alacaklar.reduce((s, a) => s + a.tahsilEdilen, 0);
-  const toplamKalan = toplamAnlasma - toplamTahsil;
+  const toplamKalan = yuvarla(toplamAnlasma - toplamTahsil);
 
   const turRenk: Record<string, string> = {
     'Dava': 'text-blue-400 bg-blue-400/10',

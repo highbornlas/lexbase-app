@@ -45,7 +45,7 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
 
   /* ── Veri Hook'ları ── */
   const { data: muv, isLoading } = useMuvekkil(id);
-  const { data: finansOzet } = useFinansOzet(id);
+  const { data: finansOzet, isError: finansHatasi, isPending: finansYukleniyor } = useFinansOzet(id);
   const { data: davalar } = useMuvDavalar(id);
   const { data: icralar } = useMuvIcralar(id);
   const { data: arabuluculuklar } = useMuvArabuluculuklar(id);
@@ -176,6 +176,7 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
       {yeniIhtarnameOpen && <IhtarnameModal open onClose={() => { setYeniIhtarnameOpen(false); setSeciliIhtarname(null); }} ihtarname={seciliIhtarname as import('@/lib/hooks/useIhtarname').Ihtarname | null} varsayilanMuvekkil={muv} />}
 
       {/* ── Compact KPI Row ── */}
+      {finansHatasi && <p role="alert" className="mt-5 text-xs text-red">Finans kayıtları yüklenemedi. Sıfır bakiye olarak değerlendirmeyiniz; sayfayı yenileyiniz.</p>}
       <div className="mt-5">
         <CompactStatsRow
           dosyaSayisi={dosyaSayisi}
@@ -234,13 +235,14 @@ export default function MuvekkilDetayPage({ params }: { params: Promise<{ id: st
             onIhtarnameClick={(item) => { setSeciliIhtarname(item); setYeniIhtarnameOpen(true); }}
           />
         )}
-        {aktifTab === 'finans' && (
+        {aktifTab === 'finans' && finansYukleniyor && <p role="status" className="p-5 text-xs text-text-muted">Finans verileri yükleniyor...</p>}
+        {aktifTab === 'finans' && !finansHatasi && !finansYukleniyor && (
           <FinansTab
             muv={muv}
-            davalar={davaArr}
-            icralar={icraArr}
-            arabuluculuklar={arabArr}
-            ihtarnameler={ihtArr}
+            davalar={davaArr.filter(d => d.muvId === id)}
+            icralar={icraArr.filter(d => d.muvId === id)}
+            arabuluculuklar={arabArr.filter(d => d.muvId === id)}
+            ihtarnameler={ihtArr.filter(d => d.muvId === id)}
             danismanliklar={tumDanismanliklar.filter((d) => d.muvId === id)}
             finansOzet={finansOzet}
             onTahsilatKaydet={handleTahsilatKaydet}

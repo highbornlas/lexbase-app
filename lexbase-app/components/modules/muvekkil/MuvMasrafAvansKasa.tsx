@@ -13,8 +13,6 @@ import {
   AVANS_ESIK,
   type AvansHareket,
 } from '@/lib/hooks/useAvansKasasi';
-import { exportAvansKasaPDF } from '@/lib/export/pdfExport';
-import { exportAvansKasaXLS } from '@/lib/export/excelExport';
 
 /* ══════════════════════════════════════════════════════════════
    Masraf & Avans Kasası — Birleşik Panel
@@ -178,7 +176,7 @@ export function MuvMasrafAvansKasa({ muvId, muvAd, davalar, icralar, arabuluculu
   }
 
   // ── Export ──
-  function handleExport(format: 'pdf' | 'excel') {
+  async function handleExport(format: 'pdf' | 'excel') {
     const kasaItem = {
       muvAd: muvAd || 'Müvekkil',
       toplamAlim: ozet.toplamAlim,
@@ -186,11 +184,15 @@ export function MuvMasrafAvansKasa({ muvId, muvAd, davalar, icralar, arabuluculu
       toplamIade: ozet.toplamIade,
       bakiye: ozet.bakiye,
     };
-    if (format === 'pdf') {
-      exportAvansKasaPDF({ kasalar: [kasaItem], toplamBakiye: ozet.bakiye });
-    } else {
-      exportAvansKasaXLS([kasaItem]);
-    }
+    try {
+      if (format === 'pdf') {
+        const { exportAvansKasaPDF } = await import('@/lib/export/pdfExport');
+        exportAvansKasaPDF({ kasalar: [kasaItem], toplamBakiye: ozet.bakiye });
+      } else {
+        const { exportAvansKasaXLS } = await import('@/lib/export/excelExport');
+        exportAvansKasaXLS([kasaItem]);
+      }
+    } catch { setHata('Rapor oluşturulamadı. Lütfen tekrar deneyiniz.'); }
   }
 
   if (isPending) {
