@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { getPreviouslyGrantedLocation } from '@/lib/weather/location';
 
 /* ══════════════════════════════════════════════════════════════
    Hava Durumu Hook — Open-Meteo API (ücretsiz, API key gereksiz)
@@ -150,28 +151,6 @@ export function sehirKaydet(sehir: Sehir) {
   } catch { /* ignore */ }
 }
 
-/** GPS konum al (promise) — timeout 5s */
-function gpsKonumAl(): Promise<{ lat: number; lon: number } | null> {
-  return new Promise((resolve) => {
-    if (typeof window === 'undefined' || !navigator.geolocation) {
-      resolve(null);
-      return;
-    }
-    const timeout = setTimeout(() => resolve(null), 5000);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        clearTimeout(timeout);
-        resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude });
-      },
-      () => {
-        clearTimeout(timeout);
-        resolve(null);
-      },
-      { timeout: 5000, maximumAge: 600000 } // 10dk cache
-    );
-  });
-}
-
 /** GPS koordinatına en yakın şehri bul */
 function enYakinSehir(lat: number, lon: number): Sehir {
   let minDist = Infinity;
@@ -256,8 +235,8 @@ async function havaDurumuGetir(lat: number, lon: number, sehirAd: string): Promi
 
 /* ── Konum belirle (GPS → profil → varsayılan) ── */
 async function konumBelirle(): Promise<{ sehir: Sehir; gps: boolean }> {
-  // 1. GPS dene
-  const gps = await gpsKonumAl();
+  // Only reuse an existing permission; otherwise keep navigation free of prompts.
+  const gps = typeof navigator === 'undefined' ? null : await getPreviouslyGrantedLocation(navigator);
   if (gps) {
     const sehir = enYakinSehir(gps.lat, gps.lon);
     return { sehir: { ad: sehir.ad, lat: gps.lat, lon: gps.lon }, gps: true };
