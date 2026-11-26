@@ -107,7 +107,7 @@ interface SidebarProps {
 export function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
   const badgeCounts = useBadgeCounts();
-  const { rol } = useRol();
+  const { rol, loading: rolYukleniyor, error: rolHatasi, yenile: rolYenile } = useRol();
 
   const renderItem = (item: MenuItem) => {
     const isActive =
@@ -182,6 +182,11 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         </div>
 
         {/* Main Navigation */}
+        {rolYukleniyor && <p role="status" className="px-4 py-2 text-xs text-text-muted">Menüler yükleniyor...</p>}
+        {rolHatasi && <div role="alert" className="px-4 py-2 text-xs text-red">
+          <p>{rolHatasi}</p>
+          <button onClick={rolYenile} className="mt-2 underline">Menüyü tekrar yükle</button>
+        </div>}
         <nav className="flex-1 pt-2 overflow-y-auto flex flex-col">
           {sidebarGroups.map((group, gi) => (
             <div key={gi}>

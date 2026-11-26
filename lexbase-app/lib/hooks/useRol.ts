@@ -1,14 +1,35 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { startRoleResolution, type RoleState, type Rol } from '@/lib/auth/roleResolution';
+export type { Rol } from '@/lib/auth/roleResolution';
 
 /* ══════════════════════════════════════════════════════════════
    Rol & Yetki Sistemi
    ══════════════════════════════════════════════════════════════ */
 
-export type Rol = 'sahip' | 'yonetici' | 'avukat' | 'stajyer' | 'sekreter';
+export function useRol(): RoleState & { yenile: () => void } {
+  const [state, setState] = useState<RoleState>({ rol: null, loading: true, error: null });
+  const controller = useRef<ReturnType<typeof startRoleResolution> | null>(null);
 
+  useEffect(() => {
+    controller.current = startRoleResolution(createClient(),
+      () => localStorage.getItem('lb_aktif_buro_id'), setState);
+    const refresh = () => { void controller.current?.refresh(); };
+    const storage = (event: StorageEvent) => { if (event.key === 'lb_aktif_buro_id') refresh(); };
+    window.addEventListener('online', refresh);
+    window.addEventListener('storage', storage);
+    return () => {
+      window.removeEventListener('online', refresh);
+      window.removeEventListener('storage', storage);
+      controller.current?.dispose();
+      controller.current = null;
+    };
+  }, []);
+
+  return { ...state, yenile: () => { void controller.current?.refresh(); } };
+}
 export const ROL_ETIKETLERI: Record<Rol, { label: string; kisa: string; renk: string }> = {
   sahip: { label: 'Büro Sahibi', kisa: 'Sahip', renk: 'text-gold bg-gold-dim border-gold/20' },
   yonetici: { label: 'Yönetici', kisa: 'Yön.', renk: 'text-gold bg-gold-dim border-gold/20' },
@@ -93,63 +114,6 @@ const YETKI_HARITASI: Record<Rol, Set<string>> = {
 // ── useRol — Aktif bürodaki rolü döndürür ──────────────────────
 // Önce uyelikler tablosundan aktif bürodaki rolü arar,
 // bulamazsa kullanicilar tablosundan fallback yapar.
-export function useRol(): { rol: Rol | null; loading: boolean } {
-  const [rol, setRol] = useState<Rol | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    const supabase = createClient();
-
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user || cancelled) return;
-
-      const GECERLI_ROLLER: Rol[] = ['sahip', 'yonetici', 'avukat', 'stajyer', 'sekreter'];
-
-      // 1. Aktif büro seçiliyse uyelikler'den rolü al
-      const aktifBuroId = typeof window !== 'undefined'
-        ? localStorage.getItem('lb_aktif_buro_id')
-        : null;
-
-      if (aktifBuroId) {
-        const { data: uyelik } = await supabase
-          .from('uyelikler')
-          .select('rol')
-          .eq('auth_id', user.id)
-          .eq('buro_id', aktifBuroId)
-          .eq('durum', 'aktif')
-          .single();
-
-        if (!cancelled && uyelik?.rol && GECERLI_ROLLER.includes(uyelik.rol as Rol)) {
-          setRol(uyelik.rol as Rol);
-          setLoading(false);
-          return;
-        }
-      }
-
-      // 2. Fallback: kullanicilar tablosundan
-      const { data: kul } = await supabase
-        .from('kullanicilar')
-        .select('rol')
-        .eq('auth_id', user.id)
-        .single();
-
-      if (!cancelled) {
-        if (kul?.rol && GECERLI_ROLLER.includes(kul.rol as Rol)) {
-          setRol(kul.rol as Rol);
-        } else {
-          setRol('avukat');
-        }
-        setLoading(false);
-      }
-    })();
-
-    return () => { cancelled = true; };
-  }, []);
-
-  return { rol, loading };
-}
 
 // ── useYetki — Belirli bir yetkiye sahip mi? ──────────────────
 export function useYetki(yetki: string): { yetkili: boolean; loading: boolean } {
